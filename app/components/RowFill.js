@@ -8,6 +8,7 @@ import {
   numberedCellId,
   row11CellId,
 } from "../lib/grid";
+import { isKnownBus } from "../lib/buses";
 
 function sanitizeBus(raw) {
   let d = String(raw).replace(/\D/g, "");
@@ -55,12 +56,16 @@ export default function RowFill({ getNum, saveNum, onClose }) {
     if (next && inputs.current[next]) inputs.current[next].focus();
   }
 
-  function Box({ cell }) {
+  // NOTE: rendered inline (not as a <Box> component) so the inputs keep focus
+  // across re-renders instead of remounting on every keystroke.
+  function renderBox(cell) {
     if (!cell) return <div className="rf__box rf__box--empty" />;
     if (cell.blocked) return <div className="rf__box rf__box--blocked">X</div>;
     const id = cell.id;
+    const val = getNum(id);
+    const invalid = val.length >= 4 && !isKnownBus(val);
     return (
-      <label className="rf__box">
+      <label className={`rf__box ${invalid ? "rf__box--invalid" : ""}`}>
         <span className="rf__label">{cell.label}</span>
         <input
           ref={(el) => {
@@ -69,8 +74,14 @@ export default function RowFill({ getNum, saveNum, onClose }) {
           className="rf__input"
           inputMode="numeric"
           enterKeyHint="next"
-          value={getNum(id)}
-          onChange={(e) => saveNum(id, sanitizeBus(e.target.value))}
+          value={val}
+          onChange={(e) => {
+            const v = sanitizeBus(e.target.value);
+            saveNum(id, v);
+            // Auto-advance as soon as a real bus number is entered (most are
+            // 4 digits, and the iOS number pad has no "next" key).
+            if (isKnownBus(v)) focusNext(id);
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -131,8 +142,8 @@ export default function RowFill({ getNum, saveNum, onClose }) {
           {titleB && <div className="rf__colhead">{titleB}</div>}
           {Array.from({ length: rows }).map((_, i) => (
             <Fragment key={i}>
-              <Box cell={colA[i]} />
-              {colB && <Box cell={colB[i]} />}
+              {renderBox(colA[i])}
+              {colB && renderBox(colB[i])}
             </Fragment>
           ))}
         </div>

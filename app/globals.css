@@ -890,6 +890,10 @@ button {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent);
 }
+.rf__box--invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
 
 /* ---------- Back of sheet (lot lists) ---------- */
 .back-sheet {
