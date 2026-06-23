@@ -40,24 +40,81 @@ export function row11CellId(band) {
   return `r11_${band}`; // band 0..9
 }
 
-// Screen-only colour swatches (never printed). Placeholder palette — easy to
-// adjust once we know the real colour meanings.
-export const COLORS = [
-  { id: "none", label: "None", hex: "transparent" },
-  { id: "white", label: "White", hex: "#e8e8e8" },
-  { id: "blue", label: "Blue", hex: "#3b82f6" },
-  { id: "green", label: "Green", hex: "#22c55e" },
-  { id: "yellow", label: "Yellow", hex: "#eab308" },
-  { id: "red", label: "Red", hex: "#ef4444" },
-  { id: "black", label: "Black", hex: "#111827" },
+// Bus TYPES — permanent roster properties. A bus can have MORE THAN ONE type
+// (e.g. 25545 is both Pulse and Hybrid). Shown as letter code(s) in the cell
+// corner. Regular buses have no type. Pulse is purple (the buses are purple).
+export const BUS_TYPES = [
+  { id: "pulse", label: "Pulse", code: "P", color: "#7c3aed" },
+  { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d" },
+  { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309" },
+  { id: "coach", label: "Coach / Single Door", code: "COACH", color: "#0f766e" },
 ];
 
-// Screen-only status options (never printed). Placeholder set.
-export const STATUSES = [
+export function typeInfo(id) {
+  return BUS_TYPES.find((t) => t.id === id) || null;
+}
+
+// Manager-set operational FLAGS. Each is separate; the full name is shown so
+// there's no confusion.
+export const FLAGS = [
   { id: "none", label: "—" },
-  { id: "ready", label: "Ready" },
-  { id: "fuel", label: "Needs fuel" },
-  { id: "clean", label: "Needs cleaning" },
-  { id: "shop", label: "In shop" },
-  { id: "oos", label: "Out of service" },
+  { id: "legal", label: "LEGAL" },
+  { id: "safety", label: "SAFETY" },
+  { id: "oos", label: "OUT OF SERVICE" },
+  { id: "inspection", label: "INSPECTION" },
+  { id: "hold", label: "HOLD" },
+  { id: "movement", label: "MOVEMENT" },
+  { id: "service", label: "NEEDS SERVICE" },
+  { id: "cleaning", label: "NEEDS CLEANING" },
 ];
+export function flagLabel(id) {
+  const f = FLAGS.find((x) => x.id === id);
+  return f ? f.label : "";
+}
+
+// The assignable flags (everything except "none").
+export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
+
+// Flag severity, most → least severe — used to pick which flag to show when a
+// bus has several. A custom note ("Other") is the least severe of all.
+export const FLAG_SEVERITY = [
+  "legal",
+  "safety",
+  "oos",
+  "inspection",
+  "hold",
+  "movement",
+  "service",
+  "cleaning",
+];
+
+export function mostSevereFlag(ids) {
+  let best = null;
+  let rank = Infinity;
+  for (const f of ids || []) {
+    const r = FLAG_SEVERITY.indexOf(f);
+    if (r !== -1 && r < rank) {
+      rank = r;
+      best = f;
+    }
+  }
+  return best || (ids && ids[0]) || null;
+}
+
+// A bus entry is { flags: [ids], note: "custom text" }.
+// Shows the most-severe flag + a count of the rest, with a trailing "*" when a
+// custom note exists. e.g. "INSPECTION +2", "NEEDS CLEANING +1*", "OTHER*".
+export function flagDisplay(entry) {
+  if (!entry) return "";
+  const flags = entry.flags || [];
+  const hasNote = !!(entry.note && entry.note.trim());
+  const count = flags.length + (hasNote ? 1 : 0);
+  if (count === 0) return "";
+  const topLabel = flags.length > 0 ? flagLabel(mostSevereFlag(flags)) : "OTHER";
+  const extra = count - 1;
+  return `${topLabel}${extra > 0 ? ` +${extra}` : ""}${hasNote ? "*" : ""}`;
+}
+
+export function entryHasContent(entry) {
+  return !!(entry && ((entry.flags && entry.flags.length) || (entry.note && entry.note.trim())));
+}

@@ -1,25 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLORS, STATUSES } from "../lib/grid";
+import { typeInfo, flagLabel } from "../lib/grid";
+import { isKnownBus, busTypes } from "../lib/buses";
+import TypeCodes from "./TypeCodes";
 
-// Bus numbers are 4-5 digits and start with 2 or 6. We warn but never block,
-// so unusual real-world entries are still possible.
-function isValidBus(num) {
-  return /^[26]\d{3,4}$/.test(num);
+// Bus numbers must start with 2 or 6 and are at most 5 digits. We block any
+// character that would break that rule so it never gets typed into the box.
+function sanitizeBus(raw) {
+  let digits = String(raw).replace(/\D/g, "");
+  if (digits && digits[0] !== "2" && digits[0] !== "6") digits = "";
+  return digits.slice(0, 5);
 }
 
-export default function CellEditor({ label, subLabel, value, onSave, onClose }) {
-  const [num, setNum] = useState(value.num || "");
-  const [color, setColor] = useState(value.color || "none");
-  const [status, setStatus] = useState(value.status || "none");
+export default function CellEditor({ subLabel, value, flags, onSave, onClose }) {
+  const [num, setNum] = useState(value || "");
   const inputRef = useRef(null);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Close on Escape.
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") onClose();
@@ -28,22 +29,25 @@ export default function CellEditor({ label, subLabel, value, onSave, onClose }) 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function save() {
-    onSave({ num: num.trim(), color, status });
-  }
+  const known = isKnownBus(num);
+  const showWarning = num.length >= 4 && !known;
 
-  function clearAll() {
-    onSave({ num: "", color: "none", status: "none" });
-  }
-
-  const showWarning = num.length > 0 && !isValidBus(num);
+  const entry = num && flags ? flags[num] || { flags: [], note: "" } : { flags: [], note: "" };
+  const types = num ? busTypes(num) : [];
+  const typeLabels = types
+    .map((t) => typeInfo(t)?.label)
+    .filter(Boolean)
+    .join(", ");
+  const flagText = (entry.flags || []).map((f) => flagLabel(f)).join(", ");
+  const note = (entry.note || "").trim();
+  const showReadout = num.length >= 4 && (types.length > 0 || flagText || note);
 
   return (
     <div className="modal-backdrop no-print" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__head">
           <div>
-            <div className="modal__title">{label}</div>
+            <div className="modal__title">Bus number</div>
             {subLabel && <div className="modal__sub">{subLabel}</div>}
           </div>
           <button className="modal__close" onClick={onClose} aria-label="Close">
@@ -51,66 +55,51 @@ export default function CellEditor({ label, subLabel, value, onSave, onClose }) 
           </button>
         </div>
 
-        <label className="modal__label">Bus number</label>
         <input
           ref={inputRef}
           className="modal__input"
           value={num}
-          onChange={(e) => setNum(e.target.value.replace(/[^0-9]/g, "").slice(0, 5))}
+          onChange={(e) => setNum(sanitizeBus(e.target.value))}
           inputMode="numeric"
-          placeholder="e.g. 2451"
+          placeholder="Bus number"
           onKeyDown={(e) => {
-            if (e.key === "Enter") save();
+            if (e.key === "Enter") onSave(num.trim());
           }}
         />
         {showWarning && (
           <div className="modal__warn">
-            Heads up: bus numbers are usually 4–5 digits starting with 2 or 6.
-            You can still save this.
+            {num} isn&apos;t on the bus list — double-check it. You can still save it.
+          </div>
+        )}
+        {num.length >= 4 && known && (
+          <div className="modal__ok">✓ Bus {num} is on the list</div>
+        )}
+
+        {showReadout && (
+          <div className="flag-readout">
+            <TypeCodes num={num} className="flag-readout__codes" />
+            <span>
+              {typeLabels}
+              {typeLabels && (flagText || note) ? " · " : ""}
+              {flagText}
+              {flagText && note ? ", " : ""}
+              {note && <em>“{note}”</em>}
+              {(flagText || note) && (
+                <span className="flag-readout__note"> (manager)</span>
+              )}
+            </span>
           </div>
         )}
 
-        <label className="modal__label">Color (screen only — not printed)</label>
-        <div className="swatches">
-          {COLORS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className={`swatch ${color === c.id ? "swatch--on" : ""} ${
-                c.id === "none" ? "swatch--none" : ""
-              }`}
-              style={c.id === "none" ? undefined : { background: c.hex }}
-              onClick={() => setColor(c.id)}
-              title={c.label}
-            >
-              {c.id === "none" ? "∅" : ""}
-            </button>
-          ))}
-        </div>
-
-        <label className="modal__label">Status (screen only — not printed)</label>
-        <div className="statuses">
-          {STATUSES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`chip ${status === s.id ? "chip--on" : ""}`}
-              onClick={() => setStatus(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
         <div className="modal__actions">
-          <button className="btn btn--ghost" onClick={clearAll}>
+          <button className="btn btn--ghost" onClick={() => onSave("")}>
             Clear
           </button>
           <div className="toolbar__spacer" />
           <button className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn btn--primary" onClick={save}>
+          <button className="btn btn--primary" onClick={() => onSave(num.trim())}>
             Save
           </button>
         </div>
