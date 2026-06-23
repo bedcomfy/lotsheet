@@ -87,16 +87,29 @@ button {
 
 /* Header */
 .head {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  display: flex;
   align-items: stretch;
-  border: 1px solid var(--line);
+  gap: 10px;
 }
 .head__logo {
+  flex: 0 0 auto;
+  width: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid var(--line);
+  border: none;
+}
+.head__logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.head__box {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  border: 1px solid var(--line);
 }
 .head__field {
   display: flex;
@@ -169,8 +182,8 @@ button {
 .frontrow {
   display: grid;
   grid-template-columns: repeat(11, minmax(0, 1fr));
-  gap: 1px;
-  border: 1px solid transparent;
+  /* 1px transparent left edge matches the grid's 1px left border so columns align */
+  border-left: 1px solid transparent;
 }
 .front {
   min-height: 26px;
@@ -193,14 +206,14 @@ button {
   outline: 1px dashed #cbd5e1; /* faint hint on screen only */
 }
 
-/* Grid — uniform 1px lines everywhere via a line-coloured background
-   showing through 1px gaps, plus a 1px outer border. */
+/* Grid — uniform 1px lines via real borders (these print reliably, unlike
+   background colours). The container draws the top+left edge; every cell draws
+   its right+bottom edge, so each interior line is a single 1px border. */
 .grid {
   display: grid;
   grid-template-columns: repeat(11, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
 }
 .grid__header {
   text-align: center;
@@ -209,6 +222,8 @@ button {
   padding: 5px 1px;
   white-space: nowrap;
   background: var(--paper);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,7 +234,10 @@ button {
   position: relative;
   min-height: 52px;
   background: var(--paper);
-  border: none; /* reset the default <button> border so only the 1px gridline shows */
+  /* reset the default <button> styling, then draw a single right+bottom border */
+  border: none;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
@@ -277,13 +295,14 @@ button {
 .eastlot {
   display: grid;
   grid-template-columns: repeat(11, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
 }
 .eastlot__cell {
   min-height: 40px;
   background: var(--paper);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 /* ---------- Modal editor (screen only) ---------- */
@@ -422,11 +441,17 @@ button {
   .head__field {
     padding: 4px 5px;
   }
+  .head__field {
+    padding: 4px 3px;
+  }
   .head__field label {
-    font-size: 9.5px;
+    font-size: 9px;
   }
   .head__field input {
-    font-size: 11px;
+    font-size: 10px;
+  }
+  .head__logo {
+    width: 46px;
   }
   .head__title {
     font-size: 12px;

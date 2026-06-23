@@ -152,33 +152,29 @@ export default function LotSheet() {
       {/* The printable sheet */}
       <div className="sheet-scroll">
         <div className="sheet">
-          {/* Header */}
+          {/* Header — logo sits in open space (no box) left of the title row */}
           <div className="head">
             <div className="head__logo">
-              <svg viewBox="0 0 100 100" width="42" height="42" aria-hidden="true">
-                {/* pointed tail at lower-left */}
-                <path d="M27 57 L15 89 L46 74 Z" fill="#15599f" />
-                {/* ring */}
-                <circle cx="55" cy="45" r="29" fill="none" stroke="#15599f" strokeWidth="13" />
-                {/* center square */}
-                <rect x="46" y="36" width="18" height="18" fill="#15599f" />
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Pace" />
             </div>
-            <div className="head__field head__time">
-              <label>TIME:</label>
-              <input
-                value={sheet.time}
-                onChange={(e) => setField("time", e.target.value)}
-                inputMode="numeric"
-              />
-            </div>
-            <div className="head__title">LOT SHEET</div>
-            <div className="head__field head__date">
-              <label>DATE:</label>
-              <input
-                value={sheet.date}
-                onChange={(e) => setField("date", e.target.value)}
-              />
+            <div className="head__box">
+              <div className="head__field head__time">
+                <label>TIME:</label>
+                <input
+                  value={sheet.time}
+                  onChange={(e) => setField("time", e.target.value)}
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="head__title">LOT SHEET</div>
+              <div className="head__field head__date">
+                <label>DATE:</label>
+                <input
+                  value={sheet.date}
+                  onChange={(e) => setField("date", e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
