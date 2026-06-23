@@ -16,12 +16,14 @@ import CellEditor from "./CellEditor";
 const STORAGE_KEY = "lotsheet:current";
 
 function emptySheet() {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
   return {
-    time: "",
+    time: `${hh}:${min}`,
     date: `${mm}/${dd}/${yyyy}`,
     offProperty: "",
     inShop: "",
@@ -102,13 +104,12 @@ export default function LotSheet() {
   }
 
   // ---- cell renderer ----
-  function Cell({ id, slotLabel, colFirst, bandTop }) {
+  function Cell({ id, slotLabel }) {
     const data = getCell(id);
     const blocked = slotLabel === "X";
-    const edge = `${colFirst ? "col-first" : ""} ${bandTop ? "band-top" : ""}`;
     if (blocked) {
       return (
-        <div className={`cell cell--blocked ${edge}`}>
+        <div className="cell cell--blocked">
           <span className="cell__x">X</span>
         </div>
       );
@@ -116,7 +117,7 @@ export default function LotSheet() {
     return (
       <button
         type="button"
-        className={`cell ${edge} ${data.num ? "cell--filled" : ""}`}
+        className={`cell ${data.num ? "cell--filled" : ""}`}
         onClick={() => openCell(id, slotLabel != null ? `Slot ${slotLabel}` : "Bus", null)}
       >
         {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
@@ -154,10 +155,13 @@ export default function LotSheet() {
           {/* Header */}
           <div className="head">
             <div className="head__logo">
-              <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
-                <circle cx="20" cy="20" r="16" fill="none" stroke="#111" strokeWidth="4" />
-                <circle cx="27" cy="20" r="3.5" fill="#111" />
-                <path d="M20 4 a16 16 0 0 1 0 0" />
+              <svg viewBox="0 0 100 100" width="42" height="42" aria-hidden="true">
+                {/* pointed tail at lower-left */}
+                <path d="M27 57 L15 89 L46 74 Z" fill="#15599f" />
+                {/* ring */}
+                <circle cx="55" cy="45" r="29" fill="none" stroke="#15599f" strokeWidth="13" />
+                {/* center square */}
+                <rect x="46" y="36" width="18" height="18" fill="#15599f" />
               </svg>
             </div>
             <div className="head__field head__time">
@@ -198,16 +202,8 @@ export default function LotSheet() {
             </div>
           </div>
 
-          {/* Main grid */}
-          <div className="grid">
-            {/* Column headers */}
-            {Array.from({ length: COLUMN_COUNT }).map((_, c) => (
-              <div key={`h${c}`} className={`grid__header ${c === 0 ? "col-first" : ""}`}>
-                ROW {c + 1}
-              </div>
-            ))}
-
-            {/* Front-bus row (ROW 1..6 only): open whitespace, no borders, no numbers */}
+          {/* Front-bus row — open whitespace ABOVE the ROW bar, ROW 1..6 only */}
+          <div className="frontrow">
             {Array.from({ length: COLUMN_COUNT }).map((_, c) =>
               c < FRONT_COLUMNS ? (
                 <button
@@ -228,38 +224,28 @@ export default function LotSheet() {
                 <div key={`f${c}`} className="front front--empty" />
               )
             )}
+          </div>
+
+          {/* Main grid: ROW bar sits directly on top of the cells */}
+          <div className="grid">
+            {/* Column headers (ROW 1..11) */}
+            {Array.from({ length: COLUMN_COUNT }).map((_, c) => (
+              <div key={`h${c}`} className="grid__header">
+                ROW {c + 1}
+              </div>
+            ))}
 
             {/* Numbered bands */}
             {SLOTS.map((band, b) =>
               band.map((slot, c) => {
-                const colFirst = c === 0;
-                const bandTop = b === 0;
                 if (c === COLUMN_COUNT - 1) {
                   // ROW 11 — writable, unnumbered
-                  return (
-                    <Cell
-                      key={`b${b}c${c}`}
-                      id={row11CellId(b)}
-                      slotLabel={null}
-                      colFirst={colFirst}
-                      bandTop={bandTop}
-                    />
-                  );
+                  return <Cell key={`b${b}c${c}`} id={row11CellId(b)} slotLabel={null} />;
                 }
                 if (slot === "X") {
-                  return (
-                    <Cell key={`b${b}c${c}`} id={null} slotLabel="X" colFirst={colFirst} bandTop={bandTop} />
-                  );
+                  return <Cell key={`b${b}c${c}`} id={null} slotLabel="X" />;
                 }
-                return (
-                  <Cell
-                    key={`b${b}c${c}`}
-                    id={numberedCellId(slot)}
-                    slotLabel={slot}
-                    colFirst={colFirst}
-                    bandTop={bandTop}
-                  />
-                );
+                return <Cell key={`b${b}c${c}`} id={numberedCellId(slot)} slotLabel={slot} />;
               })
             )}
           </div>
