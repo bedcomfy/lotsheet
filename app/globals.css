@@ -810,6 +810,87 @@ button {
   }
 }
 
+/* ---------- Fill Rows (mobile entry) ---------- */
+.rf__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 4px;
+}
+.rf__which {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+.rf__hint {
+  padding: 0 14px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rf__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 24px;
+  align-content: start;
+}
+.rf__colhead {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 1;
+}
+.rf__box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 4px 8px;
+  min-height: 52px;
+}
+.rf__box--blocked {
+  justify-content: center;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 20px;
+  background: #f3f4f6;
+}
+.rf__box--empty {
+  border: none;
+}
+.rf__label {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.rf__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.04em;
+  background: transparent;
+}
+.rf__input:focus {
+  outline: none;
+}
+.rf__box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 /* ---------- Back of sheet (lot lists) ---------- */
 .back-sheet {
   background: var(--paper);

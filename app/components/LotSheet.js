@@ -15,6 +15,7 @@ import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
 import LotEditor from "./LotEditor";
+import RowFill from "./RowFill";
 
 const STORAGE_KEY = "lotsheet:current";
 
@@ -52,6 +53,7 @@ export default function LotSheet() {
   const [showMaint, setShowMaint] = useState(false); // print maintenance info?
   const [fontDelta, setFontDelta] = useState(0); // size relative to Standard (px)
   const [editingLot, setEditingLot] = useState(null); // which back-of-sheet lot
+  const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const saveTimer = useRef(null);
 
   // "Standard" already runs +2px bigger than the base; the slider is ±4 of that.
@@ -211,6 +213,9 @@ export default function LotSheet() {
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
+        <button className="btn btn--primary" onClick={() => setFillOpen(true)}>
+          Fill Rows
+        </button>
         <button className="btn" onClick={() => setManagerOpen(true)}>
           Manager
         </button>
@@ -385,6 +390,10 @@ export default function LotSheet() {
           onBusFlagsUpdated={onBusFlagsUpdated}
           onClose={() => setManagerOpen(false)}
         />
+      )}
+
+      {fillOpen && (
+        <RowFill getNum={getNum} saveNum={saveNum} onClose={() => setFillOpen(false)} />
       )}
 
       {editingLot && (
