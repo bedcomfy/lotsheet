@@ -219,6 +219,10 @@ button {
   position: relative;
   min-height: 52px;
   background: var(--paper);
+  border: none; /* reset the default <button> border so only the 1px gridline shows */
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
