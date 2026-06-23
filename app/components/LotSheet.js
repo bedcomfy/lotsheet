@@ -165,6 +165,16 @@ export default function LotSheet() {
       return { ...s, lots: { ...lots, [key]: lots[key].filter((_, i) => i !== index) } };
     });
   }
+  function moveInLot(key, index, dir) {
+    setSheet((s) => {
+      const lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = [...(lots[key] || [])];
+      const j = index + dir;
+      if (j < 0 || j >= arr.length) return s;
+      [arr[index], arr[j]] = [arr[j], arr[index]];
+      return { ...s, lots: { ...lots, [key]: arr } };
+    });
+  }
 
   // ---- cell renderer ----
   function Cell({ id, slotLabel }) {
@@ -383,6 +393,7 @@ export default function LotSheet() {
           list={lotList(editingLot)}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
+          onMove={(i, dir) => moveInLot(editingLot, i, dir)}
           onClose={() => setEditingLot(null)}
         />
       )}

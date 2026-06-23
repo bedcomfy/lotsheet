@@ -9,7 +9,7 @@ function sanitizeBus(raw) {
   return d.slice(0, 5);
 }
 
-export default function LotEditor({ title, list, onAdd, onRemove, onClose }) {
+export default function LotEditor({ title, list, onAdd, onRemove, onMove, onClose }) {
   const [val, setVal] = useState("");
   const ref = useRef(null);
 
@@ -68,6 +68,22 @@ export default function LotEditor({ title, list, onAdd, onRemove, onClose }) {
               <span className="lotitem__bus">{bus}</span>
               <TypeCodes num={bus} />
               <div className="toolbar__spacer" />
+              <button
+                className="lotitem__move"
+                onClick={() => onMove(i, -1)}
+                disabled={i === 0}
+                aria-label="Move up"
+              >
+                ↑
+              </button>
+              <button
+                className="lotitem__move"
+                onClick={() => onMove(i, 1)}
+                disabled={i === list.length - 1}
+                aria-label="Move down"
+              >
+                ↓
+              </button>
               <button className="busrow__clear" onClick={() => onRemove(i)}>
                 Remove
               </button>
