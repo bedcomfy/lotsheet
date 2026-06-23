@@ -763,6 +763,29 @@ button {
 
 /* ---------- Small screens (phones) — screen only, never print ---------- */
 @media screen and (max-width: 480px) {
+  /* Toolbar wraps instead of overflowing off-screen */
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .toolbar__spacer {
+    display: none;
+  }
+  .toolbar__saved {
+    display: none;
+  }
+  .toolbar__title {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .toolbar .btn {
+    padding: 9px 12px;
+  }
+  .toolbar__font {
+    margin-left: auto;
+  }
+
   .sheet-scroll {
     padding: 8px;
   }
@@ -1016,8 +1039,9 @@ button {
 /* ---------- Print ---------- */
 @media print {
   @page {
+    /* margin 0 removes the browser's URL / date / "Page X of Y" header+footer */
     size: letter portrait;
-    margin: 0.45in 0.4in 0.4in; /* top right/left bottom — a touch more top like the paper */
+    margin: 0;
   }
   html,
   body {
@@ -1031,24 +1055,17 @@ button {
     padding: 0;
     overflow: visible;
   }
-  /* Fill the whole printable page so proportions match the paper form. */
+  /* Natural flow with fixed cell heights — prints consistently across devices
+     (the old flex/fixed-height approach scaled wrong on iOS and spilled onto
+     extra pages). The internal padding replaces the @page margin we removed. */
   .sheet {
     box-shadow: none;
     max-width: none;
     width: 100%;
-    padding: 0;
-    height: 10.1in; /* letter (11in) minus the 0.4in top+bottom @page margins */
-    display: flex;
-    flex-direction: column;
-  }
-  /* The grid grows to fill leftover vertical space; its 10 bands share it
-     equally and push EAST LOT to the bottom of the page. */
-  .grid {
-    flex: 1 1 auto;
-    grid-template-rows: auto repeat(10, minmax(0, 1fr));
+    padding: 0.32in 0.34in 0.2in;
   }
   .cell {
-    min-height: 0;
+    min-height: 0.7in;
   }
   /* Keep every border/ink crisp on paper */
   * {
@@ -1092,10 +1109,10 @@ button {
     max-width: none;
     width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 0.32in 0.34in;
   }
   .backlot {
-    min-height: 4.6in;
+    min-height: 4.4in;
   }
   .backlot__head {
     background: #fff;
