@@ -18,7 +18,7 @@ const CHROMIUM_PACK =
 
 // Bumped on each PDF-pipeline change so the live error text tells us which
 // build is actually serving (helps diagnose deploys we can't watch directly).
-const BUILD = "pdf-min-2";
+const BUILD = "pdf-min-3-node20";
 
 export async function GET(req) {
   const url = new URL(req.url);
