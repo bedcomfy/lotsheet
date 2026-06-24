@@ -998,6 +998,54 @@ button {
   font-size: 9px;
 }
 
+/* Back-of-sheet flag summary — buses grouped by most-severe flag */
+.flagsum {
+  margin-top: 22px;
+}
+.flagsum__title {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.flagsum__group {
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+.flagsum__cat {
+  font-weight: 700 !important;
+  font-size: calc(13px + var(--fz, 0px));
+  border-bottom: 1px solid #d1d5db;
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+}
+.flagsum__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: calc(12px + var(--fz, 0px));
+  line-height: 1.5;
+}
+.flagsum__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 1px 0;
+}
+.flagsum__bus {
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+}
+.flagsum__type .badge,
+.flagsum__type .typecodes__sep {
+  font-size: 9px;
+}
+.flagsum__flags {
+  color: #b91c1c;
+}
+
 /* Lot editor modal */
 .modal--tall {
   display: flex;
@@ -1205,6 +1253,12 @@ button {
   }
   .backlot__edit {
     display: none !important;
+  }
+  /* The flag summary prints on its own page after the lot lists. */
+  .flagsum {
+    page-break-before: always;
+    margin-top: 0;
+    padding: 0.32in 0.34in;
   }
   /* Hide screen-only inputs' focus styling; show plain text */
   input {

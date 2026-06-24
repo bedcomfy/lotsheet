@@ -11,6 +11,8 @@ import {
   row11CellId,
   flagDisplay,
   inspMilesDisplay,
+  flagsFullDisplay,
+  groupFlaggedBuses,
 } from "../lib/grid";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
@@ -314,6 +316,9 @@ export default function LotSheet() {
     );
   }
 
+  // Buses with flags, grouped by most-severe flag, for the back-of-sheet summary.
+  const flagSummary = groupFlaggedBuses(flags);
+
   return (
     <div className="app">
       {/* Toolbar — never printed */}
@@ -475,19 +480,12 @@ export default function LotSheet() {
                 </button>
                 <ol className="backlot__list">
                   {lotList(lot.key).map((bus, i) => {
-                    const entry = flagFor(bus);
-                    const fdisp = flagDisplay(entry);
-                    const miles = inspMilesDisplay(entry);
+                    const fdisp = flagsFullDisplay(flagFor(bus));
                     return (
                       <li key={i}>
                         <span className="backlot__bus">{bus}</span>
                         <TypeCodes num={bus} className="backlot__type" />
-                        {fdisp && (
-                          <span className="backlot__flag">
-                            {fdisp}
-                            {miles ? ` · ${miles}` : ""}
-                          </span>
-                        )}
+                        {fdisp && <span className="backlot__flag">{fdisp}</span>}
                       </li>
                     );
                   })}
@@ -495,6 +493,28 @@ export default function LotSheet() {
               </div>
             ))}
           </div>
+
+          {/* Flag summary — every flagged bus, grouped by most-severe flag,
+              numerically sorted, with all of its flags spelled out. */}
+          {flagSummary.length > 0 && (
+            <div className="flagsum">
+              <div className="flagsum__title">BUSES WITH FLAGS</div>
+              {flagSummary.map((g) => (
+                <div className="flagsum__group" key={g.cat}>
+                  <div className="flagsum__cat">{g.label}</div>
+                  <ul className="flagsum__list">
+                    {g.buses.map((bus) => (
+                      <li key={bus}>
+                        <span className="flagsum__bus">{bus}</span>
+                        <TypeCodes num={bus} className="flagsum__type" />
+                        <span className="flagsum__flags">{flagsFullDisplay(flagFor(bus))}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

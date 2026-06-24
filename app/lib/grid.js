@@ -68,6 +68,7 @@ export const FLAGS = [
   { id: "hold", label: "HOLD" },
   { id: "movement", label: "MOVEMENT" },
   { id: "service", label: "NEEDS SERVICE" },
+  { id: "ac", label: "A/C" },
   { id: "cleaning", label: "NEEDS CLEANING" },
 ];
 export function flagLabel(id) {
@@ -90,6 +91,7 @@ export const FLAG_SEVERITY = [
   "hold",
   "movement",
   "service",
+  "ac",
   "cleaning",
 ];
 
@@ -129,7 +131,7 @@ export function hasInspection(entry) {
   return !!(entry && entry.flags && entry.flags.includes("inspection"));
 }
 
-// Inspection mileage readout: "Insp +300" (300 miles to go) or "Insp −100"
+// Inspection mileage readout: "Miles +300" (300 miles to go) or "Miles −100"
 // (100 miles overdue). Empty string when no mileage is set. Only meaningful for
 // buses that carry the inspection flag.
 export function inspMilesDisplay(entry) {
@@ -138,5 +140,54 @@ export function inspMilesDisplay(entry) {
   if (m === null || m === undefined || m === "") return "";
   const n = Number(m);
   if (!Number.isFinite(n)) return "";
-  return `Insp ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
+  return `Miles ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
+}
+
+// All of a bus's flag labels, ordered most → least severe.
+export function flagListLabels(entry) {
+  const flags = (entry?.flags || [])
+    .slice()
+    .sort((a, b) => FLAG_SEVERITY.indexOf(a) - FLAG_SEVERITY.indexOf(b));
+  return flags.map(flagLabel).filter(Boolean);
+}
+
+// Every flag spelled out in full, plus the custom "Other" note text (not just a
+// "*"), e.g. "INSPECTION, NEEDS CLEANING, A/C, broken mirror". Empty if none.
+export function flagsAndNote(entry) {
+  if (!entry) return "";
+  const parts = flagListLabels(entry);
+  const note = entry.note && entry.note.trim();
+  if (note) parts.push(note);
+  return parts.join(", ");
+}
+
+// flagsAndNote plus the inspection mileage, for the lot lists / flag summary.
+export function flagsFullDisplay(entry) {
+  const base = flagsAndNote(entry);
+  const miles = inspMilesDisplay(entry);
+  if (base && miles) return `${base} · ${miles}`;
+  return base || miles;
+}
+
+// Group every flagged bus under its most-severe flag (note-only buses go under
+// "Other"), each group sorted numerically. Returns ordered groups for the
+// back-of-sheet summary: [{ cat, label, buses: [busNumber, ...] }].
+export function groupFlaggedBuses(flagsMap) {
+  const groups = {};
+  for (const [bus, entry] of Object.entries(flagsMap || {})) {
+    const hasFlags = entry && entry.flags && entry.flags.length;
+    const hasNote = entry && entry.note && entry.note.trim();
+    if (!hasFlags && !hasNote) continue;
+    const cat = hasFlags ? mostSevereFlag(entry.flags) : "other";
+    (groups[cat] = groups[cat] || []).push(bus);
+  }
+  const order = [...FLAG_SEVERITY, "other"];
+  const result = [];
+  for (const cat of order) {
+    const buses = groups[cat];
+    if (!buses || !buses.length) continue;
+    buses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    result.push({ cat, label: cat === "other" ? "OTHER" : flagLabel(cat), buses });
+  }
+  return result;
 }
