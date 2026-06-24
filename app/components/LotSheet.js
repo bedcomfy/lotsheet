@@ -81,6 +81,7 @@ export default function LotSheet() {
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
   const saveTimer = useRef(null);
+  const prewarmTimer = useRef(null); // debounce for background PDF pre-build
   const lastSyncRef = useRef(null); // JSON of the sheet known to match the server
   const sheetRef = useRef(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
@@ -139,6 +140,14 @@ export default function LotSheet() {
       .finally(() => setFlagsLoaded(true));
   }, []);
 
+  // Pre-build the PDF when flags or the maintenance toggle change, and once on
+  // load (the sheet itself is pre-built after each autosave) so a later
+  // "Print PDF" is instant.
+  useEffect(() => {
+    if (loaded && flagsLoaded) schedulePrewarm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flags, showMaint, loaded, flagsLoaded]);
+
   // Autosave (debounced) to the server, so every device sees the same sheet.
   // A local copy is also kept as an offline backup.
   useEffect(() => {
@@ -160,6 +169,7 @@ export default function LotSheet() {
           if (d && d.ok) {
             lastSyncRef.current = json;
             setSavedAt(new Date());
+            schedulePrewarm(); // pre-build the PDF for the saved sheet
           }
         })
         .catch(() => {});
@@ -303,6 +313,17 @@ export default function LotSheet() {
 
   function openCell(id, subLabel) {
     setEditing({ id, subLabel });
+  }
+
+  // Quietly (re)build the PDF in the background so a later "Print PDF" click is
+  // instant. Debounced; the server only re-renders if the sheet/flags changed.
+  function schedulePrewarm() {
+    if (printMode) return;
+    const maint = showMaint ? 1 : 0;
+    clearTimeout(prewarmTimer.current);
+    prewarmTimer.current = setTimeout(() => {
+      fetch(`/api/pdf?maint=${maint}&prewarm=1`).catch(() => {});
+    }, 1500);
   }
 
   // Server-side PDF: opens a new tab, flushes the latest sheet to the server,
@@ -487,6 +508,9 @@ export default function LotSheet() {
           />
           Maintenance info
         </label>
+        <button className="btn" onClick={() => window.print()} title="Print using the browser (may vary by device)">
+          Print
+        </button>
         <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
           Print PDF
         </button>

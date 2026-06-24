@@ -185,13 +185,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
         <div className="manager__bar">
           <div className="manager__title">Edit Flags</div>
           <div className="toolbar__spacer" />
-          <button
-            className="btn"
-            onClick={() => window.print()}
-            title="Print the sheet using the browser (fallback — the PDF button prints more reliably)"
-          >
-            Print
-          </button>
           <button className="btn" onClick={onClose}>
             Done
           </button>
