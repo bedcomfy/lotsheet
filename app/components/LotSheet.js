@@ -15,6 +15,7 @@ import {
   groupFlaggedBuses,
   cellLocationLabel,
 } from "../lib/grid";
+import { busLabel } from "../lib/buses";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
@@ -412,7 +413,7 @@ export default function LotSheet() {
       >
         {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
         {num && <TypeCodes num={num} className="cell__types" />}
-        <span className="cell__num">{num}</span>
+        <span className="cell__num">{busLabel(num)}</span>
         {(disp || miles) && (
           <span className="cell__meta">
             {disp && <span className="cell__flag">{disp}</span>}
@@ -555,7 +556,7 @@ export default function LotSheet() {
                   onClick={() => openCell(id, `ROW ${c + 1} — front bus`)}
                 >
                   {num && <TypeCodes num={num} className="front__types" />}
-                  <span className="cell__num">{num}</span>
+                  <span className="cell__num">{busLabel(num)}</span>
                   {disp && <span className="front__flag">{disp}</span>}
                   {miles && <span className="front__flag front__insp">{miles}</span>}
                 </button>
@@ -608,7 +609,7 @@ export default function LotSheet() {
                     const fdisp = flagsFullDisplay(flagFor(bus));
                     return (
                       <li key={i}>
-                        <span className="backlot__bus">{bus}</span>
+                        <span className="backlot__bus">{busLabel(bus)}</span>
                         <TypeCodes num={bus} className="backlot__type" />
                         {fdisp && <span className="backlot__flag">{fdisp}</span>}
                       </li>
@@ -630,7 +631,7 @@ export default function LotSheet() {
                   <ul className="flagsum__list">
                     {g.buses.map((bus) => (
                       <li key={bus}>
-                        <span className="flagsum__bus">{bus}</span>
+                        <span className="flagsum__bus">{busLabel(bus)}</span>
                         <TypeCodes num={bus} className="flagsum__type" />
                         {busLocations[bus] && (
                           <span className="flagsum__loc">{busLocations[bus].join(", ")}</span>

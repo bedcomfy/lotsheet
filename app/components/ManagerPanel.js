@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ASSIGNABLE_FLAGS, flagLabel } from "../lib/grid";
-import { BUS_NUMBERS, sanitizeBus, isKnownBus } from "../lib/buses";
+import { BUS_NUMBERS, sanitizeBus, isKnownBus, busLabel } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
 // At most this many buses may carry the INSPECTION flag at once.
@@ -239,6 +239,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
               className="manager__search"
               placeholder="Search bus number…"
               value={filter}
+              inputMode="numeric"
               onChange={(e) => setFilter(e.target.value)}
             />
             <div className="manager__list">
@@ -249,7 +250,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
                 return (
                   <div className="busrow" key={bus}>
                     <div className="busrow__head">
-                      <div className="busrow__num">{bus}</div>
+                      <div className="busrow__num">{busLabel(bus)}</div>
                       <span className="busrow__type">
                         <TypeCodes num={bus} />
                       </span>
@@ -318,6 +319,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
                   className="manager__search byflag__input"
                   placeholder="Type a bus number to add…"
                   value={busInput}
+                  inputMode="numeric"
                   onChange={(e) => {
                     const v = sanitizeBus(e.target.value);
                     // Autofill: add as soon as a valid bus number is typed.
@@ -349,7 +351,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
             <div className="manager__list">
               {matchedBuses.map((bus) => (
                 <div className="busitem" key={bus}>
-                  <div className="busrow__num">{bus}</div>
+                  <div className="busrow__num">{busLabel(bus)}</div>
                   <span className="busrow__type">
                     <TypeCodes num={bus} />
                   </span>

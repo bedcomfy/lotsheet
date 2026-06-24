@@ -74,6 +74,7 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
             if (el) inputs.current[id] = el;
           }}
           className="rf__input"
+          inputMode="numeric"
           enterKeyHint="next"
           value={val}
           onChange={(e) => {
