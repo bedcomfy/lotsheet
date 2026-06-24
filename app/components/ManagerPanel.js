@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ASSIGNABLE_FLAGS, flagLabel } from "../lib/grid";
-import { BUS_NUMBERS, sanitizeBus } from "../lib/buses";
+import { BUS_NUMBERS, sanitizeBus, isKnownBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
 // At most this many buses may carry the INSPECTION flag at once.
@@ -27,35 +27,48 @@ function NoteInput({ value, onSave }) {
   );
 }
 
-// Inspection mileage input (local state; saves on blur / Enter). Accepts a
-// signed integer — positive = miles to go, negative = miles overdue.
+// Inspection mileage input. A +/− toggle button sets the sign (mobile number
+// pads have no minus key) and the field holds the magnitude. Positive = miles
+// to go, negative = miles overdue. Saves on toggle, blur, or Enter.
 function MilesInput({ value, onSave }) {
-  const [v, setV] = useState(value === null || value === undefined ? "" : String(value));
-  function clean(raw) {
-    let s = String(raw).replace(/[^\d-]/g, "");
-    s = (s[0] === "-" ? "-" : "") + s.replace(/-/g, "");
-    return s;
+  const has = value !== null && value !== undefined && value !== "";
+  const [sign, setSign] = useState(has && Number(value) < 0 ? -1 : 1);
+  const [mag, setMag] = useState(has ? String(Math.abs(Number(value))) : "");
+
+  function commit(nextSign, nextMag) {
+    const m = String(nextMag).replace(/\D/g, "");
+    const out = m === "" ? null : nextSign * parseInt(m, 10);
+    const cur = has ? Number(value) : null;
+    if (out !== cur) onSave(out);
   }
-  function commit() {
-    const norm = v === "" || v === "-" ? "" : v;
-    const cur = value === null || value === undefined ? "" : String(value);
-    if (norm !== cur) onSave(norm === "" ? null : parseInt(norm, 10));
+  function toggleSign() {
+    const ns = sign === 1 ? -1 : 1;
+    setSign(ns);
+    commit(ns, mag);
   }
   return (
-    <label className="milesinput">
+    <div className="milesinput">
       <span className="milesinput__label">Insp miles</span>
+      <button
+        type="button"
+        className="milesinput__sign"
+        onClick={toggleSign}
+        aria-label="Toggle miles to-go (+) or overdue (−)"
+      >
+        {sign < 0 ? "−" : "+"}
+      </button>
       <input
         className="milesinput__field"
         inputMode="numeric"
-        placeholder="+/−"
-        value={v}
-        onChange={(e) => setV(clean(e.target.value))}
-        onBlur={commit}
+        placeholder="0"
+        value={mag}
+        onChange={(e) => setMag(e.target.value.replace(/\D/g, ""))}
+        onBlur={() => commit(sign, mag)}
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
         }}
       />
-    </label>
+    </div>
   );
 }
 
@@ -129,13 +142,14 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
 
   const isOther = selectedFlag === "other";
 
-  function addBusToFlag() {
+  function addBusToFlag(busArg) {
     if (isOther) return;
-    const bus = sanitizeBus(busInput);
+    const bus = sanitizeBus(busArg != null ? busArg : busInput);
     if (bus.length < 4) return;
     const cur = getEntry(bus);
     if (selectedFlag === "inspection" && inspectionFull(bus)) {
       setWarn(`Only ${INSPECTION_LIMIT} buses can be flagged INSPECTION at once.`);
+      setBusInput(bus);
       return;
     }
     setWarn("");
@@ -297,7 +311,12 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
                   className="manager__search byflag__input"
                   placeholder="Type a bus number to add…"
                   value={busInput}
-                  onChange={(e) => setBusInput(sanitizeBus(e.target.value))}
+                  onChange={(e) => {
+                    const v = sanitizeBus(e.target.value);
+                    // Autofill: add as soon as a valid bus number is typed.
+                    if (isKnownBus(v)) addBusToFlag(v);
+                    else setBusInput(v);
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && addBusToFlag()}
                 />
                 <button className="btn btn--primary" onClick={addBusToFlag}>
