@@ -261,7 +261,7 @@ export default function LotSheet() {
     if (
       gridHasContent(sheet) &&
       !window.confirm(
-        "Start a new grid for everyone? The current sheet is saved to Prev Sheets first; the grid clears but the back-of-sheet lots stay."
+        "Clear the grid for everyone? The current sheet is saved to Prev Sheets first; the grid clears but the back-of-sheet lots stay."
       )
     ) {
       return;
@@ -453,10 +453,10 @@ export default function LotSheet() {
           Fill Rows
         </button>
         <button className="btn" onClick={() => setManagerOpen(true)}>
-          Edit Busses
+          Edit Flags
         </button>
         <button className="btn" onClick={newSheet}>
-          New Grid
+          Clear Grid
         </button>
         <button className="btn" onClick={clearLots}>
           Clear Lots
@@ -484,7 +484,7 @@ export default function LotSheet() {
           Maintenance info
         </label>
         <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
-          PDF
+          Print PDF
         </button>
       </div>
 

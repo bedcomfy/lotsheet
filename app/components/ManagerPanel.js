@@ -208,7 +208,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
     <div className="manager no-print">
       <div className="manager__inner">
         <div className="manager__bar">
-          <div className="manager__title">Edit Busses</div>
+          <div className="manager__title">Edit Flags</div>
           <div className="toolbar__spacer" />
           <button
             className="btn"
