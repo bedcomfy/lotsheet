@@ -40,6 +40,32 @@ export function row11CellId(band) {
   return `r11_${band}`; // band 0..9
 }
 
+// Which grid column (0-based) each numbered slot sits in. Built from SLOTS so it
+// stays correct even where the numbering jumps around the blocked "X" slot.
+const SLOT_COL = {};
+SLOTS.forEach((band) => {
+  band.forEach((slot, c) => {
+    if (typeof slot === "number") SLOT_COL[slot] = c;
+  });
+});
+
+// Human-readable spot for a cell id, e.g. "Row 5 · #85", "Row 3 front",
+// "Row 11". Empty string for an unknown id. Columns are labelled ROW 1..11.
+export function cellLocationLabel(id) {
+  if (!id) return "";
+  if (id.startsWith("r11_")) return "Row 11";
+  if (id[0] === "s") {
+    const slot = parseInt(id.slice(1), 10);
+    const col = SLOT_COL[slot];
+    return col == null ? `#${slot}` : `Row ${col + 1} · #${slot}`;
+  }
+  if (id[0] === "f") {
+    const c = parseInt(id.slice(1), 10);
+    return `Row ${c + 1} front`;
+  }
+  return "";
+}
+
 // Bus TYPES — permanent roster properties. A bus can have MORE THAN ONE type
 // (e.g. 25545 is both Pulse and Hybrid). Shown as letter code(s) in the cell
 // corner. Regular buses have no type. Pulse is purple (the buses are purple).
