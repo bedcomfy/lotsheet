@@ -257,3 +257,40 @@ export async function deleteHistory(id) {
   const list = await historyFileRead();
   await historyFileWrite(list.filter((h) => String(h.id) !== String(id)));
 }
+
+// ---------- cached PDF (so "Print PDF" is instant) ----------
+// Stores the generated PDF (base64) keyed by maintenance variant, with a
+// signature of the sheet+flags it was built from. One key per maint variant.
+function pdfKey(maint) {
+  return `pdf_${maint ? 1 : 0}`;
+}
+function pdfFile(maint) {
+  return path.join(DATA_DIR, `${pdfKey(maint)}.json`);
+}
+
+export async function getPdfCache(maint) {
+  const key = pdfKey(maint);
+  if (usePg) {
+    const { rows } = await (await pool()).query("SELECT value FROM app_state WHERE key = $1", [key]);
+    return rows.length ? rows[0].value : null;
+  }
+  try {
+    return JSON.parse(await fs.readFile(pdfFile(maint), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export async function setPdfCache(maint, signature, data) {
+  const value = { signature, data };
+  if (usePg) {
+    await (await pool()).query(
+      `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, now())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()`,
+      [pdfKey(maint), value]
+    );
+    return;
+  }
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(pdfFile(maint), JSON.stringify(value));
+}
