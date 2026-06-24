@@ -87,6 +87,7 @@ export const FLAGS = [
   { id: "none", label: "—" },
   { id: "legal", label: "LEGAL" },
   { id: "safety", label: "SAFETY" },
+  { id: "offprop", label: "OFF PROPERTY" },
   { id: "eng", label: "ENG" },
   { id: "trans", label: "TRANS" },
   { id: "oos", label: "OUT OF SERVICE" },
@@ -110,6 +111,7 @@ export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
 export const FLAG_SEVERITY = [
   "legal",
   "safety",
+  "offprop",
   "eng",
   "trans",
   "oos",

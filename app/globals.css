@@ -228,6 +228,17 @@ button {
   outline: none;
   border-bottom-color: var(--accent);
 }
+/* Auto-calculated counter (off property) — read-only, looks filled-in */
+.counter__auto {
+  text-align: center;
+  cursor: default;
+  background: #f3f4f6;
+}
+@media print {
+  .counter__auto {
+    background: #fff;
+  }
+}
 
 /* Front-bus whitespace row — sits ABOVE the ROW bar, no visible lines.
    Uses the same gap/border geometry as .grid so columns line up. */
@@ -933,6 +944,20 @@ button {
 .rf__box--invalid {
   border-color: #ef4444;
   box-shadow: 0 0 0 1px #ef4444;
+}
+.rf__box {
+  flex-wrap: wrap;
+}
+.rf__box--dup {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+.rf__dup {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #b91c1c;
+  text-align: right;
+  margin-top: 2px;
 }
 
 /* ---------- Back of sheet (lot lists) ---------- */

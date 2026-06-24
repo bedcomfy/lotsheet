@@ -311,6 +311,24 @@ export default function LotSheet() {
     });
   }
 
+  // Find where a bus already sits on the sheet — grid cell, front, ROW 11, or a
+  // back-of-sheet lot — excluding one cell id (the one being edited). Returns a
+  // human location ("Row 9 · #39", "North Lot") or "" if it's not on the sheet.
+  // A bus may only appear in one place, so this powers the duplicate guard.
+  function locateBus(num, exceptCellId) {
+    if (!num) return "";
+    for (const [id, v] of Object.entries(sheet.cells || {})) {
+      if (id === exceptCellId) continue;
+      const n = typeof v === "string" ? v : v && v.num;
+      if (n === num) return cellLocationLabel(id);
+    }
+    const lots = sheet.lots || {};
+    for (const lot of LOTS) {
+      if ((lots[lot.key] || []).includes(num)) return lot.title;
+    }
+    return "";
+  }
+
   // ---- cell renderer ----
   function Cell({ id, slotLabel }) {
     const num = getNum(id);
@@ -355,6 +373,11 @@ export default function LotSheet() {
     const loc = cellLocationLabel(id);
     if (loc) (busLocations[n] = busLocations[n] || []).push(loc);
   }
+
+  // "# OF VEHICLES OFF PROPERTY" is auto-counted from the OFF PROPERTY flag.
+  const offPropertyCount = Object.values(flags).filter((e) =>
+    (e.flags || []).includes("offprop")
+  ).length;
 
   return (
     <div className="app">
@@ -438,9 +461,10 @@ export default function LotSheet() {
             <div className="counter">
               <label># OF VEHICLES OFF PROPERTY:</label>
               <input
-                value={sheet.offProperty}
-                onChange={(e) => setField("offProperty", e.target.value)}
-                inputMode="numeric"
+                className="counter__auto"
+                value={offPropertyCount}
+                readOnly
+                title="Auto-counted from buses flagged OFF PROPERTY in the Manager panel"
               />
             </div>
             <div className="counter">
@@ -566,6 +590,8 @@ export default function LotSheet() {
           subLabel={editing.subLabel}
           value={getNum(editing.id)}
           flags={flags}
+          cellId={editing.id}
+          locate={locateBus}
           onSave={(num) => {
             saveNum(editing.id, num);
             setEditing(null);
@@ -583,7 +609,12 @@ export default function LotSheet() {
       )}
 
       {fillOpen && (
-        <RowFill getNum={getNum} saveNum={saveNum} onClose={() => setFillOpen(false)} />
+        <RowFill
+          getNum={getNum}
+          saveNum={saveNum}
+          locate={locateBus}
+          onClose={() => setFillOpen(false)}
+        />
       )}
 
       {prevOpen && (
@@ -595,6 +626,7 @@ export default function LotSheet() {
           title={LOTS.find((l) => l.key === editingLot)?.title || ""}
           list={lotList(editingLot)}
           flags={flags}
+          locate={locateBus}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
