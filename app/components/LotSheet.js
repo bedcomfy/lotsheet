@@ -304,13 +304,34 @@ export default function LotSheet() {
   }
 
   // Server-side PDF: opens a new tab, flushes the latest sheet to the server,
-  // then loads the rendered PDF so printing is identical on every device.
+  // then loads the rendered PDF. On desktop it wraps the PDF so the browser's
+  // print dialog opens automatically; mobile uses its native PDF viewer.
   function openPdf() {
-    const w = window.open("", "_blank"); // open synchronously so it isn't blocked
     const target = `/api/pdf?maint=${showMaint ? 1 : 0}`;
+    const isMobile =
+      typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const w = window.open("", "_blank"); // open synchronously so it isn't blocked
     const go = () => {
-      if (w) w.location = target;
-      else window.location.href = target;
+      if (!w) {
+        window.location.href = target;
+        return;
+      }
+      if (isMobile) {
+        w.location = target;
+        return;
+      }
+      // Desktop: show the PDF in an iframe and pop the print dialog once it loads.
+      w.document.write(
+        '<!doctype html><html><head><meta charset="utf-8"><title>Lot Sheet</title>' +
+          "<style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100vh;display:block}</style>" +
+          '</head><body><iframe src="' +
+          target +
+          '"></iframe><script>' +
+          'var f=document.getElementsByTagName("iframe")[0];' +
+          'f.addEventListener("load",function(){setTimeout(function(){try{f.contentWindow.focus();f.contentWindow.print();}catch(e){}},600);});' +
+          "<\/script></body></html>"
+      );
+      w.document.close();
     };
     fetch("/api/sheet", {
       method: "PUT",
@@ -432,7 +453,7 @@ export default function LotSheet() {
           Fill Rows
         </button>
         <button className="btn" onClick={() => setManagerOpen(true)}>
-          Manager
+          Edit Busses
         </button>
         <button className="btn" onClick={newSheet}>
           New Grid
@@ -462,10 +483,7 @@ export default function LotSheet() {
           />
           Maintenance info
         </label>
-        <button className="btn" onClick={() => window.print()}>
-          Print
-        </button>
-        <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF that prints the same on every device">
+        <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
           PDF
         </button>
       </div>
