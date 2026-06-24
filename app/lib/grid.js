@@ -48,6 +48,7 @@ export const BUS_TYPES = [
   { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d" },
   { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309" },
   { id: "coach", label: "Coach / Single Door", code: "COACH", color: "#0f766e" },
+  { id: "tow", label: "Tow Truck", code: "TOW", color: "#b91c1c" },
 ];
 
 export function typeInfo(id) {
@@ -60,6 +61,8 @@ export const FLAGS = [
   { id: "none", label: "—" },
   { id: "legal", label: "LEGAL" },
   { id: "safety", label: "SAFETY" },
+  { id: "eng", label: "ENG" },
+  { id: "trans", label: "TRANS" },
   { id: "oos", label: "OUT OF SERVICE" },
   { id: "inspection", label: "INSPECTION" },
   { id: "hold", label: "HOLD" },
@@ -80,6 +83,8 @@ export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
 export const FLAG_SEVERITY = [
   "legal",
   "safety",
+  "eng",
+  "trans",
   "oos",
   "inspection",
   "hold",
@@ -117,4 +122,21 @@ export function flagDisplay(entry) {
 
 export function entryHasContent(entry) {
   return !!(entry && ((entry.flags && entry.flags.length) || (entry.note && entry.note.trim())));
+}
+
+// Whether a bus is flagged for inspection.
+export function hasInspection(entry) {
+  return !!(entry && entry.flags && entry.flags.includes("inspection"));
+}
+
+// Inspection mileage readout: "Insp +300" (300 miles to go) or "Insp −100"
+// (100 miles overdue). Empty string when no mileage is set. Only meaningful for
+// buses that carry the inspection flag.
+export function inspMilesDisplay(entry) {
+  if (!entry) return "";
+  const m = entry.inspMiles;
+  if (m === null || m === undefined || m === "") return "";
+  const n = Number(m);
+  if (!Number.isFinite(n)) return "";
+  return `Insp ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 }

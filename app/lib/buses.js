@@ -17,12 +17,33 @@ export const BUS_NUMBERS = [
   "6565", "6566", "6567", "6568", "6569", "6570", "6571", "6572", "6573",
   "6378", "6381", "6388", "6485", "6492", "6494", "6497", "6504", "6467",
   "25545", "25538", "25539",
+  // Named (non-numbered) vehicles, e.g. the tow truck.
+  "JUDI",
 ];
 
 export const BUS_SET = new Set(BUS_NUMBERS);
 
+// Named vehicles that aren't 2-/6-prefixed numbers (typed as letters).
+export const NAMED_VEHICLES = ["JUDI"];
+
 export function isKnownBus(num) {
   return BUS_SET.has(num);
+}
+
+// Single source of truth for what may be typed into a bus box. Allows a numeric
+// bus (must start with 2 or 6, max 5 digits) OR a named vehicle like JUDI. Any
+// in-progress prefix of a named vehicle is allowed so it can be typed letter by
+// letter; anything that can't become a valid value is rejected.
+export function sanitizeBus(raw) {
+  const s = String(raw).toUpperCase();
+  const letters = s.replace(/[^A-Z]/g, "");
+  if (letters) {
+    const match = NAMED_VEHICLES.find((v) => v.startsWith(letters));
+    return match ? letters.slice(0, match.length) : "";
+  }
+  let d = s.replace(/\D/g, "");
+  if (d && d[0] !== "2" && d[0] !== "6") d = "";
+  return d.slice(0, 5);
 }
 
 // ---- Bus types (permanent roster info, from the official list) ----
@@ -49,6 +70,8 @@ assign(
 );
 // Pulse & Hybrid
 assign([25538, 25539, 25545], ["pulse", "hybrid"]);
+// Tow truck (named vehicle)
+assign(["JUDI"], ["tow"]);
 
 // Returns an array of type ids for the bus (empty array = Standard bus).
 export function busTypes(num) {

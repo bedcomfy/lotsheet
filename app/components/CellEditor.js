@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { typeInfo, flagLabel } from "../lib/grid";
-import { isKnownBus, busTypes } from "../lib/buses";
+import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
+import { isKnownBus, busTypes, sanitizeBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
-
-// Bus numbers must start with 2 or 6 and are at most 5 digits. We block any
-// character that would break that rule so it never gets typed into the box.
-function sanitizeBus(raw) {
-  let digits = String(raw).replace(/\D/g, "");
-  if (digits && digits[0] !== "2" && digits[0] !== "6") digits = "";
-  return digits.slice(0, 5);
-}
 
 export default function CellEditor({ subLabel, value, flags, onSave, onClose }) {
   const [num, setNum] = useState(value || "");
@@ -40,7 +32,8 @@ export default function CellEditor({ subLabel, value, flags, onSave, onClose }) 
     .join(", ");
   const flagText = (entry.flags || []).map((f) => flagLabel(f)).join(", ");
   const note = (entry.note || "").trim();
-  const showReadout = num.length >= 4 && (types.length > 0 || flagText || note);
+  const miles = inspMilesDisplay(entry);
+  const showReadout = num.length >= 4 && (types.length > 0 || flagText || note || miles);
 
   return (
     <div className="modal-backdrop no-print" onClick={onClose}>
@@ -82,9 +75,10 @@ export default function CellEditor({ subLabel, value, flags, onSave, onClose }) 
               {typeLabels}
               {typeLabels && (flagText || note) ? " · " : ""}
               {flagText}
+              {miles ? `${flagText ? " · " : ""}${miles}` : ""}
               {flagText && note ? ", " : ""}
               {note && <em>“{note}”</em>}
-              {(flagText || note) && (
+              {(flagText || note || miles) && (
                 <span className="flag-readout__note"> (manager)</span>
               )}
             </span>
