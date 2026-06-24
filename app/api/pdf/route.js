@@ -3,11 +3,18 @@
 // longer depends on each OS's own print engine).
 
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+// Self-contained Chromium pack (binary + shared libraries like libnss3) is
+// downloaded to /tmp at runtime. This avoids the bundler dropping the sibling
+// .so files, which caused "libnss3.so: cannot open shared object file". The
+// version here must match the @sparticuz/chromium-min package version.
+const CHROMIUM_PACK =
+  "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
 export async function GET(req) {
   const url = new URL(req.url);
@@ -24,7 +31,7 @@ export async function GET(req) {
   try {
     browser = await puppeteer.launch({
       args: chromium.args,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(CHROMIUM_PACK),
       headless: chromium.headless,
       defaultViewport: chromium.defaultViewport,
     });
