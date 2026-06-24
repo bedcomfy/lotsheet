@@ -1,8 +1,12 @@
-// Shared storage for manager-set bus flags. Each bus entry is
-//   { flags: [flagId, ...], note: "custom issue text" }
+// Shared storage for manager-set bus flags AND the shared "current" Lot Sheet.
+//
+// Bus flags: each entry is { flags: [flagId, ...], note: "custom issue text" }.
 // A bus can have several flags plus an optional free-text note ("Other").
 //
-// Dev (no DATABASE_URL): a local JSON file under .data/. Production
+// Lot sheet: a single shared JSON blob (the current sheet everyone edits), so a
+// sheet started on a phone can be printed from a company computer.
+//
+// Dev (no DATABASE_URL): local JSON files under .data/. Production
 // (DATABASE_URL set): Postgres. The API surface is identical either way.
 
 import { promises as fs } from "fs";
@@ -18,6 +22,7 @@ const usePg = !!PG_URL;
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FLAGS_FILE = path.join(DATA_DIR, "flags.json");
+const SHEET_FILE = path.join(DATA_DIR, "sheet.json");
 
 // Normalise any stored shape (old string, old array, or new object) to an entry.
 function toEntry(v) {
@@ -64,6 +69,14 @@ async function pool() {
       )`
     );
     await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS note TEXT`);
+    // Generic key/value store for shared app state (currently the lot sheet).
+    await _pool.query(
+      `CREATE TABLE IF NOT EXISTS app_state (
+        key TEXT PRIMARY KEY,
+        value JSONB,
+        updated_at TIMESTAMPTZ DEFAULT now()
+      )`
+    );
   }
   return _pool;
 }
@@ -108,4 +121,51 @@ export async function setBusFlags(bus, entry) {
   if (isEmpty(e)) delete data[bus];
   else data[bus] = e;
   await fileWrite(data);
+}
+
+// ---------- shared current lot sheet ----------
+// The single sheet everyone edits. Returns { sheet, updatedAt } where sheet is
+// the saved JSON (or null if none saved yet) and updatedAt is an ISO string.
+const SHEET_KEY = "current";
+
+export async function getSheet() {
+  if (usePg) {
+    const { rows } = await (await pool()).query(
+      "SELECT value, updated_at FROM app_state WHERE key = $1",
+      [SHEET_KEY]
+    );
+    if (!rows.length) return { sheet: null, updatedAt: null };
+    return {
+      sheet: rows[0].value || null,
+      updatedAt: rows[0].updated_at ? new Date(rows[0].updated_at).toISOString() : null,
+    };
+  }
+  try {
+    const raw = JSON.parse(await fs.readFile(SHEET_FILE, "utf8"));
+    return { sheet: raw.sheet || null, updatedAt: raw.updatedAt || null };
+  } catch {
+    return { sheet: null, updatedAt: null };
+  }
+}
+
+export async function setSheet(sheet) {
+  const updatedAt = new Date().toISOString();
+  if (usePg) {
+    await (await pool()).query(
+      `INSERT INTO app_state (key, value, updated_at)
+       VALUES ($1, $2, now())
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()
+       RETURNING updated_at`,
+      [SHEET_KEY, sheet]
+    );
+    // Read back the canonical timestamp so all devices agree.
+    const { rows } = await (await pool()).query(
+      "SELECT updated_at FROM app_state WHERE key = $1",
+      [SHEET_KEY]
+    );
+    return rows[0]?.updated_at ? new Date(rows[0].updated_at).toISOString() : updatedAt;
+  }
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(SHEET_FILE, JSON.stringify({ sheet, updatedAt }, null, 2));
+  return updatedAt;
 }

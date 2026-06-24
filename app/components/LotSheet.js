@@ -55,6 +55,11 @@ export default function LotSheet() {
   const [editingLot, setEditingLot] = useState(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const saveTimer = useRef(null);
+  const lastSyncRef = useRef(null); // JSON of the sheet known to match the server
+  const sheetRef = useRef(sheet); // always-current sheet, for the poll loop
+  useEffect(() => {
+    sheetRef.current = sheet;
+  }, [sheet]);
 
   // "Standard" already runs +2px bigger than the base; the slider is ±4 of that.
   const FONT_BASE = 2;
@@ -71,13 +76,32 @@ export default function LotSheet() {
     setFontDelta((f) => Math.max(-4, Math.min(4, f + d)));
   }
 
-  // Load in-progress sheet from this device.
+  // Load the shared current sheet from the server. Show the device cache first
+  // so the page isn't blank on a slow connection, then sync with the server.
   useEffect(() => {
+    let cancelled = false;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setSheet(JSON.parse(raw));
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached) setSheet(JSON.parse(cached));
     } catch {}
-    setLoaded(true);
+    fetch("/api/sheet")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d && d.sheet) {
+          setSheet(d.sheet);
+          lastSyncRef.current = JSON.stringify(d.sheet);
+        }
+        // If the server has no sheet yet, leave lastSyncRef null so the device's
+        // current sheet gets pushed up on the first autosave.
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Load shared bus flags.
@@ -88,18 +112,56 @@ export default function LotSheet() {
       .catch(() => {});
   }, []);
 
-  // Autosave (debounced) to this device.
+  // Autosave (debounced) to the server, so every device sees the same sheet.
+  // A local copy is also kept as an offline backup.
   useEffect(() => {
     if (!loaded) return;
+    const json = JSON.stringify(sheet);
+    if (json === lastSyncRef.current) return; // nothing new to push
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(sheet));
-        setSavedAt(new Date());
+        localStorage.setItem(STORAGE_KEY, json);
       } catch {}
-    }, 400);
+      fetch("/api/sheet", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d && d.ok) {
+            lastSyncRef.current = json;
+            setSavedAt(new Date());
+          }
+        })
+        .catch(() => {});
+    }, 600);
     return () => clearTimeout(saveTimer.current);
   }, [sheet, loaded]);
+
+  // Poll for changes made on other devices. Adopt the server's sheet only when
+  // there are no unsaved local edits, so we never clobber in-progress typing.
+  useEffect(() => {
+    if (!loaded) return;
+    const iv = setInterval(() => {
+      fetch("/api/sheet")
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d || !d.sheet) return;
+          const serverJson = JSON.stringify(d.sheet);
+          if (serverJson === lastSyncRef.current) return; // no change
+          if (JSON.stringify(sheetRef.current) !== lastSyncRef.current) return; // local edits pending
+          setSheet(d.sheet);
+          lastSyncRef.current = serverJson;
+          try {
+            localStorage.setItem(STORAGE_KEY, serverJson);
+          } catch {}
+        })
+        .catch(() => {});
+    }, 4000);
+    return () => clearInterval(iv);
+  }, [loaded]);
 
   function setField(field, value) {
     setSheet((s) => ({ ...s, [field]: value }));
@@ -140,7 +202,7 @@ export default function LotSheet() {
   function newSheet() {
     if (
       Object.keys(sheet.cells).length > 0 &&
-      !window.confirm("Start a new blank sheet? The current one is saved on this device until you overwrite it.")
+      !window.confirm("Start a new blank sheet for everyone? This clears the current shared sheet on all devices.")
     ) {
       return;
     }
