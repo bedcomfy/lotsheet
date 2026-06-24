@@ -3,7 +3,7 @@ const nextConfig = {
   // Keep the Postgres driver out of the bundle (it's only loaded at runtime in
   // production via a dynamic import); avoids webpack trying to resolve it.
   experimental: {
-    serverComponentsExternalPackages: ["pg"],
+    serverComponentsExternalPackages: ["pg", "@sparticuz/chromium", "puppeteer-core"],
   },
   webpack: (config, { dev }) => {
     // The project lives in a OneDrive-synced folder, which locks/renames the

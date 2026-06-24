@@ -284,6 +284,27 @@ export default function LotSheet() {
     setEditing({ id, subLabel });
   }
 
+  // Server-side PDF: opens a new tab, flushes the latest sheet to the server,
+  // then loads the rendered PDF so printing is identical on every device.
+  function openPdf() {
+    const w = window.open("", "_blank"); // open synchronously so it isn't blocked
+    const target = `/api/pdf?maint=${showMaint ? 1 : 0}&fz=${fontDelta}`;
+    const go = () => {
+      if (w) w.location = target;
+      else window.location.href = target;
+    };
+    fetch("/api/sheet", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheet }),
+    })
+      .then(() => {
+        lastSyncRef.current = JSON.stringify(sheet);
+      })
+      .catch(() => {})
+      .finally(go);
+  }
+
   // ---- back-of-sheet lot lists ----
   function lotList(key) {
     return (sheet.lots && sheet.lots[key]) || [];
@@ -422,8 +443,11 @@ export default function LotSheet() {
           />
           Maintenance info
         </label>
-        <button className="btn btn--primary" onClick={() => window.print()}>
+        <button className="btn" onClick={() => window.print()}>
           Print
+        </button>
+        <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF that prints the same on every device">
+          PDF
         </button>
       </div>
 
