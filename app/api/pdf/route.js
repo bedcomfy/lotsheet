@@ -16,6 +16,10 @@ export const maxDuration = 60;
 const CHROMIUM_PACK =
   "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar";
 
+// Bumped on each PDF-pipeline change so the live error text tells us which
+// build is actually serving (helps diagnose deploys we can't watch directly).
+const BUILD = "pdf-min-2";
+
 export async function GET(req) {
   const url = new URL(req.url);
   const maint = url.searchParams.get("maint") === "1" ? "1" : "0";
@@ -29,8 +33,10 @@ export async function GET(req) {
 
   let browser;
   try {
+    // No on-screen graphics needed for PDF rendering; reduces required libs.
+    chromium.setGraphicsMode = false;
     browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
       executablePath: await chromium.executablePath(CHROMIUM_PACK),
       headless: chromium.headless,
       defaultViewport: chromium.defaultViewport,
@@ -51,7 +57,7 @@ export async function GET(req) {
       },
     });
   } catch (err) {
-    return new Response(`PDF generation failed: ${err?.message || err}`, {
+    return new Response(`PDF generation failed [${BUILD}]: ${err?.message || err}`, {
       status: 500,
       headers: { "Content-Type": "text/plain" },
     });
