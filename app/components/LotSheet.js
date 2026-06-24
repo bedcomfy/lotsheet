@@ -48,14 +48,32 @@ function emptySheet() {
   };
 }
 
+// Read a query param on the very first render (used by the server-side PDF,
+// which loads this page at /?print=1&maint=1 with a headless browser).
+function param(name) {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(name);
+}
+
 export default function LotSheet() {
   const [sheet, setSheet] = useState(emptySheet);
   const [loaded, setLoaded] = useState(false);
+  const [flagsLoaded, setFlagsLoaded] = useState(false);
   const [editing, setEditing] = useState(null); // { id, subLabel }
   const [savedAt, setSavedAt] = useState(null);
   const [flags, setFlags] = useState({}); // bus number -> flagId
   const [managerOpen, setManagerOpen] = useState(false);
+  // PDF render mode: the page is opened headless at /?print=1; don't write to
+  // the server and expose a readiness marker the PDF generator waits for.
+  const [printMode, setPrintMode] = useState(false);
   const [showMaint, setShowMaint] = useState(false); // print maintenance info?
+
+  // Read the print query params on the client (not during SSR/prerender, where
+  // window doesn't exist — a lazy initializer would bake in the wrong value).
+  useEffect(() => {
+    if (param("print") === "1") setPrintMode(true);
+    if (param("maint") === "1") setShowMaint(true);
+  }, []);
   const [fontDelta, setFontDelta] = useState(0); // size relative to Standard (px)
   const [editingLot, setEditingLot] = useState(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
@@ -115,13 +133,14 @@ export default function LotSheet() {
     fetch("/api/flags")
       .then((r) => r.json())
       .then((d) => setFlags(d.flags || {}))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setFlagsLoaded(true));
   }, []);
 
   // Autosave (debounced) to the server, so every device sees the same sheet.
   // A local copy is also kept as an offline backup.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || printMode) return;
     const json = JSON.stringify(sheet);
     if (json === lastSyncRef.current) return; // nothing new to push
     clearTimeout(saveTimer.current);
@@ -149,7 +168,7 @@ export default function LotSheet() {
   // Poll for changes made on other devices. Adopt the server's sheet only when
   // there are no unsaved local edits, so we never clobber in-progress typing.
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || printMode) return;
     const iv = setInterval(() => {
       fetch("/api/sheet")
         .then((r) => r.json())
@@ -288,7 +307,7 @@ export default function LotSheet() {
   // then loads the rendered PDF so printing is identical on every device.
   function openPdf() {
     const w = window.open("", "_blank"); // open synchronously so it isn't blocked
-    const target = `/api/pdf?maint=${showMaint ? 1 : 0}&fz=${fontDelta}`;
+    const target = `/api/pdf?maint=${showMaint ? 1 : 0}`;
     const go = () => {
       if (w) w.location = target;
       else window.location.href = target;
@@ -608,6 +627,9 @@ export default function LotSheet() {
           )}
         </div>
       </div>
+
+      {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
+      {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
 
       {editing && (
         <CellEditor

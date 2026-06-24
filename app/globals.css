@@ -1236,10 +1236,20 @@ button {
     box-shadow: none;
     max-width: none;
     width: 100%;
-    padding: 0.32in 0.34in 0.2in;
+    padding: 0.32in 0.34in;
+    /* Fill the whole page so there's no empty band at the bottom. */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  /* The grid grows to absorb the leftover vertical space; rows share it evenly. */
+  .grid {
+    flex: 1 1 auto;
+    grid-template-rows: auto repeat(10, minmax(0, 1fr));
   }
   .cell {
-    min-height: 0.7in;
+    min-height: 0;
   }
   /* Keep every border/ink crisp on paper */
   * {
@@ -1298,11 +1308,10 @@ button {
   .backlot__edit {
     display: none !important;
   }
-  /* The flag summary prints on its own page after the lot lists. */
+  /* The flag summary flows right after the lot lists (its own page only if it
+     doesn't fit). Groups avoid splitting across a page break. */
   .flagsum {
-    page-break-before: always;
-    margin-top: 0;
-    padding: 0.32in 0.34in;
+    margin-top: 0.3in;
   }
   /* Hide screen-only inputs' focus styling; show plain text */
   input {
