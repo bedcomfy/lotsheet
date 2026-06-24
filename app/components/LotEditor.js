@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { flagDisplay, inspMilesDisplay } from "../lib/grid";
-import { sanitizeBus } from "../lib/buses";
+import { flagsFullDisplay } from "../lib/grid";
+import { sanitizeBus, isKnownBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
 export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, onMove, onClose }) {
@@ -18,12 +18,24 @@ export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, on
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
 
-  function add() {
-    const b = sanitizeBus(val);
+  function add(bus) {
+    const b = sanitizeBus(bus != null ? bus : val);
     if (b.length < 4) return;
     onAdd(b);
     setVal("");
     ref.current?.focus();
+  }
+
+  // Same check as the grid: warn about a number that isn't on the roster.
+  const known = isKnownBus(val);
+  const showWarn = val.length >= 4 && !known;
+
+  function onChange(raw) {
+    const v = sanitizeBus(raw);
+    // Autocomplete: as soon as a valid bus is typed, add it (like the grid /
+    // Fill Rows auto-advance). Unknown numbers still add via the Add button.
+    if (isKnownBus(v)) add(v);
+    else setVal(v);
   }
 
   return (
@@ -44,30 +56,32 @@ export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, on
             ref={ref}
             className="modal__input lotadd__input"
             value={val}
-            inputMode="numeric"
             placeholder="Bus number"
-            onChange={(e) => setVal(sanitizeBus(e.target.value))}
+            onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
           />
-          <button className="btn btn--primary" onClick={add}>
+          <button className="btn btn--primary" onClick={() => add()}>
             Add
           </button>
         </div>
+        {showWarn && (
+          <div className="modal__warn">
+            {val} isn&apos;t on the bus list — double-check it. Press Add to use it anyway.
+          </div>
+        )}
 
         <div className="lotlist">
           {list.length === 0 && (
             <div className="lotlist__empty">No buses yet — type a number and press Add.</div>
           )}
           {list.map((bus, i) => {
-            const entry = flags[bus];
-            const fdisp = flagDisplay(entry);
-            const miles = inspMilesDisplay(entry);
+            const fdisp = flagsFullDisplay(flags[bus]);
             return (
             <div className="lotitem" key={`${bus}-${i}`}>
               <span className="lotitem__idx">{i + 1}.</span>
               <span className="lotitem__bus">{bus}</span>
               <TypeCodes num={bus} />
-              {fdisp && <span className="lotitem__flag">{fdisp}{miles ? ` · ${miles}` : ""}</span>}
+              {fdisp && <span className="lotitem__flag">{fdisp}</span>}
               <div className="toolbar__spacer" />
               <button
                 className="lotitem__move"
