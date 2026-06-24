@@ -93,6 +93,7 @@ export const FLAGS = [
   { id: "oos", label: "OUT OF SERVICE" },
   { id: "inspection", label: "INSPECTION" },
   { id: "hold", label: "HOLD" },
+  { id: "split", label: "SPLIT" },
   { id: "movement", label: "MOVEMENT" },
   { id: "service", label: "NEEDS SERVICE" },
   { id: "ac", label: "A/C" },
@@ -117,11 +118,24 @@ export const FLAG_SEVERITY = [
   "oos",
   "inspection",
   "hold",
+  "split",
   "movement",
   "service",
   "ac",
   "cleaning",
 ];
+
+// Flags that print on the grid even when "Maintenance info" is off, because
+// they affect how the lot is read at a glance.
+export const ALWAYS_PRINT_FLAGS = ["hold", "split"];
+
+// The always-print flags a bus carries, spelled out (e.g. "HOLD · SPLIT").
+export function pinnedFlagText(entry) {
+  if (!entry || !entry.flags) return "";
+  return ALWAYS_PRINT_FLAGS.filter((id) => entry.flags.includes(id))
+    .map(flagLabel)
+    .join(" · ");
+}
 
 export function mostSevereFlag(ids) {
   let best = null;

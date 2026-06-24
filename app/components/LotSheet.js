@@ -14,6 +14,7 @@ import {
   flagsFullDisplay,
   groupFlaggedBuses,
   cellLocationLabel,
+  pinnedFlagText,
 } from "../lib/grid";
 import { busLabel } from "../lib/buses";
 import CellEditor from "./CellEditor";
@@ -397,6 +398,7 @@ export default function LotSheet() {
     const entry = num ? flagFor(num) : null;
     const disp = entry ? flagDisplay(entry) : "";
     const miles = entry ? inspMilesDisplay(entry) : "";
+    const pin = entry ? pinnedFlagText(entry) : "";
     const blocked = slotLabel === "X";
     if (blocked) {
       return (
@@ -414,10 +416,11 @@ export default function LotSheet() {
         {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
         {num && <TypeCodes num={num} className="cell__types" />}
         <span className="cell__num">{busLabel(num)}</span>
-        {(disp || miles) && (
+        {(disp || miles || pin) && (
           <span className="cell__meta">
             {disp && <span className="cell__flag">{disp}</span>}
             {miles && <span className="cell__insp">{miles}</span>}
+            {pin && <span className="cell__pin">{pin}</span>}
           </span>
         )}
       </button>
@@ -548,6 +551,7 @@ export default function LotSheet() {
               const entry = num ? flagFor(num) : null;
               const disp = entry ? flagDisplay(entry) : "";
               const miles = entry ? inspMilesDisplay(entry) : "";
+              const pin = entry ? pinnedFlagText(entry) : "";
               return (
                 <button
                   key={`f${c}`}
@@ -559,6 +563,7 @@ export default function LotSheet() {
                   <span className="cell__num">{busLabel(num)}</span>
                   {disp && <span className="front__flag">{disp}</span>}
                   {miles && <span className="front__flag front__insp">{miles}</span>}
+                  {pin && <span className="front__flag front__pin">{pin}</span>}
                 </button>
               );
             })}

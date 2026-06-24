@@ -412,6 +412,22 @@ button {
 .front__insp {
   color: #1d4ed8;
 }
+/* Always-print flags (HOLD / SPLIT). Hidden on screen — the full flag line
+   already shows them there; these only surface on the printout. */
+.cell__pin,
+.front__pin {
+  display: none;
+  text-align: center;
+  color: #b91c1c;
+  line-height: 1.05;
+  white-space: normal;
+}
+.cell__pin {
+  font-size: calc(7.5px + var(--fz, 0px));
+}
+.front__pin {
+  font-size: calc(7px + var(--fz, 0px));
+}
 .cell--blocked {
   background: var(--paper);
 }
@@ -1283,6 +1299,16 @@ button {
   }
   .sheet--maint .cell__insp {
     display: block;
+  }
+  /* HOLD / SPLIT print even without maintenance info; when maintenance info IS
+     on, the full flag line covers them, so hide the pin to avoid duplicates. */
+  .cell__pin,
+  .front__pin {
+    display: block;
+  }
+  .sheet--maint .cell__pin,
+  .sheet--maint .front__pin {
+    display: none;
   }
   .sheet--maint .front__types {
     display: inline-flex;
