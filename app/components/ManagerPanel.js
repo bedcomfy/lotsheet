@@ -5,9 +5,6 @@ import { ASSIGNABLE_FLAGS, flagLabel } from "../lib/grid";
 import { BUS_NUMBERS, sanitizeBus, isKnownBus, busLabel } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
-// At most this many buses may carry the INSPECTION flag at once.
-const INSPECTION_LIMIT = 10;
-
 // Free-text custom-note input with local state; saves on blur / Enter.
 function NoteInput({ value, onSave }) {
   const [v, setV] = useState(value || "");
@@ -78,22 +75,11 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
   const [tab, setTab] = useState("bus");
   const [filter, setFilter] = useState("");
   const [savingBus, setSavingBus] = useState(null);
-  const [warn, setWarn] = useState("");
 
   const [selectedFlag, setSelectedFlag] = useState(ASSIGNABLE_FLAGS[0].id);
   const [busInput, setBusInput] = useState("");
 
   const getEntry = (bus) => flags[bus] || { flags: [], note: "", inspMiles: null };
-
-  // How many distinct buses currently carry the inspection flag.
-  const inspectionCount = useMemo(
-    () => Object.values(flags).filter((e) => (e.flags || []).includes("inspection")).length,
-    [flags]
-  );
-  function inspectionFull(bus) {
-    const has = (getEntry(bus).flags || []).includes("inspection");
-    return !has && inspectionCount >= INSPECTION_LIMIT;
-  }
 
   async function postEntry(bus, entry) {
     const res = await fetch("/api/flags", {
@@ -120,11 +106,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
   function toggle(bus, flagId) {
     const cur = getEntry(bus);
     const adding = !cur.flags.includes(flagId);
-    if (flagId === "inspection" && adding && inspectionFull(bus)) {
-      setWarn(`Only ${INSPECTION_LIMIT} buses can be flagged INSPECTION at once.`);
-      return;
-    }
-    setWarn("");
     const flags2 = adding ? [...cur.flags, flagId] : cur.flags.filter((f) => f !== flagId);
     // Clear stored miles when inspection is removed.
     const inspMiles = flags2.includes("inspection") ? cur.inspMiles ?? null : null;
@@ -147,12 +128,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
     const bus = sanitizeBus(busArg != null ? busArg : busInput);
     if (bus.length < 4) return;
     const cur = getEntry(bus);
-    if (selectedFlag === "inspection" && inspectionFull(bus)) {
-      setWarn(`Only ${INSPECTION_LIMIT} buses can be flagged INSPECTION at once.`);
-      setBusInput(bus);
-      return;
-    }
-    setWarn("");
     if (!cur.flags.includes(selectedFlag)) {
       save(bus, { ...cur, flags: [...cur.flags, selectedFlag] });
     }
@@ -231,8 +206,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
           </button>
         </div>
 
-        {warn && <div className="manager__warn">{warn}</div>}
-
         {tab === "bus" && (
           <>
             <input
@@ -263,19 +236,15 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
                       {savingBus === bus && <span className="busrow__saving">saving…</span>}
                     </div>
                     <div className="busrow__flags">
-                      {ASSIGNABLE_FLAGS.map((f) => {
-                        const on = set.has(f.id);
-                        const blocked = f.id === "inspection" && !on && inspectionFull(bus);
-                        return (
-                          <button
-                            key={f.id}
-                            className={`fchip ${on ? "fchip--on" : ""} ${blocked ? "fchip--blocked" : ""}`}
-                            onClick={() => toggle(bus, f.id)}
-                          >
-                            {f.label}
-                          </button>
-                        );
-                      })}
+                      {ASSIGNABLE_FLAGS.map((f) => (
+                        <button
+                          key={f.id}
+                          className={`fchip ${set.has(f.id) ? "fchip--on" : ""}`}
+                          onClick={() => toggle(bus, f.id)}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
                     </div>
                     {set.has("inspection") && (
                       <MilesInput
@@ -303,10 +272,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
                 <button
                   key={f.id}
                   className={`fchip ${selectedFlag === f.id ? "fchip--on" : ""}`}
-                  onClick={() => {
-                    setSelectedFlag(f.id);
-                    setWarn("");
-                  }}
+                  onClick={() => setSelectedFlag(f.id)}
                 >
                   {f.label}
                 </button>
@@ -338,7 +304,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
               <span className="byflag__count">
                 {matchedBuses.length} bus{matchedBuses.length === 1 ? "" : "es"}
                 {isOther ? " with a note" : ` flagged ${flagLabel(selectedFlag)}`}
-                {selectedFlag === "inspection" ? ` (max ${INSPECTION_LIMIT})` : ""}
               </span>
               <div className="toolbar__spacer" />
               {matchedBuses.length > 0 && (
