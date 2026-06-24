@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flagsFullDisplay } from "../lib/grid";
-import { sanitizeBus, isKnownBus } from "../lib/buses";
+import { sanitizeBus, isKnownBus, busLabel } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
 export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
@@ -65,6 +65,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
             ref={ref}
             className="modal__input lotadd__input"
             value={val}
+            inputMode="numeric"
             placeholder="Bus number"
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
@@ -75,8 +76,8 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
         </div>
         {dup && (
           <div className="modal__warn">
-            Bus {val} is already on the sheet at <strong>{dup}</strong>. Remove it there
-            first — a bus can only be in one place.
+            Bus {busLabel(val)} is already on the sheet at <strong>{dup}</strong>. Remove it
+            there first — a bus can only be in one place.
           </div>
         )}
         {showWarn && !dup && (
@@ -94,7 +95,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
             return (
             <div className="lotitem" key={`${bus}-${i}`}>
               <span className="lotitem__idx">{i + 1}.</span>
-              <span className="lotitem__bus">{bus}</span>
+              <span className="lotitem__bus">{busLabel(bus)}</span>
               <TypeCodes num={bus} />
               {fdisp && <span className="lotitem__flag">{fdisp}</span>}
               <div className="toolbar__spacer" />

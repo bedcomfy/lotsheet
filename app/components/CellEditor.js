@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
-import { isKnownBus, busTypes, sanitizeBus } from "../lib/buses";
+import { isKnownBus, busTypes, sanitizeBus, busLabel } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
 export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }) {
@@ -66,6 +66,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
           ref={inputRef}
           className="modal__input"
           value={num}
+          inputMode="numeric"
           onChange={(e) => {
             const v = sanitizeBus(e.target.value);
             setNum(v);
@@ -81,8 +82,8 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
         />
         {dup && (
           <div className="modal__warn">
-            Bus {num} is already on the sheet at <strong>{dup}</strong>. Remove it there
-            first — a bus can only be in one place.
+            Bus {busLabel(num)} is already on the sheet at <strong>{dup}</strong>. Remove it
+            there first — a bus can only be in one place.
           </div>
         )}
         {showWarning && !dup && (
@@ -91,7 +92,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
           </div>
         )}
         {num.length >= 4 && known && (
-          <div className="modal__ok">✓ Bus {num} is on the list</div>
+          <div className="modal__ok">✓ {busLabel(num)} is on the list</div>
         )}
 
         {showReadout && (
