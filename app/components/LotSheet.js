@@ -13,6 +13,7 @@ import {
   inspMilesDisplay,
   flagsFullDisplay,
   groupFlaggedBuses,
+  cellLocationLabel,
 } from "../lib/grid";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
@@ -224,17 +225,44 @@ export default function LotSheet() {
     } catch {}
   }
 
+  function gridHasContent(s) {
+    return !!(s && s.cells && Object.values(s.cells).filter(Boolean).length > 0);
+  }
+  function lotsHaveContent(s) {
+    return !!(
+      s &&
+      s.lots &&
+      Object.values(s.lots).some((a) => Array.isArray(a) && a.length > 0)
+    );
+  }
+
+  // "New" resets the daily grid (cells, counters, time/date) but keeps the
+  // back-of-sheet lots, which don't change as often.
   async function newSheet() {
     if (
-      sheetHasContent(sheet) &&
+      gridHasContent(sheet) &&
       !window.confirm(
-        "Start a new blank sheet for everyone? The current sheet is saved to Prev Sheets first, then cleared on all devices."
+        "Start a new grid for everyone? The current sheet is saved to Prev Sheets first; the grid clears but the back-of-sheet lots stay."
       )
     ) {
       return;
     }
     await archiveSheet(sheet);
-    setSheet(emptySheet());
+    setSheet((s) => ({ ...emptySheet(), lots: s.lots }));
+  }
+
+  // Clears just the back-of-sheet lots (North / East / Fence).
+  async function clearLots() {
+    if (
+      lotsHaveContent(sheet) &&
+      !window.confirm(
+        "Clear the back-of-sheet lots (North / East / Fence) for everyone? The current sheet is saved to Prev Sheets first."
+      )
+    ) {
+      return;
+    }
+    await archiveSheet(sheet);
+    setSheet((s) => ({ ...s, lots: { north: [], east: [], fence: [] } }));
   }
 
   // Bring a previous sheet back as the current shared sheet. The sheet that's up
@@ -319,6 +347,15 @@ export default function LotSheet() {
   // Buses with flags, grouped by most-severe flag, for the back-of-sheet summary.
   const flagSummary = groupFlaggedBuses(flags);
 
+  // Where each bus currently sits on the grid (bus number -> "Row 5 · #85").
+  const busLocations = {};
+  for (const [id, v] of Object.entries(sheet.cells || {})) {
+    const n = typeof v === "string" ? v : v && v.num;
+    if (!n) continue;
+    const loc = cellLocationLabel(id);
+    if (loc) (busLocations[n] = busLocations[n] || []).push(loc);
+  }
+
   return (
     <div className="app">
       {/* Toolbar — never printed */}
@@ -335,7 +372,10 @@ export default function LotSheet() {
           Manager
         </button>
         <button className="btn" onClick={newSheet}>
-          New
+          New Grid
+        </button>
+        <button className="btn" onClick={clearLots}>
+          Clear Lots
         </button>
         <button className="btn" onClick={() => setPrevOpen(true)}>
           Prev Sheets
@@ -507,6 +547,9 @@ export default function LotSheet() {
                       <li key={bus}>
                         <span className="flagsum__bus">{bus}</span>
                         <TypeCodes num={bus} className="flagsum__type" />
+                        {busLocations[bus] && (
+                          <span className="flagsum__loc">{busLocations[bus].join(", ")}</span>
+                        )}
                         <span className="flagsum__flags">{flagsFullDisplay(flagFor(bus))}</span>
                       </li>
                     ))}

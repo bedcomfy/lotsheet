@@ -52,8 +52,13 @@ export default function CellEditor({ subLabel, value, flags, onSave, onClose }) 
           ref={inputRef}
           className="modal__input"
           value={num}
-          onChange={(e) => setNum(sanitizeBus(e.target.value))}
-          inputMode="numeric"
+          onChange={(e) => {
+            const v = sanitizeBus(e.target.value);
+            setNum(v);
+            // Autocomplete: save & close the moment a valid bus is entered,
+            // matching the lot editor and Fill Rows.
+            if (isKnownBus(v)) onSave(v);
+          }}
           placeholder="Bus number"
           onKeyDown={(e) => {
             if (e.key === "Enter") onSave(num.trim());
