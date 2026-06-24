@@ -1156,8 +1156,22 @@ button {
   color: var(--muted);
   white-space: nowrap;
 }
+.milesinput__sign {
+  width: 38px;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.milesinput__sign:active {
+  transform: translateY(1px);
+}
 .milesinput__field {
-  width: 84px;
+  width: 72px;
   padding: 6px 8px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
