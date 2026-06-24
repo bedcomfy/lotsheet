@@ -8,13 +8,7 @@ import {
   numberedCellId,
   row11CellId,
 } from "../lib/grid";
-import { isKnownBus } from "../lib/buses";
-
-function sanitizeBus(raw) {
-  let d = String(raw).replace(/\D/g, "");
-  if (d && d[0] !== "2" && d[0] !== "6") d = "";
-  return d.slice(0, 5);
-}
+import { isKnownBus, sanitizeBus } from "../lib/buses";
 
 // Garage rows are walked two at a time. (0-indexed; ROW 11 stands alone.)
 const PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10]];

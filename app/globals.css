@@ -369,12 +369,19 @@ button {
 .cell__types .typecodes__sep {
   font-size: calc(8.5px + var(--fz, 0px));
 }
-/* Manager flag (full name) along the bottom — wraps if long */
-.cell__flag {
+/* Manager flag + inspection miles stacked along the bottom of the cell */
+.cell__meta {
   position: absolute;
   bottom: 1px;
   left: 0;
   right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 1px;
+}
+.cell__flag {
   text-align: center;
   font-size: calc(7.5px + var(--fz, 0px));
   line-height: 1.05;
@@ -382,7 +389,17 @@ button {
   letter-spacing: 0.01em;
   white-space: normal;
   word-break: break-word;
-  padding: 0 1px;
+}
+/* Inspection mileage line, just below the flag text */
+.cell__insp {
+  text-align: center;
+  font-size: calc(7px + var(--fz, 0px));
+  line-height: 1.05;
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
+}
+.front__insp {
+  color: #1d4ed8;
 }
 .cell--blocked {
   background: var(--paper);
@@ -1036,6 +1053,71 @@ button {
   opacity: 0.35;
 }
 
+/* Manager warning banner (e.g. inspection cap reached) */
+.manager__warn {
+  margin: 8px 14px 0;
+  font-size: 13px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+/* A flag chip that can't be turned on right now (inspection cap reached) */
+.fchip--blocked {
+  opacity: 0.45;
+}
+/* Inspection miles input inside the manager rows */
+.milesinput {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.milesinput__label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.milesinput__field {
+  width: 84px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.milesinput__field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Flag shown next to a bus in the lot lists (back of sheet + lot editor) */
+.backlot__flag {
+  color: #b91c1c;
+  font-size: calc(10px + var(--fz, 0px));
+}
+.lotitem__flag {
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+/* Prev Sheets list */
+.prevsheet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.prevsheet__when {
+  font-weight: 700;
+  font-size: 15px;
+}
+.prevsheet__meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---------- Print ---------- */
 @media print {
   @page {
@@ -1086,6 +1168,7 @@ button {
      "Maintenance info" checkbox is on (.sheet--maint). The boxes never change. */
   .cell__types,
   .cell__flag,
+  .cell__insp,
   .front__types,
   .front__flag {
     display: none;
@@ -1094,6 +1177,9 @@ button {
     display: flex;
   }
   .sheet--maint .cell__flag {
+    display: block;
+  }
+  .sheet--maint .cell__insp {
     display: block;
   }
   .sheet--maint .front__types {

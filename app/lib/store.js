@@ -23,15 +23,24 @@ const usePg = !!PG_URL;
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FLAGS_FILE = path.join(DATA_DIR, "flags.json");
 const SHEET_FILE = path.join(DATA_DIR, "sheet.json");
+const HISTORY_FILE = path.join(DATA_DIR, "history.json");
+
+// Normalise a stored miles value to an integer or null.
+function toMiles(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) ? n : null;
+}
 
 // Normalise any stored shape (old string, old array, or new object) to an entry.
 function toEntry(v) {
-  if (!v) return { flags: [], note: "" };
-  if (Array.isArray(v)) return { flags: v.filter(Boolean), note: "" };
-  if (typeof v === "string") return { flags: v.split(",").filter(Boolean), note: "" };
+  if (!v) return { flags: [], note: "", inspMiles: null };
+  if (Array.isArray(v)) return { flags: v.filter(Boolean), note: "", inspMiles: null };
+  if (typeof v === "string") return { flags: v.split(",").filter(Boolean), note: "", inspMiles: null };
   return {
     flags: Array.isArray(v.flags) ? v.flags.filter(Boolean) : [],
     note: typeof v.note === "string" ? v.note : "",
+    inspMiles: toMiles(v.inspMiles),
   };
 }
 function isEmpty(e) {
@@ -69,12 +78,21 @@ async function pool() {
       )`
     );
     await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS note TEXT`);
+    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS insp_miles INTEGER`);
     // Generic key/value store for shared app state (currently the lot sheet).
     await _pool.query(
       `CREATE TABLE IF NOT EXISTS app_state (
         key TEXT PRIMARY KEY,
         value JSONB,
         updated_at TIMESTAMPTZ DEFAULT now()
+      )`
+    );
+    // Archive of past/erased sheets (Prev Sheets), capped at 20 newest rows.
+    await _pool.query(
+      `CREATE TABLE IF NOT EXISTS sheet_history (
+        id BIGSERIAL PRIMARY KEY,
+        data JSONB,
+        saved_at TIMESTAMPTZ DEFAULT now()
       )`
     );
   }
@@ -86,9 +104,13 @@ async function pool() {
 export async function getFlags() {
   const out = {};
   if (usePg) {
-    const { rows } = await (await pool()).query("SELECT bus, flag, note FROM bus_flags");
+    const { rows } = await (await pool()).query("SELECT bus, flag, note, insp_miles FROM bus_flags");
     for (const r of rows) {
-      const e = toEntry({ flags: (r.flag || "").split(",").filter(Boolean), note: r.note || "" });
+      const e = toEntry({
+        flags: (r.flag || "").split(",").filter(Boolean),
+        note: r.note || "",
+        inspMiles: r.insp_miles,
+      });
       if (!isEmpty(e)) out[r.bus] = e;
     }
     return out;
@@ -109,10 +131,10 @@ export async function setBusFlags(bus, entry) {
       await db.query("DELETE FROM bus_flags WHERE bus = $1", [bus]);
     } else {
       await db.query(
-        `INSERT INTO bus_flags (bus, flag, note, updated_at)
-         VALUES ($1, $2, $3, now())
-         ON CONFLICT (bus) DO UPDATE SET flag = $2, note = $3, updated_at = now()`,
-        [bus, e.flags.join(","), e.note]
+        `INSERT INTO bus_flags (bus, flag, note, insp_miles, updated_at)
+         VALUES ($1, $2, $3, $4, now())
+         ON CONFLICT (bus) DO UPDATE SET flag = $2, note = $3, insp_miles = $4, updated_at = now()`,
+        [bus, e.flags.join(","), e.note, e.inspMiles]
       );
     }
     return;
@@ -168,4 +190,70 @@ export async function setSheet(sheet) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(SHEET_FILE, JSON.stringify({ sheet, updatedAt }, null, 2));
   return updatedAt;
+}
+
+// ---------- Prev Sheets (archive of past/erased sheets) ----------
+const HISTORY_LIMIT = 20;
+
+async function historyFileRead() {
+  try {
+    const arr = JSON.parse(await fs.readFile(HISTORY_FILE, "utf8"));
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+async function historyFileWrite(list) {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(HISTORY_FILE, JSON.stringify(list, null, 2));
+}
+
+// Newest first: [{ id, sheet, savedAt }]. At most HISTORY_LIMIT entries.
+export async function listHistory() {
+  if (usePg) {
+    const { rows } = await (await pool()).query(
+      "SELECT id, data, saved_at FROM sheet_history ORDER BY saved_at DESC, id DESC LIMIT $1",
+      [HISTORY_LIMIT]
+    );
+    return rows.map((r) => ({
+      id: String(r.id),
+      sheet: r.data || null,
+      savedAt: r.saved_at ? new Date(r.saved_at).toISOString() : null,
+    }));
+  }
+  const list = await historyFileRead();
+  return list.slice(0, HISTORY_LIMIT);
+}
+
+// Archive a sheet, then trim to the newest HISTORY_LIMIT.
+export async function archiveSheet(sheet) {
+  const savedAt = new Date().toISOString();
+  if (usePg) {
+    const db = await pool();
+    const { rows } = await db.query(
+      "INSERT INTO sheet_history (data) VALUES ($1) RETURNING id",
+      [sheet]
+    );
+    await db.query(
+      `DELETE FROM sheet_history WHERE id NOT IN (
+        SELECT id FROM sheet_history ORDER BY saved_at DESC, id DESC LIMIT $1
+      )`,
+      [HISTORY_LIMIT]
+    );
+    return String(rows[0].id);
+  }
+  const id = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+  const list = await historyFileRead();
+  list.unshift({ id, sheet, savedAt });
+  await historyFileWrite(list.slice(0, HISTORY_LIMIT));
+  return id;
+}
+
+export async function deleteHistory(id) {
+  if (usePg) {
+    await (await pool()).query("DELETE FROM sheet_history WHERE id = $1", [id]);
+    return;
+  }
+  const list = await historyFileRead();
+  await historyFileWrite(list.filter((h) => String(h.id) !== String(id)));
 }

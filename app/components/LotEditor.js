@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { flagDisplay, inspMilesDisplay } from "../lib/grid";
+import { sanitizeBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
-function sanitizeBus(raw) {
-  let d = String(raw).replace(/\D/g, "");
-  if (d && d[0] !== "2" && d[0] !== "6") d = "";
-  return d.slice(0, 5);
-}
-
-export default function LotEditor({ title, list, onAdd, onRemove, onMove, onClose }) {
+export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, onMove, onClose }) {
   const [val, setVal] = useState("");
   const ref = useRef(null);
 
@@ -62,11 +58,16 @@ export default function LotEditor({ title, list, onAdd, onRemove, onMove, onClos
           {list.length === 0 && (
             <div className="lotlist__empty">No buses yet — type a number and press Add.</div>
           )}
-          {list.map((bus, i) => (
+          {list.map((bus, i) => {
+            const entry = flags[bus];
+            const fdisp = flagDisplay(entry);
+            const miles = inspMilesDisplay(entry);
+            return (
             <div className="lotitem" key={`${bus}-${i}`}>
               <span className="lotitem__idx">{i + 1}.</span>
               <span className="lotitem__bus">{bus}</span>
               <TypeCodes num={bus} />
+              {fdisp && <span className="lotitem__flag">{fdisp}{miles ? ` · ${miles}` : ""}</span>}
               <div className="toolbar__spacer" />
               <button
                 className="lotitem__move"
@@ -88,7 +89,8 @@ export default function LotEditor({ title, list, onAdd, onRemove, onMove, onClos
                 Remove
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="modal__actions">

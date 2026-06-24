@@ -10,12 +10,14 @@ import {
   frontCellId,
   row11CellId,
   flagDisplay,
+  inspMilesDisplay,
 } from "../lib/grid";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
 import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
+import PrevSheets from "./PrevSheets";
 
 const STORAGE_KEY = "lotsheet:current";
 
@@ -54,6 +56,7 @@ export default function LotSheet() {
   const [fontDelta, setFontDelta] = useState(0); // size relative to Standard (px)
   const [editingLot, setEditingLot] = useState(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
+  const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
   const saveTimer = useRef(null);
   const lastSyncRef = useRef(null); // JSON of the sheet known to match the server
   const sheetRef = useRef(sheet); // always-current sheet, for the poll loop
@@ -199,14 +202,52 @@ export default function LotSheet() {
     });
   }
 
-  function newSheet() {
+  function sheetHasContent(s) {
+    const cells = s && s.cells ? Object.values(s.cells).filter(Boolean).length : 0;
+    const lots = s && s.lots
+      ? Object.values(s.lots).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0)
+      : 0;
+    return cells + lots > 0;
+  }
+
+  // Save a copy into Prev Sheets (server-side) before it's discarded.
+  async function archiveSheet(s) {
+    if (!sheetHasContent(s)) return;
+    try {
+      await fetch("/api/sheet/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet: s }),
+      });
+    } catch {}
+  }
+
+  async function newSheet() {
     if (
-      Object.keys(sheet.cells).length > 0 &&
-      !window.confirm("Start a new blank sheet for everyone? This clears the current shared sheet on all devices.")
+      sheetHasContent(sheet) &&
+      !window.confirm(
+        "Start a new blank sheet for everyone? The current sheet is saved to Prev Sheets first, then cleared on all devices."
+      )
     ) {
       return;
     }
+    await archiveSheet(sheet);
     setSheet(emptySheet());
+  }
+
+  // Bring a previous sheet back as the current shared sheet. The sheet that's up
+  // now is archived first (so it isn't lost), and the imported one leaves the
+  // archive since you're continuing it.
+  async function importSheet(imported, id) {
+    if (!imported) return;
+    await archiveSheet(sheet);
+    if (id) {
+      try {
+        await fetch(`/api/sheet/history?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      } catch {}
+    }
+    setSheet(imported);
+    setPrevOpen(false);
   }
 
   function openCell(id, subLabel) {
@@ -243,7 +284,9 @@ export default function LotSheet() {
   // ---- cell renderer ----
   function Cell({ id, slotLabel }) {
     const num = getNum(id);
-    const disp = num ? flagDisplay(flagFor(num)) : "";
+    const entry = num ? flagFor(num) : null;
+    const disp = entry ? flagDisplay(entry) : "";
+    const miles = entry ? inspMilesDisplay(entry) : "";
     const blocked = slotLabel === "X";
     if (blocked) {
       return (
@@ -261,7 +304,12 @@ export default function LotSheet() {
         {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
         {num && <TypeCodes num={num} className="cell__types" />}
         <span className="cell__num">{num}</span>
-        {disp && <span className="cell__flag">{disp}</span>}
+        {(disp || miles) && (
+          <span className="cell__meta">
+            {disp && <span className="cell__flag">{disp}</span>}
+            {miles && <span className="cell__insp">{miles}</span>}
+          </span>
+        )}
       </button>
     );
   }
@@ -283,6 +331,9 @@ export default function LotSheet() {
         </button>
         <button className="btn" onClick={newSheet}>
           New
+        </button>
+        <button className="btn" onClick={() => setPrevOpen(true)}>
+          Prev Sheets
         </button>
         <div className="toolbar__font" title="Text size">
           <button className="btn btn--mini" onClick={() => changeFont(-1)} disabled={fontDelta <= -4} aria-label="Smaller text">
@@ -363,7 +414,9 @@ export default function LotSheet() {
               if (c >= FRONT_COLUMNS) return <div key={`f${c}`} className="front front--empty" />;
               const id = frontCellId(c);
               const num = getNum(id);
-              const disp = num ? flagDisplay(flagFor(num)) : "";
+              const entry = num ? flagFor(num) : null;
+              const disp = entry ? flagDisplay(entry) : "";
+              const miles = entry ? inspMilesDisplay(entry) : "";
               return (
                 <button
                   key={`f${c}`}
@@ -374,6 +427,7 @@ export default function LotSheet() {
                   {num && <TypeCodes num={num} className="front__types" />}
                   <span className="cell__num">{num}</span>
                   {disp && <span className="front__flag">{disp}</span>}
+                  {miles && <span className="front__flag front__insp">{miles}</span>}
                 </button>
               );
             })}
@@ -420,12 +474,23 @@ export default function LotSheet() {
                   <span className="backlot__edit no-print"> ✎ edit</span>
                 </button>
                 <ol className="backlot__list">
-                  {lotList(lot.key).map((bus, i) => (
-                    <li key={i}>
-                      <span className="backlot__bus">{bus}</span>
-                      <TypeCodes num={bus} className="backlot__type" />
-                    </li>
-                  ))}
+                  {lotList(lot.key).map((bus, i) => {
+                    const entry = flagFor(bus);
+                    const fdisp = flagDisplay(entry);
+                    const miles = inspMilesDisplay(entry);
+                    return (
+                      <li key={i}>
+                        <span className="backlot__bus">{bus}</span>
+                        <TypeCodes num={bus} className="backlot__type" />
+                        {fdisp && (
+                          <span className="backlot__flag">
+                            {fdisp}
+                            {miles ? ` · ${miles}` : ""}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ol>
               </div>
             ))}
@@ -458,10 +523,15 @@ export default function LotSheet() {
         <RowFill getNum={getNum} saveNum={saveNum} onClose={() => setFillOpen(false)} />
       )}
 
+      {prevOpen && (
+        <PrevSheets onImport={importSheet} onClose={() => setPrevOpen(false)} />
+      )}
+
       {editingLot && (
         <LotEditor
           title={LOTS.find((l) => l.key === editingLot)?.title || ""}
           list={lotList(editingLot)}
+          flags={flags}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
