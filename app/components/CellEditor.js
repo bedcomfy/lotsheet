@@ -5,9 +5,23 @@ import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
 import { isKnownBus, busTypes, sanitizeBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
-export default function CellEditor({ subLabel, value, flags, onSave, onClose }) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }) {
   const [num, setNum] = useState(value || "");
+  const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
   const inputRef = useRef(null);
+
+  // Save unless the bus is already placed elsewhere on the sheet.
+  function trySave(v) {
+    const n = (v ?? num).trim();
+    if (n) {
+      const where = locate ? locate(n, cellId) : "";
+      if (where) {
+        setDup(where);
+        return;
+      }
+    }
+    onSave(n);
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -55,16 +69,23 @@ export default function CellEditor({ subLabel, value, flags, onSave, onClose }) 
           onChange={(e) => {
             const v = sanitizeBus(e.target.value);
             setNum(v);
+            setDup("");
             // Autocomplete: save & close the moment a valid bus is entered,
-            // matching the lot editor and Fill Rows.
-            if (isKnownBus(v)) onSave(v);
+            // matching the lot editor and Fill Rows (blocked if it's a duplicate).
+            if (isKnownBus(v)) trySave(v);
           }}
           placeholder="Bus number"
           onKeyDown={(e) => {
-            if (e.key === "Enter") onSave(num.trim());
+            if (e.key === "Enter") trySave();
           }}
         />
-        {showWarning && (
+        {dup && (
+          <div className="modal__warn">
+            Bus {num} is already on the sheet at <strong>{dup}</strong>. Remove it there
+            first — a bus can only be in one place.
+          </div>
+        )}
+        {showWarning && !dup && (
           <div className="modal__warn">
             {num} isn&apos;t on the bus list — double-check it. You can still save it.
           </div>
@@ -98,7 +119,7 @@ export default function CellEditor({ subLabel, value, flags, onSave, onClose }) 
           <button className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn btn--primary" onClick={() => onSave(num.trim())}>
+          <button className="btn btn--primary" onClick={() => trySave()}>
             Save
           </button>
         </div>

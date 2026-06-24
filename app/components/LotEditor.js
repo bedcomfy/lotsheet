@@ -5,8 +5,9 @@ import { flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus, isKnownBus } from "../lib/buses";
 import TypeCodes from "./TypeCodes";
 
-export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, onMove, onClose }) {
+export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
   const [val, setVal] = useState("");
+  const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
   const ref = useRef(null);
 
   useEffect(() => {
@@ -21,8 +22,15 @@ export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, on
   function add(bus) {
     const b = sanitizeBus(bus != null ? bus : val);
     if (b.length < 4) return;
+    const where = locate ? locate(b, null) : "";
+    if (where) {
+      setDup(where);
+      setVal(b);
+      return;
+    }
     onAdd(b);
     setVal("");
+    setDup("");
     ref.current?.focus();
   }
 
@@ -32,6 +40,7 @@ export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, on
 
   function onChange(raw) {
     const v = sanitizeBus(raw);
+    setDup("");
     // Autocomplete: as soon as a valid bus is typed, add it (like the grid /
     // Fill Rows auto-advance). Unknown numbers still add via the Add button.
     if (isKnownBus(v)) add(v);
@@ -64,7 +73,13 @@ export default function LotEditor({ title, list, flags = {}, onAdd, onRemove, on
             Add
           </button>
         </div>
-        {showWarn && (
+        {dup && (
+          <div className="modal__warn">
+            Bus {val} is already on the sheet at <strong>{dup}</strong>. Remove it there
+            first — a bus can only be in one place.
+          </div>
+        )}
+        {showWarn && !dup && (
           <div className="modal__warn">
             {val} isn&apos;t on the bus list — double-check it. Press Add to use it anyway.
           </div>

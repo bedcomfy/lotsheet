@@ -27,9 +27,10 @@ function columnCells(c) {
   return out;
 }
 
-export default function RowFill({ getNum, saveNum, onClose }) {
+export default function RowFill({ getNum, saveNum, locate, onClose }) {
   const [pair, setPair] = useState(0);
   const [swapped, setSwapped] = useState(false);
+  const [dup, setDup] = useState(null); // { id, value, where } for a blocked duplicate
   const inputs = useRef({});
 
   let [a, b] = PAIRS[pair];
@@ -56,21 +57,34 @@ export default function RowFill({ getNum, saveNum, onClose }) {
     if (!cell) return <div className="rf__box rf__box--empty" />;
     if (cell.blocked) return <div className="rf__box rf__box--blocked">X</div>;
     const id = cell.id;
-    const val = getNum(id);
-    const invalid = val.length >= 4 && !isKnownBus(val);
+    const isDupHere = dup && dup.id === id;
+    // Show the rejected duplicate value locally until it's changed; it is NOT
+    // saved to the sheet, so a bus can't be entered in two places.
+    const val = isDupHere ? dup.value : getNum(id);
+    const invalid = !isDupHere && val.length >= 4 && !isKnownBus(val);
     return (
-      <label className={`rf__box ${invalid ? "rf__box--invalid" : ""}`}>
+      <label
+        className={`rf__box ${invalid ? "rf__box--invalid" : ""} ${
+          isDupHere ? "rf__box--dup" : ""
+        }`}
+      >
         <span className="rf__label">{cell.label}</span>
         <input
           ref={(el) => {
             if (el) inputs.current[id] = el;
           }}
           className="rf__input"
-          inputMode="numeric"
           enterKeyHint="next"
           value={val}
           onChange={(e) => {
             const v = sanitizeBus(e.target.value);
+            const where = v && locate ? locate(v, id) : "";
+            if (where) {
+              // Duplicate — don't save it; flag the box and stay put.
+              setDup({ id, value: v, where });
+              return;
+            }
+            setDup(null);
             saveNum(id, v);
             // Auto-advance as soon as a real bus number is entered (most are
             // 4 digits, and the iOS number pad has no "next" key).
@@ -83,6 +97,7 @@ export default function RowFill({ getNum, saveNum, onClose }) {
             }
           }}
         />
+        {isDupHere && <span className="rf__dup">already at {dup.where}</span>}
       </label>
     );
   }
