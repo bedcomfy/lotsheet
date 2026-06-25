@@ -1,3 +1,14 @@
+/* Roboto Slab — used ONLY for the fuel/DEF R/H/I flag letter. Being a slab serif,
+   its capital I has bold top + bottom bars (clearly not a lowercase L). The rest
+   of the site stays Arial. Self-hosted so it also renders in the server-side PDF. */
+@font-face {
+  font-family: "Roboto Slab";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/robotoslab-700.woff2") format("woff2");
+}
+
 :root {
   --ink: #111111;
   --line: #111111;
@@ -5,6 +16,7 @@
   --paper: #ffffff;
   --accent: #2563eb;
   --muted: #6b7280;
+  --font-sheet: Arial, Helvetica, sans-serif;
 }
 
 * {
@@ -17,7 +29,7 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sheet);
   -webkit-text-size-adjust: 100%;
 }
 
@@ -26,6 +38,224 @@ button {
   cursor: pointer;
   color: inherit; /* iOS Safari otherwise renders button text in system blue */
   -webkit-text-fill-color: currentColor;
+}
+
+/* ---------- App nav (sheet picker, screen only) ---------- */
+.appnav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #111827;
+  color: #fff;
+}
+.appnav__brand {
+  font-weight: 700;
+  font-size: 15px;
+}
+.appnav__picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.appnav__pickerlabel {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+.appnav__select {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #fff;
+}
+.appnav__btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #fff;
+}
+.appnav__btn:hover {
+  background: #374151;
+}
+
+/* Bus Lists editor */
+.buslist__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px 4px;
+}
+.buslist__new {
+  max-width: 160px;
+}
+.buslist__search {
+  flex: 1 1 auto;
+  max-width: 320px;
+}
+.buslist__code {
+  display: inline-flex;
+  align-items: center;
+  min-width: 52px;
+  font-weight: 700;
+}
+.buslist__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.buslist__row--retired {
+  opacity: 0.62;
+}
+.buslist__num {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 92px;
+}
+.buslist__sel,
+.buslist__model {
+  font-size: 13px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+.buslist__model {
+  min-width: 150px;
+  flex: 1 1 150px;
+}
+.buslist__lane {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.buslist__lane input {
+  width: 16px;
+  height: 16px;
+}
+.buslist__info {
+  font-size: 12px;
+  color: var(--muted);
+}
+.buslist__hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.csv__area {
+  width: 100%;
+  height: 50vh;
+  min-height: 240px;
+  resize: vertical;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  white-space: pre;
+  overflow: auto;
+}
+.pwgate {
+  display: flex;
+  gap: 8px;
+  padding: 6px 2px;
+}
+.pwgate__err {
+  color: #b91c1c;
+  font-size: 13px;
+  padding: 0 2px 6px;
+}
+
+/* ---------- Flag editor (departments + detail pickers) ---------- */
+.deptchip {
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  border: 1px solid #d8dce1;
+  background: #fff;
+  color: #374151;
+  line-height: 1.1;
+}
+.deptchip:hover {
+  border-color: #b9bfc7;
+}
+.deptchip--on--service { background: #e8f1fc; border-color: #2563eb; color: #1e40af; font-weight: 600; }
+.deptchip--on--maintenance { background: #fdf3e7; border-color: #d97706; color: #92400e; font-weight: 600; }
+.deptchip--on--safety { background: #fdecec; border-color: #dc2626; color: #991b1b; font-weight: 600; }
+
+.busblock { border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+.busblock--open { border-color: #cbd5e1; }
+.busblock__head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 12px; background: #fff; border: none; text-align: left; }
+.busblock__num { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 54px; }
+.busblock__type { min-width: 30px; }
+.busblock__sum { flex: 1; font-size: 13px; color: #6b7280; }
+.busblock__chev { color: #9ca3af; }
+
+.busedit { padding: 0 12px 12px; }
+.busedit__dept { margin-top: 12px; }
+.busedit__depthead { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.busedit__dot { width: 8px; height: 8px; border-radius: 50%; }
+.busedit__depthead--service { color: #1e40af; }
+.busedit__depthead--service .busedit__dot { background: #2563eb; }
+.busedit__depthead--maintenance { color: #92400e; }
+.busedit__depthead--maintenance .busedit__dot { background: #d97706; }
+.busedit__depthead--safety { color: #991b1b; }
+.busedit__depthead--safety .busedit__dot { background: #dc2626; }
+.busedit__chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.busedit__noterow { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.busedit__dept { margin-top: 16px; }
+
+.detailbox { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; }
+.detailbox--col { flex-direction: column; align-items: stretch; }
+.detailbox__label { font-size: 12px; font-weight: 600; color: #374151; }
+.detailbox__num { width: 70px; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 8px; font-size: 14px; }
+.detailbox__text { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.detailbox__hint { font-size: 12px; color: #6b7280; }
+.detailbox__sum { font-size: 13px; color: #374151; }
+.detailbox__warn { font-size: 12px; color: #b91c1c; }
+
+.tirepick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 320px; }
+.tirepick__hint { grid-column: 1 / 3; text-align: center; font-size: 11px; color: #9ca3af; }
+.tirebtn { padding: 11px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #374151; font-size: 13px; }
+.tirebtn--on { background: #e8f1fc; border-color: #2563eb; color: #1e40af; font-weight: 600; }
+.reasonpick { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.byflag { padding: 14px 16px 0; }
+.byflag .manager__list { padding-left: 0; padding-right: 0; }
+.depttabs { display: flex; gap: 10px; margin-bottom: 14px; }
+.depttab { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; font-size: 13px; font-weight: 600; color: #374151; }
+.depttab--on.depttab--service { background: #e8f1fc; border-color: #2563eb; color: #1e40af; }
+.depttab--on.depttab--maintenance { background: #fdf3e7; border-color: #d97706; color: #92400e; }
+.depttab--on.depttab--safety { background: #fdecec; border-color: #dc2626; color: #991b1b; }
+.byflag__note { font-size: 13px; color: #374151; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
+.byflag__hint { font-size: 12px; color: #6b7280; margin-top: -4px; margin-bottom: 4px; }
+.linkbtn { background: none; border: none; color: #2563eb; font: inherit; padding: 0; text-decoration: underline; }
+.busitem__detail { font-size: 13px; color: #6b7280; }
+.flagpicker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.flagrow { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+.flagrow__head { display: flex; align-items: center; gap: 10px; }
+.placeholder {
+  max-width: 600px;
+  margin: 48px auto;
+  text-align: center;
+  color: var(--muted);
+  padding: 0 16px;
+}
+.placeholder h2 {
+  color: var(--ink);
+  margin-bottom: 6px;
 }
 
 /* ---------- Toolbar (screen only) ---------- */
@@ -468,6 +698,7 @@ button {
 }
 .modal {
   background: #fff;
+  color: var(--ink); /* don't inherit the dark nav's white text */
   width: 100%;
   max-width: 460px;
   border-radius: 16px 16px 0 0;
@@ -480,6 +711,9 @@ button {
   }
   .modal {
     border-radius: 16px;
+  }
+  .modal--wide {
+    max-width: 820px;
   }
 }
 .modal__head {
@@ -623,8 +857,8 @@ button {
   color: var(--muted);
 }
 .manager__search {
-  margin: 10px 14px;
-  padding: 10px 12px;
+  margin: 12px 16px;
+  padding: 11px 13px;
   font-size: 16px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
@@ -632,13 +866,13 @@ button {
 .manager__list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 8px 24px;
+  padding: 0 16px 24px;
 }
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 6px;
-  padding: 8px 14px 0;
+  gap: 8px;
+  padding: 16px 16px 0;
 }
 .tab {
   flex: 1;
@@ -995,6 +1229,10 @@ button {
   min-height: 170px;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
+}
+.backlot:hover {
+  border-color: var(--accent);
 }
 .backlot__head {
   border: none;
@@ -1226,6 +1464,299 @@ button {
   color: var(--muted);
 }
 
+/* ---------- Fuel / DEF sheet ---------- */
+/* Faithful to the Google Sheet: ONE continuous grid, title/DATE as the first row
+   (no separate header band, no gaps between groups). Shown on screen as a fixed
+   paper-shaped preview (like the lot sheet) so it matches the printout: the card
+   is a portrait page with margins, the table fills it, and the rows share the
+   page height — so changing the font only changes the text, not the sheet size. */
+.fuel-sheet {
+  min-width: 660px; /* 12 columns stay readable; scrolls on phones */
+  max-width: 704px;
+  aspect-ratio: 8.5 / 11; /* a real portrait page */
+  display: flex;
+  flex-direction: column;
+  padding: 26px 30px 24px; /* margins around the grid, roughly matching print */
+}
+.fuelt {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  flex: 1 1 auto; /* fill the page; rows share the leftover height */
+  height: 100%;
+}
+.fuelt td {
+  border: 1px solid #000;
+  height: auto; /* row height comes from the page, not the font size */
+  padding: 0 4px;
+  text-align: center;
+  font-size: var(--ffz, 12px);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* Header row: title + date — only a bottom rule, no vertical dividers */
+.fuelt__hdr td {
+  border: none;
+  border-bottom: 1px solid #000;
+  text-align: left;
+  padding: 5px 6px;
+  font-size: calc(var(--ffz, 12px) + 3px);
+}
+.fuelt__name {
+  letter-spacing: 0.03em;
+}
+.fuelt__hin {
+  border: none;
+  border-bottom: 1px solid #000;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  padding: 0 2px;
+  width: 88px;
+  background: transparent;
+}
+.fuelt__hin--sm {
+  width: 32px;
+}
+.fuelt__hin--line {
+  width: 84px; /* Start and End lines kept equal */
+}
+/* The header is one line that fills the full width: the title is fixed and each
+   field grows to share the rest, so the lines stretch and N/S gets room. */
+.fuelt__hdrrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0 12px;
+  width: 100%;
+  font-size: calc(var(--ffz, 12px) + 1px);
+}
+.fuelt__hdrrow .fuelt__name {
+  flex: 0 0 auto;
+}
+.fuelt__field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+/* DATE / START / END lines: grow to fill, same look + height. The fuel sheet's
+   date isn't in the flex header, so inline-block + min-width keeps a visible
+   blank line even when the date isn't printed. */
+.fuelt__date,
+.fuelt__hdrrow .fuelt__hin--line {
+  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 30px;
+  width: auto;
+  box-sizing: border-box;
+  height: 1.6em;
+  line-height: 1.5em;
+  border: none;
+  border-bottom: 1px solid #000;
+  text-align: center;
+  background: transparent;
+  font-size: calc(var(--ffz, 12px) + 1px);
+  padding: 0 4px;
+  vertical-align: middle;
+}
+.fuelt__date {
+  min-width: 110px;
+}
+/* Room to circle N or S by hand. */
+.fuelt__ns {
+  justify-content: center;
+  letter-spacing: 4px;
+}
+.fuelt__colhdr td {
+  font-size: var(--ffz, 12px);
+  background: #f3f4f6;
+}
+.fuelt__bus {
+  position: relative;
+  padding: 0;
+  text-align: center; /* bus number centered horizontally */
+  font-variant-numeric: tabular-nums; /* all bus numbers are 4 uniform digits */
+}
+/* Highlight on a bus box that carries a flag. */
+.fuelt__bus--flagged {
+  background: #ffe066;
+}
+/* ONE flag letter (R/H/I, or ∗ when a bus has more than one) sits in the left
+   margin — the space between the box edge and the centered number — and is
+   centered within it, so the gap to the box line equals the gap to the first
+   digit. The margin = half the cell minus half the 4-digit number (2ch). The
+   OUTER span is sized in the number's font (so ch = a digit's width); the inner
+   span draws the bigger slab-serif letter. */
+.fuelt__ind {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: calc(50% - 2ch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--ffz, 12px);
+  pointer-events: none;
+}
+.fuelt__indl {
+  font-family: "Roboto Slab", "Times New Roman", serif;
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  line-height: 1;
+  /* Barred capital I (bold top + bottom slab bars) so I isn't read as l. */
+}
+.fuelt__in {
+  width: 100%;
+  border: none;
+  text-align: center;
+  font-size: var(--ffz, 12px);
+  padding: 0;
+  background: transparent;
+}
+.fuelt__in:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.fuelt__total {
+  text-align: right;
+  padding-right: 4px;
+}
+
+/* Fuel/DEF second sheet — "SERVICE LANE" + print date header, then flag sections */
+.fuelsum {
+  justify-content: flex-start;
+}
+.fuelsum__head {
+  text-align: center;
+  border-bottom: 1px solid #000;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.fuelsum__title {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 7px);
+  letter-spacing: 0.06em;
+}
+.fuelsum__date {
+  font-size: calc(var(--ffz, 12px) + 2px);
+  margin-top: 3px;
+}
+.fuelsum__sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 28px;
+  width: 100%;
+}
+.fuelsum__section {
+  flex: 1 1 44%;
+  min-width: 0;
+}
+.fuelsum__seclabel {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  border-bottom: 1px solid #000;
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+.fuelsum__row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px solid #ddd;
+}
+.fuelsum__bus {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 1px);
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+}
+.fuelsum__flags {
+  font-size: var(--ffz, 12px);
+}
+
+/* Hold-reason picker in the flag editor */
+.holdreason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.holdreason__label {
+  font-size: 12px;
+  font-weight: 700;
+}
+.holdreason__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fchip--sm {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.holdreason__field {
+  flex: 1 1 140px;
+  min-width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* ---------- Sheet Settings dropdown (font size, future per-sheet options) --- */
+.setmenu {
+  position: relative;
+  display: inline-block;
+}
+.setmenu__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 210px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  padding: 10px 12px;
+}
+.setmenu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.setmenu__label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.setmenu__stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.setmenu__val {
+  min-width: 46px;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.setmenu__check {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.setmenu__check input {
+  width: 16px;
+  height: 16px;
+}
+
 /* ---------- Print ---------- */
 @media print {
   @page {
@@ -1342,5 +1873,43 @@ button {
   /* Hide screen-only inputs' focus styling; show plain text */
   input {
     color: #000;
+  }
+}
+
+/* Fuel / DEF print: fill exactly one page. The global .sheet print rule makes
+   this a flex column (height:100vh, overflow:hidden); we let the table grow to
+   fill it so the rows share the space evenly — no empty band at the bottom, and
+   never a 2nd page, at any font size. Just widen the margins here. */
+@media print {
+  .fuel-sheet {
+    min-width: 0;
+    padding: 0.5in 0.55in 0.45in;
+  }
+  .fuelt {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+  .fuelt td {
+    height: auto;
+  }
+  .fuelt__hdr td {
+    padding-bottom: 8px;
+  }
+  /* R/H/I + the flag highlight follow the "print with flags" toggle. */
+  .fuelt__ind {
+    display: none;
+  }
+  .fuel-sheet--flags .fuelt__ind {
+    display: flex;
+  }
+  .fuelt__bus--flagged {
+    background: none;
+  }
+  .fuel-sheet--flags .fuelt__bus--flagged {
+    background: #ffe066;
+  }
+  /* The flagged-buses summary prints on its own page. */
+  .fuelsum {
+    page-break-before: always;
   }
 }

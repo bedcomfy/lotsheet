@@ -92,16 +92,62 @@ export const FLAGS = [
   { id: "trans", label: "TRANS" },
   { id: "oos", label: "OUT OF SERVICE" },
   { id: "inspection", label: "INSPECTION" },
+  { id: "retorque", label: "RETORQUE" },
   { id: "hold", label: "HOLD" },
   { id: "split", label: "SPLIT" },
-  { id: "movement", label: "MOVEMENT" },
   { id: "service", label: "NEEDS SERVICE" },
+  { id: "cards", label: "CARDS" },
+  { id: "braketest", label: "BRAKE TEST" },
   { id: "ac", label: "A/C" },
   { id: "cleaning", label: "NEEDS CLEANING" },
 ];
+
+// A Hold bus has a reason. These are the quick-picks; a free-text box also
+// allows anything else. (Movement used to be its own flag — a movement bus is
+// always a hold, so it's now a hold reason.)
+export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
 export function flagLabel(id) {
   const f = FLAGS.find((x) => x.id === id);
   return f ? f.label : "";
+}
+
+// Friendly names for the flag editor (the printed code stays = flagLabel).
+const FLAG_NAMES = {
+  legal: "Legal", safety: "Safety", offprop: "Off property", eng: "Engine",
+  trans: "Transmission", oos: "Out of service", inspection: "Inspection",
+  retorque: "Retorque", hold: "Hold", split: "Split", service: "Needs service",
+  cards: "Cards", braketest: "Brake test", ac: "A/C", cleaning: "Needs cleaning",
+};
+export function flagName(id) {
+  return FLAG_NAMES[id] || flagLabel(id);
+}
+
+// Flags grouped by department, for the editor. A flag may appear in more than
+// one department (shared); the By bus view shows it once, under the first one.
+export const DEPARTMENTS = [
+  { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold"] },
+  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "split"] },
+  { id: "safety", label: "Safety", flags: ["safety", "legal"] },
+];
+
+// Retorque must specify which tire(s). Roadside = traffic side, curbside = door
+// side; fronts on top, rears on the bottom.
+export const RETORQUE_TIRES = [
+  { id: "rf", label: "Roadside front" },
+  { id: "cf", label: "Curbside front" },
+  { id: "rr", label: "Roadside rear" },
+  { id: "cr", label: "Curbside rear" },
+];
+// Collapse the tire selection to a short label: All / Fronts / Rears, else list.
+export function retorqueTiresDisplay(tires) {
+  const set = new Set((tires || []).filter(Boolean));
+  if (set.size === 0) return "";
+  if (set.size === 4) return "All";
+  const fronts = set.has("rf") && set.has("cf");
+  const rears = set.has("rr") && set.has("cr");
+  if (set.size === 2 && fronts) return "Fronts";
+  if (set.size === 2 && rears) return "Rears";
+  return RETORQUE_TIRES.filter((t) => set.has(t.id)).map((t) => t.label).join(", ");
 }
 
 // The assignable flags (everything except "none").
@@ -117,10 +163,12 @@ export const FLAG_SEVERITY = [
   "trans",
   "oos",
   "inspection",
+  "retorque",
   "hold",
   "split",
-  "movement",
   "service",
+  "cards",
+  "braketest",
   "ac",
   "cleaning",
 ];
@@ -232,4 +280,76 @@ export function groupFlaggedBuses(flagsMap) {
     result.push({ cat, label: cat === "other" ? "OTHER" : flagLabel(cat), buses });
   }
   return result;
+}
+
+// ---- Fuel / DEF flag display ----
+// The fuel/DEF sheets show ONE letter to the left of the bus number: R / H / I
+// for a single retorque / hold / inspection flag, or "*" when the bus has more
+// than one of those three.
+const FUEL_LETTERS = [
+  ["retorque", "R"],
+  ["hold", "H"],
+  ["inspection", "I"],
+  ["braketest", "B"],
+  ["cards", "C"],
+];
+export function fuelIndicator(entry) {
+  if (!entry || !entry.flags) return "";
+  const hits = FUEL_LETTERS.filter(([id]) => entry.flags.includes(id));
+  if (hits.length === 0) return "";
+  // U+2217 (∗) is the vertically-centered asterisk, so it lines up with the
+  // bus number instead of riding high like a normal "*".
+  if (hits.length > 1) return "∗";
+  return hits[0][1];
+}
+
+// The fuel/DEF second sheet: one row per flagged bus, listing its Retorque /
+// Inspection / Hold flags (only those three) next to the number, each with its
+// detail (inspection miles / hold reason).
+export const FUEL_SUMMARY_FLAGS = ["retorque", "inspection", "hold", "braketest", "cards"];
+export function fuelBusFlagList(flagsMap) {
+  const rows = [];
+  for (const [bus, entry] of Object.entries(flagsMap || {})) {
+    if (!entry || !entry.flags) continue;
+    const items = [];
+    for (const id of FUEL_SUMMARY_FLAGS) {
+      if (!entry.flags.includes(id)) continue;
+      let detail = "";
+      if (id === "inspection") detail = inspMilesDisplay(entry);
+      else if (id === "hold") detail = (entry.holdReason || "").trim();
+      else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
+      items.push({ id, label: flagLabel(id), detail });
+    }
+    if (items.length) rows.push({ bus, items });
+  }
+  rows.sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true }));
+  return rows;
+}
+
+// Fuel/DEF flagged-buses summary split into sections by flag group. A bus is
+// listed once, under the highest-precedence group it carries (Holds/Cards/Brake
+// tests > Inspections > Retorques), but its line lists every flag it has.
+export const FUEL_SECTIONS = [
+  { id: "holdcards", label: "Holds · Cards · Brake tests", flags: ["hold", "cards", "braketest"] },
+  { id: "inspection", label: "Inspections", flags: ["inspection"] },
+  { id: "retorque", label: "Retorques", flags: ["retorque"] },
+];
+const FUEL_ITEM_ORDER = ["hold", "cards", "braketest", "inspection", "retorque"];
+export function fuelFlagSections(flagsMap) {
+  const out = FUEL_SECTIONS.map((s) => ({ id: s.id, label: s.label, rows: [] }));
+  for (const [bus, entry] of Object.entries(flagsMap || {})) {
+    if (!entry || !entry.flags) continue;
+    const idx = FUEL_SECTIONS.findIndex((s) => s.flags.some((f) => entry.flags.includes(f)));
+    if (idx === -1) continue;
+    const items = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
+      let detail = "";
+      if (f === "inspection") detail = inspMilesDisplay(entry);
+      else if (f === "hold") detail = (entry.holdReason || "").trim();
+      else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
+      return { id: f, label: flagLabel(f), detail };
+    });
+    out[idx].rows.push({ bus, items });
+  }
+  out.forEach((s) => s.rows.sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true })));
+  return out.filter((s) => s.rows.length);
 }

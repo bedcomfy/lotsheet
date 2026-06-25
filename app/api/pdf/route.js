@@ -7,7 +7,7 @@
 // request just returns the stored file.
 
 import { createHash } from "crypto";
-import { getSheet, getFlags, getPdfCache, setPdfCache } from "../../lib/store";
+import { getSheet, getFlags, getState, getPdfCache, setPdfCache } from "../../lib/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "1";
+const PDF_VERSION = "16";
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -32,10 +32,27 @@ function stable(v) {
   return v;
 }
 
-function signature(sheet, flags, maint) {
+function signature(data, maint) {
   return createHash("sha1")
-    .update(JSON.stringify({ v: PDF_VERSION, maint: !!maint, sheet: stable(sheet || null), flags: stable(flags || {}) }))
+    .update(JSON.stringify({ v: PDF_VERSION, maint: !!maint, data: stable(data ?? null) }))
     .digest("hex");
+}
+
+// The data a sheet's PDF is built from — used for the cache signature so a
+// cached PDF is reused until the underlying sheet actually changes.
+async function sheetData(path) {
+  if (path === "/") {
+    const [{ sheet }, flags] = await Promise.all([getSheet(), getFlags()]);
+    return { sheet, flags };
+  }
+  // Include the universal flags (R/H/I indicators) AND the bus master (the lane
+  // list / types) so either change invalidates the cached PDF.
+  const [{ value }, flags, busMaster] = await Promise.all([
+    getState(path.slice(1)),
+    getFlags(),
+    getState("bus_master"),
+  ]);
+  return { value, flags, busMaster: busMaster.value || null };
 }
 
 const PDF_HEADERS = {
@@ -72,12 +89,17 @@ async function launchBrowser() {
   });
 }
 
-async function renderPdf(req, maint) {
+// Sheets that can be exported to PDF. Each must render its print view at
+// `<path>?print=1` and expose a #print-ready marker when loaded.
+const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover"]);
+
+async function renderPdf(req, maint, path, fz) {
   const host = req.headers.get("host");
   const proto =
     req.headers.get("x-forwarded-proto") ||
     (host && host.startsWith("localhost") ? "http" : "https");
-  const pageUrl = `${proto}://${host}/?print=1&maint=${maint ? "1" : "0"}`;
+  const pageUrl =
+    `${proto}://${host}${path}?print=1&maint=${maint ? "1" : "0"}` + (fz ? `&fz=${fz}` : "");
 
   let browser;
   try {
@@ -96,23 +118,30 @@ export async function GET(req) {
   const url = new URL(req.url);
   const maint = url.searchParams.get("maint") === "1";
   const prewarm = url.searchParams.get("prewarm") === "1";
+  let path = url.searchParams.get("path") || "/";
+  if (!ALLOWED_PATHS.has(path)) path = "/";
+  // Optional font size (fuel/def) so the printout matches the chosen on-screen size.
+  const fzRaw = parseInt(url.searchParams.get("fz") || "", 10);
+  const fz = Number.isNaN(fzRaw) ? null : Math.max(8, Math.min(16, fzRaw));
+
+  const name = path === "/" ? "lot-sheet" : path.replace(/\W+/g, "");
+  const headers = { ...PDF_HEADERS, "Content-Disposition": `inline; filename="${name}.pdf"` };
 
   try {
-    const [{ sheet }, flags] = await Promise.all([getSheet(), getFlags()]);
-    const sig = signature(sheet, flags, maint);
-
-    // Serve from cache when the sheet + flags haven't changed since last build.
-    const cached = await getPdfCache(maint);
+    // Every sheet is cached by a signature of its data (+ font), so a later
+    // "Print PDF" (or a background prewarm after edits) returns instantly.
+    const sig = signature({ d: await sheetData(path), fz }, maint);
+    const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
       if (prewarm) return Response.json({ ok: true, cached: true });
-      return new Response(Buffer.from(cached.data, "base64"), { status: 200, headers: PDF_HEADERS });
+      return new Response(Buffer.from(cached.data, "base64"), { status: 200, headers });
     }
 
-    // Cache miss — generate (this is the slow path) and store for next time.
-    const pdf = await renderPdf(req, maint);
-    await setPdfCache(maint, sig, pdf.toString("base64"));
+    // Cache miss — generate (the slow path) and store for next time.
+    const pdf = await renderPdf(req, maint, path, fz);
+    await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
-    return new Response(pdf, { status: 200, headers: PDF_HEADERS });
+    return new Response(pdf, { status: 200, headers });
   } catch (err) {
     let diag = "";
     try {

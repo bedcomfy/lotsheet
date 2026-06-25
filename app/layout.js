@@ -1,8 +1,10 @@
 import "./globals.css";
+import SheetNav from "./components/SheetNav";
+import { BusMasterProvider } from "./components/BusMasterProvider";
 
 export const metadata = {
-  title: "Lot Sheet",
-  description: "Digital lot sheet",
+  title: "Pace Sheets",
+  description: "Digital garage sheets — lot, turnover, fuel",
 };
 
 export const viewport = {
@@ -16,7 +18,12 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <BusMasterProvider>
+          <SheetNav />
+          {children}
+        </BusMasterProvider>
+      </body>
     </html>
   );
 }

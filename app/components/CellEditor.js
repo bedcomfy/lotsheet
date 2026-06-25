@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
-import { isKnownBus, busTypes, sanitizeBus, busLabel } from "../lib/buses";
+import { sanitizeBus } from "../lib/buses";
+import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
 export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }) {
+  const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
   const inputRef = useRef(null);

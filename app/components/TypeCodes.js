@@ -1,11 +1,12 @@
 "use client";
 
 import { typeInfo } from "../lib/grid";
-import { busTypes } from "../lib/buses";
+import { useBusMaster } from "./BusMasterProvider";
 
 // Renders a bus's type code(s), each in its colour, joined with a dash:
 // e.g. P  /  HEV  or  COACH / 30'. Standard buses (no types) render nothing.
 export default function TypeCodes({ num, className = "" }) {
+  const { types: busTypes } = useBusMaster();
   const types = busTypes(num);
   if (!types.length) return null;
   return (

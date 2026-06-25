@@ -16,13 +16,14 @@ import {
   cellLocationLabel,
   pinnedFlagText,
 } from "../lib/grid";
-import { busLabel } from "../lib/buses";
+import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
 import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
+import SheetSettings from "./SheetSettings";
 
 const STORAGE_KEY = "lotsheet:current";
 
@@ -58,6 +59,7 @@ function param(name) {
 }
 
 export default function LotSheet() {
+  const { label: busLabel } = useBusMaster();
   const [sheet, setSheet] = useState(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
@@ -489,17 +491,12 @@ export default function LotSheet() {
         <button className="btn" onClick={() => setPrevOpen(true)}>
           Prev Sheets
         </button>
-        <div className="toolbar__font" title="Text size">
-          <button className="btn btn--mini" onClick={() => changeFont(-1)} disabled={fontDelta <= -4} aria-label="Smaller text">
-            A−
-          </button>
-          <span className="toolbar__fontlabel">
-            {fontDelta === 0 ? "Standard" : fontDelta > 0 ? `+${fontDelta}` : `${fontDelta}`}
-          </span>
-          <button className="btn btn--mini" onClick={() => changeFont(1)} disabled={fontDelta >= 4} aria-label="Bigger text">
-            A+
-          </button>
-        </div>
+        <SheetSettings
+          fontPx={12 + fontDelta}
+          minPx={8}
+          maxPx={16}
+          onFontPx={(px) => setFontDelta(Math.max(-4, Math.min(4, px - 12)))}
+        />
         <label className="toolbar__check" title="Include the bus type codes and maintenance flags on the printout">
           <input
             type="checkbox"
@@ -627,12 +624,24 @@ export default function LotSheet() {
         <div className="back-sheet">
           <div className="back__cols">
             {LOTS.map((lot) => (
-              <div className="backlot" key={lot.key}>
-                <button className="backlot__head" onClick={() => setEditingLot(lot.key)}>
+              <div
+                className="backlot"
+                key={lot.key}
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditingLot(lot.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setEditingLot(lot.key);
+                  }
+                }}
+              >
+                <div className="backlot__head">
                   {lot.title}
                   <span className="backlot__count"> ({lotList(lot.key).length})</span>
                   <span className="backlot__edit no-print"> ✎ edit</span>
-                </button>
+                </div>
                 <ol className="backlot__list">
                   {lotList(lot.key).map((bus, i) => {
                     const fdisp = flagsFullDisplay(flagFor(bus));

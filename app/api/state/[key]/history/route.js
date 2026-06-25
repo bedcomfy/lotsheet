@@ -1,0 +1,43 @@
+import { NextResponse } from "next/server";
+import { listHistory, archiveSheet, deleteHistory } from "../../../../lib/store";
+
+export const dynamic = "force-dynamic";
+
+// Prev Sheets archive for the hub sheets (fuel / def / turnover), keyed per sheet.
+const ALLOWED = new Set(["fuel", "def", "turnover"]);
+
+function check(key) {
+  return ALLOWED.has(key);
+}
+
+// List this sheet's archived copies, newest first.
+export async function GET(_req, { params }) {
+  const { key } = params;
+  if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
+  const sheets = await listHistory(key);
+  return NextResponse.json({ sheets });
+}
+
+// Archive a copy of this sheet (capped at 20 newest per sheet).
+export async function POST(req, { params }) {
+  const { key } = params;
+  if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
+  const body = await req.json().catch(() => ({}));
+  if (!body || typeof body.sheet !== "object" || body.sheet === null) {
+    return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
+  }
+  const id = await archiveSheet(key, body.sheet);
+  const sheets = await listHistory(key);
+  return NextResponse.json({ ok: true, id, sheets });
+}
+
+// Delete one archived copy by id (?id=...).
+export async function DELETE(req, { params }) {
+  const { key } = params;
+  if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  await deleteHistory(id);
+  const sheets = await listHistory(key);
+  return NextResponse.json({ ok: true, sheets });
+}

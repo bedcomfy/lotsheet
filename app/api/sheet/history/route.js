@@ -3,20 +3,20 @@ import { listHistory, archiveSheet, deleteHistory } from "../../../lib/store";
 
 export const dynamic = "force-dynamic";
 
-// List the archived (previous/erased) sheets, newest first.
+// List the archived (previous/erased) lot sheets, newest first.
 export async function GET() {
-  const sheets = await listHistory();
+  const sheets = await listHistory("lot");
   return NextResponse.json({ sheets });
 }
 
-// Archive a sheet into the history (capped at 20 newest on the server).
+// Archive a lot sheet into the history (capped at 20 newest on the server).
 export async function POST(req) {
   const body = await req.json().catch(() => ({}));
   if (!body || typeof body.sheet !== "object" || body.sheet === null) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
   }
-  const id = await archiveSheet(body.sheet);
-  const sheets = await listHistory();
+  const id = await archiveSheet("lot", body.sheet);
+  const sheets = await listHistory("lot");
   return NextResponse.json({ ok: true, id, sheets });
 }
 

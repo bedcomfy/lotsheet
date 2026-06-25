@@ -23,6 +23,8 @@ export async function POST(req) {
     body.inspMiles === null || body.inspMiles === undefined || body.inspMiles === ""
       ? null
       : body.inspMiles;
-  await setBusFlags(bus, { flags, note, inspMiles });
+  const holdReason = typeof body.holdReason === "string" ? body.holdReason : "";
+  const retorqueTires = Array.isArray(body.retorqueTires) ? body.retorqueTires : [];
+  await setBusFlags(bus, { flags, note, inspMiles, holdReason, retorqueTires });
   return NextResponse.json({ ok: true });
 }

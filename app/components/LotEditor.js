@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flagsFullDisplay } from "../lib/grid";
-import { sanitizeBus, isKnownBus, busLabel } from "../lib/buses";
+import { sanitizeBus } from "../lib/buses";
+import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
 export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
+  const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
   const ref = useRef(null);

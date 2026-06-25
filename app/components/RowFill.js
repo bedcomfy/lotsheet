@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   SLOTS,
   FRONT_COLUMNS,
@@ -8,7 +8,8 @@ import {
   numberedCellId,
   row11CellId,
 } from "../lib/grid";
-import { isKnownBus, sanitizeBus } from "../lib/buses";
+import { sanitizeBus } from "../lib/buses";
+import { useBusMaster } from "./BusMasterProvider";
 
 // Garage rows are walked two at a time. (0-indexed; ROW 11 stands alone.)
 const PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10]];
@@ -28,6 +29,7 @@ function columnCells(c) {
 }
 
 export default function RowFill({ getNum, saveNum, locate, onClose }) {
+  const { isKnown: isKnownBus } = useBusMaster();
   const [pair, setPair] = useState(0);
   const [swapped, setSwapped] = useState(false);
   const [dup, setDup] = useState(null); // { id, value, where } for a blocked duplicate
@@ -40,9 +42,14 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
   const colB = b != null ? columnCells(b) : null;
   const rows = Math.max(colA.length, colB ? colB.length : 0);
 
+  // If the EVEN-numbered row (display a+1) is on the left, fill bottom-to-top
+  // (start at the bottom and move up); otherwise top-to-bottom (the default).
+  const upward = a % 2 === 1;
+
   // Side-to-side focus order: row A then row B at each position, skipping blocked.
   const order = [];
-  for (let i = 0; i < rows; i++) {
+  for (let k = 0; k < rows; k++) {
+    const i = upward ? rows - 1 - k : k;
     if (colA[i] && !colA[i].blocked) order.push(colA[i].id);
     if (colB && colB[i] && !colB[i].blocked) order.push(colB[i].id);
   }
@@ -50,6 +57,14 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
     const next = order[order.indexOf(id) + 1];
     if (next && inputs.current[next]) inputs.current[next].focus();
   }
+
+  // Start the user at the first box in the fill direction (top, or bottom when
+  // moving up) whenever the pair or swap changes.
+  useEffect(() => {
+    const first = order[0];
+    if (first && inputs.current[first]) inputs.current[first].focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pair, swapped]);
 
   // NOTE: rendered inline (not as a <Box> component) so the inputs keep focus
   // across re-renders instead of remounting on every keystroke.
