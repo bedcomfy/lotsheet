@@ -1895,7 +1895,8 @@ button {
   .fuelt__hdr td {
     padding-bottom: 8px;
   }
-  /* R/H/I + the flag highlight follow the "print with flags" toggle. */
+  /* R/H/I, the highlight, the date, AND the summary page all follow the
+     "print with flags" toggle — gated in CSS so Ctrl+P respects it too. */
   .fuelt__ind {
     display: none;
   }
@@ -1908,8 +1909,19 @@ button {
   .fuel-sheet--flags .fuelt__bus--flagged {
     background: #ffe066;
   }
-  /* The flagged-buses summary prints on its own page. */
+  /* Date value hidden unless printing with flags (blank line stays). */
+  .fuelt__dateval {
+    visibility: hidden;
+  }
+  .fuel-sheet--flags .fuelt__dateval {
+    visibility: visible;
+  }
+  /* The flagged-buses summary prints (its own page) only with flags on. */
   .fuelsum {
+    display: none;
+  }
+  .fuelsum.fuel-sheet--flags {
+    display: flex;
     page-break-before: always;
   }
 }

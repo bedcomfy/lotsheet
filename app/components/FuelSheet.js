@@ -270,10 +270,11 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
 
   // Second sheet: flagged buses split into sections by flag group. Shown on
   // screen when any exist; printed only when "Print with flags" is on.
+  // The summary always renders (so it shows on screen); the date + summary only
+  // PRINT when "Print with flags" is on — gated by CSS so the browser's Ctrl+P
+  // respects it too, not just the PDF render.
   const sections = fuelFlagSections(busFlags);
-  const showSummary = (printMode ? showFlags : true) && sections.length > 0;
-  // The auto date shows on screen always, but prints only with the flags.
-  const showDate = !printMode || showFlags;
+  const showSummary = sections.length > 0;
 
   return (
     <div className="app">
@@ -313,7 +314,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
                     <div className="fuelt__hdrrow">
                       <span className="fuelt__name">{title}</span>
                       <span className="fuelt__field">
-                        DATE: <span className="fuelt__date">{showDate ? printDate() : ""}</span>
+                        DATE: <span className="fuelt__date"><span className="fuelt__dateval">{printDate()}</span></span>
                       </span>
                       <span className="fuelt__field fuelt__ns">N / S</span>
                       <span className="fuelt__field">
@@ -332,7 +333,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
                       <span className="fuelt__name">{title}</span>
                     </td>
                     <td colSpan={6}>
-                      DATE: <span className="fuelt__date">{showDate ? printDate() : ""}</span>
+                      DATE: <span className="fuelt__date"><span className="fuelt__dateval">{printDate()}</span></span>
                     </td>
                   </>
                 )}
@@ -354,7 +355,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
 
       {showSummary && (
         <div className="sheet-scroll fuelsum-scroll" style={{ "--ffz": `${fontPx}px` }}>
-          <div className="sheet fuel-sheet fuelsum">
+          <div className={`sheet fuel-sheet fuelsum ${showFlags ? "fuel-sheet--flags" : ""}`}>
             <div className="fuelsum__head">
               <div className="fuelsum__title">SERVICE LANE</div>
               <div className="fuelsum__date">{printDate()}</div>

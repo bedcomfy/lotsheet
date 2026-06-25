@@ -6,7 +6,9 @@ export function openSheetPdf({ path = "/", maint = false, params = {}, flush } =
   if (typeof window === "undefined") return;
   const qs = new URLSearchParams({ path, maint: maint ? "1" : "0" });
   for (const [k, v] of Object.entries(params)) if (v != null) qs.set(k, String(v));
-  const target = `/api/pdf?${qs.toString()}`;
+  // Absolute URL — the print tab is opened as about:blank, where a relative
+  // "/api/pdf" wouldn't resolve to the site.
+  const target = `${window.location.origin}/api/pdf?${qs.toString()}`;
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
   const w = window.open("", "_blank");
 

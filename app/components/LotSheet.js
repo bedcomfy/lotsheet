@@ -332,7 +332,9 @@ export default function LotSheet() {
   // then loads the rendered PDF. On desktop it wraps the PDF so the browser's
   // print dialog opens automatically; mobile uses its native PDF viewer.
   function openPdf() {
-    const target = `/api/pdf?maint=${showMaint ? 1 : 0}`;
+    // Absolute URL — the print tab opens as about:blank, where a relative
+    // "/api/pdf" wouldn't resolve to the site.
+    const target = `${window.location.origin}/api/pdf?maint=${showMaint ? 1 : 0}`;
     const isMobile =
       typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const w = window.open("", "_blank"); // open synchronously so it isn't blocked
