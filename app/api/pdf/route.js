@@ -101,17 +101,30 @@ async function renderPdf(req, maint, path, fz) {
   const pageUrl =
     `${proto}://${host}${path}?print=1&maint=${maint ? "1" : "0"}` + (fz ? `&fz=${fz}` : "");
 
-  let browser;
-  try {
-    browser = await launchBrowser();
-    const page = await browser.newPage();
-    await page.goto(pageUrl, { waitUntil: "networkidle0", timeout: 45000 });
-    await page.waitForSelector("#print-ready", { timeout: 20000 });
-    const pdf = await page.pdf({ format: "letter", printBackground: true, preferCSSPageSize: true });
-    return Buffer.from(pdf);
-  } finally {
-    if (browser) await browser.close();
+  // On a cold start the chromium binary is still being extracted to /tmp when we
+  // try to spawn it, which fails with "spawn ETXTBSY" (text file busy). Retry a
+  // couple of times with a short backoff so a cold print doesn't just error out.
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let browser;
+    try {
+      browser = await launchBrowser();
+      const page = await browser.newPage();
+      await page.goto(pageUrl, { waitUntil: "networkidle0", timeout: 45000 });
+      await page.waitForSelector("#print-ready", { timeout: 20000 });
+      const pdf = await page.pdf({ format: "letter", printBackground: true, preferCSSPageSize: true });
+      return Buffer.from(pdf);
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err?.message || err);
+      const transient = /ETXTBSY|spawn|Failed to launch|Target closed|Protocol error/i.test(msg);
+      if (!transient || attempt === 2) throw err;
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    } finally {
+      if (browser) await browser.close();
+    }
   }
+  throw lastErr;
 }
 
 export async function GET(req) {
