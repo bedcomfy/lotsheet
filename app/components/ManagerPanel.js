@@ -11,6 +11,7 @@ import {
   entryHasContent,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
+import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
@@ -264,6 +265,7 @@ function BusFlagEditor({ entry, onChange }) {
 }
 
 export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
+  useScrollLock();
   const { numbers, isKnown, label } = useBusMaster();
   const [tab, setTab] = useState("bus");
   const [query, setQuery] = useState("");

@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
+import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
 export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
+  useScrollLock();
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere

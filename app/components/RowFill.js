@@ -9,6 +9,7 @@ import {
   row11CellId,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
+import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 
 // Garage rows are normally walked two at a time. (0-indexed; ROW 11 stands alone.)
@@ -31,6 +32,7 @@ function columnCells(c) {
 }
 
 export default function RowFill({ getNum, saveNum, locate, onClose }) {
+  useScrollLock();
   const { isKnown: isKnownBus } = useBusMaster();
   const [berto, setBerto] = useState(() => {
     if (typeof window === "undefined") return false;

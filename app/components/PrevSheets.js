@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useScrollLock } from "../lib/useScrollLock";
 
 // Count how many buses are recorded on a sheet (grid cells + back-of-sheet lots).
 function busCount(sheet) {
@@ -28,6 +29,7 @@ function savedLabel(iso) {
 }
 
 export default function PrevSheets({ onImport, onClose }) {
+  useScrollLock();
   const [sheets, setSheets] = useState(null); // null = loading
   const [busy, setBusy] = useState(null); // id being acted on
 

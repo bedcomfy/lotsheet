@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BUS_CATEGORIES, BUS_STATUSES } from "../lib/buses";
+import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import CsvEditor from "./CsvEditor";
 import TypeCodes from "./TypeCodes";
@@ -11,6 +12,7 @@ const PASSWORD = "ride";
 // Editing the bus master list is gated by a password (kept simple — it's a
 // deterrent so everyday staff don't change the fleet by accident).
 export default function BusListEditor({ onClose }) {
+  useScrollLock();
   const [unlocked, setUnlocked] = useState(
     () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("pace:buslist") === "1"
   );

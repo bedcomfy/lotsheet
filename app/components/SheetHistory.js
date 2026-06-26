@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useScrollLock } from "../lib/useScrollLock";
 
 function savedLabel(iso) {
   if (!iso) return "";
@@ -19,6 +20,7 @@ function savedLabel(iso) {
 // Generic "Prev Sheets" browser. `apiBase` is the history endpoint
 // (e.g. /api/state/fuel/history); `describe(sheet)` returns { title, meta }.
 export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }) {
+  useScrollLock();
   const [sheets, setSheets] = useState(null); // null = loading
   const [busy, setBusy] = useState(null);
 
