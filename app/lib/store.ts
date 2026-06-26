@@ -8,19 +8,37 @@
 //
 // Dev (no DATABASE_URL): local JSON files under .data/. Production
 // (DATABASE_URL set): Postgres. The API surface is identical either way.
+//
+// STORAGE ISOLATION: production data is kept separate from preview/development so
+// testing can never change the numbers production is using:
+//   - If PREVIEW_DATABASE_URL is set, non-production deployments use that
+//     database entirely.
+//   - Otherwise non-production deployments share the database but write to their
+//     own tables (suffixed by the Vercel environment, e.g. bus_flags_preview).
 
 import { promises as fs } from "fs";
 import path from "path";
 import type { Pool as PgPool } from "pg";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
 
-// Vercel/Neon set one of these depending on the integration used.
+const IS_PROD = process.env.VERCEL_ENV === "production";
+
+// Outside production, prefer a dedicated preview database if one is configured.
 const PG_URL =
+  (!IS_PROD && process.env.PREVIEW_DATABASE_URL) ||
   process.env.DATABASE_URL ||
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_PRISMA_URL ||
   "";
 const usePg = !!PG_URL;
+
+// Even when preview shares the production database, its data lives in separate
+// tables so it can't clobber production. Production keeps the plain table names.
+const ENV = process.env.VERCEL_ENV || "";
+const TBL_SUFFIX = ENV && ENV !== "production" ? "_" + ENV.replace(/[^a-z]/gi, "") : "";
+const T_FLAGS = `bus_flags${TBL_SUFFIX}`;
+const T_STATE = `app_state${TBL_SUFFIX}`;
+const T_HISTORY = `sheet_history${TBL_SUFFIX}`;
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FLAGS_FILE = path.join(DATA_DIR, "flags.json");
@@ -84,21 +102,21 @@ async function pool(): Promise<PgPool> {
       ssl: { rejectUnauthorized: false },
     });
     await _pool.query(
-      `CREATE TABLE IF NOT EXISTS bus_flags (
+      `CREATE TABLE IF NOT EXISTS ${T_FLAGS} (
         bus TEXT PRIMARY KEY,
         flag TEXT,
         note TEXT,
         updated_at TIMESTAMPTZ DEFAULT now()
       )`
     );
-    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS note TEXT`);
-    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS insp_miles INTEGER`);
-    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS hold_reason TEXT`);
-    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS retorque_tires TEXT`);
-    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS insp_option TEXT`);
+    await _pool.query(`ALTER TABLE ${T_FLAGS} ADD COLUMN IF NOT EXISTS note TEXT`);
+    await _pool.query(`ALTER TABLE ${T_FLAGS} ADD COLUMN IF NOT EXISTS insp_miles INTEGER`);
+    await _pool.query(`ALTER TABLE ${T_FLAGS} ADD COLUMN IF NOT EXISTS hold_reason TEXT`);
+    await _pool.query(`ALTER TABLE ${T_FLAGS} ADD COLUMN IF NOT EXISTS retorque_tires TEXT`);
+    await _pool.query(`ALTER TABLE ${T_FLAGS} ADD COLUMN IF NOT EXISTS insp_option TEXT`);
     // Generic key/value store for shared app state (currently the lot sheet).
     await _pool.query(
-      `CREATE TABLE IF NOT EXISTS app_state (
+      `CREATE TABLE IF NOT EXISTS ${T_STATE} (
         key TEXT PRIMARY KEY,
         value JSONB,
         updated_at TIMESTAMPTZ DEFAULT now()
@@ -106,7 +124,7 @@ async function pool(): Promise<PgPool> {
     );
     // Archive of past/erased sheets (Prev Sheets), capped at 20 newest per sheet.
     await _pool.query(
-      `CREATE TABLE IF NOT EXISTS sheet_history (
+      `CREATE TABLE IF NOT EXISTS ${T_HISTORY} (
         id BIGSERIAL PRIMARY KEY,
         data JSONB,
         saved_at TIMESTAMPTZ DEFAULT now()
@@ -114,7 +132,7 @@ async function pool(): Promise<PgPool> {
     );
     // Which sheet each archive row belongs to (lot / fuel / def / …). Existing
     // rows predate this and are the lot sheet.
-    await _pool.query(`ALTER TABLE sheet_history ADD COLUMN IF NOT EXISTS sheet_key TEXT`);
+    await _pool.query(`ALTER TABLE ${T_HISTORY} ADD COLUMN IF NOT EXISTS sheet_key TEXT`);
   }
   return _pool;
 }
@@ -125,7 +143,7 @@ export async function getFlags(): Promise<FlagMap> {
   const out: FlagMap = {};
   if (usePg) {
     const { rows } = await (await pool()).query(
-      "SELECT bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option FROM bus_flags"
+      `SELECT bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option FROM ${T_FLAGS}`
     );
     for (const r of rows) {
       const e = toEntry({
@@ -153,10 +171,10 @@ export async function setBusFlags(bus: string, entry: unknown): Promise<void> {
   if (usePg) {
     const db = await pool();
     if (isEmpty(e)) {
-      await db.query("DELETE FROM bus_flags WHERE bus = $1", [bus]);
+      await db.query(`DELETE FROM ${T_FLAGS} WHERE bus = $1`, [bus]);
     } else {
       await db.query(
-        `INSERT INTO bus_flags (bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option, updated_at)
+        `INSERT INTO ${T_FLAGS} (bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, now())
          ON CONFLICT (bus) DO UPDATE SET flag = $2, note = $3, insp_miles = $4, hold_reason = $5, retorque_tires = $6, insp_option = $7, updated_at = now()`,
         [bus, e.flags.join(","), e.note, e.inspMiles, e.holdReason, (e.retorqueTires || []).join(","), e.inspOption || ""]
@@ -178,7 +196,7 @@ const SHEET_KEY = "current";
 export async function getSheet(): Promise<{ sheet: LotSheet | null; updatedAt: string | null }> {
   if (usePg) {
     const { rows } = await (await pool()).query(
-      "SELECT value, updated_at FROM app_state WHERE key = $1",
+      `SELECT value, updated_at FROM ${T_STATE} WHERE key = $1`,
       [SHEET_KEY]
     );
     if (!rows.length) return { sheet: null, updatedAt: null };
@@ -199,7 +217,7 @@ export async function setSheet(sheet: LotSheet): Promise<string> {
   const updatedAt = new Date().toISOString();
   if (usePg) {
     await (await pool()).query(
-      `INSERT INTO app_state (key, value, updated_at)
+      `INSERT INTO ${T_STATE} (key, value, updated_at)
        VALUES ($1, $2, now())
        ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()
        RETURNING updated_at`,
@@ -207,7 +225,7 @@ export async function setSheet(sheet: LotSheet): Promise<string> {
     );
     // Read back the canonical timestamp so all devices agree.
     const { rows } = await (await pool()).query(
-      "SELECT updated_at FROM app_state WHERE key = $1",
+      `SELECT updated_at FROM ${T_STATE} WHERE key = $1`,
       [SHEET_KEY]
     );
     return rows[0]?.updated_at ? new Date(rows[0].updated_at).toISOString() : updatedAt;
@@ -223,7 +241,7 @@ export async function setSheet(sheet: LotSheet): Promise<string> {
 export async function getState(key: string): Promise<{ value: unknown; updatedAt: string | null }> {
   if (usePg) {
     const { rows } = await (await pool()).query(
-      "SELECT value, updated_at FROM app_state WHERE key = $1",
+      `SELECT value, updated_at FROM ${T_STATE} WHERE key = $1`,
       [key]
     );
     if (!rows.length) return { value: null, updatedAt: null };
@@ -245,13 +263,13 @@ export async function setState(key: string, value: unknown): Promise<string> {
   const updatedAt = new Date().toISOString();
   if (usePg) {
     await (await pool()).query(
-      `INSERT INTO app_state (key, value, updated_at)
+      `INSERT INTO ${T_STATE} (key, value, updated_at)
        VALUES ($1, $2, now())
        ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()`,
       [key, value]
     );
     const { rows } = await (await pool()).query(
-      "SELECT updated_at FROM app_state WHERE key = $1",
+      `SELECT updated_at FROM ${T_STATE} WHERE key = $1`,
       [key]
     );
     return rows[0]?.updated_at ? new Date(rows[0].updated_at).toISOString() : updatedAt;
@@ -297,7 +315,7 @@ async function historyFileWrite(map: HistoryMap): Promise<void> {
 export async function listHistory(key = "lot"): Promise<HistoryEntry[]> {
   if (usePg) {
     const { rows } = await (await pool()).query(
-      `SELECT id, data, saved_at FROM sheet_history
+      `SELECT id, data, saved_at FROM ${T_HISTORY}
        WHERE COALESCE(sheet_key, 'lot') = $1
        ORDER BY saved_at DESC, id DESC LIMIT $2`,
       [key, HISTORY_LIMIT]
@@ -318,12 +336,12 @@ export async function archiveSheet(key: string, sheet: unknown): Promise<string>
   if (usePg) {
     const db = await pool();
     const { rows } = await db.query(
-      "INSERT INTO sheet_history (data, sheet_key) VALUES ($1, $2) RETURNING id",
+      `INSERT INTO ${T_HISTORY} (data, sheet_key) VALUES ($1, $2) RETURNING id`,
       [sheet, key]
     );
     await db.query(
-      `DELETE FROM sheet_history WHERE COALESCE(sheet_key, 'lot') = $1 AND id NOT IN (
-        SELECT id FROM sheet_history WHERE COALESCE(sheet_key, 'lot') = $1
+      `DELETE FROM ${T_HISTORY} WHERE COALESCE(sheet_key, 'lot') = $1 AND id NOT IN (
+        SELECT id FROM ${T_HISTORY} WHERE COALESCE(sheet_key, 'lot') = $1
         ORDER BY saved_at DESC, id DESC LIMIT $2
       )`,
       [key, HISTORY_LIMIT]
@@ -340,7 +358,7 @@ export async function archiveSheet(key: string, sheet: unknown): Promise<string>
 // Delete one archived sheet by id (ids are globally unique).
 export async function deleteHistory(id: string): Promise<void> {
   if (usePg) {
-    await (await pool()).query("DELETE FROM sheet_history WHERE id = $1", [id]);
+    await (await pool()).query(`DELETE FROM ${T_HISTORY} WHERE id = $1`, [id]);
     return;
   }
   const map = await historyFileRead();
@@ -369,7 +387,7 @@ function pdfFile(sheetPath: string | null | undefined, maint: boolean): string {
 export async function getPdfCache(sheetPath: string, maint: boolean): Promise<PdfCache | null> {
   const key = pdfKey(sheetPath, maint);
   if (usePg) {
-    const { rows } = await (await pool()).query("SELECT value FROM app_state WHERE key = $1", [key]);
+    const { rows } = await (await pool()).query(`SELECT value FROM ${T_STATE} WHERE key = $1`, [key]);
     return rows.length ? rows[0].value : null;
   }
   try {
@@ -383,7 +401,7 @@ export async function setPdfCache(sheetPath: string, maint: boolean, signature: 
   const value: PdfCache = { signature, data };
   if (usePg) {
     await (await pool()).query(
-      `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, now())
+      `INSERT INTO ${T_STATE} (key, value, updated_at) VALUES ($1, $2, now())
        ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()`,
       [pdfKey(sheetPath, maint), value]
     );
