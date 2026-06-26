@@ -1,0 +1,104 @@
+"use client";
+
+import { useRef, useState } from "react";
+
+// A text input that suggests from the employee list as you type (matching name
+// OR badge). Tab / Enter / click fills the highlighted name. Free text is always
+// allowed — not everyone (e.g. contractors) is in the list. The dropdown is
+// position:fixed so it isn't clipped by the table cell's overflow:hidden.
+export default function EmployeeInput({
+  value,
+  onChange,
+  employees = [],
+  className = "turnt__in",
+  placeholder,
+  inputMode,
+}) {
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const [rect, setRect] = useState(null);
+  const ref = useRef(null);
+
+  const q = (value || "").trim().toLowerCase();
+  const matches = q
+    ? employees
+        .filter(
+          (e) =>
+            (e.name && e.name.toLowerCase().includes(q)) ||
+            (e.badge && e.badge.toLowerCase().includes(q))
+        )
+        .slice(0, 6)
+    : [];
+
+  function measure() {
+    if (!ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    setRect({ left: r.left, top: r.bottom, width: r.width });
+  }
+  function pick(emp) {
+    onChange(emp.name || emp.badge);
+    setOpen(false);
+  }
+  function onKey(e) {
+    if (!open || matches.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHi((h) => Math.min(matches.length - 1, h + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHi((h) => Math.max(0, h - 1));
+    } else if (e.key === "Tab" || e.key === "Enter") {
+      e.preventDefault();
+      pick(matches[hi] || matches[0]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <>
+      <input
+        ref={ref}
+        className={className}
+        value={value || ""}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        autoComplete="off"
+        onChange={(e) => {
+          onChange(e.target.value);
+          measure();
+          setOpen(true);
+          setHi(0);
+        }}
+        onFocus={() => {
+          measure();
+          setOpen(true);
+          setHi(0);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onKeyDown={onKey}
+      />
+      {open && matches.length > 0 && rect && (
+        <ul
+          className="empac"
+          style={{ position: "fixed", left: rect.left, top: rect.top, minWidth: rect.width }}
+        >
+          {matches.map((e, i) => (
+            <li
+              key={`${e.name}|${e.badge}|${i}`}
+              className={`empac__item ${i === hi ? "is-hi" : ""}`}
+              onMouseDown={(ev) => {
+                ev.preventDefault();
+                pick(e);
+              }}
+              onMouseEnter={() => setHi(i)}
+            >
+              <span className="empac__name">{e.name || "(no name)"}</span>
+              {e.badge && <span className="empac__badge">#{e.badge}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}

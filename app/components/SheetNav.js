@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import BusListEditor from "./BusListEditor";
+import EmployeesEditor from "./EmployeesEditor";
 
 // The sheets available in the hub. Add new ones here.
 export const SHEETS = [
@@ -17,6 +18,7 @@ export default function SheetNav() {
   const pathname = usePathname();
   const current = SHEETS.some((s) => s.path === pathname) ? pathname : "/";
   const [busListOpen, setBusListOpen] = useState(false);
+  const [employeesOpen, setEmployeesOpen] = useState(false);
 
   return (
     <div className="appnav no-print">
@@ -38,7 +40,11 @@ export default function SheetNav() {
       <button className="appnav__btn" onClick={() => setBusListOpen(true)}>
         Bus Lists
       </button>
+      <button className="appnav__btn" onClick={() => setEmployeesOpen(true)}>
+        Employees
+      </button>
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}
+      {employeesOpen && <EmployeesEditor onClose={() => setEmployeesOpen(false)} />}
     </div>
   );
 }
