@@ -2,14 +2,21 @@
 
 import { useEffect } from "react";
 
-// Freeze the page behind a full-screen overlay / modal while it's open. This
-// (a) stops the sheet behind from scrolling and bleeding through on iOS, and
-// (b) makes focusing an input scroll the overlay's own scroll area instead of
-// yanking the whole document to the focused box. The exact scroll position is
-// restored when the overlay closes.
+// Used by every full-screen overlay / modal. Two jobs:
+//
+// 1. Freeze the page behind it (position:fixed + saved scrollY) so the sheet
+//    can't scroll under the overlay and bleed through on iOS, and so focusing
+//    an input scrolls the overlay's own area, not the whole document.
+//
+// 2. Track the *visual* viewport and publish it as --vvh / --vvtop CSS vars.
+//    On iOS a position:fixed element stays the full layout height even when the
+//    keyboard is open, so a bottom-anchored sheet ends up hidden behind the
+//    keyboard. Sizing overlays to the visual viewport keeps them in the area
+//    that's actually visible above the keyboard.
 export function useScrollLock() {
   useEffect(() => {
     const { body } = document;
+    const root = document.documentElement;
     const scrollY = window.scrollY;
     const prev = {
       position: body.style.position,
@@ -25,6 +32,19 @@ export function useScrollLock() {
     body.style.right = "0";
     body.style.width = "100%";
     body.style.overflow = "hidden";
+
+    const vv = window.visualViewport;
+    const applyVV = () => {
+      if (!vv) return;
+      root.style.setProperty("--vvh", `${vv.height}px`);
+      root.style.setProperty("--vvtop", `${vv.offsetTop}px`);
+    };
+    applyVV();
+    if (vv) {
+      vv.addEventListener("resize", applyVV);
+      vv.addEventListener("scroll", applyVV);
+    }
+
     return () => {
       body.style.position = prev.position;
       body.style.top = prev.top;
@@ -33,6 +53,12 @@ export function useScrollLock() {
       body.style.width = prev.width;
       body.style.overflow = prev.overflow;
       window.scrollTo(0, scrollY);
+      if (vv) {
+        vv.removeEventListener("resize", applyVV);
+        vv.removeEventListener("scroll", applyVV);
+      }
+      root.style.removeProperty("--vvh");
+      root.style.removeProperty("--vvtop");
     };
   }, []);
 }

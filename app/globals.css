@@ -689,7 +689,12 @@ button {
 /* ---------- Modal editor (screen only) ---------- */
 .modal-backdrop {
   position: fixed;
-  inset: 0;
+  top: var(--vvtop, 0px);
+  left: 0;
+  right: 0;
+  /* Size to the visible area (above the keyboard) so the bottom sheet isn't
+     hidden behind it on iOS. Falls back to the full viewport. */
+  height: var(--vvh, 100dvh);
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: flex-end;
@@ -704,6 +709,9 @@ button {
   border-radius: 16px 16px 0 0;
   padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
+  /* Never taller than the visible area above the keyboard; scroll if needed. */
+  max-height: var(--vvh, 100dvh);
+  overflow-y: auto;
 }
 @media (min-width: 540px) {
   .modal-backdrop {
@@ -824,7 +832,11 @@ button {
 /* ---------- Manager panel ---------- */
 .manager {
   position: fixed;
-  inset: 0;
+  top: var(--vvtop, 0px);
+  left: 0;
+  right: 0;
+  /* Size to the visible area above the keyboard (see .modal-backdrop). */
+  height: var(--vvh, 100dvh);
   z-index: 60;
   background: #fff;
   display: flex;
@@ -1353,7 +1365,8 @@ button {
 .modal--tall {
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  /* Cap at 85% of the screen, but never exceed the area above the keyboard. */
+  max-height: min(85vh, var(--vvh, 100dvh));
 }
 .lotadd {
   display: flex;
