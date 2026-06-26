@@ -2192,12 +2192,17 @@ td.turnt__head {
   .turnt__reasonhint {
     display: none;
   }
-  /* "Print with flags" off → completely blank form: hide all filled-in values
-     (buses, flags, inputs, shift) but keep the grid, labels, and bay numbers. */
+  /* "Print with flags" off → blank form: hide the filled-in values (buses,
+     flags, lot/lane/calloff/bay inputs, shift) but keep the grid, labels, bay
+     numbers, AND the FOREMAN/SR + DATE write-lines (just emptied). */
   .turn-sheet--blank .turnt__in,
   .turn-sheet--blank .turnt__veh,
   .turn-sheet--blank .turnt__reason {
     visibility: hidden;
+  }
+  .turn-sheet--blank .turnt__band .turnt__in {
+    visibility: visible;
+    color: transparent; /* keep the underline write-line, blank the value */
   }
   .turn-sheet--blank .turnt__shiftopt.is-on {
     outline: none;
