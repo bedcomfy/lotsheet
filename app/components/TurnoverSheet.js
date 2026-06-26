@@ -486,8 +486,8 @@ export default function TurnoverSheet() {
                 </td>
               </tr>
               {rows}
-              {/* Bay table */}
-              <tr className="turnt__head">
+              {/* Bay table (header underlined but NOT shaded) */}
+              <tr className="turnt__head turnt__head--plain">
                 <td />
                 <td>BAY</td>
                 <td colSpan={3}>1ST HALF</td>

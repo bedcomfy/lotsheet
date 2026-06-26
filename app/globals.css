@@ -2063,6 +2063,10 @@ td.turnt__head {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
+/* The Bay header keeps the underline but no shading. */
+.turnt__head--plain td {
+  background: #fff;
+}
 .turnt__head--btn,
 .turnt__reason--btn,
 .turnt__veh--btn {
