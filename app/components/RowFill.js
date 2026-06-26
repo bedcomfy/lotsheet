@@ -11,8 +11,10 @@ import {
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 
-// Garage rows are walked two at a time. (0-indexed; ROW 11 stands alone.)
+// Garage rows are normally walked two at a time. (0-indexed; ROW 11 stands alone.)
 const PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10]];
+// "Berto" grouping: 1·2, then 3·4·5·6 together, then 7·8, 9·10, 11.
+const BERTO_GROUPS = [[0, 1], [2, 3, 4, 5], [6, 7], [8, 9], [10]];
 
 // Top-to-bottom positions in one garage row column: the outside (front) bus
 // for ROW 1–6, then each slot going back.
@@ -30,41 +32,56 @@ function columnCells(c) {
 
 export default function RowFill({ getNum, saveNum, locate, onClose }) {
   const { isKnown: isKnownBus } = useBusMaster();
-  const [pair, setPair] = useState(0);
+  const [berto, setBerto] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem("pace:rowfill:berto") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [step, setStep] = useState(0);
   const [swapped, setSwapped] = useState(false);
   const [dup, setDup] = useState(null); // { id, value, where } for a blocked duplicate
   const inputs = useRef({});
 
-  let [a, b] = PAIRS[pair];
-  if (swapped && b != null) [a, b] = [b, a];
+  const groups = berto ? BERTO_GROUPS : PAIRS;
+  // The rows shown on this screen, left → right (swap reverses the order).
+  let cols = [...groups[step]];
+  if (swapped && cols.length > 1) cols.reverse();
 
-  const colA = columnCells(a);
-  const colB = b != null ? columnCells(b) : null;
-  const rows = Math.max(colA.length, colB ? colB.length : 0);
+  const colCells = cols.map(columnCells);
+  const rows = colCells.reduce((m, cc) => Math.max(m, cc.length), 0);
 
-  // If the EVEN-numbered row (display a+1) is on the left, fill bottom-to-top
-  // (start at the bottom and move up); otherwise top-to-bottom (the default).
-  const upward = a % 2 === 1;
+  // Fill direction follows the LEFTMOST row: an even-index row (ROW 1, 3, …) on
+  // the left means "start at the back" → fill bottom-to-top; otherwise top-down.
+  const upward = cols[0] % 2 === 0;
 
-  // Side-to-side focus order: row A then row B at each position, skipping blocked.
+  // Focus order: across all columns at each row position, skipping blocked cells.
   const order = [];
   for (let k = 0; k < rows; k++) {
     const i = upward ? rows - 1 - k : k;
-    if (colA[i] && !colA[i].blocked) order.push(colA[i].id);
-    if (colB && colB[i] && !colB[i].blocked) order.push(colB[i].id);
+    for (const cc of colCells) {
+      if (cc[i] && !cc[i].blocked) order.push(cc[i].id);
+    }
   }
   function focusNext(id) {
     const next = order[order.indexOf(id) + 1];
     if (next && inputs.current[next]) inputs.current[next].focus();
   }
 
-  // Start the user at the first box in the fill direction (top, or bottom when
-  // moving up) whenever the pair or swap changes.
+  // Start at the first box in the fill direction whenever the screen changes.
   useEffect(() => {
     const first = order[0];
     if (first && inputs.current[first]) inputs.current[first].focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pair, swapped]);
+  }, [step, swapped, berto]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pace:rowfill:berto", berto ? "1" : "0");
+    } catch {}
+  }, [berto]);
 
   // NOTE: rendered inline (not as a <Box> component) so the inputs keep focus
   // across re-renders instead of remounting on every keystroke.
@@ -118,11 +135,20 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
     );
   }
 
-  const titleA = `ROW ${a + 1}`;
-  const titleB = b != null ? `ROW ${b + 1}` : null;
+  const rowNums = cols.map((c) => c + 1);
+  const which =
+    rowNums.length === 1
+      ? `ROW ${rowNums[0]}`
+      : `ROW ${rowNums.slice(0, -1).join(", ")} & ${rowNums[rowNums.length - 1]}`;
 
   function go(delta) {
-    setPair((p) => Math.max(0, Math.min(PAIRS.length - 1, p + delta)));
+    setStep((p) => Math.max(0, Math.min(groups.length - 1, p + delta)));
+    setSwapped(false);
+  }
+
+  function toggleBerto() {
+    setBerto((v) => !v);
+    setStep(0);
     setSwapped(false);
   }
 
@@ -131,6 +157,10 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
       <div className="manager__inner">
         <div className="manager__bar">
           <div className="manager__title">Fill Rows</div>
+          <label className="toolbar__check">
+            <input type="checkbox" checked={berto} onChange={toggleBerto} />
+            Berto
+          </label>
           <div className="toolbar__spacer" />
           <button className="btn" onClick={onClose}>
             Done
@@ -138,19 +168,20 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
         </div>
 
         <div className="rf__nav">
-          <button className="btn" onClick={() => go(-1)} disabled={pair === 0}>
+          <button className="btn" onClick={() => go(-1)} disabled={step === 0}>
             ‹ Prev
           </button>
-          <div className="rf__which">
-            {titleA}
-            {titleB ? ` & ${titleB}` : ""}
-          </div>
-          {titleB && (
+          <div className="rf__which">{which}</div>
+          {cols.length > 1 && (
             <button className="btn btn--mini" onClick={() => setSwapped((s) => !s)}>
               ⇄ Swap
             </button>
           )}
-          <button className="btn" onClick={() => go(1)} disabled={pair === PAIRS.length - 1}>
+          <button
+            className="btn"
+            onClick={() => go(1)}
+            disabled={step === groups.length - 1}
+          >
             Next ›
           </button>
         </div>
@@ -160,15 +191,19 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
         </div>
 
         <div
-          className="rf__grid"
-          style={{ gridTemplateColumns: colB ? "1fr 1fr" : "1fr" }}
+          className={`rf__grid ${cols.length > 2 ? "rf__grid--multi" : ""}`}
+          style={{ gridTemplateColumns: cols.map(() => "1fr").join(" ") }}
         >
-          <div className="rf__colhead">{titleA}</div>
-          {titleB && <div className="rf__colhead">{titleB}</div>}
+          {cols.map((c) => (
+            <div className="rf__colhead" key={`h${c}`}>
+              ROW {c + 1}
+            </div>
+          ))}
           {Array.from({ length: rows }).map((_, i) => (
             <Fragment key={i}>
-              {renderBox(colA[i])}
-              {colB && renderBox(colB[i])}
+              {colCells.map((cc, ci) => (
+                <Fragment key={ci}>{renderBox(cc[i])}</Fragment>
+              ))}
             </Fragment>
           ))}
         </div>

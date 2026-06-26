@@ -1157,6 +1157,25 @@ button {
   border-radius: 10px;
   padding: 4px 8px;
   min-height: 52px;
+  /* Let the 1fr grid columns shrink so 4-wide (Berto 3·4·5·6) fits the screen
+     instead of overflowing. */
+  min-width: 0;
+}
+/* Compact spacing when 3+ rows share the screen (Berto's 3·4·5·6). */
+.rf__grid--multi {
+  gap: 5px;
+}
+.rf__grid--multi .rf__box {
+  gap: 4px;
+  padding: 4px 5px;
+}
+.rf__grid--multi .rf__label {
+  min-width: 18px;
+  font-size: 11px;
+}
+.rf__grid--multi .rf__input {
+  font-size: 18px;
+  letter-spacing: 0;
 }
 .rf__box--blocked {
   justify-content: center;
