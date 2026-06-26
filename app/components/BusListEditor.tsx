@@ -6,12 +6,17 @@ import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import CsvEditor from "./CsvEditor";
 import TypeCodes from "./TypeCodes";
+import type { MasterBus } from "../lib/types";
 
 const PASSWORD = "ride";
 
+interface BusListEditorProps {
+  onClose: () => void;
+}
+
 // Editing the bus master list is gated by a password (kept simple — it's a
 // deterrent so everyday staff don't change the fleet by accident).
-export default function BusListEditor({ onClose }) {
+export default function BusListEditor({ onClose }: BusListEditorProps) {
   useScrollLock();
   const [unlocked, setUnlocked] = useState(
     () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("pace:buslist") === "1"
@@ -69,15 +74,18 @@ export default function BusListEditor({ onClose }) {
   return <Editor onClose={onClose} />;
 }
 
-function Editor({ onClose }) {
+function Editor({ onClose }: BusListEditorProps) {
   const { master, setMaster } = useBusMaster();
-  const [buses, setBuses] = useState(() => master.buses.map((b) => ({ ...b })));
+  const [buses, setBuses] = useState<MasterBus[]>(() => master.buses.map((b) => ({ ...b })));
   const [filter, setFilter] = useState("");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
 
-  const catLabel = useMemo(() => Object.fromEntries(BUS_CATEGORIES.map((c) => [c.id, c.label])), []);
+  const catLabel = useMemo(
+    () => Object.fromEntries(BUS_CATEGORIES.map((c) => [c.id, c.label] as [string, string])),
+    []
+  );
 
   const shown = useMemo(() => {
     const f = filter.trim().toUpperCase();
@@ -87,7 +95,7 @@ function Editor({ onClose }) {
     );
   }, [buses, filter]);
 
-  function update(num, patch) {
+  function update(num: string, patch: Partial<MasterBus>) {
     setBuses((list) => list.map((b) => (b.num === num ? { ...b, ...patch } : b)));
     setDirty(true);
   }

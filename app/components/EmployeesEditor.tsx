@@ -2,13 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useScrollLock } from "../lib/useScrollLock";
+import type { Employee } from "../lib/types";
+
+interface EmployeesEditorProps {
+  onClose: () => void;
+}
 
 // Manage the shared employee list (name + badge) used for Turnover autofill.
 // Simple add/remove rows; everyday staff can keep it current. Free text is still
 // allowed on the sheets, so this only needs the people you want suggested.
-export default function EmployeesEditor({ onClose }) {
+export default function EmployeesEditor({ onClose }: EmployeesEditorProps) {
   useScrollLock();
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState<Employee[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
@@ -21,10 +26,10 @@ export default function EmployeesEditor({ onClose }) {
       .finally(() => setLoaded(true));
   }, []);
 
-  function setRow(i, key, val) {
+  function setRow(i: number, key: keyof Employee, val: string) {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: val } : r)));
   }
-  function removeRow(i) {
+  function removeRow(i: number) {
     setRows((rs) => rs.filter((_, j) => j !== i));
   }
   function addRow() {

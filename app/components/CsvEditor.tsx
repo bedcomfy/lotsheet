@@ -4,16 +4,21 @@ import { useMemo, useState } from "react";
 import { masterToCsv, csvToMaster } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 
+interface CsvEditorProps {
+  onClose: () => void;
+  onSaved?: () => void;
+}
+
 // Bulk editor for the whole fleet as CSV text — for the rare big changes (new
 // models, type/length corrections, many buses at once). The simple Bus Lists
 // menu covers day-to-day (active/retired, fuel/def).
-export default function CsvEditor({ onClose, onSaved }) {
+export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
   const { master, setMaster } = useBusMaster();
   const [text, setText] = useState(() => masterToCsv(master.buses));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  const preview = useMemo(() => {
+  const preview = useMemo<number | null>(() => {
     try {
       return csvToMaster(text).buses.length;
     } catch {
@@ -28,7 +33,7 @@ export default function CsvEditor({ onClose, onSaved }) {
       return;
     }
     // Preserve named vehicles (e.g. JUDI) — the CSV has no name column.
-    const nameByNum = {};
+    const nameByNum: Record<string, string> = {};
     for (const b of master.buses) if (b.name) nameByNum[b.num] = b.name;
     const buses = parsed.buses.map((b) => (nameByNum[b.num] ? { ...b, name: nameByNum[b.num] } : b));
 
