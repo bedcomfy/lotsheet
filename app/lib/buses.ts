@@ -6,10 +6,17 @@
 //   lane  = included on the Fuel / DEF (service lane) sheets
 
 import { FUEL_COLUMNS } from "./fuelBuses";
+import type { MasterBus, BusMaster } from "./types";
+
+export interface BusCategory {
+  id: string;
+  label: string;
+  codes: string[];
+}
 
 // Selectable bus types (categories) and the lot-sheet code(s) each maps to.
 // A bus's type is editable — the model just suggests it.
-export const BUS_CATEGORIES = [
+export const BUS_CATEGORIES: BusCategory[] = [
   { id: "standard", label: "Standard", codes: [] },
   { id: "short", label: "Short Bus", codes: ["short"] },
   { id: "coach", label: "Coach / Single Door", codes: ["coach"] },
@@ -17,7 +24,8 @@ export const BUS_CATEGORIES = [
   { id: "pulsehybrid", label: "Pulse & Hybrid", codes: ["pulse", "hybrid"] },
   { id: "tow", label: "Tow Truck", codes: ["tow"] },
 ];
-const CATEGORY_CODES = Object.fromEntries(BUS_CATEGORIES.map((c) => [c.id, c.codes]));
+const CATEGORY_CODES: Record<string, string[]> = {};
+for (const c of BUS_CATEGORIES) CATEGORY_CODES[c.id] = c.codes;
 
 export const BUS_LENGTHS = ["30 feet", "40 feet"];
 export const BUS_STATUSES = [
@@ -26,10 +34,16 @@ export const BUS_STATUSES = [
 ];
 
 // ---- seed data (the current fleet) ----
-function mk(nums, attrs) {
+interface SeedAttrs {
+  model: string;
+  type: string;
+  length: string;
+  status?: string;
+}
+function mk(nums: number[], attrs: SeedAttrs): MasterBus[] {
   return nums.map((n) => ({ num: String(n), status: "active", ...attrs }));
 }
-const SEED = [
+const SEED: MasterBus[] = [
   // 2010 ENC EZ-Rider II — Short Bus, 30 feet
   ...mk([2770, 2771, 2772, 2774, 2775, 2776, 2779, 2801], { model: "2010 ENC EZ-Rider II", type: "short", length: "30 feet" }),
   ...mk([2769, 2777, 2781, 2782, 2783, 2784, 2797], { model: "2010 ENC EZ-Rider II", type: "short", length: "30 feet", status: "retired" }),
@@ -66,18 +80,18 @@ const SEED = [
 const FUEL_SET = new Set(FUEL_COLUMNS.flat().map(String));
 for (const b of SEED) b.lane = b.status === "active" && FUEL_SET.has(b.num);
 
-export const DEFAULT_MASTER = { buses: SEED };
+export const DEFAULT_MASTER: BusMaster = { buses: SEED };
 
 // The distinct model names currently in use (for the editor's Model dropdown).
 export const KNOWN_MODELS = [...new Set(SEED.map((b) => b.model).filter(Boolean))];
 
 // Build the lookup helpers for a given master list.
-export function busHelpers(master) {
+export function busHelpers(master?: BusMaster | null) {
   const buses = master && Array.isArray(master.buses) ? master.buses : DEFAULT_MASTER.buses;
   const numbers = buses.map((b) => b.num);
   const set = new Set(numbers);
-  const byNum = {};
-  const names = {};
+  const byNum: Record<string, MasterBus> = {};
+  const names: Record<string, string> = {};
   for (const b of buses) {
     byNum[b.num] = b;
     if (b.name) names[b.num] = b.name;
@@ -86,10 +100,10 @@ export function busHelpers(master) {
     buses,
     numbers,
     set,
-    isKnown: (num) => set.has(num),
-    types: (num) => CATEGORY_CODES[byNum[num]?.type] || [],
-    label: (num) => names[num] || num,
-    bus: (num) => byNum[num] || null,
+    isKnown: (num: string) => set.has(num),
+    types: (num: string) => CATEGORY_CODES[byNum[num]?.type ?? ""] || [],
+    label: (num: string) => names[num] || num,
+    bus: (num: string) => byNum[num] || null,
     names,
     // Buses on the Fuel/DEF service lane (active + lane flag).
     laneBuses: () => buses.filter((b) => b.lane && b.status !== "retired").map((b) => b.num),
@@ -102,20 +116,20 @@ const DEFAULT = busHelpers(DEFAULT_MASTER);
 export const BUS_NUMBERS = DEFAULT.numbers;
 export const BUS_SET = DEFAULT.set;
 export const VEHICLE_LABELS = DEFAULT.names;
-export function isKnownBus(num) {
+export function isKnownBus(num: string): boolean {
   return DEFAULT.isKnown(num);
 }
-export function busLabel(num) {
+export function busLabel(num: string): string {
   return DEFAULT.label(num);
 }
-export function busTypes(num) {
+export function busTypes(num: string): string[] {
   return DEFAULT.types(num);
 }
 
 // What may be typed into a bus box. Digits only (keeps the mobile number pad).
 // Standard buses start with 2 or 6; named vehicles (Judi = 9690) match by prefix.
 const SPECIAL_VEHICLE_NUMBERS = Object.keys(DEFAULT.names);
-export function sanitizeBus(raw) {
+export function sanitizeBus(raw: unknown): string {
   const d = String(raw).replace(/\D/g, "").slice(0, 5);
   if (!d) return "";
   if (d[0] === "2" || d[0] === "6") return d;
@@ -124,12 +138,12 @@ export function sanitizeBus(raw) {
 }
 
 // ---- CSV import/export (for the bulk "Edit CSV" editor) ----
-function csvCell(s) {
-  s = String(s == null ? "" : s);
+function csvCell(v: unknown): string {
+  const s = String(v == null ? "" : v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-function parseCsvLine(line) {
-  const out = [];
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
   let cur = "";
   let q = false;
   for (let i = 0; i < line.length; i++) {
@@ -152,8 +166,9 @@ function parseCsvLine(line) {
 }
 
 // Master list -> CSV text (the columns from the fleet spreadsheet + Fuel/DEF).
-export function masterToCsv(buses) {
-  const catLabel = Object.fromEntries(BUS_CATEGORIES.map((c) => [c.id, c.label]));
+export function masterToCsv(buses: MasterBus[]): string {
+  const catLabel: Record<string, string> = {};
+  for (const c of BUS_CATEGORIES) catLabel[c.id] = c.label;
   const head = ["Bus Number", "Bus Length", "Bus Model", "Bus Type", "Status", "Fuel/DEF"];
   const rows = (buses || []).map((b) =>
     [b.num, b.length || "", b.model || "", catLabel[b.type] || "Standard", b.status === "retired" ? "Retired" : "Active", b.lane ? "Yes" : "No"]
@@ -165,21 +180,21 @@ export function masterToCsv(buses) {
 
 // CSV text -> master list. Columns are matched by header name, so order/extra
 // columns don't matter. Unknown bus types fall back to Standard.
-export function csvToMaster(text) {
+export function csvToMaster(text: string): BusMaster {
   const lines = String(text || "").split(/\r?\n/).filter((l) => l.trim().length);
   if (lines.length < 2) return { buses: [] };
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
-  const col = (...names) => header.findIndex((h) => names.some((n) => h.includes(n)));
+  const col = (...names: string[]) => header.findIndex((h) => names.some((n) => h.includes(n)));
   const iNum = col("number") >= 0 ? col("number") : 0;
   const iLen = col("length");
   const iModel = col("model");
   const iType = col("type");
   const iStatus = col("status");
   const iLane = col("fuel", "lane", "def");
-  const labelToCat = {};
+  const labelToCat: Record<string, string> = {};
   BUS_CATEGORIES.forEach((c) => (labelToCat[c.label.toLowerCase()] = c.id));
-  const seen = new Set();
-  const buses = [];
+  const seen = new Set<string>();
+  const buses: MasterBus[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
     const num = sanitizeBus(cells[iNum] || "");

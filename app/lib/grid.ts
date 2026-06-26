@@ -7,7 +7,10 @@
 //
 // Reading ACROSS each band matches the paper: 1..10, 11..20, ... and the
 // blocked "X" sits where slot 40 would have been in ROW 10.
-export const SLOTS = [
+
+import type { FlagEntry, FlagMap } from "./types";
+
+export const SLOTS: (number | string | null)[][] = [
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null],
   [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, null],
   [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, null],
@@ -30,19 +33,19 @@ export const FRONT_COLUMNS = 6;
 export const EAST_LOT_CELLS = 11;
 
 // Stable id for a writable cell, used as the key in the saved data object.
-export function numberedCellId(slot) {
+export function numberedCellId(slot: number): string {
   return `s${slot}`;
 }
-export function frontCellId(col) {
+export function frontCellId(col: number): string {
   return `f${col}`; // col is 0-based: ROW 1 -> f0 ... ROW 6 -> f5
 }
-export function row11CellId(band) {
+export function row11CellId(band: number): string {
   return `r11_${band}`; // band 0..9
 }
 
 // Which grid column (0-based) each numbered slot sits in. Built from SLOTS so it
 // stays correct even where the numbering jumps around the blocked "X" slot.
-const SLOT_COL = {};
+const SLOT_COL: Record<number, number> = {};
 SLOTS.forEach((band) => {
   band.forEach((slot, c) => {
     if (typeof slot === "number") SLOT_COL[slot] = c;
@@ -51,7 +54,7 @@ SLOTS.forEach((band) => {
 
 // Human-readable spot for a cell id, e.g. "Row 5 · #85", "Row 3 front",
 // "Row 11". Empty string for an unknown id. Columns are labelled ROW 1..11.
-export function cellLocationLabel(id) {
+export function cellLocationLabel(id: string): string {
   if (!id) return "";
   if (id.startsWith("r11_")) return "Row 11";
   if (id[0] === "s") {
@@ -66,10 +69,17 @@ export function cellLocationLabel(id) {
   return "";
 }
 
+export interface BusType {
+  id: string;
+  label: string;
+  code: string;
+  color: string;
+}
+
 // Bus TYPES — permanent roster properties. A bus can have MORE THAN ONE type
 // (e.g. 25545 is both Pulse and Hybrid). Shown as letter code(s) in the cell
 // corner. Regular buses have no type. Pulse is purple (the buses are purple).
-export const BUS_TYPES = [
+export const BUS_TYPES: BusType[] = [
   { id: "pulse", label: "Pulse", code: "P", color: "#7c3aed" },
   { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d" },
   { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309" },
@@ -77,13 +87,18 @@ export const BUS_TYPES = [
   { id: "tow", label: "Tow Truck", code: "TOW", color: "#b91c1c" },
 ];
 
-export function typeInfo(id) {
+export function typeInfo(id: string): BusType | null {
   return BUS_TYPES.find((t) => t.id === id) || null;
+}
+
+export interface FlagDef {
+  id: string;
+  label: string;
 }
 
 // Manager-set operational FLAGS. Each is separate; the full name is shown so
 // there's no confusion.
-export const FLAGS = [
+export const FLAGS: FlagDef[] = [
   { id: "none", label: "—" },
   { id: "legal", label: "LEGAL" },
   { id: "safety", label: "SAFETY" },
@@ -106,25 +121,31 @@ export const FLAGS = [
 // allows anything else. (Movement used to be its own flag — a movement bus is
 // always a hold, so it's now a hold reason.)
 export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
-export function flagLabel(id) {
+export function flagLabel(id: string | null | undefined): string {
   const f = FLAGS.find((x) => x.id === id);
   return f ? f.label : "";
 }
 
 // Friendly names for the flag editor (the printed code stays = flagLabel).
-const FLAG_NAMES = {
+const FLAG_NAMES: Record<string, string> = {
   legal: "Legal", safety: "Safety", offprop: "Off property", eng: "Engine",
   trans: "Transmission", oos: "Out of service", inspection: "Inspection",
   retorque: "Retorque", hold: "Hold", split: "Split", service: "Needs service",
   cards: "Cards", braketest: "Brake test", ac: "A/C", cleaning: "Needs cleaning",
 };
-export function flagName(id) {
+export function flagName(id: string): string {
   return FLAG_NAMES[id] || flagLabel(id);
+}
+
+export interface Department {
+  id: string;
+  label: string;
+  flags: string[];
 }
 
 // Flags grouped by department, for the editor. A flag may appear in more than
 // one department (shared); the By bus view shows it once, under the first one.
-export const DEPARTMENTS = [
+export const DEPARTMENTS: Department[] = [
   { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold"] },
   { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "split"] },
   { id: "safety", label: "Safety", flags: ["safety", "legal"] },
@@ -142,7 +163,7 @@ export const RETORQUE_TIRES = [
 // still be selected on its own.
 export const INSPECTION_OPTIONS = ["A-3", "B-6", "A-9", "B-12", "A-15", "B-18", "A-21", "C-24"];
 // Collapse the tire selection to a short label: All / Fronts / Rears, else list.
-export function retorqueTiresDisplay(tires) {
+export function retorqueTiresDisplay(tires: string[] | null | undefined): string {
   const set = new Set((tires || []).filter(Boolean));
   if (set.size === 0) return "";
   if (set.size === 4) return "All";
@@ -181,15 +202,15 @@ export const FLAG_SEVERITY = [
 export const ALWAYS_PRINT_FLAGS = ["hold", "split"];
 
 // The always-print flags a bus carries, spelled out (e.g. "HOLD · SPLIT").
-export function pinnedFlagText(entry) {
+export function pinnedFlagText(entry: FlagEntry | null | undefined): string {
   if (!entry || !entry.flags) return "";
   return ALWAYS_PRINT_FLAGS.filter((id) => entry.flags.includes(id))
     .map(flagLabel)
     .join(" · ");
 }
 
-export function mostSevereFlag(ids) {
-  let best = null;
+export function mostSevereFlag(ids: string[] | null | undefined): string | null {
+  let best: string | null = null;
   let rank = Infinity;
   for (const f of ids || []) {
     const r = FLAG_SEVERITY.indexOf(f);
@@ -204,7 +225,7 @@ export function mostSevereFlag(ids) {
 // A bus entry is { flags: [ids], note: "custom text" }.
 // Shows the most-severe flag + a count of the rest, with a trailing "*" when a
 // custom note exists. e.g. "INSPECTION +2", "NEEDS CLEANING +1*", "OTHER*".
-export function flagDisplay(entry) {
+export function flagDisplay(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
   const flags = entry.flags || [];
   const hasNote = !!(entry.note && entry.note.trim());
@@ -215,29 +236,29 @@ export function flagDisplay(entry) {
   return `${topLabel}${extra > 0 ? ` +${extra}` : ""}${hasNote ? "*" : ""}`;
 }
 
-export function entryHasContent(entry) {
+export function entryHasContent(entry: FlagEntry | null | undefined): boolean {
   return !!(entry && ((entry.flags && entry.flags.length) || (entry.note && entry.note.trim())));
 }
 
 // Whether a bus is flagged for inspection.
-export function hasInspection(entry) {
+export function hasInspection(entry: FlagEntry | null | undefined): boolean {
   return !!(entry && entry.flags && entry.flags.includes("inspection"));
 }
 
 // Inspection mileage readout: "Miles +300" (300 miles to go) or "Miles −100"
 // (100 miles overdue). Empty string when no mileage is set. Only meaningful for
 // buses that carry the inspection flag.
-export function inspMilesDisplay(entry) {
+export function inspMilesDisplay(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
   const m = entry.inspMiles;
-  if (m === null || m === undefined || m === "") return "";
+  if (m === null || m === undefined) return "";
   const n = Number(m);
   if (!Number.isFinite(n)) return "";
   return `Miles ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 }
 
 // All of a bus's flag labels, ordered most → least severe.
-export function flagListLabels(entry) {
+export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
   const flags = (entry?.flags || [])
     .slice()
     .sort((a, b) => FLAG_SEVERITY.indexOf(a) - FLAG_SEVERITY.indexOf(b));
@@ -246,7 +267,7 @@ export function flagListLabels(entry) {
 
 // Every flag spelled out in full, plus the custom "Other" note text (not just a
 // "*"), e.g. "INSPECTION, NEEDS CLEANING, A/C, broken mirror". Empty if none.
-export function flagsAndNote(entry) {
+export function flagsAndNote(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
   const parts = flagListLabels(entry);
   const note = entry.note && entry.note.trim();
@@ -255,27 +276,33 @@ export function flagsAndNote(entry) {
 }
 
 // flagsAndNote plus the inspection mileage, for the lot lists / flag summary.
-export function flagsFullDisplay(entry) {
+export function flagsFullDisplay(entry: FlagEntry | null | undefined): string {
   const base = flagsAndNote(entry);
   const detail = (entry && entry.inspOption ? String(entry.inspOption).trim() : "") || inspMilesDisplay(entry);
   if (base && detail) return `${base} · ${detail}`;
   return base || detail;
 }
 
+export interface FlagGroup {
+  cat: string;
+  label: string;
+  buses: string[];
+}
+
 // Group every flagged bus under its most-severe flag (note-only buses go under
 // "Other"), each group sorted numerically. Returns ordered groups for the
 // back-of-sheet summary: [{ cat, label, buses: [busNumber, ...] }].
-export function groupFlaggedBuses(flagsMap) {
-  const groups = {};
+export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGroup[] {
+  const groups: Record<string, string[]> = {};
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
     const hasFlags = entry && entry.flags && entry.flags.length;
     const hasNote = entry && entry.note && entry.note.trim();
     if (!hasFlags && !hasNote) continue;
-    const cat = hasFlags ? mostSevereFlag(entry.flags) : "other";
+    const cat = (hasFlags ? mostSevereFlag(entry.flags) : "other") || "other";
     (groups[cat] = groups[cat] || []).push(bus);
   }
   const order = [...FLAG_SEVERITY, "other"];
-  const result = [];
+  const result: FlagGroup[] = [];
   for (const cat of order) {
     const buses = groups[cat];
     if (!buses || !buses.length) continue;
@@ -289,14 +316,14 @@ export function groupFlaggedBuses(flagsMap) {
 // The fuel/DEF sheets show ONE letter to the left of the bus number: R / H / I
 // for a single retorque / hold / inspection flag, or "*" when the bus has more
 // than one of those three.
-const FUEL_LETTERS = [
+const FUEL_LETTERS: [string, string][] = [
   ["retorque", "R"],
   ["hold", "H"],
   ["inspection", "I"],
   ["braketest", "B"],
   ["cards", "C"],
 ];
-export function fuelIndicator(entry) {
+export function fuelIndicator(entry: FlagEntry | null | undefined): string {
   if (!entry || !entry.flags) return "";
   const hits = FUEL_LETTERS.filter(([id]) => entry.flags.includes(id));
   if (hits.length === 0) return "";
@@ -306,15 +333,30 @@ export function fuelIndicator(entry) {
   return hits[0][1];
 }
 
+export interface FlagItem {
+  id: string;
+  label: string;
+  detail: string;
+}
+export interface FlagRow {
+  bus: string;
+  items: FlagItem[];
+}
+export interface FuelSection {
+  id: string;
+  label: string;
+  rows: FlagRow[];
+}
+
 // The fuel/DEF second sheet: one row per flagged bus, listing its Retorque /
 // Inspection / Hold flags (only those three) next to the number, each with its
 // detail (inspection miles / hold reason).
 export const FUEL_SUMMARY_FLAGS = ["retorque", "inspection", "hold", "braketest", "cards"];
-export function fuelBusFlagList(flagsMap) {
-  const rows = [];
+export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[] {
+  const rows: FlagRow[] = [];
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
     if (!entry || !entry.flags) continue;
-    const items = [];
+    const items: FlagItem[] = [];
     for (const id of FUEL_SUMMARY_FLAGS) {
       if (!entry.flags.includes(id)) continue;
       let detail = "";
@@ -338,13 +380,13 @@ export const FUEL_SECTIONS = [
   { id: "retorque", label: "Retorques", flags: ["retorque"] },
 ];
 const FUEL_ITEM_ORDER = ["hold", "cards", "braketest", "inspection", "retorque"];
-export function fuelFlagSections(flagsMap) {
-  const out = FUEL_SECTIONS.map((s) => ({ id: s.id, label: s.label, rows: [] }));
+export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSection[] {
+  const out: FuelSection[] = FUEL_SECTIONS.map((s) => ({ id: s.id, label: s.label, rows: [] }));
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
     if (!entry || !entry.flags) continue;
     const idx = FUEL_SECTIONS.findIndex((s) => s.flags.some((f) => entry.flags.includes(f)));
     if (idx === -1) continue;
-    const items = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
+    const items: FlagItem[] = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
       let detail = "";
       if (f === "inspection") detail = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
       else if (f === "hold") detail = (entry.holdReason || "").trim();

@@ -62,7 +62,7 @@ export interface MasterBus {
   model?: string;
   type: string; // category id: standard/short/coach/pulse/pulsehybrid/tow
   status: string; // "active" | "retired"
-  lane: boolean; // included on the Fuel/DEF lane
+  lane?: boolean; // included on the Fuel/DEF lane (set after seed construction)
   name?: string; // named vehicles (e.g. JUDI)
 }
 
