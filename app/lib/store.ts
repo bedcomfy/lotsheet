@@ -11,6 +11,8 @@
 
 import { promises as fs } from "fs";
 import path from "path";
+import type { Pool as PgPool } from "pg";
+import type { FlagEntry, FlagMap, LotSheet } from "./types";
 
 // Vercel/Neon set one of these depending on the integration used.
 const PG_URL =
@@ -27,53 +29,54 @@ const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 const STATES_FILE = path.join(DATA_DIR, "states.json"); // generic keyed sheets (fuel, def, turnover…)
 
 // Normalise a stored miles value to an integer or null.
-function toMiles(v) {
+function toMiles(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
-  const n = parseInt(v, 10);
+  const n = parseInt(String(v), 10);
   return Number.isFinite(n) ? n : null;
 }
 
 // Normalise any stored shape (old string, old array, or new object) to an entry.
-const EMPTY_ENTRY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
-function toEntry(v) {
+const EMPTY_ENTRY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+function toEntry(v: unknown): FlagEntry {
   if (!v) return { ...EMPTY_ENTRY };
   if (Array.isArray(v)) return { ...EMPTY_ENTRY, flags: v.filter(Boolean) };
   if (typeof v === "string") return { ...EMPTY_ENTRY, flags: v.split(",").filter(Boolean) };
-  let flags = Array.isArray(v.flags) ? v.flags.filter(Boolean) : [];
-  const holdReason = flags.includes("hold") && typeof v.holdReason === "string" ? v.holdReason : "";
-  const retorqueTires = flags.includes("retorque") && Array.isArray(v.retorqueTires) ? v.retorqueTires.filter(Boolean) : [];
+  const o = v as Record<string, unknown>;
+  let flags: string[] = Array.isArray(o.flags) ? o.flags.filter(Boolean) : [];
+  const holdReason = flags.includes("hold") && typeof o.holdReason === "string" ? o.holdReason : "";
+  const retorqueTires = flags.includes("retorque") && Array.isArray(o.retorqueTires) ? o.retorqueTires.filter(Boolean) : [];
   // A retorque needs a tire (a hold can stand on its own, reason optional).
   if (flags.includes("retorque") && retorqueTires.length === 0) flags = flags.filter((f) => f !== "retorque");
-  const inspOption = flags.includes("inspection") && typeof v.inspOption === "string" ? v.inspOption.trim() : "";
+  const inspOption = flags.includes("inspection") && typeof o.inspOption === "string" ? o.inspOption.trim() : "";
   return {
     flags,
-    note: typeof v.note === "string" ? v.note : "",
-    inspMiles: toMiles(v.inspMiles),
+    note: typeof o.note === "string" ? o.note : "",
+    inspMiles: toMiles(o.inspMiles),
     holdReason,
     retorqueTires,
     inspOption,
   };
 }
-function isEmpty(e) {
+function isEmpty(e: FlagEntry): boolean {
   return !e.flags.length && !(e.note && e.note.trim());
 }
 
 // ---------- local JSON file backend (dev) ----------
-async function fileRead() {
+async function fileRead(): Promise<Record<string, unknown>> {
   try {
     return JSON.parse(await fs.readFile(FLAGS_FILE, "utf8"));
   } catch {
     return {};
   }
 }
-async function fileWrite(data) {
+async function fileWrite(data: unknown): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(FLAGS_FILE, JSON.stringify(data, null, 2));
 }
 
 // ---------- Postgres backend (prod) ----------
-let _pool;
-async function pool() {
+let _pool: PgPool | undefined;
+async function pool(): Promise<PgPool> {
   if (!_pool) {
     const { Pool } = await import("pg");
     _pool = new Pool({
@@ -118,8 +121,8 @@ async function pool() {
 
 // ---------- public API ----------
 // Returns { [busNumber]: { flags: [...], note } } for buses that have content.
-export async function getFlags() {
-  const out = {};
+export async function getFlags(): Promise<FlagMap> {
+  const out: FlagMap = {};
   if (usePg) {
     const { rows } = await (await pool()).query(
       "SELECT bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option FROM bus_flags"
@@ -145,7 +148,7 @@ export async function getFlags() {
   return out;
 }
 
-export async function setBusFlags(bus, entry) {
+export async function setBusFlags(bus: string, entry: unknown): Promise<void> {
   const e = toEntry(entry);
   if (usePg) {
     const db = await pool();
@@ -172,7 +175,7 @@ export async function setBusFlags(bus, entry) {
 // the saved JSON (or null if none saved yet) and updatedAt is an ISO string.
 const SHEET_KEY = "current";
 
-export async function getSheet() {
+export async function getSheet(): Promise<{ sheet: LotSheet | null; updatedAt: string | null }> {
   if (usePg) {
     const { rows } = await (await pool()).query(
       "SELECT value, updated_at FROM app_state WHERE key = $1",
@@ -192,7 +195,7 @@ export async function getSheet() {
   }
 }
 
-export async function setSheet(sheet) {
+export async function setSheet(sheet: LotSheet): Promise<string> {
   const updatedAt = new Date().toISOString();
   if (usePg) {
     await (await pool()).query(
@@ -217,7 +220,7 @@ export async function setSheet(sheet) {
 // ---------- generic keyed sheet state (fuel, def, turnover…) ----------
 // Same app_state table as the lot sheet, just under different keys, so any new
 // sheet gets shared cross-device storage for free. Returns { value, updatedAt }.
-export async function getState(key) {
+export async function getState(key: string): Promise<{ value: unknown; updatedAt: string | null }> {
   if (usePg) {
     const { rows } = await (await pool()).query(
       "SELECT value, updated_at FROM app_state WHERE key = $1",
@@ -238,7 +241,7 @@ export async function getState(key) {
   }
 }
 
-export async function setState(key, value) {
+export async function setState(key: string, value: unknown): Promise<string> {
   const updatedAt = new Date().toISOString();
   if (usePg) {
     await (await pool()).query(
@@ -253,7 +256,7 @@ export async function setState(key, value) {
     );
     return rows[0]?.updated_at ? new Date(rows[0].updated_at).toISOString() : updatedAt;
   }
-  let all = {};
+  let all: Record<string, { value: unknown; updatedAt: string }> = {};
   try {
     all = JSON.parse(await fs.readFile(STATES_FILE, "utf8"));
   } catch {}
@@ -266,9 +269,16 @@ export async function setState(key, value) {
 // ---------- Prev Sheets (archive of past/erased sheets) ----------
 const HISTORY_LIMIT = 20;
 
+export interface HistoryEntry {
+  id: string;
+  sheet: unknown;
+  savedAt: string | null;
+}
+type HistoryMap = Record<string, HistoryEntry[]>;
+
 // The dev JSON file holds a map { sheetKey: [ {id, sheet, savedAt}, ... ] }.
 // Old installs stored a bare array (lot sheet only) — migrate that to { lot: [] }.
-async function historyFileRead() {
+async function historyFileRead(): Promise<HistoryMap> {
   try {
     const data = JSON.parse(await fs.readFile(HISTORY_FILE, "utf8"));
     if (Array.isArray(data)) return { lot: data };
@@ -277,14 +287,14 @@ async function historyFileRead() {
     return {};
   }
 }
-async function historyFileWrite(map) {
+async function historyFileWrite(map: HistoryMap): Promise<void> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(HISTORY_FILE, JSON.stringify(map, null, 2));
 }
 
 // Newest first: [{ id, sheet, savedAt }]. At most HISTORY_LIMIT entries, scoped
 // to one sheet (lot / fuel / def / …).
-export async function listHistory(key = "lot") {
+export async function listHistory(key = "lot"): Promise<HistoryEntry[]> {
   if (usePg) {
     const { rows } = await (await pool()).query(
       `SELECT id, data, saved_at FROM sheet_history
@@ -303,7 +313,7 @@ export async function listHistory(key = "lot") {
 }
 
 // Archive a sheet under its key, then trim that key to the newest HISTORY_LIMIT.
-export async function archiveSheet(key, sheet) {
+export async function archiveSheet(key: string, sheet: unknown): Promise<string> {
   const savedAt = new Date().toISOString();
   if (usePg) {
     const db = await pool();
@@ -328,7 +338,7 @@ export async function archiveSheet(key, sheet) {
 }
 
 // Delete one archived sheet by id (ids are globally unique).
-export async function deleteHistory(id) {
+export async function deleteHistory(id: string): Promise<void> {
   if (usePg) {
     await (await pool()).query("DELETE FROM sheet_history WHERE id = $1", [id]);
     return;
@@ -344,15 +354,19 @@ export async function deleteHistory(id) {
 // Stores the generated PDF (base64) keyed by sheet path + maintenance variant,
 // with a signature of the data it was built from. One key per sheet/variant, so
 // every sheet (lot, fuel, def, …) gets its own instant-print cache.
-function pdfKey(sheetPath, maint) {
+export interface PdfCache {
+  signature: string;
+  data: string;
+}
+function pdfKey(sheetPath: string | null | undefined, maint: boolean): string {
   const slug = !sheetPath || sheetPath === "/" ? "lot" : sheetPath.replace(/\W+/g, "");
   return `pdf_${slug}_${maint ? 1 : 0}`;
 }
-function pdfFile(sheetPath, maint) {
+function pdfFile(sheetPath: string | null | undefined, maint: boolean): string {
   return path.join(DATA_DIR, `${pdfKey(sheetPath, maint)}.json`);
 }
 
-export async function getPdfCache(sheetPath, maint) {
+export async function getPdfCache(sheetPath: string, maint: boolean): Promise<PdfCache | null> {
   const key = pdfKey(sheetPath, maint);
   if (usePg) {
     const { rows } = await (await pool()).query("SELECT value FROM app_state WHERE key = $1", [key]);
@@ -365,8 +379,8 @@ export async function getPdfCache(sheetPath, maint) {
   }
 }
 
-export async function setPdfCache(sheetPath, maint, signature, data) {
-  const value = { signature, data };
+export async function setPdfCache(sheetPath: string, maint: boolean, signature: string, data: string): Promise<void> {
+  const value: PdfCache = { signature, data };
   if (usePg) {
     await (await pool()).query(
       `INSERT INTO app_state (key, value, updated_at) VALUES ($1, $2, now())
