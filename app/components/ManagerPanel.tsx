@@ -15,17 +15,18 @@ import { sanitizeBus } from "../lib/buses";
 import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
+import type { FlagEntry, FlagMap } from "../lib/types";
 
-const EMPTY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
 const REQUIRE_DETAIL = new Set(["retorque"]); // can't add without picking a detail (hold's reason is optional)
 // A shared flag's "home" department (the first one it's listed in) — used so the
 // By bus view shows each flag once even when it's in two departments.
-const PRIMARY_DEPT = {};
+const PRIMARY_DEPT: Record<string, string> = {};
 DEPARTMENTS.forEach((d) => d.flags.forEach((f) => (f in PRIMARY_DEPT ? null : (PRIMARY_DEPT[f] = d.id))));
 
 // Short text summary of a bus's flags for the list rows.
-function entrySummary(entry) {
+function entrySummary(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
   const parts = (entry.flags || []).map((id) => {
     if (id === "retorque") return `Retorque (${retorqueTiresDisplay(entry.retorqueTires)})`;
@@ -41,11 +42,11 @@ function entrySummary(entry) {
 }
 
 // ---- detail pickers ----
-function MilesInput({ value, onSave }) {
+function MilesInput({ value, onSave }: { value: number | string | null; onSave: (v: number | null) => void }) {
   const has = value !== null && value !== undefined && value !== "";
   const [sign, setSign] = useState(has && Number(value) < 0 ? -1 : 1);
   const [mag, setMag] = useState(has ? String(Math.abs(Number(value))) : "");
-  function commit(ns, nm) {
+  function commit(ns: number, nm: string) {
     const m = String(nm).replace(/\D/g, "");
     onSave(m === "" ? null : ns * parseInt(m, 10));
   }
@@ -78,7 +79,7 @@ function MilesInput({ value, onSave }) {
   );
 }
 
-function NoteInput({ value, onSave }) {
+function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: string) => void }) {
   const [v, setV] = useState(value || "");
   return (
     <input
@@ -92,9 +93,9 @@ function NoteInput({ value, onSave }) {
   );
 }
 
-function TirePicker({ tires, onChange }) {
+function TirePicker({ tires, onChange }: { tires: string[] | undefined; onChange: (tires: string[]) => void }) {
   const set = new Set(tires || []);
-  function toggle(id) {
+  function toggle(id: string) {
     const next = new Set(set);
     next.has(id) ? next.delete(id) : next.add(id);
     onChange(RETORQUE_TIRES.filter((t) => next.has(t.id)).map((t) => t.id));
@@ -129,7 +130,7 @@ function TirePicker({ tires, onChange }) {
   );
 }
 
-function HoldReasonPicker({ reason, onChange }) {
+function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; onChange: (r: string) => void }) {
   const [text, setText] = useState(reason || "");
   return (
     <div className="detailbox detailbox--col">
@@ -162,7 +163,7 @@ function HoldReasonPicker({ reason, onChange }) {
 }
 
 // Optional inspection type — pick one of A-3 … C-24 (or none).
-function InspOptionPicker({ option, onChange }) {
+function InspOptionPicker({ option, onChange }: { option: string | undefined; onChange: (o: string) => void }) {
   return (
     <div className="detailbox detailbox--col">
       <div className="detailbox__label">Inspection (optional)</div>
@@ -183,23 +184,23 @@ function InspOptionPicker({ option, onChange }) {
 }
 
 // ---- the grouped editor for one bus ----
-function BusFlagEditor({ entry, onChange }) {
+function BusFlagEditor({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagEntry) => void }) {
   // openDept: detail-flag id -> the department its picker opens under (present =
   // picker shown). A pre-existing on-flag falls back to its primary department.
-  const [openDept, setOpenDept] = useState({});
-  const isActive = (id) =>
+  const [openDept, setOpenDept] = useState<Record<string, string>>({});
+  const isActive = (id: string) =>
     id === "retorque" ? (entry.retorqueTires || []).length > 0 : entry.flags.includes(id);
-  const pickerShown = (id) => isActive(id) || id in openDept;
-  const pickerDept = (id) => openDept[id] || PRIMARY_DEPT[id];
-  const setOpen = (id, dept) => setOpenDept((m) => ({ ...m, [id]: dept }));
-  const close = (id) =>
+  const pickerShown = (id: string) => isActive(id) || id in openDept;
+  const pickerDept = (id: string) => openDept[id] || PRIMARY_DEPT[id];
+  const setOpen = (id: string, dept: string) => setOpenDept((m) => ({ ...m, [id]: dept }));
+  const close = (id: string, _dept?: string) =>
     setOpenDept((m) => {
       const n = { ...m };
       delete n[id];
       return n;
     });
 
-  function toggle(id, dept) {
+  function toggle(id: string, dept: string) {
     if (id === "retorque") {
       if (isActive("retorque")) {
         onChange({ ...entry, flags: entry.flags.filter((f) => f !== "retorque"), retorqueTires: [] });
@@ -213,13 +214,13 @@ function BusFlagEditor({ entry, onChange }) {
     }
     const on = entry.flags.includes(id);
     const flags = on ? entry.flags.filter((f) => f !== id) : [...entry.flags, id];
-    const patch = { ...entry, flags };
+    const patch: FlagEntry = { ...entry, flags };
     if (id === "inspection" && on) patch.inspOption = "";
     if (id === "hold" && on) patch.holdReason = "";
     onChange(patch);
     if (DETAIL_FLAGS.has(id)) (on ? close : setOpen)(id, dept);
   }
-  function setTires(tires) {
+  function setTires(tires: string[]) {
     const flags = tires.length
       ? entry.flags.includes("retorque")
         ? entry.flags
@@ -228,11 +229,11 @@ function BusFlagEditor({ entry, onChange }) {
     onChange({ ...entry, flags, retorqueTires: tires });
     if (!tires.length) close("retorque");
   }
-  function setReason(reason) {
+  function setReason(reason: string) {
     onChange({ ...entry, holdReason: reason });
   }
 
-  function chipLabel(id) {
+  function chipLabel(id: string) {
     if (id === "retorque" && isActive("retorque")) return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
     if (id === "hold" && isActive("hold") && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
     if (id === "inspection" && isActive("inspection")) {
@@ -286,16 +287,23 @@ function BusFlagEditor({ entry, onChange }) {
   );
 }
 
-export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }) {
+interface ManagerPanelProps {
+  flags: FlagMap;
+  onClose: () => void;
+  onBusFlagsUpdated: (bus: string, entry: FlagEntry) => void;
+  initialBus?: string;
+}
+
+export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }: ManagerPanelProps) {
   useScrollLock();
   const { numbers, isKnown, label } = useBusMaster();
-  const [tab, setTab] = useState("bus");
+  const [tab, setTab] = useState<"bus" | "flag">("bus");
   const [query, setQuery] = useState(initialBus || "");
-  const [openBus, setOpenBus] = useState(initialBus || null);
+  const [openBus, setOpenBus] = useState<string | null>(initialBus || null);
   const [dept, setDept] = useState(DEPARTMENTS[0].id);
   const [pickedFlag, setPickedFlag] = useState(DEPARTMENTS[0].flags[0]);
   const [busInput, setBusInput] = useState("");
-  const [pending, setPending] = useState([]); // by-flag: buses awaiting a tire/reason
+  const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
 
   // Typing a full bus number on the By bus tab opens its flag menu automatically.
   useEffect(() => {
@@ -304,8 +312,8 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
-  const getEntry = (bus) => flags[bus] || { ...EMPTY };
-  function save(bus, entry) {
+  const getEntry = (bus: string): FlagEntry => flags[bus] || { ...EMPTY };
+  function save(bus: string, entry: FlagEntry) {
     fetch("/api/flags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -334,7 +342,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     .filter((b) => (flags[b].flags || []).includes(pickedFlag))
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  function addBusToFlag(busArg) {
+  function addBusToFlag(busArg?: string) {
     const bus = sanitizeBus(busArg != null ? busArg : busInput);
     if (bus.length < 4) return;
     setBusInput("");
@@ -347,16 +355,16 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     const cur = getEntry(bus);
     if (!cur.flags.includes(pickedFlag)) save(bus, { ...cur, flags: [...cur.flags, pickedFlag] });
   }
-  function removeFromFlag(bus) {
+  function removeFromFlag(bus: string) {
     const cur = getEntry(bus);
-    const patch = { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
+    const patch: FlagEntry = { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
     if (pickedFlag === "inspection") patch.inspOption = "";
     if (pickedFlag === "retorque") patch.retorqueTires = [];
     if (pickedFlag === "hold") patch.holdReason = "";
     save(bus, patch);
     setPending((p) => p.filter((b) => b !== bus));
   }
-  function setTiresFor(bus, tires) {
+  function setTiresFor(bus: string, tires: string[]) {
     const cur = getEntry(bus);
     const flags2 = tires.length
       ? cur.flags.includes("retorque")
@@ -366,10 +374,10 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     save(bus, { ...cur, flags: flags2, retorqueTires: tires });
     if (tires.length) setPending((p) => p.filter((b) => b !== bus));
   }
-  function setReasonFor(bus, reason) {
+  function setReasonFor(bus: string, reason: string) {
     save(bus, { ...getEntry(bus), holdReason: reason });
   }
-  const isPending = (bus) => pending.includes(bus) && !flagBuses.includes(bus);
+  const isPending = (bus: string) => pending.includes(bus) && !flagBuses.includes(bus);
   const flagRows = REQUIRE_DETAIL.has(pickedFlag)
     ? [...pending.filter((b) => !flagBuses.includes(b)), ...flagBuses]
     : flagBuses;
