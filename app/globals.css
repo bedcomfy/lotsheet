@@ -709,13 +709,13 @@ button {
   background: rgba(0, 0, 0, 0.45);
   z-index: 50;
 }
-/* Mobile = bottom sheet lifted above the keyboard; desktop = centered. */
+/* Mobile = bottom sheet; desktop = centered. */
 .modal {
   position: fixed;
   z-index: 51;
   left: 0;
   right: 0;
-  bottom: var(--kb, 0px);
+  bottom: 0;
   margin: 0 auto;
   width: 100%;
   max-width: 460px;
@@ -724,8 +724,7 @@ button {
   border-radius: 16px 16px 0 0;
   padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
-  /* Never taller than the visible area above the keyboard; scroll if needed. */
-  max-height: var(--vvh, 100dvh);
+  max-height: 90dvh; /* scroll within the dialog if it's tall */
   overflow-y: auto;
 }
 @media (min-width: 540px) {
@@ -851,10 +850,7 @@ button {
 .manager {
   position: fixed;
   inset: 0;
-  /* Full-screen white cover (no bleed-through); pad the content in to the area
-     visible above the keyboard so the inner scroll area fits there. */
-  padding-top: var(--vvtop, 0px);
-  padding-bottom: var(--kb, 0px);
+  /* Full-screen white cover (no bleed-through). */
   z-index: 60;
   background: #fff;
   display: flex;
@@ -1383,8 +1379,7 @@ button {
 .modal--tall {
   display: flex;
   flex-direction: column;
-  /* Cap at 85% of the screen, but never exceed the area above the keyboard. */
-  max-height: min(85vh, var(--vvh, 100dvh));
+  max-height: 85dvh;
 }
 .lotadd {
   display: flex;

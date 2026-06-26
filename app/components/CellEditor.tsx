@@ -38,7 +38,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
   }
 
   useEffect(() => {
-    inputRef.current?.focus();
+    inputRef.current?.focus({ preventScroll: true });
   }, []);
 
   const known = isKnownBus(num);

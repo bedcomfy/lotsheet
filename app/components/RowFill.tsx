@@ -92,13 +92,13 @@ export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillPro
   }
   function focusNext(id: string) {
     const next = order[order.indexOf(id) + 1];
-    if (next && inputs.current[next]) inputs.current[next].focus();
+    if (next && inputs.current[next]) inputs.current[next].focus({ preventScroll: true });
   }
 
   // Start at the first box in the fill direction whenever the screen changes.
   useEffect(() => {
     const first = order[0];
-    if (first && inputs.current[first]) inputs.current[first].focus();
+    if (first && inputs.current[first]) inputs.current[first].focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, swapped, berto]);
 

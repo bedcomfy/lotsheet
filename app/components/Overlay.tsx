@@ -2,7 +2,6 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
-import { useViewportVars } from "../lib/useViewportVars";
 
 interface OverlayProps {
   onClose: () => void;
@@ -18,14 +17,20 @@ interface OverlayProps {
 
 // Shared overlay built on Radix Dialog: robust, iOS-safe scroll-lock (the page
 // behind can't scroll or bleed through), a focus trap, Escape-to-close, and
-// click-outside-to-close — replacing the hand-rolled modal + useScrollLock.
+// click-outside-to-close.
+//
+// onOpenAutoFocus is prevented so opening a dialog never yanks the page — the
+// editors that want an input focused do it themselves with { preventScroll: true }.
 export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", children }: OverlayProps) {
-  useViewportVars();
   return (
     <Dialog.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
         {overlayClassName && <Dialog.Overlay className={overlayClassName} />}
-        <Dialog.Content className={contentClassName} aria-describedby={undefined}>
+        <Dialog.Content
+          className={contentClassName}
+          aria-describedby={undefined}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <Dialog.Title className="sr-only">{label}</Dialog.Title>
           {children}
         </Dialog.Content>

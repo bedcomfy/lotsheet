@@ -26,7 +26,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    ref.current?.focus();
+    ref.current?.focus({ preventScroll: true });
   }, []);
 
   function add(bus?: string) {
@@ -41,7 +41,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
     onAdd(b);
     setVal("");
     setDup("");
-    ref.current?.focus();
+    ref.current?.focus({ preventScroll: true });
   }
 
   // Same check as the grid: warn about a number that isn't on the roster.
