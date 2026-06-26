@@ -330,6 +330,13 @@ button {
   border-color: transparent;
   color: #b91c1c;
 }
+.btn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.btn:disabled:active {
+  transform: none;
+}
 
 /* ---------- Sheet ---------- */
 .sheet-scroll {

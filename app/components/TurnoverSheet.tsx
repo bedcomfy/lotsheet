@@ -69,6 +69,8 @@ export default function TurnoverSheet() {
   const [flagBus, setFlagBus] = useState<string | null>(null);
 
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [pdfReady, setPdfReady] = useState(false); // a cached PDF matches the current sheet → Print PDF is instant
+  const prewarmSeq = useRef(0); // guards against an older prewarm marking a newer edit "ready"
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -185,6 +187,7 @@ export default function TurnoverSheet() {
   function patchLots(nextLots: TurnoverLots) {
     setLots(nextLots);
     lotDirty.current = true;
+    setPdfReady(false); // lot edit — its PDF isn't built yet
     clearTimeout(lotTimer.current);
     lotTimer.current = setTimeout(() => {
       fetch("/api/sheet", {
@@ -234,15 +237,23 @@ export default function TurnoverSheet() {
 
   function schedulePrewarm() {
     if (printMode) return;
+    setPdfReady(false); // gray Print PDF until this rebuild lands
+    const seq = ++prewarmSeq.current;
     clearTimeout(prewarmTimer.current);
     prewarmTimer.current = setTimeout(() => {
-      fetch(`/api/pdf?path=/${STORAGE_KEY}&fz=${fontPx}&maint=${printFlags ? 1 : 0}&prewarm=1`).catch(() => {});
+      // When the prewarm settles the cache holds the current sheet, so a click is
+      // instant. Ignore a stale prewarm if a newer edit has since been scheduled.
+      fetch(`/api/pdf?path=/${STORAGE_KEY}&fz=${fontPx}&maint=${printFlags ? 1 : 0}&prewarm=1`)
+        .catch(() => {})
+        .finally(() => {
+          if (seq === prewarmSeq.current) setPdfReady(true);
+        });
     }, 1500);
   }
   useEffect(() => {
     if (loaded) schedulePrewarm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontPx, flags, printFlags]);
+  }, [fontPx, flags, printFlags, loaded]);
 
   useEffect(() => {
     let alive = true;
@@ -259,6 +270,7 @@ export default function TurnoverSheet() {
   }, []);
   useEffect(() => {
     if (!loaded || printMode) return;
+    setPdfReady(false); // unsaved edit — its PDF isn't built yet
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       fetch(`/api/state/${STORAGE_KEY}`, {
@@ -450,7 +462,14 @@ export default function TurnoverSheet() {
         </label>
         <button className="btn" onClick={() => setPrevOpen(true)}>Prev Sheets</button>
         <button className="btn" onClick={clearAll}>Clear</button>
-        <button className="btn btn--primary" onClick={printPdf}>Print PDF</button>
+        <button
+          className="btn btn--primary"
+          onClick={printPdf}
+          disabled={!pdfReady}
+          title={pdfReady ? "Generate the PDF and open the print dialog" : "Preparing the print file… ready in a moment"}
+        >
+          {pdfReady ? "Print PDF" : "Preparing…"}
+        </button>
       </div>
 
       <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` } as CSSProperties}>

@@ -102,6 +102,8 @@ export default function LotSheet() {
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
+  const [pdfReady, setPdfReady] = useState(false); // a cached PDF matches the current sheet → Print PDF is instant
+  const prewarmSeq = useRef(0); // guards against an older prewarm marking a newer edit "ready"
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
   const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
@@ -174,6 +176,7 @@ export default function LotSheet() {
     if (!loaded || printMode) return;
     const json = JSON.stringify(sheet);
     if (json === lastSyncRef.current) return; // nothing new to push
+    setPdfReady(false); // unsaved edit — its PDF isn't built yet
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       try {
@@ -340,9 +343,17 @@ export default function LotSheet() {
   function schedulePrewarm() {
     if (printMode) return;
     const maint = showMaint ? 1 : 0;
+    setPdfReady(false); // gray Print PDF until this rebuild lands
+    const seq = ++prewarmSeq.current;
     clearTimeout(prewarmTimer.current);
     prewarmTimer.current = setTimeout(() => {
-      fetch(`/api/pdf?maint=${maint}&prewarm=1`).catch(() => {});
+      // When the prewarm settles the cache holds the current sheet, so a click is
+      // instant. Ignore a stale prewarm if a newer edit has since been scheduled.
+      fetch(`/api/pdf?maint=${maint}&prewarm=1`)
+        .catch(() => {})
+        .finally(() => {
+          if (seq === prewarmSeq.current) setPdfReady(true);
+        });
     }, 1500);
   }
 
@@ -533,8 +544,13 @@ export default function LotSheet() {
         <button className="btn" onClick={() => window.print()} title="Print using the browser (may vary by device)">
           Print
         </button>
-        <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
-          Print PDF
+        <button
+          className="btn btn--primary"
+          onClick={openPdf}
+          disabled={!pdfReady}
+          title={pdfReady ? "Generate a Letter-size PDF and open the print dialog" : "Preparing the print file… ready in a moment"}
+        >
+          {pdfReady ? "Print PDF" : "Preparing…"}
         </button>
       </div>
 
