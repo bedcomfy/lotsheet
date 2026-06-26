@@ -689,12 +689,10 @@ button {
 /* ---------- Modal editor (screen only) ---------- */
 .modal-backdrop {
   position: fixed;
-  top: var(--vvtop, 0px);
-  left: 0;
-  right: 0;
-  /* Size to the visible area (above the keyboard) so the bottom sheet isn't
-     hidden behind it on iOS. Falls back to the full viewport. */
-  height: var(--vvh, 100dvh);
+  inset: 0;
+  /* Cover the whole screen (no bleed-through), but pad the bottom up by the
+     keyboard height so the bottom sheet sits just above the keyboard on iOS. */
+  padding-bottom: var(--kb, 0px);
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: flex-end;
@@ -832,11 +830,11 @@ button {
 /* ---------- Manager panel ---------- */
 .manager {
   position: fixed;
-  top: var(--vvtop, 0px);
-  left: 0;
-  right: 0;
-  /* Size to the visible area above the keyboard (see .modal-backdrop). */
-  height: var(--vvh, 100dvh);
+  inset: 0;
+  /* Full-screen white cover (no bleed-through); pad the content in to the area
+     visible above the keyboard so the inner scroll area fits there. */
+  padding-top: var(--vvtop, 0px);
+  padding-bottom: var(--kb, 0px);
   z-index: 60;
   background: #fff;
   display: flex;

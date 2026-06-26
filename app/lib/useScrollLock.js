@@ -36,8 +36,11 @@ export function useScrollLock() {
     const vv = window.visualViewport;
     const applyVV = () => {
       if (!vv) return;
+      // Keyboard height = the layout viewport minus the visible (visual) area.
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
       root.style.setProperty("--vvh", `${vv.height}px`);
       root.style.setProperty("--vvtop", `${vv.offsetTop}px`);
+      root.style.setProperty("--kb", `${kb}px`);
     };
     applyVV();
     if (vv) {
@@ -59,6 +62,7 @@ export function useScrollLock() {
       }
       root.style.removeProperty("--vvh");
       root.style.removeProperty("--vvtop");
+      root.style.removeProperty("--kb");
     };
   }, []);
 }
