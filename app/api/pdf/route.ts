@@ -15,7 +15,11 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "17";
+const PDF_VERSION = "18";
+
+// Sheets rendered by the deterministic react-pdf templates (no headless browser)
+// instead of Chromium. Migrating sheet-by-sheet — the rest still use Chromium.
+const REACT_PDF_PATHS = new Set(["/fuel", "/def"]);
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -95,6 +99,38 @@ async function launchBrowser(): Promise<any> {
 // `<path>?print=1` and expose a #print-ready marker when loaded.
 const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover"]);
 
+// Deterministic, pure-JS render for the Fuel / DEF sheets via @react-pdf/renderer
+// — no headless browser. Reads the same live data the screen uses (lane list,
+// per-bus entries, universal flags). Imports are dynamic so the heavy renderer
+// only loads when one of these sheets is actually generated.
+async function renderReactPdf(path: string, maint: boolean, fz: number | null): Promise<Buffer> {
+  const [{ renderToBuffer }, { buildFuelDoc }, { busHelpers, DEFAULT_MASTER }] = await Promise.all([
+    import("@react-pdf/renderer"),
+    import("../../lib/pdf/FuelPdf"),
+    import("../../lib/buses"),
+  ]);
+  const storageKey = path.slice(1); // "fuel" | "def"
+  const [{ value }, flags, masterState] = await Promise.all([
+    getState(storageKey),
+    getFlags(),
+    getState("bus_master"),
+  ]);
+  const mv = masterState.value as { buses?: unknown } | null;
+  const master = mv && Array.isArray(mv.buses) ? mv : DEFAULT_MASTER;
+  const lane = busHelpers(master as any).laneBuses();
+  const isDef = storageKey === "def";
+  const doc = buildFuelDoc({
+    title: isDef ? "PNW DEF SHEET" : "PNW FUEL SHEET",
+    showShiftFields: isDef,
+    data: (value as any) || { entries: {} },
+    lane,
+    flags,
+    fontPx: fz ?? 14,
+    showFlags: maint,
+  });
+  return await renderToBuffer(doc);
+}
+
 async function renderPdf(req: Request, maint: boolean, path: string, fz: number | null): Promise<Buffer> {
   const host = req.headers.get("host");
   const proto =
@@ -153,7 +189,9 @@ export async function GET(req: Request) {
     }
 
     // Cache miss — generate (the slow path) and store for next time.
-    const pdf = await renderPdf(req, maint, path, fz);
+    const pdf = REACT_PDF_PATHS.has(path)
+      ? await renderReactPdf(path, maint, fz)
+      : await renderPdf(req, maint, path, fz);
     await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
     return new Response(pdf as unknown as BodyInit, { status: 200, headers });
