@@ -98,30 +98,33 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
             const fdisp = flagsFullDisplay(flags[bus]);
             return (
             <div className="lotitem" key={`${bus}-${i}`}>
-              <span className="lotitem__idx">{i + 1}.</span>
-              <span className="lotitem__bus">{busLabel(bus)}</span>
-              <TypeCodes num={bus} />
-              {fdisp && <span className="lotitem__flag">{fdisp}</span>}
-              <div className="toolbar__spacer" />
-              <button
-                className="lotitem__move"
-                onClick={() => onMove(i, -1)}
-                disabled={i === 0}
-                aria-label="Move up"
-              >
-                ↑
-              </button>
-              <button
-                className="lotitem__move"
-                onClick={() => onMove(i, 1)}
-                disabled={i === list.length - 1}
-                aria-label="Move down"
-              >
-                ↓
-              </button>
-              <button className="busrow__clear" onClick={() => onRemove(i)}>
-                Remove
-              </button>
+              <div className="lotitem__info">
+                <span className="lotitem__idx">{i + 1}.</span>
+                <span className="lotitem__bus">{busLabel(bus)}</span>
+                <TypeCodes num={bus} />
+                {fdisp && <span className="lotitem__flag">{fdisp}</span>}
+              </div>
+              <div className="lotitem__actions">
+                <button
+                  className="lotitem__move"
+                  onClick={() => onMove(i, -1)}
+                  disabled={i === 0}
+                  aria-label="Move up"
+                >
+                  ↑
+                </button>
+                <button
+                  className="lotitem__move"
+                  onClick={() => onMove(i, 1)}
+                  disabled={i === list.length - 1}
+                  aria-label="Move down"
+                >
+                  ↓
+                </button>
+                <button className="busrow__clear" onClick={() => onRemove(i)}>
+                  Remove
+                </button>
+              </div>
             </div>
             );
           })}

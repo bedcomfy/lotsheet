@@ -49,6 +49,7 @@ export default function TurnoverSheet() {
   const [savedAt, setSavedAt] = useState(null);
   const [printMode, setPrintMode] = useState(false);
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
+  const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
 
   const [lots, setLots] = useState({ north: [], east: [], fence: [], rc: [], apron: [] });
@@ -70,15 +71,39 @@ export default function TurnoverSheet() {
     if (isPrint) {
       const fz = parseInt(param("fz") || "", 10);
       if (!Number.isNaN(fz)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, fz)));
+      setPrintFlags(param("maint") === "1");
     } else {
       const v = parseInt(localStorage.getItem(`pace:font:${STORAGE_KEY}`) || "", 10);
       if (!Number.isNaN(v)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, v)));
+      setPrintFlags(localStorage.getItem(`pace:flags:${STORAGE_KEY}`) !== "0"); // default on
     }
   }, []);
   useEffect(() => {
     if (printMode) return;
     localStorage.setItem(`pace:font:${STORAGE_KEY}`, String(fontPx));
   }, [fontPx, printMode]);
+  useEffect(() => {
+    if (printMode) return;
+    localStorage.setItem(`pace:flags:${STORAGE_KEY}`, printFlags ? "1" : "0");
+  }, [printFlags, printMode]);
+
+  // Auto-fill today's date (MM / DD / YY) when the sheet has no date yet.
+  useEffect(() => {
+    if (!loaded || printMode) return;
+    setData((d) => {
+      if (d.cells["date-m"] || d.cells["date-d"] || d.cells["date-y"]) return d;
+      const now = new Date();
+      return {
+        ...d,
+        cells: {
+          ...d.cells,
+          "date-m": String(now.getMonth() + 1).padStart(2, "0"),
+          "date-d": String(now.getDate()).padStart(2, "0"),
+          "date-y": String(now.getFullYear()).slice(-2),
+        },
+      };
+    });
+  }, [loaded, printMode]);
 
   useEffect(() => {
     let alive = true;
@@ -187,13 +212,13 @@ export default function TurnoverSheet() {
     if (printMode) return;
     clearTimeout(prewarmTimer.current);
     prewarmTimer.current = setTimeout(() => {
-      fetch(`/api/pdf?path=/${STORAGE_KEY}&fz=${fontPx}&prewarm=1`).catch(() => {});
+      fetch(`/api/pdf?path=/${STORAGE_KEY}&fz=${fontPx}&maint=${printFlags ? 1 : 0}&prewarm=1`).catch(() => {});
     }, 1500);
   }
   useEffect(() => {
     if (loaded) schedulePrewarm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontPx, flags]);
+  }, [fontPx, flags, printFlags]);
 
   useEffect(() => {
     let alive = true;
@@ -258,6 +283,7 @@ export default function TurnoverSheet() {
   function printPdf() {
     openSheetPdf({
       path: `/${STORAGE_KEY}`,
+      maint: printFlags, // off = print a completely blank form
       params: { fz: fontPx },
       flush: () =>
         fetch(`/api/state/${STORAGE_KEY}`, {
@@ -290,7 +316,7 @@ export default function TurnoverSheet() {
           className="turnt__reason turnt__reason--btn"
           onClick={bus ? () => setFlagBus(bus) : () => setEditingLot(lotKey)}
         >
-          {bus ? flagsFullDisplay(flags[bus]) || <span className="turnt__reasonhint">＋ flag</span> : ""}
+          {bus ? flagsFullDisplay(flags[bus]) : ""}
         </td>
       </>
     );
@@ -330,22 +356,34 @@ export default function TurnoverSheet() {
     if (sr === LANE_HDR) {
       right = (
         <>
+          <td />
           <td className="turnt__head" colSpan={2}>NORTH LANE</td>
-          <td className="turnt__head" colSpan={3}>SOUTH LANE</td>
+          <td className="turnt__head" colSpan={2}>SOUTH LANE</td>
         </>
       );
     } else if (sr > LANE_HDR && sr < CALL_HDR) {
       const i = sr - LANE_HDR - 1;
       right = (
         <>
+          <td />
           <td colSpan={2}>{C(`nlane-${i}`)}</td>
-          <td colSpan={3}>{C(`slane-${i}`)}</td>
+          <td colSpan={2}>{C(`slane-${i}`)}</td>
         </>
       );
     } else if (sr === CALL_HDR) {
-      right = <td className="turnt__head" colSpan={5}>EMPLOYEE CALLOFFS</td>;
+      right = (
+        <>
+          <td />
+          <td className="turnt__head" colSpan={4}>EMPLOYEE CALLOFFS</td>
+        </>
+      );
     } else if (sr > CALL_HDR) {
-      right = <td colSpan={5}>{E(`calloff-${sr - CALL_HDR - 1}`)}</td>;
+      right = (
+        <>
+          <td />
+          <td colSpan={4}>{E(`calloff-${sr - CALL_HDR - 1}`)}</td>
+        </>
+      );
     } else {
       right = lotSlot("east", eastIdx++, 3);
     }
@@ -369,13 +407,17 @@ export default function TurnoverSheet() {
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
         </span>
         <SheetSettings fontPx={fontPx} minPx={FONT_MIN} maxPx={FONT_MAX} onFontPx={setFontPx} />
+        <label className="toolbar__check" title="Off = print a completely blank form">
+          <input type="checkbox" checked={printFlags} onChange={(e) => setPrintFlags(e.target.checked)} />
+          Print with flags
+        </label>
         <button className="btn" onClick={() => setPrevOpen(true)}>Prev Sheets</button>
         <button className="btn" onClick={clearAll}>Clear</button>
         <button className="btn btn--primary" onClick={printPdf}>Print PDF</button>
       </div>
 
       <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` }}>
-        <div className="sheet turn-sheet">
+        <div className={`sheet turn-sheet ${!printFlags ? "turn-sheet--blank" : ""}`}>
           <table className="turnt">
             <colgroup>
               <col style={{ width: "8.2%" }} />
