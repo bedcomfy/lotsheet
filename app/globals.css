@@ -1972,8 +1972,9 @@ button {
   flex: 1 1 auto; /* fill the page; rows share the height — 1:1 with the paper */
   height: 100%;
 }
+/* Thin GRAY grid (matches the Google-Sheets original; not heavy black). */
 .turnt td {
-  border: 1px solid #000;
+  border: 1px solid #999;
   padding: 0 4px;
   font-size: var(--tfz, 13px);
   white-space: nowrap;
@@ -1985,18 +1986,17 @@ button {
   border: none;
 }
 .turnt__brand {
-  font-weight: 700;
-  font-size: calc(var(--tfz, 13px) + 4px);
-  letter-spacing: 0.04em;
-  padding-bottom: 2px;
+  text-align: center;
+  font-weight: normal;
 }
 .turnt__shiftpick {
   text-align: center;
   white-space: nowrap;
+  font-size: calc(var(--tfz, 13px) + 2px);
 }
 .turnt__shiftsep {
-  color: #9ca3af;
-  margin: 0 2px;
+  color: #6b7280;
+  margin: 0 4px;
 }
 .turnt__shiftopt {
   border: none;
@@ -2006,54 +2006,48 @@ button {
   cursor: pointer;
   padding: 2px 9px;
   border-radius: 999px;
-  font-size: var(--tfz, 13px);
+  font-size: calc(var(--tfz, 13px) + 2px);
 }
 .turnt__shiftopt.is-on {
   outline: 2px solid #000;
-  font-weight: 700;
 }
 .turnt__field {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 2px 6px;
+  padding: 3px 2px 5px;
 }
 .turnt__fieldlbl {
-  font-weight: 600;
   white-space: nowrap;
 }
+/* Labels: underlined, NOT bold, white background (1:1 with the original). */
 .turnt__head td,
 td.turnt__head {
   text-align: center;
-  font-weight: 700;
+  font-weight: normal;
   text-decoration: underline;
-  background: #f3f4f6;
+  background: #fff;
 }
 .turnt__head--btn,
-.turnt__seclbl--btn,
-.turnt__reason--btn {
+.turnt__reason--btn,
+.turnt__veh--btn {
   cursor: pointer;
 }
 .turnt__edit {
   text-decoration: none;
   color: var(--accent);
-  font-weight: 700;
-  margin-left: 4px;
+  margin-left: 3px;
 }
-.turnt__seclbl {
+.turnt__divlbl {
   text-align: center;
-  font-weight: 700;
+  text-decoration: underline;
 }
 .turnt__c {
   text-align: center;
 }
 .turnt__veh {
   text-align: center;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
-}
-.turnt__veh--btn {
-  cursor: pointer;
 }
 .turnt__reason {
   text-align: left;
@@ -2068,7 +2062,6 @@ td.turnt__head {
 }
 .turnt__bayno {
   flex: 0 0 auto;
-  font-weight: 600;
 }
 .turnt__in {
   width: 100%;

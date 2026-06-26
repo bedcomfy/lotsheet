@@ -51,7 +51,7 @@ export default function TurnoverSheet() {
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [prevOpen, setPrevOpen] = useState(false);
 
-  const [lots, setLots] = useState({ north: [], east: [], fence: [] });
+  const [lots, setLots] = useState({ north: [], east: [], fence: [], rc: [], apron: [] });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
   const lotTimer = useRef(null);
@@ -129,7 +129,13 @@ export default function TurnoverSheet() {
         .then((d) => {
           if (!alive || !d || !d.sheet || lotDirty.current) return;
           const s = d.sheet;
-          setLots({ north: s.lots?.north || [], east: s.lots?.east || [], fence: s.lots?.fence || [] });
+          setLots({
+            north: s.lots?.north || [],
+            east: s.lots?.east || [],
+            fence: s.lots?.fence || [],
+            rc: s.lots?.rc || [],
+            apron: s.lots?.apron || [],
+          });
         })
         .catch(() => {})
         .finally(() => alive && setLotsLoaded(true));
@@ -171,7 +177,9 @@ export default function TurnoverSheet() {
     patchLots({ ...lots, [key]: arr });
   }
   function locateLot(bus) {
-    for (const k of ["north", "east", "fence"]) if ((lots[k] || []).includes(bus)) return `${k.toUpperCase()} LOT`;
+    for (const k of ["north", "east", "fence", "rc", "apron"]) {
+      if ((lots[k] || []).includes(bus)) return `${k.toUpperCase()} LOT`;
+    }
     return "";
   }
 
@@ -288,42 +296,35 @@ export default function TurnoverSheet() {
     );
   }
 
-  // Build the left/right cells for each spreadsheet body row (6–41).
+  // A label divider row inside the left column (FENCE / R-C / APRON) — click to
+  // manage that lot.
+  const divider = (lotKey, label) => (
+    <>
+      <td />
+      <td className="turnt__divlbl turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
+        {label} <span className="turnt__edit">✎</span>
+      </td>
+      <td colSpan={2} />
+    </>
+  );
+
+  // Build the left/right cells for each spreadsheet body row (6–41). The left
+  // column is four stacked bus lists separated by the labels.
   let northIdx = 0;
+  let fenceIdx = 0;
+  let rcIdx = 0;
+  let apronIdx = 0;
   let eastIdx = 0;
   const rows = [];
   for (let sr = BODY_START; sr <= BODY_END; sr++) {
     let left;
-    if (sr === FENCE_ROW) {
-      const fence = (lots.fence || []).map((b) => busLabel(b)).join(", ");
-      left = (
-        <>
-          <td />
-          <td className="turnt__veh turnt__seclbl">FENCE</td>
-          <td colSpan={2} className="turnt__reason turnt__reason--btn" onClick={() => setEditingLot("fence")}>
-            {fence || <span className="turnt__reasonhint">✎</span>}
-          </td>
-        </>
-      );
-    } else if (sr === RC_ROW) {
-      left = (
-        <>
-          <td />
-          <td className="turnt__veh turnt__seclbl">R/C</td>
-          <td colSpan={2}>{C("rc")}</td>
-        </>
-      );
-    } else if (sr === APRON_ROW) {
-      left = (
-        <>
-          <td />
-          <td className="turnt__veh turnt__seclbl">APRON</td>
-          <td colSpan={2}>{C("apron")}</td>
-        </>
-      );
-    } else {
-      left = lotSlot("north", northIdx++, 2);
-    }
+    if (sr === FENCE_ROW) left = divider("fence", "FENCE");
+    else if (sr === RC_ROW) left = divider("rc", "R/C");
+    else if (sr === APRON_ROW) left = divider("apron", "APRON");
+    else if (sr < FENCE_ROW) left = lotSlot("north", northIdx++, 2);
+    else if (sr < RC_ROW) left = lotSlot("fence", fenceIdx++, 2);
+    else if (sr < APRON_ROW) left = lotSlot("rc", rcIdx++, 2);
+    else left = lotSlot("apron", apronIdx++, 2);
 
     let right;
     if (sr === LANE_HDR) {
