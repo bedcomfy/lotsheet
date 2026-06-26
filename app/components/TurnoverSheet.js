@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { flagsFullDisplay } from "../lib/grid";
+import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import SheetSettings from "./SheetSettings";
 import SheetHistory from "./SheetHistory";
@@ -53,7 +54,7 @@ export default function TurnoverSheet() {
   const [prevOpen, setPrevOpen] = useState(false);
 
   const [lots, setLots] = useState({
-    north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay1h: [], bay2h: [],
+    north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [],
   });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
@@ -164,8 +165,7 @@ export default function TurnoverSheet() {
             apron: s.lots?.apron || [],
             northlane: s.lots?.northlane || [],
             southlane: s.lots?.southlane || [],
-            bay1h: s.lots?.bay1h || [],
-            bay2h: s.lots?.bay2h || [],
+            bay: s.lots?.bay || [],
           });
         })
         .catch(() => {})
@@ -198,6 +198,14 @@ export default function TurnoverSheet() {
         });
     }, 500);
   }
+  // BAY is 10 fixed spots — type the bus into each (no reorder). Stored as a
+  // 10-length array so the duplicate guard still finds the bus.
+  function setBayBus(i, raw) {
+    const b = sanitizeBus(raw);
+    const arr = Array.from({ length: BAY_ROWS }, (_, j) => (lots.bay || [])[j] || "");
+    arr[i] = b;
+    patchLots({ ...lots, bay: arr });
+  }
   const addToLot = (key, bus) => patchLots({ ...lots, [key]: [...(lots[key] || []), bus] });
   const removeFromLot = (key, i) => patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) });
   function moveInLot(key, i, dir) {
@@ -209,7 +217,7 @@ export default function TurnoverSheet() {
   }
   const LOT_LABELS = {
     north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
-    northlane: "North Lane", southlane: "South Lane", bay1h: "Bay (1st half)", bay2h: "Bay (2nd half)",
+    northlane: "North Lane", southlane: "South Lane", bay: "Bay",
   };
   function locateLot(bus) {
     for (const k of Object.keys(LOT_LABELS)) {
@@ -520,9 +528,21 @@ export default function TurnoverSheet() {
                 return (
                   <tr key={`bay-${n}`}>
                     <td />
-                    <td className="turnt__c">{C(`bay-${n}`, { className: "turnt__in turnt__in--c" })}</td>
-                    {busListCell("bay1h", i, 3, <span className="turnt__bayno">{n})&nbsp;</span>)}
-                    {busListCell("bay2h", i, 4)}
+                    <td className="turnt__c">
+                      <input
+                        className="turnt__in turnt__in--c"
+                        inputMode="numeric"
+                        value={(lots.bay || [])[i] || ""}
+                        onChange={(e) => setBayBus(i, e.target.value)}
+                      />
+                    </td>
+                    <td colSpan={3}>
+                      <div className="turnt__fline">
+                        <span className="turnt__bayno">{n})</span>
+                        {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
+                      </div>
+                    </td>
+                    <td colSpan={4}>{E(`bay2h-${n}`)}</td>
                   </tr>
                 );
               })}

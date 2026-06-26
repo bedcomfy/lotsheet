@@ -8,6 +8,7 @@ import {
   retorqueTiresDisplay,
   HOLD_REASONS,
   inspMilesDisplay,
+  INSPECTION_OPTIONS,
   entryHasContent,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
@@ -15,7 +16,7 @@ import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
-const EMPTY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [] };
+const EMPTY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
 const REQUIRE_DETAIL = new Set(["retorque"]); // can't add without picking a detail (hold's reason is optional)
 // A shared flag's "home" department (the first one it's listed in) — used so the
@@ -30,8 +31,8 @@ function entrySummary(entry) {
     if (id === "retorque") return `Retorque (${retorqueTiresDisplay(entry.retorqueTires)})`;
     if (id === "hold") return `Hold (${entry.holdReason})`;
     if (id === "inspection") {
-      const m = inspMilesDisplay(entry);
-      return m ? `Inspection (${m})` : "Inspection";
+      const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+      return o ? `Inspection (${o})` : "Inspection";
     }
     return flagName(id);
   });
@@ -160,6 +161,27 @@ function HoldReasonPicker({ reason, onChange }) {
   );
 }
 
+// Optional inspection type — pick one of A-3 … C-24 (or none).
+function InspOptionPicker({ option, onChange }) {
+  return (
+    <div className="detailbox detailbox--col">
+      <div className="detailbox__label">Inspection (optional)</div>
+      <div className="reasonpick">
+        {INSPECTION_OPTIONS.map((o) => (
+          <button
+            key={o}
+            type="button"
+            className={`deptchip ${option === o ? "deptchip--on--service" : ""}`}
+            onClick={() => onChange(option === o ? "" : o)}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---- the grouped editor for one bus ----
 function BusFlagEditor({ entry, onChange }) {
   // openDept: detail-flag id -> the department its picker opens under (present =
@@ -192,7 +214,7 @@ function BusFlagEditor({ entry, onChange }) {
     const on = entry.flags.includes(id);
     const flags = on ? entry.flags.filter((f) => f !== id) : [...entry.flags, id];
     const patch = { ...entry, flags };
-    if (id === "inspection" && on) patch.inspMiles = null;
+    if (id === "inspection" && on) patch.inspOption = "";
     if (id === "hold" && on) patch.holdReason = "";
     onChange(patch);
     if (DETAIL_FLAGS.has(id)) (on ? close : setOpen)(id, dept);
@@ -214,8 +236,8 @@ function BusFlagEditor({ entry, onChange }) {
     if (id === "retorque" && isActive("retorque")) return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
     if (id === "hold" && isActive("hold") && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
     if (id === "inspection" && isActive("inspection")) {
-      const m = inspMilesDisplay(entry);
-      return m ? `Inspection · ${m}` : "Inspection";
+      const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+      return o ? `Inspection · ${o}` : "Inspection";
     }
     return flagName(id);
   }
@@ -249,7 +271,7 @@ function BusFlagEditor({ entry, onChange }) {
                   {id === "retorque" && <TirePicker tires={entry.retorqueTires || []} onChange={setTires} />}
                   {id === "hold" && <HoldReasonPicker reason={entry.holdReason || ""} onChange={setReason} />}
                   {id === "inspection" && (
-                    <MilesInput value={entry.inspMiles} onSave={(m) => onChange({ ...entry, inspMiles: m })} />
+                    <InspOptionPicker option={entry.inspOption || ""} onChange={(o) => onChange({ ...entry, inspOption: o })} />
                   )}
                 </div>
               ))}
@@ -294,6 +316,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         inspMiles: entry.inspMiles ?? null,
         holdReason: entry.holdReason ?? "",
         retorqueTires: entry.retorqueTires || [],
+        inspOption: entry.inspOption ?? "",
       }),
     }).catch(() => {});
     onBusFlagsUpdated(bus, entry);
@@ -327,7 +350,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   function removeFromFlag(bus) {
     const cur = getEntry(bus);
     const patch = { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
-    if (pickedFlag === "inspection") patch.inspMiles = null;
+    if (pickedFlag === "inspection") patch.inspOption = "";
     if (pickedFlag === "retorque") patch.retorqueTires = [];
     if (pickedFlag === "hold") patch.holdReason = "";
     save(bus, patch);
@@ -493,7 +516,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                       <HoldReasonPicker key={bus} reason={entry.holdReason || ""} onChange={(r) => setReasonFor(bus, r)} />
                     )}
                     {pickedFlag === "inspection" && (
-                      <MilesInput key={bus} value={entry.inspMiles} onSave={(m) => save(bus, { ...getEntry(bus), inspMiles: m })} />
+                      <InspOptionPicker key={bus} option={entry.inspOption || ""} onChange={(o) => save(bus, { ...getEntry(bus), inspOption: o })} />
                     )}
                   </div>
                 );

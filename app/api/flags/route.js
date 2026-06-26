@@ -25,6 +25,7 @@ export async function POST(req) {
       : body.inspMiles;
   const holdReason = typeof body.holdReason === "string" ? body.holdReason : "";
   const retorqueTires = Array.isArray(body.retorqueTires) ? body.retorqueTires : [];
-  await setBusFlags(bus, { flags, note, inspMiles, holdReason, retorqueTires });
+  const inspOption = typeof body.inspOption === "string" ? body.inspOption : "";
+  await setBusFlags(bus, { flags, note, inspMiles, holdReason, retorqueTires, inspOption });
   return NextResponse.json({ ok: true });
 }

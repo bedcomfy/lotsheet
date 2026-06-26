@@ -37,7 +37,7 @@ const LOTS = [
 // duplicate guard can report where a bus already sits.
 const LOT_LOCATION_LABELS = {
   north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
-  northlane: "North Lane", southlane: "South Lane", bay1h: "Bay (1st half)", bay2h: "Bay (2nd half)",
+  northlane: "North Lane", southlane: "South Lane", bay: "Bay",
 };
 
 function emptySheet() {

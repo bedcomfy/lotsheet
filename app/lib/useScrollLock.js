@@ -4,24 +4,25 @@ import { useEffect } from "react";
 
 // Used by every full-screen overlay / modal. Two jobs:
 //
-// 1. Freeze the page behind it (position:fixed + saved scrollY) so the sheet
-//    can't scroll under the overlay and bleed through on iOS, and so focusing
-//    an input scrolls the overlay's own area, not the whole document.
+// 1. Lock the page behind it so it can't scroll under the overlay.
+//    - Desktop (fine pointer): `overflow:hidden` on <html>. This keeps the
+//      page exactly where it is (no position change, so no "shoot up"), and we
+//      reserve the scrollbar width as padding so nothing shifts sideways.
+//    - Touch (iOS/Android): `position:fixed` on <body> with a saved scroll
+//      offset — overflow:hidden alone doesn't stop touch scrolling / the
+//      focus-scroll that yanks the page on mobile.
 //
-// 2. Track the *visual* viewport and publish it as --vvh / --vvtop CSS vars.
-//    On iOS a position:fixed element stays the full layout height even when the
-//    keyboard is open, so a bottom-anchored sheet ends up hidden behind the
-//    keyboard. Sizing overlays to the visual viewport keeps them in the area
-//    that's actually visible above the keyboard.
+// 2. Track the visual viewport and publish --vvh / --vvtop / --kb so overlays
+//    can sit above the on-screen keyboard.
 export function useScrollLock() {
   useEffect(() => {
     const { body } = document;
     const root = document.documentElement;
     const scrollY = window.scrollY;
-    // The vertical scrollbar disappears when we fix the body; reserve its width
-    // as padding so the page doesn't shift sideways on desktop.
     const scrollbarW = Math.max(0, window.innerWidth - root.clientWidth);
-    const prev = {
+    const isTouch = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+
+    const prevBody = {
       position: body.style.position,
       top: body.style.top,
       left: body.style.left,
@@ -30,18 +31,28 @@ export function useScrollLock() {
       overflow: body.style.overflow,
       paddingRight: body.style.paddingRight,
     };
-    body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
-    body.style.left = "0";
-    body.style.right = "0";
-    body.style.width = "100%";
-    body.style.overflow = "hidden";
-    if (scrollbarW > 0) body.style.paddingRight = `${scrollbarW}px`;
+    const prevRoot = {
+      overflow: root.style.overflow,
+      paddingRight: root.style.paddingRight,
+    };
+
+    if (isTouch) {
+      body.style.position = "fixed";
+      body.style.top = `-${scrollY}px`;
+      body.style.left = "0";
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
+      if (scrollbarW > 0) body.style.paddingRight = `${scrollbarW}px`;
+    } else {
+      // Desktop: just stop scrolling — the page stays put.
+      root.style.overflow = "hidden";
+      if (scrollbarW > 0) root.style.paddingRight = `${scrollbarW}px`;
+    }
 
     const vv = window.visualViewport;
     const applyVV = () => {
       if (!vv) return;
-      // Keyboard height = the layout viewport minus the visible (visual) area.
       const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
       root.style.setProperty("--vvh", `${vv.height}px`);
       root.style.setProperty("--vvtop", `${vv.offsetTop}px`);
@@ -54,14 +65,19 @@ export function useScrollLock() {
     }
 
     return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.left = prev.left;
-      body.style.right = prev.right;
-      body.style.width = prev.width;
-      body.style.overflow = prev.overflow;
-      body.style.paddingRight = prev.paddingRight;
-      window.scrollTo(0, scrollY);
+      if (isTouch) {
+        body.style.position = prevBody.position;
+        body.style.top = prevBody.top;
+        body.style.left = prevBody.left;
+        body.style.right = prevBody.right;
+        body.style.width = prevBody.width;
+        body.style.overflow = prevBody.overflow;
+        body.style.paddingRight = prevBody.paddingRight;
+        window.scrollTo(0, scrollY);
+      } else {
+        root.style.overflow = prevRoot.overflow;
+        root.style.paddingRight = prevRoot.paddingRight;
+      }
       if (vv) {
         vv.removeEventListener("resize", applyVV);
         vv.removeEventListener("scroll", applyVV);

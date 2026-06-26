@@ -138,6 +138,9 @@ export const RETORQUE_TIRES = [
   { id: "rr", label: "Roadside rear" },
   { id: "cr", label: "Curbside rear" },
 ];
+// Optional inspection type (the A/B/C inspection at its mileage). Inspection can
+// still be selected on its own.
+export const INSPECTION_OPTIONS = ["A-3", "B-6", "A-9", "B-12", "A-15", "B-18", "A-21", "C-24"];
 // Collapse the tire selection to a short label: All / Fronts / Rears, else list.
 export function retorqueTiresDisplay(tires) {
   const set = new Set((tires || []).filter(Boolean));
@@ -254,9 +257,9 @@ export function flagsAndNote(entry) {
 // flagsAndNote plus the inspection mileage, for the lot lists / flag summary.
 export function flagsFullDisplay(entry) {
   const base = flagsAndNote(entry);
-  const miles = inspMilesDisplay(entry);
-  if (base && miles) return `${base} · ${miles}`;
-  return base || miles;
+  const detail = (entry && entry.inspOption ? String(entry.inspOption).trim() : "") || inspMilesDisplay(entry);
+  if (base && detail) return `${base} · ${detail}`;
+  return base || detail;
 }
 
 // Group every flagged bus under its most-severe flag (note-only buses go under
@@ -315,7 +318,7 @@ export function fuelBusFlagList(flagsMap) {
     for (const id of FUEL_SUMMARY_FLAGS) {
       if (!entry.flags.includes(id)) continue;
       let detail = "";
-      if (id === "inspection") detail = inspMilesDisplay(entry);
+      if (id === "inspection") detail = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
       else if (id === "hold") detail = (entry.holdReason || "").trim();
       else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       items.push({ id, label: flagLabel(id), detail });
@@ -343,7 +346,7 @@ export function fuelFlagSections(flagsMap) {
     if (idx === -1) continue;
     const items = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
       let detail = "";
-      if (f === "inspection") detail = inspMilesDisplay(entry);
+      if (f === "inspection") detail = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
       else if (f === "hold") detail = (entry.holdReason || "").trim();
       else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       return { id: f, label: flagLabel(f), detail };

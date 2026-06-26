@@ -34,7 +34,7 @@ function toMiles(v) {
 }
 
 // Normalise any stored shape (old string, old array, or new object) to an entry.
-const EMPTY_ENTRY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [] };
+const EMPTY_ENTRY = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 function toEntry(v) {
   if (!v) return { ...EMPTY_ENTRY };
   if (Array.isArray(v)) return { ...EMPTY_ENTRY, flags: v.filter(Boolean) };
@@ -44,12 +44,14 @@ function toEntry(v) {
   const retorqueTires = flags.includes("retorque") && Array.isArray(v.retorqueTires) ? v.retorqueTires.filter(Boolean) : [];
   // A retorque needs a tire (a hold can stand on its own, reason optional).
   if (flags.includes("retorque") && retorqueTires.length === 0) flags = flags.filter((f) => f !== "retorque");
+  const inspOption = flags.includes("inspection") && typeof v.inspOption === "string" ? v.inspOption.trim() : "";
   return {
     flags,
     note: typeof v.note === "string" ? v.note : "",
     inspMiles: toMiles(v.inspMiles),
     holdReason,
     retorqueTires,
+    inspOption,
   };
 }
 function isEmpty(e) {
@@ -90,6 +92,7 @@ async function pool() {
     await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS insp_miles INTEGER`);
     await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS hold_reason TEXT`);
     await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS retorque_tires TEXT`);
+    await _pool.query(`ALTER TABLE bus_flags ADD COLUMN IF NOT EXISTS insp_option TEXT`);
     // Generic key/value store for shared app state (currently the lot sheet).
     await _pool.query(
       `CREATE TABLE IF NOT EXISTS app_state (
@@ -119,7 +122,7 @@ export async function getFlags() {
   const out = {};
   if (usePg) {
     const { rows } = await (await pool()).query(
-      "SELECT bus, flag, note, insp_miles, hold_reason, retorque_tires FROM bus_flags"
+      "SELECT bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option FROM bus_flags"
     );
     for (const r of rows) {
       const e = toEntry({
@@ -128,6 +131,7 @@ export async function getFlags() {
         inspMiles: r.insp_miles,
         holdReason: r.hold_reason || "",
         retorqueTires: (r.retorque_tires || "").split(",").filter(Boolean),
+        inspOption: r.insp_option || "",
       });
       if (!isEmpty(e)) out[r.bus] = e;
     }
@@ -149,10 +153,10 @@ export async function setBusFlags(bus, entry) {
       await db.query("DELETE FROM bus_flags WHERE bus = $1", [bus]);
     } else {
       await db.query(
-        `INSERT INTO bus_flags (bus, flag, note, insp_miles, hold_reason, retorque_tires, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now())
-         ON CONFLICT (bus) DO UPDATE SET flag = $2, note = $3, insp_miles = $4, hold_reason = $5, retorque_tires = $6, updated_at = now()`,
-        [bus, e.flags.join(","), e.note, e.inspMiles, e.holdReason, (e.retorqueTires || []).join(",")]
+        `INSERT INTO bus_flags (bus, flag, note, insp_miles, hold_reason, retorque_tires, insp_option, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+         ON CONFLICT (bus) DO UPDATE SET flag = $2, note = $3, insp_miles = $4, hold_reason = $5, retorque_tires = $6, insp_option = $7, updated_at = now()`,
+        [bus, e.flags.join(","), e.note, e.inspMiles, e.holdReason, (e.retorqueTires || []).join(","), e.inspOption || ""]
       );
     }
     return;
