@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { buildLaneColumns, COL_HEADERS, printDate } from "../lib/fuelLayout";
+import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator, fuelFlagSections } from "../lib/grid";
 import { useBusMaster } from "./BusMasterProvider";
@@ -28,16 +28,43 @@ interface FuelData {
 }
 type FuelStringField = "date" | "ns" | "start" | "end";
 
+// The Fuel/DEF list now comes from the master "lane" membership (active + the
+// Fuel/DEF toggle), kept in the sheet's familiar order: the original column
+// order first, then any newly-added lane buses appended. The grid stays at 4
+// columns × 35 rows (the paper layout) unless the lane outgrows it.
+const BASE_ORDER = FUEL_COLUMNS.flat().map(String);
+
+function buildLaneColumns(laneList: string[]) {
+  const laneSet = new Set(laneList);
+  const baseSet = new Set(BASE_ORDER);
+  const ordered = BASE_ORDER.filter((n) => laneSet.has(n));
+  const extras = laneList.filter((n) => !baseSet.has(n));
+  const list = [...ordered, ...extras];
+  const total = list.length;
+  const rows = Math.max(35, Math.ceil((total + 1) / 4));
+  const columns: (string | null)[][] = [[], [], [], []];
+  for (let i = 0; i < total; i++) columns[Math.floor(i / rows)][i % rows] = list[i];
+  for (const c of columns) while (c.length < rows) c.push(null);
+  return { columns, rows, total };
+}
+
 // Read a query param on the client (the headless PDF loads this page at
-// <path>?print=1). The 4-column lane build, headers, and printDate now live in
-// ../lib/fuelLayout so the on-screen sheet and the react-pdf printout share them.
+// <path>?print=1).
 function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
 }
+const COL_HEADERS = ["BUS", "GALS", "SERV", "BUS", "GALS", "SERV", "BUS", "GALS", "SERV", "BUS", "GALS", "SERV"];
 
 function emptyData(): FuelData {
   return { date: "", ns: "", start: "", end: "", entries: {} };
+}
+// The date the sheet is printed, as MM/DD/YY (e.g. 06/25/26).
+function printDate(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${mm}/${dd}/${String(d.getFullYear()).slice(-2)}`;
 }
 function sanitizeGals(raw: string): string {
   let s = String(raw).replace(/[^0-9.]/g, "");

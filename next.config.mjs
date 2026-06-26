@@ -3,7 +3,7 @@ const nextConfig = {
   // Keep the Postgres driver out of the bundle (it's only loaded at runtime in
   // production via a dynamic import); avoids webpack trying to resolve it.
   experimental: {
-    serverComponentsExternalPackages: ["pg", "@sparticuz/chromium", "puppeteer-core", "@react-pdf/renderer"],
+    serverComponentsExternalPackages: ["pg", "@sparticuz/chromium", "puppeteer-core"],
     // Force the Chromium binary AND its sibling shared libraries (libnss3.so,
     // etc.) into the /api/pdf function bundle. Next's tracer includes the binary
     // but misses these runtime-loaded files — the cause of the earlier
