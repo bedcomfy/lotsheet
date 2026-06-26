@@ -17,21 +17,44 @@ const PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10]];
 // "Berto" grouping: 1·2, then 3·4·5·6 together, then 7·8, 9·10, 11.
 const BERTO_GROUPS = [[0, 1], [2, 3, 4, 5], [6, 7], [8, 9], [10]];
 
+interface FillCell {
+  id: string;
+  label: string;
+  blocked?: false;
+}
+interface BlockedCell {
+  blocked: true;
+}
+type Cell = FillCell | BlockedCell;
+
 // Top-to-bottom positions in one garage row column: the outside (front) bus
 // for ROW 1–6, then each slot going back.
-function columnCells(c) {
-  const out = [];
+function columnCells(c: number): Cell[] {
+  const out: Cell[] = [];
   if (c < FRONT_COLUMNS) out.push({ id: frontCellId(c), label: "Out" });
   for (let b = 0; b < SLOTS.length; b++) {
     const slot = SLOTS[b][c];
     if (slot === "X") out.push({ blocked: true });
     else if (slot === null) out.push({ id: row11CellId(b), label: String(b + 1) });
-    else out.push({ id: numberedCellId(slot), label: String(slot) });
+    else out.push({ id: numberedCellId(slot as number), label: String(slot) });
   }
   return out;
 }
 
-export default function RowFill({ getNum, saveNum, locate, onClose }) {
+interface Dup {
+  id: string;
+  value: string;
+  where: string;
+}
+
+interface RowFillProps {
+  getNum: (id: string) => string;
+  saveNum: (id: string, v: string) => void;
+  locate?: (bus: string, exceptId: string | null) => string;
+  onClose: () => void;
+}
+
+export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillProps) {
   useScrollLock();
   const { isKnown: isKnownBus } = useBusMaster();
   const [berto, setBerto] = useState(() => {
@@ -44,8 +67,8 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
   });
   const [step, setStep] = useState(0);
   const [swapped, setSwapped] = useState(false);
-  const [dup, setDup] = useState(null); // { id, value, where } for a blocked duplicate
-  const inputs = useRef({});
+  const [dup, setDup] = useState<Dup | null>(null); // a blocked duplicate
+  const inputs = useRef<Record<string, HTMLInputElement>>({});
 
   const groups = berto ? BERTO_GROUPS : PAIRS;
   // The rows shown on this screen, left → right (swap reverses the order).
@@ -60,14 +83,15 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
   const upward = cols[0] % 2 === 0;
 
   // Focus order: across all columns at each row position, skipping blocked cells.
-  const order = [];
+  const order: string[] = [];
   for (let k = 0; k < rows; k++) {
     const i = upward ? rows - 1 - k : k;
     for (const cc of colCells) {
-      if (cc[i] && !cc[i].blocked) order.push(cc[i].id);
+      const cell = cc[i];
+      if (cell && !cell.blocked) order.push(cell.id);
     }
   }
-  function focusNext(id) {
+  function focusNext(id: string) {
     const next = order[order.indexOf(id) + 1];
     if (next && inputs.current[next]) inputs.current[next].focus();
   }
@@ -87,14 +111,14 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
 
   // NOTE: rendered inline (not as a <Box> component) so the inputs keep focus
   // across re-renders instead of remounting on every keystroke.
-  function renderBox(cell) {
+  function renderBox(cell: Cell | undefined) {
     if (!cell) return <div className="rf__box rf__box--empty" />;
     if (cell.blocked) return <div className="rf__box rf__box--blocked">X</div>;
     const id = cell.id;
-    const isDupHere = dup && dup.id === id;
+    const isDupHere = !!dup && dup.id === id;
     // Show the rejected duplicate value locally until it's changed; it is NOT
     // saved to the sheet, so a bus can't be entered in two places.
-    const val = isDupHere ? dup.value : getNum(id);
+    const val = isDupHere && dup ? dup.value : getNum(id);
     const invalid = !isDupHere && val.length >= 4 && !isKnownBus(val);
     return (
       <label
@@ -132,7 +156,7 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
             }
           }}
         />
-        {isDupHere && <span className="rf__dup">already at {dup.where}</span>}
+        {isDupHere && dup && <span className="rf__dup">already at {dup.where}</span>}
       </label>
     );
   }
@@ -143,7 +167,7 @@ export default function RowFill({ getNum, saveNum, locate, onClose }) {
       ? `ROW ${rowNums[0]}`
       : `ROW ${rowNums.slice(0, -1).join(", ")} & ${rowNums[rowNums.length - 1]}`;
 
-  function go(delta) {
+  function go(delta: number) {
     setStep((p) => Math.max(0, Math.min(groups.length - 1, p + delta)));
     setSwapped(false);
   }

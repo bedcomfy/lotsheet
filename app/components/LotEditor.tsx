@@ -6,24 +6,36 @@ import { sanitizeBus } from "../lib/buses";
 import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
+import type { FlagMap } from "../lib/types";
 
-export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
+interface LotEditorProps {
+  title: string;
+  list: string[];
+  flags?: FlagMap;
+  locate?: (bus: string, exceptId: string | null) => string;
+  onAdd: (bus: string) => void;
+  onRemove: (i: number) => void;
+  onMove: (i: number, dir: number) => void;
+  onClose: () => void;
+}
+
+export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
   useScrollLock();
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
-  const ref = useRef(null);
+  const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     ref.current?.focus();
   }, []);
   useEffect(() => {
-    const k = (e) => e.key === "Escape" && onClose();
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
 
-  function add(bus) {
+  function add(bus?: string) {
     const b = sanitizeBus(bus != null ? bus : val);
     if (b.length < 4) return;
     const where = locate ? locate(b, null) : "";
@@ -42,7 +54,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
   const known = isKnownBus(val);
   const showWarn = val.length >= 4 && !known;
 
-  function onChange(raw) {
+  function onChange(raw: string) {
     const v = sanitizeBus(raw);
     setDup("");
     // Autocomplete: as soon as a valid bus is typed, add it (like the grid /

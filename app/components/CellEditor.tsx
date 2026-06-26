@@ -6,16 +6,27 @@ import { sanitizeBus } from "../lib/buses";
 import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
+import type { FlagEntry, FlagMap } from "../lib/types";
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }) {
+interface CellEditorProps {
+  subLabel?: string;
+  value?: string;
+  flags?: FlagMap;
+  cellId: string;
+  locate?: (bus: string, exceptId: string | null) => string;
+  onSave: (v: string) => void;
+  onClose: () => void;
+}
+
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }: CellEditorProps) {
   useScrollLock();
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Save unless the bus is already placed elsewhere on the sheet.
-  function trySave(v) {
+  function trySave(v?: string) {
     const n = (v ?? num).trim();
     if (n) {
       const where = locate ? locate(n, cellId) : "";
@@ -32,7 +43,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
   }, []);
 
   useEffect(() => {
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
@@ -42,14 +53,14 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
   const known = isKnownBus(num);
   const showWarning = num.length >= 4 && !known;
 
-  const entry = num && flags ? flags[num] || { flags: [], note: "" } : { flags: [], note: "" };
+  const entry: FlagEntry | null = num && flags ? flags[num] || null : null;
   const types = num ? busTypes(num) : [];
   const typeLabels = types
     .map((t) => typeInfo(t)?.label)
     .filter(Boolean)
     .join(", ");
-  const flagText = (entry.flags || []).map((f) => flagLabel(f)).join(", ");
-  const note = (entry.note || "").trim();
+  const flagText = (entry?.flags || []).map((f) => flagLabel(f)).join(", ");
+  const note = (entry?.note || "").trim();
   const miles = inspMilesDisplay(entry);
   const showReadout = num.length >= 4 && (types.length > 0 || flagText || note || miles);
 
