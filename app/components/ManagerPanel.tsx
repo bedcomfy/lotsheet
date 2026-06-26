@@ -12,7 +12,7 @@ import {
   entryHasContent,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -295,7 +295,6 @@ interface ManagerPanelProps {
 }
 
 export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }: ManagerPanelProps) {
-  useScrollLock();
   const { numbers, isKnown, label } = useBusMaster();
   const [tab, setTab] = useState<"bus" | "flag">("bus");
   const [query, setQuery] = useState(initialBus || "");
@@ -383,7 +382,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     : flagBuses;
 
   return (
-    <div className="manager no-print">
+    <Overlay onClose={onClose} contentClassName="manager no-print" label="Edit flags">
       <div className="manager__inner">
         <div className="manager__bar">
           <div className="manager__title">Edit flags</div>
@@ -533,6 +532,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           </div>
         )}
       </div>
-    </div>
+    </Overlay>
   );
 }

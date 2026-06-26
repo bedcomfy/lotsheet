@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -19,7 +19,6 @@ interface CellEditorProps {
 }
 
 export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }: CellEditorProps) {
-  useScrollLock();
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -42,14 +41,6 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const known = isKnownBus(num);
   const showWarning = num.length >= 4 && !known;
 
@@ -65,8 +56,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
   const showReadout = num.length >= 4 && (types.length > 0 || flagText || note || miles);
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal" label="Bus number">
         <div className="modal__head">
           <div>
             <div className="modal__title">Bus number</div>
@@ -139,7 +129,6 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
             Save
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

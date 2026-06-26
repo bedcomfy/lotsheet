@@ -9,7 +9,7 @@ import {
   row11CellId,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 
 // Garage rows are normally walked two at a time. (0-indexed; ROW 11 stands alone.)
@@ -55,7 +55,6 @@ interface RowFillProps {
 }
 
 export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillProps) {
-  useScrollLock();
   const { isKnown: isKnownBus } = useBusMaster();
   const [berto, setBerto] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -179,7 +178,7 @@ export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillPro
   }
 
   return (
-    <div className="manager no-print">
+    <Overlay onClose={onClose} contentClassName="manager no-print" label="Fill Rows">
       <div className="manager__inner">
         <div className="manager__bar">
           <div className="manager__title">Fill Rows</div>
@@ -234,6 +233,6 @@ export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillPro
           ))}
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }

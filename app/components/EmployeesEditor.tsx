@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import type { Employee } from "../lib/types";
 
 interface EmployeesEditorProps {
@@ -12,7 +12,6 @@ interface EmployeesEditorProps {
 // Simple add/remove rows; everyday staff can keep it current. Free text is still
 // allowed on the sheets, so this only needs the people you want suggested.
 export default function EmployeesEditor({ onClose }: EmployeesEditorProps) {
-  useScrollLock();
   const [rows, setRows] = useState<Employee[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,8 +58,7 @@ export default function EmployeesEditor({ onClose }: EmployeesEditorProps) {
     );
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label="Employees">
         <div className="modal__head">
           <div>
             <div className="modal__title">Employees</div>
@@ -116,7 +114,6 @@ export default function EmployeesEditor({ onClose }: EmployeesEditorProps) {
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

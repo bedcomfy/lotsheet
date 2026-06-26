@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { masterToCsv, csvToMaster } from "../lib/buses";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 
 interface CsvEditorProps {
@@ -58,8 +59,7 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
   }
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--wide modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--wide modal--tall" label="Edit full list">
         <div className="modal__head">
           <div>
             <div className="modal__title">Edit full list (CSV)</div>
@@ -94,7 +94,6 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

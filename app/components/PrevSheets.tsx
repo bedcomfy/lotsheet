@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import type { HistoryEntry } from "../lib/store";
 
 // Count how many buses are recorded on a sheet (grid cells + back-of-sheet lots).
@@ -35,7 +35,6 @@ interface PrevSheetsProps {
 }
 
 export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
-  useScrollLock();
   const [sheets, setSheets] = useState<HistoryEntry[] | null>(null); // null = loading
   const [busy, setBusy] = useState<string | null>(null); // id being acted on
 
@@ -45,12 +44,6 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
       .then((d) => setSheets(Array.isArray(d.sheets) ? d.sheets : []))
       .catch(() => setSheets([]));
   }, []);
-
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
 
   async function remove(id: string) {
     if (!window.confirm("Delete this saved sheet permanently?")) return;
@@ -68,8 +61,7 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
   }
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label="Prev Sheets">
         <div className="modal__head">
           <div>
             <div className="modal__title">Prev Sheets</div>
@@ -128,7 +120,6 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
             Done
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

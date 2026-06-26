@@ -686,24 +686,41 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
+/* Visually hidden but available to screen readers (e.g. Radix Dialog titles). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ---------- Modal editor (screen only) ---------- */
+/* Backdrop is just the dim layer now; Radix renders the dialog box as a sibling,
+   so the box positions itself (see .modal). The page behind is scroll-locked by
+   Radix (react-remove-scroll), which is iOS-safe and stops bleed-through. */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  /* Cover the whole screen (no bleed-through), but pad the bottom up by the
-     keyboard height so the bottom sheet sits just above the keyboard on iOS. */
-  padding-bottom: var(--kb, 0px);
   background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   z-index: 50;
 }
+/* Mobile = bottom sheet lifted above the keyboard; desktop = centered. */
 .modal {
-  background: #fff;
-  color: var(--ink); /* don't inherit the dark nav's white text */
+  position: fixed;
+  z-index: 51;
+  left: 0;
+  right: 0;
+  bottom: var(--kb, 0px);
+  margin: 0 auto;
   width: 100%;
   max-width: 460px;
+  background: #fff;
+  color: var(--ink); /* don't inherit the dark nav's white text */
   border-radius: 16px 16px 0 0;
   padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
@@ -712,10 +729,13 @@ button {
   overflow-y: auto;
 }
 @media (min-width: 540px) {
-  .modal-backdrop {
-    align-items: center;
-  }
   .modal {
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
     border-radius: 16px;
   }
   .modal--wide {

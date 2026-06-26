@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import type { HistoryEntry } from "../lib/store";
 
 function savedLabel(iso: string | null | undefined): string {
@@ -29,7 +29,6 @@ interface SheetHistoryProps {
 // Generic "Prev Sheets" browser. `apiBase` is the history endpoint
 // (e.g. /api/state/fuel/history); `describe(sheet)` returns { title, meta }.
 export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }: SheetHistoryProps) {
-  useScrollLock();
   const [sheets, setSheets] = useState<HistoryEntry[] | null>(null); // null = loading
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -39,12 +38,6 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
       .then((d) => setSheets(Array.isArray(d.sheets) ? d.sheets : []))
       .catch(() => setSheets([]));
   }, [apiBase]);
-
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
 
   async function remove(id: string) {
     if (!window.confirm("Delete this saved sheet permanently?")) return;
@@ -60,8 +53,7 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
   }
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label={title}>
         <div className="modal__head">
           <div>
             <div className="modal__title">{title}</div>
@@ -114,7 +106,6 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
             Done
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

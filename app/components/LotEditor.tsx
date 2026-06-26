@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import type { FlagMap } from "../lib/types";
@@ -20,7 +20,6 @@ interface LotEditorProps {
 }
 
 export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
-  useScrollLock();
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -29,11 +28,6 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
   useEffect(() => {
     ref.current?.focus();
   }, []);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
 
   function add(bus?: string) {
     const b = sanitizeBus(bus != null ? bus : val);
@@ -64,8 +58,7 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
   }
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label={title}>
         <div className="modal__head">
           <div>
             <div className="modal__title">{title}</div>
@@ -148,7 +141,6 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
             Done
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }

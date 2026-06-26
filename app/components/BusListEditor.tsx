@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { BUS_CATEGORIES, BUS_STATUSES } from "../lib/buses";
-import { useScrollLock } from "../lib/useScrollLock";
+import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 import CsvEditor from "./CsvEditor";
 import TypeCodes from "./TypeCodes";
@@ -17,7 +17,6 @@ interface BusListEditorProps {
 // Editing the bus master list is gated by a password (kept simple — it's a
 // deterrent so everyday staff don't change the fleet by accident).
 export default function BusListEditor({ onClose }: BusListEditorProps) {
-  useScrollLock();
   const [unlocked, setUnlocked] = useState(
     () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("pace:buslist") === "1"
   );
@@ -37,8 +36,7 @@ export default function BusListEditor({ onClose }: BusListEditorProps) {
 
   if (!unlocked) {
     return (
-      <div className="modal-backdrop no-print" onClick={onClose}>
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal" label="Bus Lists">
           <div className="modal__head">
             <div>
               <div className="modal__title">Bus Lists</div>
@@ -66,8 +64,7 @@ export default function BusListEditor({ onClose }: BusListEditorProps) {
             </button>
           </div>
           {pwErr && <div className="pwgate__err">Wrong password.</div>}
-        </div>
-      </div>
+      </Overlay>
     );
   }
 
@@ -120,8 +117,7 @@ function Editor({ onClose }: BusListEditorProps) {
   if (csvOpen) return <CsvEditor onClose={() => setCsvOpen(false)} onSaved={onClose} />;
 
   return (
-    <div className="modal-backdrop no-print" onClick={onClose}>
-      <div className="modal modal--tall" onClick={(e) => e.stopPropagation()}>
+    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label="Bus Lists">
         <div className="modal__head">
           <div>
             <div className="modal__title">Bus Lists</div>
@@ -189,7 +185,6 @@ function Editor({ onClose }: BusListEditorProps) {
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
-    </div>
+    </Overlay>
   );
 }
