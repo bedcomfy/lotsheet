@@ -11,7 +11,7 @@ export async function GET() {
 
 // Set a bus's full list of flags (empty clears it). Sheets are global and saved
 // on the website, so there's no separate manager password.
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const bus = String(body.bus || "").trim();
   if (!bus) {

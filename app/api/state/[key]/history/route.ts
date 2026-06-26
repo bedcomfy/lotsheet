@@ -6,12 +6,16 @@ export const dynamic = "force-dynamic";
 // Prev Sheets archive for the hub sheets (fuel / def / turnover), keyed per sheet.
 const ALLOWED = new Set(["fuel", "def", "turnover"]);
 
-function check(key) {
+function check(key: string): boolean {
   return ALLOWED.has(key);
 }
 
+interface KeyParams {
+  params: { key: string };
+}
+
 // List this sheet's archived copies, newest first.
-export async function GET(_req, { params }) {
+export async function GET(_req: Request, { params }: KeyParams) {
   const { key } = params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const sheets = await listHistory(key);
@@ -19,7 +23,7 @@ export async function GET(_req, { params }) {
 }
 
 // Archive a copy of this sheet (capped at 20 newest per sheet).
-export async function POST(req, { params }) {
+export async function POST(req: Request, { params }: KeyParams) {
   const { key } = params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const body = await req.json().catch(() => ({}));
@@ -32,7 +36,7 @@ export async function POST(req, { params }) {
 }
 
 // Delete one archived copy by id (?id=...).
-export async function DELETE(req, { params }) {
+export async function DELETE(req: Request, { params }: KeyParams) {
   const { key } = params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const id = new URL(req.url).searchParams.get("id");

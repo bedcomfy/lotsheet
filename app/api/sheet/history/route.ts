@@ -10,7 +10,7 @@ export async function GET() {
 }
 
 // Archive a lot sheet into the history (capped at 20 newest on the server).
-export async function POST(req) {
+export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (!body || typeof body.sheet !== "object" || body.sheet === null) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(req) {
 }
 
 // Delete one archived sheet by id (?id=...).
-export async function DELETE(req) {
+export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });

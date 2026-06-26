@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 // Sheets allowed to use the shared keyed store. Add new sheet keys here.
 const ALLOWED = new Set(["fuel", "def", "turnover"]);
 
-export async function GET(_req, { params }) {
+interface KeyParams {
+  params: { key: string };
+}
+
+export async function GET(_req: Request, { params }: KeyParams) {
   const key = params.key;
   if (!ALLOWED.has(key)) {
     return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
@@ -15,7 +19,7 @@ export async function GET(_req, { params }) {
   return NextResponse.json({ value, updatedAt });
 }
 
-export async function PUT(req, { params }) {
+export async function PUT(req: Request, { params }: KeyParams) {
   const key = params.key;
   if (!ALLOWED.has(key)) {
     return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });

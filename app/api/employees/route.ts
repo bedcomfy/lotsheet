@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getState, setState } from "../../lib/store";
+import type { Employee } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
 // The shared employee list (name + badge) used to autofill the Turnover sheet.
 // Free text is still allowed everywhere — this is only for suggestions.
-function sanitize(list) {
+function sanitize(list: unknown): Employee[] {
   if (!Array.isArray(list)) return [];
-  const seen = new Set();
-  const out = [];
+  const seen = new Set<string>();
+  const out: Employee[] = [];
   for (const e of list) {
     const name = String(e?.name ?? "").trim();
     const badge = String(e?.badge ?? "").trim();
@@ -23,10 +24,11 @@ function sanitize(list) {
 
 export async function GET() {
   const { value, updatedAt } = await getState("employees");
-  return NextResponse.json({ employees: (value && value.employees) || [], updatedAt });
+  const v = value as { employees?: Employee[] } | null;
+  return NextResponse.json({ employees: (v && v.employees) || [], updatedAt });
 }
 
-export async function PUT(req) {
+export async function PUT(req: Request) {
   const body = await req.json().catch(() => ({}));
   const employees = sanitize(body.employees);
   const updatedAt = await setState("employees", { employees });

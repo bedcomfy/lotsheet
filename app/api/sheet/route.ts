@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSheet, setSheet } from "../../lib/store";
+import type { LotSheet, Lots } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export async function GET() {
 }
 
 // Public: save the shared current sheet. Last write wins.
-export async function PUT(req) {
+export async function PUT(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (!body || typeof body.sheet !== "object" || body.sheet === null) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
@@ -24,13 +25,13 @@ export async function PUT(req) {
 // it shares the North/East/Fence lots two-way without overwriting the lot grid.
 // (Reasons are NOT stored here — a bus's "reason" on the Turnover is its
 // universal flags, edited via the flag menu and kept independent of placement.)
-export async function PATCH(req) {
+export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { sheet } = await getSheet();
-  const base = sheet && typeof sheet === "object" ? sheet : {};
-  const next = { ...base };
+  const base: LotSheet = (sheet && typeof sheet === "object" ? sheet : {}) as LotSheet;
+  const next: LotSheet = { ...base };
   if (body.lots && typeof body.lots === "object") {
-    next.lots = { ...(base.lots || {}), ...body.lots };
+    next.lots = { ...(base.lots || {}), ...(body.lots as Lots) };
   }
   const updatedAt = await setSheet(next);
   return NextResponse.json({ ok: true, updatedAt, lots: next.lots || {} });
