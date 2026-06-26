@@ -1,13 +1,15 @@
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import SheetNav from "./components/SheetNav";
 import { BusMasterProvider } from "./components/BusMasterProvider";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Pace Sheets",
   description: "Digital garage sheets — lot, turnover, fuel",
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   // Allow pinch-zoom so the full grid stays usable on phones.
@@ -15,7 +17,7 @@ export const viewport = {
   userScalable: true,
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>

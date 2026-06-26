@@ -1,7 +1,7 @@
 // The fuel/DEF sheet's fixed bus list and 4-column layout, transcribed exactly
 // from the PNW Fuel/DEF sheet (126 buses, columns of 35/35/35/21). This is its
 // own list — NOT the full lot roster (the 30' buses aren't fueled here).
-export const FUEL_COLUMNS = [
+export const FUEL_COLUMNS: string[][] = [
   [
     "2770", "2771", "2772", "2774", "2775", "2776", "2779", "2781", "2801",
     "6392", "6393", "6394", "6395", "6396", "6397", "6398", "6399", "6400",
