@@ -48,7 +48,6 @@ function emptySheet() {
     inShop: "",
     cells: {}, // id -> bus number string
     lots: { north: [], east: [], fence: [] }, // back-of-sheet ordered lists
-    lotReasons: {}, // bus -> reason (shared with the Turnover sheet)
   };
 }
 
@@ -386,23 +385,9 @@ export default function LotSheet() {
   function removeFromLot(key, index) {
     setSheet((s) => {
       const lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      const removed = (lots[key] || [])[index];
-      const lotReasons = { ...(s.lotReasons || {}) };
-      if (removed) delete lotReasons[removed]; // drop the shared reason too
-      return {
-        ...s,
-        lots: { ...lots, [key]: lots[key].filter((_, i) => i !== index) },
-        lotReasons,
-      };
-    });
-  }
-  // The reason a bus is in a lot — shared with the Turnover sheet.
-  function setLotReason(bus, reason) {
-    setSheet((s) => {
-      const lotReasons = { ...(s.lotReasons || {}) };
-      if (reason && reason.trim()) lotReasons[bus] = reason;
-      else delete lotReasons[bus];
-      return { ...s, lotReasons };
+      // Flags are NEVER auto-cleared when a bus leaves a lot — they persist
+      // until a user clears them in the flag menu.
+      return { ...s, lots: { ...lots, [key]: lots[key].filter((_, i) => i !== index) } };
     });
   }
   function moveInLot(key, index, dir) {
@@ -748,12 +733,10 @@ export default function LotSheet() {
           title={LOTS.find((l) => l.key === editingLot)?.title || ""}
           list={lotList(editingLot)}
           flags={flags}
-          reasons={sheet.lotReasons || {}}
           locate={locateBus}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
-          onReason={setLotReason}
           onClose={() => setEditingLot(null)}
         />
       )}

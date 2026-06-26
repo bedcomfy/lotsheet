@@ -7,7 +7,7 @@ import { useScrollLock } from "../lib/useScrollLock";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 
-export default function LotEditor({ title, list, flags = {}, reasons = {}, locate, onAdd, onRemove, onMove, onReason, onClose }) {
+export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }) {
   useScrollLock();
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
@@ -122,14 +122,6 @@ export default function LotEditor({ title, list, flags = {}, reasons = {}, locat
               <button className="busrow__clear" onClick={() => onRemove(i)}>
                 Remove
               </button>
-              {onReason && (
-                <input
-                  className="lotitem__reason"
-                  placeholder="Reason (shared with Turnover)"
-                  value={reasons[bus] || ""}
-                  onChange={(e) => onReason(bus, e.target.value)}
-                />
-              )}
             </div>
             );
           })}

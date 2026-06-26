@@ -1956,32 +1956,45 @@ button {
   }
 }
 
-/* ---------- Turnover sheet (LEGAL size, 8.5 x 14) ---------- */
+/* ---------- Turnover sheet (LEGAL size, 8.5 x 14) — fixed 1:1 grid ---------- */
 .turn-sheet {
   min-width: 740px; /* stays readable; scrolls horizontally on phones */
-  max-width: 800px;
+  max-width: 820px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   padding: 20px 24px;
   font-size: var(--tfz, 13px);
 }
-/* Header band */
-.turn-head__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.turnt {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  flex: 1 1 auto; /* fill the page; rows share the height — 1:1 with the paper */
+  height: 100%;
 }
-.turn-head__brand {
+.turnt td {
+  border: 1px solid #000;
+  padding: 0 4px;
+  font-size: var(--tfz, 13px);
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: middle;
+}
+/* Title + foreman/date band — no grid borders */
+.turnt__band td {
+  border: none;
+}
+.turnt__brand {
   font-weight: 700;
   font-size: calc(var(--tfz, 13px) + 4px);
   letter-spacing: 0.04em;
+  padding-bottom: 2px;
 }
-.turn-head__shift {
+.turnt__shiftpick {
+  text-align: right;
   white-space: nowrap;
 }
-.turn-head__sep {
+.turnt__shiftsep {
   color: #9ca3af;
   margin: 0 2px;
 }
@@ -1999,58 +2012,51 @@ button {
   outline: 2px solid #000;
   font-weight: 700;
 }
-.turn-head__fields {
-  display: flex;
-  gap: 18px;
-  margin-top: 4px;
-}
-.turn-head__field {
+.turnt__field {
   display: flex;
   align-items: center;
   gap: 5px;
-  flex: 1 1 auto;
-  border-bottom: 1px solid #000;
-}
-.turn-head__field--date {
-  flex: 0 0 38%;
+  padding: 4px 2px 6px;
 }
 .turnt__fieldlbl {
   font-weight: 600;
   white-space: nowrap;
 }
-/* Two-column band */
-.turn-cols {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-.turn-col {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-/* Section tables */
-.turnt {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-.turnt td {
-  border: 1px solid #000;
-  padding: 1px 4px;
-  font-size: var(--tfz, 13px);
-  white-space: nowrap;
-  overflow: hidden;
-  vertical-align: middle;
-  height: 1.7em;
-}
-.turnt__head td {
+.turnt__head td,
+td.turnt__head {
   text-align: center;
   font-weight: 700;
   text-decoration: underline;
   background: #f3f4f6;
+}
+.turnt__head--btn,
+.turnt__seclbl--btn,
+.turnt__reason--btn {
+  cursor: pointer;
+}
+.turnt__edit {
+  text-decoration: none;
+  color: var(--accent);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.turnt__seclbl {
+  text-align: center;
+  font-weight: 700;
+}
+.turnt__c {
+  text-align: center;
+}
+.turnt__veh {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.turnt__reason {
+  text-align: left;
+}
+.turnt__reasonhint {
+  color: var(--muted);
 }
 .turnt__bayno {
   text-align: center;
@@ -2105,18 +2111,6 @@ button {
 .empac__badge {
   color: var(--muted);
 }
-/* LotEditor shared-reason line (the lot-sheet side of the shared reason) */
-.lotitem {
-  flex-wrap: wrap;
-}
-.lotitem__reason {
-  flex-basis: 100%;
-  margin-top: 6px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 14px;
-}
 /* Employees editor */
 .emplist {
   flex: 1;
@@ -2150,10 +2144,15 @@ button {
     min-width: 0;
     max-width: none;
     width: 100%;
-    padding: 0.3in 0.36in;
-    gap: 7px;
+    padding: 0.32in 0.36in;
   }
-  .turnt td {
-    height: auto;
+  .turnt {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+  /* The on-screen edit affordances don't print. */
+  .turnt__edit,
+  .turnt__reasonhint {
+    display: none;
   }
 }

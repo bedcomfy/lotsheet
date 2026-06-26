@@ -264,12 +264,12 @@ function BusFlagEditor({ entry, onChange }) {
   );
 }
 
-export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated }) {
+export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }) {
   useScrollLock();
   const { numbers, isKnown, label } = useBusMaster();
   const [tab, setTab] = useState("bus");
-  const [query, setQuery] = useState("");
-  const [openBus, setOpenBus] = useState(null);
+  const [query, setQuery] = useState(initialBus || "");
+  const [openBus, setOpenBus] = useState(initialBus || null);
   const [dept, setDept] = useState(DEPARTMENTS[0].id);
   const [pickedFlag, setPickedFlag] = useState(DEPARTMENTS[0].flags[0]);
   const [busInput, setBusInput] = useState("");

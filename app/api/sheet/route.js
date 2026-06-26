@@ -19,10 +19,11 @@ export async function PUT(req) {
   return NextResponse.json({ ok: true, updatedAt });
 }
 
-// Merge ONLY the back-of-sheet lots / their reasons into the stored sheet,
-// server-side, leaving the grid cells (and everything else) untouched. Used by
-// the Turnover sheet so it shares the North/East/Fence lots two-way without
-// overwriting the lot grid. Reasons are keyed by bus; empties are pruned.
+// Merge ONLY the back-of-sheet lots into the stored sheet, server-side, leaving
+// the grid cells (and everything else) untouched. Used by the Turnover sheet so
+// it shares the North/East/Fence lots two-way without overwriting the lot grid.
+// (Reasons are NOT stored here — a bus's "reason" on the Turnover is its
+// universal flags, edited via the flag menu and kept independent of placement.)
 export async function PATCH(req) {
   const body = await req.json().catch(() => ({}));
   const { sheet } = await getSheet();
@@ -31,15 +32,6 @@ export async function PATCH(req) {
   if (body.lots && typeof body.lots === "object") {
     next.lots = { ...(base.lots || {}), ...body.lots };
   }
-  if (body.lotReasons && typeof body.lotReasons === "object") {
-    // Authoritative replace (pruned) — the sender holds the full reason set, so
-    // a reason whose bus was removed simply isn't sent and is dropped.
-    const clean = {};
-    for (const [k, v] of Object.entries(body.lotReasons)) {
-      if (v && String(v).trim()) clean[k] = v;
-    }
-    next.lotReasons = clean;
-  }
   const updatedAt = await setSheet(next);
-  return NextResponse.json({ ok: true, updatedAt, lots: next.lots || {}, lotReasons: next.lotReasons || {} });
+  return NextResponse.json({ ok: true, updatedAt, lots: next.lots || {} });
 }
