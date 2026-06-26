@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
@@ -10,13 +11,14 @@ import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanel";
 import LotEditor from "./LotEditor";
+import type { Employee, FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
 
 const STORAGE_KEY = "turnover";
 const FONT_DEFAULT = 13;
 const FONT_MIN = 8;
 const FONT_MAX = 16;
 
-const SHIFTS = [
+const SHIFTS: [string, string][] = [
   ["3rd1st", "3rd to 1st"],
   ["1st2nd", "1st to 2nd"],
   ["2nd3rd", "2nd to 3rd"],
@@ -35,38 +37,40 @@ const LANE_HDR = 30;
 const CALL_HDR = 37;
 const BAY_ROWS = 10;
 
-function param(name) {
+type TurnoverLots = Record<LotKey, string[]>;
+
+function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
 }
-function emptyData() {
+function emptyData(): TurnoverData {
   return { cells: {}, shift: "" };
 }
 
 export default function TurnoverSheet() {
   const { label: busLabel } = useBusMaster();
-  const [data, setData] = useState(emptyData);
+  const [data, setData] = useState<TurnoverData>(emptyData);
   const [loaded, setLoaded] = useState(false);
-  const [savedAt, setSavedAt] = useState(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
 
-  const [lots, setLots] = useState({
+  const [lots, setLots] = useState<TurnoverLots>({
     north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [],
   });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
-  const lotTimer = useRef(null);
-  const [editingLot, setEditingLot] = useState(null);
+  const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [editingLot, setEditingLot] = useState<LotKey | null>(null);
 
-  const [flags, setFlags] = useState({});
-  const [flagBus, setFlagBus] = useState(null);
+  const [flags, setFlags] = useState<FlagMap>({});
+  const [flagBus, setFlagBus] = useState<string | null>(null);
 
-  const [employees, setEmployees] = useState([]);
-  const saveTimer = useRef(null);
-  const prewarmTimer = useRef(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const isPrint = param("print") === "1";
@@ -133,7 +137,7 @@ export default function TurnoverSheet() {
       clearInterval(iv);
     };
   }, []);
-  function onBusFlagsUpdated(bus, entry) {
+  function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
     setFlags((prev) => {
       const next = { ...prev };
       const empty =
@@ -178,7 +182,7 @@ export default function TurnoverSheet() {
     };
   }, []);
 
-  function patchLots(nextLots) {
+  function patchLots(nextLots: TurnoverLots) {
     setLots(nextLots);
     lotDirty.current = true;
     clearTimeout(lotTimer.current);
@@ -200,27 +204,29 @@ export default function TurnoverSheet() {
   }
   // BAY is 10 fixed spots — type the bus into each (no reorder). Stored as a
   // 10-length array so the duplicate guard still finds the bus.
-  function setBayBus(i, raw) {
+  function setBayBus(i: number, raw: string) {
     const b = sanitizeBus(raw);
     const arr = Array.from({ length: BAY_ROWS }, (_, j) => (lots.bay || [])[j] || "");
     arr[i] = b;
     patchLots({ ...lots, bay: arr });
   }
-  const addToLot = (key, bus) => patchLots({ ...lots, [key]: [...(lots[key] || []), bus] });
-  const removeFromLot = (key, i) => patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) });
-  function moveInLot(key, i, dir) {
+  const addToLot = (key: LotKey, bus: string) =>
+    patchLots({ ...lots, [key]: [...(lots[key] || []), bus] } as TurnoverLots);
+  const removeFromLot = (key: LotKey, i: number) =>
+    patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) } as TurnoverLots);
+  function moveInLot(key: LotKey, i: number, dir: number) {
     const arr = [...(lots[key] || [])];
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
-    patchLots({ ...lots, [key]: arr });
+    patchLots({ ...lots, [key]: arr } as TurnoverLots);
   }
-  const LOT_LABELS = {
+  const LOT_LABELS: Record<LotKey, string> = {
     north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
     northlane: "North Lane", southlane: "South Lane", bay: "Bay",
   };
-  function locateLot(bus) {
-    for (const k of Object.keys(LOT_LABELS)) {
+  function locateLot(bus: string): string {
+    for (const k of Object.keys(LOT_LABELS) as LotKey[]) {
       if ((lots[k] || []).includes(bus)) return LOT_LABELS[k];
     }
     return "";
@@ -270,13 +276,14 @@ export default function TurnoverSheet() {
     return () => clearTimeout(saveTimer.current);
   }, [data, loaded, printMode]);
 
-  function setCell(key, value) {
+  function setCell(key: string, value: string) {
     setData((d) => ({ ...d, cells: { ...d.cells, [key]: value } }));
   }
-  function setShift(value) {
+  function setShift(value: string) {
     setData((d) => ({ ...d, shift: d.shift === value ? "" : value }));
   }
-  const hasContent = (d) => !!(d && (d.shift || Object.values(d.cells || {}).some((v) => v && String(v).trim())));
+  const hasContent = (d: TurnoverData | null | undefined) =>
+    !!(d && (d.shift || Object.values(d.cells || {}).some((v) => v && String(v).trim())));
 
   async function archiveCurrent() {
     if (!hasContent(data)) return;
@@ -291,7 +298,7 @@ export default function TurnoverSheet() {
     await archiveCurrent();
     setData(emptyData());
   }
-  async function importSheet(imported, id) {
+  async function importSheet(imported: any, id?: string) {
     if (!imported) return;
     await archiveCurrent();
     setData({ ...emptyData(), ...imported });
@@ -312,16 +319,16 @@ export default function TurnoverSheet() {
     });
   }
 
-  const E = (key, props = {}) => (
+  const E = (key: string, props: Partial<ComponentProps<typeof EmployeeInput>> = {}) => (
     <EmployeeInput value={data.cells[key] || ""} onChange={(v) => setCell(key, v)} employees={employees} {...props} />
   );
-  const C = (key, props = {}) => (
+  const C = (key: string, props: ComponentProps<"input"> = {}) => (
     <input className="turnt__in" value={data.cells[key] || ""} onChange={(e) => setCell(key, e.target.value)} {...props} />
   );
 
   // A lot slot: MECH (employee) | VEH# (shared list; click to add/reorder) |
   // REASON (the bus's flags; click to edit flags). Empty slots open the editor.
-  function lotSlot(lotKey, idx, reasonSpan) {
+  function lotSlot(lotKey: LotKey, idx: number, reasonSpan: number) {
     const bus = (lots[lotKey] || [])[idx] || "";
     return (
       <>
@@ -342,7 +349,7 @@ export default function TurnoverSheet() {
 
   // A single-column bus-list cell (lanes / bay halves): shows the bus; click to
   // add/reorder via the lot editor. `prefix` is an optional leading label.
-  function busListCell(lotKey, i, colSpan, prefix) {
+  function busListCell(lotKey: LotKey, i: number, colSpan: number, prefix?: ReactNode) {
     const bus = (lots[lotKey] || [])[i] || "";
     return (
       <td colSpan={colSpan} className="turnt__listcell turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
@@ -354,7 +361,7 @@ export default function TurnoverSheet() {
 
   // A label divider row inside the left column (FENCE / R-C / APRON) — click to
   // manage that lot.
-  const divider = (lotKey, label) => (
+  const divider = (lotKey: LotKey, label: string) => (
     <>
       <td />
       <td className="turnt__divlbl turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
@@ -371,9 +378,9 @@ export default function TurnoverSheet() {
   let rcIdx = 0;
   let apronIdx = 0;
   let eastIdx = 0;
-  const rows = [];
+  const rows: ReactNode[] = [];
   for (let sr = BODY_START; sr <= BODY_END; sr++) {
-    let left;
+    let left: ReactNode;
     if (sr === FENCE_ROW) left = divider("fence", "FENCE");
     else if (sr === RC_ROW) left = divider("rc", "R/C");
     else if (sr === APRON_ROW) left = divider("apron", "APRON");
@@ -382,7 +389,7 @@ export default function TurnoverSheet() {
     else if (sr < APRON_ROW) left = lotSlot("rc", rcIdx++, 2);
     else left = lotSlot("apron", apronIdx++, 2);
 
-    let right;
+    let right: ReactNode;
     if (sr === LANE_HDR) {
       right = (
         <>
@@ -446,7 +453,7 @@ export default function TurnoverSheet() {
         <button className="btn btn--primary" onClick={printPdf}>Print PDF</button>
       </div>
 
-      <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` }}>
+      <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` } as CSSProperties}>
         <div className={`sheet turn-sheet ${!printFlags ? "turn-sheet--blank" : ""}`}>
           <table className="turnt">
             <colgroup>
