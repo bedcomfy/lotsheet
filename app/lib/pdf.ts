@@ -2,7 +2,15 @@
 // (so it isn't pop-up-blocked), flushes the sheet's latest data to the server,
 // then loads the server-rendered PDF — auto-opening the print dialog on desktop
 // and the native PDF viewer on mobile.
-export function openSheetPdf({ path = "/", maint = false, params = {}, flush } = {}) {
+
+export interface OpenSheetPdfOptions {
+  path?: string;
+  maint?: boolean;
+  params?: Record<string, string | number | null | undefined>;
+  flush?: () => unknown;
+}
+
+export function openSheetPdf({ path = "/", maint = false, params = {}, flush }: OpenSheetPdfOptions = {}): void {
   if (typeof window === "undefined") return;
   const qs = new URLSearchParams({ path, maint: maint ? "1" : "0" });
   for (const [k, v] of Object.entries(params)) if (v != null) qs.set(k, String(v));
@@ -18,7 +26,7 @@ export function openSheetPdf({ path = "/", maint = false, params = {}, flush } =
       return;
     }
     if (isMobile) {
-      w.location = target;
+      w.location.href = target;
       return;
     }
     w.document.write(
