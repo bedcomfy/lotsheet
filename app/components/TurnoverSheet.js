@@ -52,7 +52,9 @@ export default function TurnoverSheet() {
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
 
-  const [lots, setLots] = useState({ north: [], east: [], fence: [], rc: [], apron: [] });
+  const [lots, setLots] = useState({
+    north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay1h: [], bay2h: [],
+  });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
   const lotTimer = useRef(null);
@@ -160,6 +162,10 @@ export default function TurnoverSheet() {
             fence: s.lots?.fence || [],
             rc: s.lots?.rc || [],
             apron: s.lots?.apron || [],
+            northlane: s.lots?.northlane || [],
+            southlane: s.lots?.southlane || [],
+            bay1h: s.lots?.bay1h || [],
+            bay2h: s.lots?.bay2h || [],
           });
         })
         .catch(() => {})
@@ -201,9 +207,13 @@ export default function TurnoverSheet() {
     [arr[i], arr[j]] = [arr[j], arr[i]];
     patchLots({ ...lots, [key]: arr });
   }
+  const LOT_LABELS = {
+    north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
+    northlane: "North Lane", southlane: "South Lane", bay1h: "Bay (1st half)", bay2h: "Bay (2nd half)",
+  };
   function locateLot(bus) {
-    for (const k of ["north", "east", "fence", "rc", "apron"]) {
-      if ((lots[k] || []).includes(bus)) return `${k.toUpperCase()} LOT`;
+    for (const k of Object.keys(LOT_LABELS)) {
+      if ((lots[k] || []).includes(bus)) return LOT_LABELS[k];
     }
     return "";
   }
@@ -322,6 +332,18 @@ export default function TurnoverSheet() {
     );
   }
 
+  // A single-column bus-list cell (lanes / bay halves): shows the bus; click to
+  // add/reorder via the lot editor. `prefix` is an optional leading label.
+  function busListCell(lotKey, i, colSpan, prefix) {
+    const bus = (lots[lotKey] || [])[i] || "";
+    return (
+      <td colSpan={colSpan} className="turnt__listcell turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
+        {prefix}
+        <span className="turnt__listbus">{bus ? busLabel(bus) : ""}</span>
+      </td>
+    );
+  }
+
   // A label divider row inside the left column (FENCE / R-C / APRON) — click to
   // manage that lot.
   const divider = (lotKey, label) => (
@@ -366,8 +388,8 @@ export default function TurnoverSheet() {
       right = (
         <>
           <td />
-          <td colSpan={2}>{C(`nlane-${i}`)}</td>
-          <td colSpan={2}>{C(`slane-${i}`)}</td>
+          {busListCell("northlane", i, 2)}
+          {busListCell("southlane", i, 2)}
         </>
       );
     } else if (sr === CALL_HDR) {
@@ -499,13 +521,8 @@ export default function TurnoverSheet() {
                   <tr key={`bay-${n}`}>
                     <td />
                     <td className="turnt__c">{C(`bay-${n}`, { className: "turnt__in turnt__in--c" })}</td>
-                    <td colSpan={3}>
-                      <div className="turnt__fline">
-                        <span className="turnt__bayno">{n})</span>
-                        {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
-                      </div>
-                    </td>
-                    <td colSpan={4}>{E(`bay2h-${n}`)}</td>
+                    {busListCell("bay1h", i, 3, <span className="turnt__bayno">{n})&nbsp;</span>)}
+                    {busListCell("bay2h", i, 4)}
                   </tr>
                 );
               })}
@@ -516,7 +533,7 @@ export default function TurnoverSheet() {
 
       {editingLot && (
         <LotEditor
-          title={`${editingLot.toUpperCase()} LOT`}
+          title={LOT_LABELS[editingLot] || editingLot}
           list={lots[editingLot] || []}
           flags={flags}
           locate={(bus) => locateLot(bus)}

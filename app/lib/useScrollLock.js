@@ -18,6 +18,9 @@ export function useScrollLock() {
     const { body } = document;
     const root = document.documentElement;
     const scrollY = window.scrollY;
+    // The vertical scrollbar disappears when we fix the body; reserve its width
+    // as padding so the page doesn't shift sideways on desktop.
+    const scrollbarW = Math.max(0, window.innerWidth - root.clientWidth);
     const prev = {
       position: body.style.position,
       top: body.style.top,
@@ -25,6 +28,7 @@ export function useScrollLock() {
       right: body.style.right,
       width: body.style.width,
       overflow: body.style.overflow,
+      paddingRight: body.style.paddingRight,
     };
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
@@ -32,6 +36,7 @@ export function useScrollLock() {
     body.style.right = "0";
     body.style.width = "100%";
     body.style.overflow = "hidden";
+    if (scrollbarW > 0) body.style.paddingRight = `${scrollbarW}px`;
 
     const vv = window.visualViewport;
     const applyVV = () => {
@@ -55,6 +60,7 @@ export function useScrollLock() {
       body.style.right = prev.right;
       body.style.width = prev.width;
       body.style.overflow = prev.overflow;
+      body.style.paddingRight = prev.paddingRight;
       window.scrollTo(0, scrollY);
       if (vv) {
         vv.removeEventListener("resize", applyVV);

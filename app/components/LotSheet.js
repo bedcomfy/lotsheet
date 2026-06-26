@@ -33,6 +33,12 @@ const LOTS = [
   { key: "east", title: "EAST LOT" },
   { key: "fence", title: "FENCE" },
 ];
+// Friendly names for EVERY shared lot (incl. the Turnover-managed ones) so the
+// duplicate guard can report where a bus already sits.
+const LOT_LOCATION_LABELS = {
+  north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
+  northlane: "North Lane", southlane: "South Lane", bay1h: "Bay (1st half)", bay2h: "Bay (2nd half)",
+};
 
 function emptySheet() {
   const now = new Date();
@@ -295,7 +301,9 @@ export default function LotSheet() {
       return;
     }
     await archiveSheet(sheet);
-    setSheet((s) => ({ ...s, lots: { north: [], east: [], fence: [] } }));
+    // Clear only the back-of-sheet lots; keep the Turnover-managed lots
+    // (R/C, Apron, Lanes, Bay) intact.
+    setSheet((s) => ({ ...s, lots: { ...(s.lots || {}), north: [], east: [], fence: [] } }));
   }
 
   // Bring a previous sheet back as the current shared sheet. The sheet that's up
@@ -412,9 +420,12 @@ export default function LotSheet() {
       const n = typeof v === "string" ? v : v && v.num;
       if (n === num) return cellLocationLabel(id);
     }
+    // Check every shared lot (North/East/Fence on this sheet, plus the
+    // Turnover-managed R/C, Apron, Lanes, and Bay) so a bus can't be in two
+    // places.
     const lots = sheet.lots || {};
-    for (const lot of LOTS) {
-      if ((lots[lot.key] || []).includes(num)) return lot.title;
+    for (const [key, arr] of Object.entries(lots)) {
+      if (Array.isArray(arr) && arr.includes(num)) return LOT_LOCATION_LABELS[key] || key;
     }
     return "";
   }

@@ -2099,6 +2099,11 @@ td.turnt__head {
 .turnt__reasonhint {
   color: var(--muted);
 }
+/* Lane / bay bus-list cells. */
+.turnt__listcell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 .turnt__bay {
   display: flex;
   align-items: center;
@@ -2201,7 +2206,8 @@ td.turnt__head {
      numbers, AND the FOREMAN/SR + DATE write-lines (just emptied). */
   .turn-sheet--blank .turnt__in,
   .turn-sheet--blank .turnt__veh,
-  .turn-sheet--blank .turnt__reason {
+  .turn-sheet--blank .turnt__reason,
+  .turn-sheet--blank .turnt__listbus {
     visibility: hidden;
   }
   .turn-sheet--blank .turnt__band .turnt__in {
