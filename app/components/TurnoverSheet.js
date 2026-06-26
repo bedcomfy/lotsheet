@@ -397,8 +397,10 @@ export default function TurnoverSheet() {
               {/* Foreman (left) + shift selector (right, spans 2 rows) */}
               <tr className="turnt__band">
                 <td colSpan={3} className="turnt__field">
-                  <span className="turnt__fieldlbl">FOREMAN / SR:</span>
-                  {C("foreman", { className: "turnt__in turnt__in--fill" })}
+                  <div className="turnt__fline">
+                    <span className="turnt__fieldlbl">FOREMAN / SR:</span>
+                    {C("foreman", { className: "turnt__in turnt__in--fill" })}
+                  </div>
                 </td>
                 <td />
                 <td />
@@ -413,11 +415,17 @@ export default function TurnoverSheet() {
                   ))}
                 </td>
               </tr>
-              {/* Date (left) */}
+              {/* Date (left) — three blanks like the original */}
               <tr className="turnt__band">
                 <td colSpan={3} className="turnt__field">
-                  <span className="turnt__fieldlbl">DATE:</span>
-                  {C("date", { className: "turnt__in turnt__in--fill" })}
+                  <div className="turnt__fline">
+                    <span className="turnt__fieldlbl">DATE:</span>
+                    {C("date-m", { className: "turnt__in turnt__datein" })}
+                    <span className="turnt__slash">/</span>
+                    {C("date-d", { className: "turnt__in turnt__datein" })}
+                    <span className="turnt__slash">/</span>
+                    {C("date-y", { className: "turnt__in turnt__datein" })}
+                  </div>
                 </td>
                 <td />
                 <td />
@@ -449,9 +457,11 @@ export default function TurnoverSheet() {
                   <tr key={`bay-${n}`}>
                     <td />
                     <td className="turnt__c">{C(`bay-${n}`, { className: "turnt__in turnt__in--c" })}</td>
-                    <td colSpan={3} className="turnt__bay">
-                      <span className="turnt__bayno">{n})</span>
-                      {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
+                    <td colSpan={3}>
+                      <div className="turnt__fline">
+                        <span className="turnt__bayno">{n})</span>
+                        {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
+                      </div>
                     </td>
                     <td colSpan={4}>{E(`bay2h-${n}`)}</td>
                   </tr>
@@ -484,8 +494,10 @@ export default function TurnoverSheet() {
           apiBase={`/api/state/${STORAGE_KEY}/history`}
           title="Turnover — Prev Sheets"
           describe={(s) => {
-            const n = Object.values(s?.cells || {}).filter((v) => v && String(v).trim()).length;
-            return { title: s?.cells?.date ? `Date: ${s.cells.date}` : "—", meta: `${n} field${n === 1 ? "" : "s"} filled` };
+            const c = s?.cells || {};
+            const date = [c["date-m"], c["date-d"], c["date-y"]].filter(Boolean).join("/");
+            const n = Object.values(c).filter((v) => v && String(v).trim()).length;
+            return { title: date ? `Date: ${date}` : "—", meta: `${n} field${n === 1 ? "" : "s"} filled` };
           }}
           onImport={importSheet}
           onClose={() => setPrevOpen(false)}
