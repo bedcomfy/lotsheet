@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Bus, List, Users } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 
@@ -27,7 +28,10 @@ export default function SheetNav() {
 
   return (
     <div className="appnav no-print">
-      <span className="appnav__brand">Pace Sheets</span>
+      <span className="appnav__brand">
+        <span className="appnav__logo"><Bus size={18} /></span>
+        Pace Sheets
+      </span>
       <label className="appnav__picker">
         <span className="appnav__pickerlabel">Sheet</span>
         <select
@@ -43,10 +47,10 @@ export default function SheetNav() {
         </select>
       </label>
       <button className="appnav__btn" onClick={() => setBusListOpen(true)}>
-        Bus Lists
+        <List size={16} /> Bus Lists
       </button>
       <button className="appnav__btn" onClick={() => setEmployeesOpen(true)}>
-        Employees
+        <Users size={16} /> Employees
       </button>
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}
       {employeesOpen && <EmployeesEditor onClose={() => setEmployeesOpen(false)} />}

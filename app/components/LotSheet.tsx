@@ -17,6 +17,7 @@ import {
   cellLocationLabel,
   pinnedFlagText,
 } from "../lib/grid";
+import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
@@ -502,19 +503,19 @@ export default function LotSheet() {
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
         <button className="btn btn--primary" onClick={() => setFillOpen(true)}>
-          Fill Rows
+          <LayoutGrid size={16} /> Fill Rows
         </button>
         <button className="btn" onClick={() => setManagerOpen(true)}>
-          Edit Flags
+          <Flag size={16} /> Edit Flags
         </button>
         <button className="btn" onClick={newSheet}>
-          Clear Grid
+          <Eraser size={16} /> Clear Grid
         </button>
         <button className="btn" onClick={clearLots}>
-          Clear Lots
+          <ListX size={16} /> Clear Lots
         </button>
         <button className="btn" onClick={() => setPrevOpen(true)}>
-          Prev Sheets
+          <History size={16} /> Prev Sheets
         </button>
         <SheetSettings
           fontPx={12 + fontDelta}
@@ -531,10 +532,10 @@ export default function LotSheet() {
           Maintenance info
         </label>
         <button className="btn" onClick={() => window.print()} title="Print using the browser (may vary by device)">
-          Print
+          <Printer size={16} /> Print
         </button>
         <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
-          Print PDF
+          <FileDown size={16} /> Print PDF
         </button>
       </div>
 

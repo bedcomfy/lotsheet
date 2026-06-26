@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator, fuelFlagSections } from "../lib/grid";
+import { Flag, History, Eraser, FileDown } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import SheetSettings from "./SheetSettings";
 import ManagerPanel from "./ManagerPanel";
@@ -311,16 +312,16 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
           Print with flags
         </label>
         <button className="btn" onClick={() => setManagerOpen(true)}>
-          Edit Flags
+          <Flag size={16} /> Edit Flags
         </button>
         <button className="btn" onClick={() => setPrevOpen(true)}>
-          Prev Sheets
+          <History size={16} /> Prev Sheets
         </button>
         <button className="btn" onClick={clearAll}>
-          Clear
+          <Eraser size={16} /> Clear
         </button>
         <button className="btn btn--primary" onClick={printPdf}>
-          Print PDF
+          <FileDown size={16} /> Print PDF
         </button>
       </div>
 

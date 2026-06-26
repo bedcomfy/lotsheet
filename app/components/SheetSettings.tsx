@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
 
 interface SheetSettingsProps {
   fontPx: number;
@@ -28,7 +29,7 @@ export default function SheetSettings({ fontPx, minPx = 8, maxPx = 16, onFontPx,
   return (
     <div className="setmenu no-print" ref={ref}>
       <button className="btn" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        Sheet Settings ▾
+        <SlidersHorizontal size={16} /> Sheet Settings <ChevronDown size={15} />
       </button>
       {open && (
         <div className="setmenu__panel" role="menu">

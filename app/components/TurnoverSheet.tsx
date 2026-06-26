@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { flagsFullDisplay } from "../lib/grid";
+import { History, Eraser, FileDown } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import SheetSettings from "./SheetSettings";
@@ -448,9 +449,9 @@ export default function TurnoverSheet() {
           <input type="checkbox" checked={printFlags} onChange={(e) => setPrintFlags(e.target.checked)} />
           Print with flags
         </label>
-        <button className="btn" onClick={() => setPrevOpen(true)}>Prev Sheets</button>
-        <button className="btn" onClick={clearAll}>Clear</button>
-        <button className="btn btn--primary" onClick={printPdf}>Print PDF</button>
+        <button className="btn" onClick={() => setPrevOpen(true)}><History size={16} /> Prev Sheets</button>
+        <button className="btn" onClick={clearAll}><Eraser size={16} /> Clear</button>
+        <button className="btn btn--primary" onClick={printPdf}><FileDown size={16} /> Print PDF</button>
       </div>
 
       <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` } as CSSProperties}>
