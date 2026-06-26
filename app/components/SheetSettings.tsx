@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+
+interface SheetSettingsProps {
+  fontPx: number;
+  minPx?: number;
+  maxPx?: number;
+  onFontPx: (px: number) => void;
+  children?: ReactNode;
+}
 
 // A "Sheet Settings" dropdown shown on every sheet's toolbar. Today it holds the
 // font-size control; it's a panel so we can add more per-sheet settings later.
-export default function SheetSettings({ fontPx, minPx = 8, maxPx = 16, onFontPx, children }) {
+export default function SheetSettings({ fontPx, minPx = 8, maxPx = 16, onFontPx, children }: SheetSettingsProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function onDoc(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);

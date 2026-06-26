@@ -1,6 +1,23 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { HTMLAttributes, KeyboardEvent } from "react";
+import type { Employee } from "../lib/types";
+
+interface Rect {
+  left: number;
+  top: number;
+  width: number;
+}
+
+interface EmployeeInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  employees?: Employee[];
+  className?: string;
+  placeholder?: string;
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
+}
 
 // A text input that suggests from the employee list as you type (matching name
 // OR badge). Tab / Enter / click fills the highlighted name. Free text is always
@@ -13,14 +30,14 @@ export default function EmployeeInput({
   className = "turnt__in",
   placeholder,
   inputMode,
-}) {
+}: EmployeeInputProps) {
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
-  const [rect, setRect] = useState(null);
-  const ref = useRef(null);
+  const [rect, setRect] = useState<Rect | null>(null);
+  const ref = useRef<HTMLInputElement>(null);
 
   const q = (value || "").trim().toLowerCase();
-  const matches = q
+  const matches: Employee[] = q
     ? employees
         .filter(
           (e) =>
@@ -35,11 +52,11 @@ export default function EmployeeInput({
     const r = ref.current.getBoundingClientRect();
     setRect({ left: r.left, top: r.bottom, width: r.width });
   }
-  function pick(emp) {
+  function pick(emp: Employee) {
     onChange(emp.name || emp.badge);
     setOpen(false);
   }
-  function onKey(e) {
+  function onKey(e: KeyboardEvent<HTMLInputElement>) {
     if (!open || matches.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
