@@ -15,21 +15,24 @@ const FONT_DEFAULT = 13;
 const FONT_MIN = 8;
 const FONT_MAX = 16;
 
-// Fixed slot counts — the form ALWAYS looks the same (1:1 with the paper).
-const NORTH_SLOTS = 13;
-const FENCE_SLOTS = 4;
-const RC_LINES = 7;
-const APRON_LINES = 9;
-const EAST_SLOTS = 24;
-const LANE_LINES = 6;
-const CALLOFF_LINES = 4;
-const BAY_ROWS = 10;
-
 const SHIFTS = [
   ["3rd1st", "3rd to 1st"],
   ["1st2nd", "1st to 2nd"],
   ["2nd3rd", "2nd to 3rd"],
 ];
+
+// 1:1 with the original sheet: the body spans spreadsheet rows 6–41. The left
+// column is one continuous NORTH LOT list with FENCE / R-C / APRON as single
+// labeled rows inserted at these positions; the right column is EAST LOT
+// (rows 6–29), then the lanes, then employee call-offs.
+const BODY_START = 6;
+const BODY_END = 41;
+const FENCE_ROW = 19;
+const RC_ROW = 24;
+const APRON_ROW = 32;
+const LANE_HDR = 30;
+const CALL_HDR = 37;
+const BAY_ROWS = 10;
 
 function param(name) {
   if (typeof window === "undefined") return null;
@@ -48,16 +51,14 @@ export default function TurnoverSheet() {
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [prevOpen, setPrevOpen] = useState(false);
 
-  // Shared with the Lot Sheet: North/East/Fence lots (membership only).
   const [lots, setLots] = useState({ north: [], east: [], fence: [] });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
   const lotTimer = useRef(null);
-  const [editingLot, setEditingLot] = useState(null); // 'north' | 'east' | 'fence'
+  const [editingLot, setEditingLot] = useState(null);
 
-  // Universal flags = the "reason" a bus is on a sheet.
   const [flags, setFlags] = useState({});
-  const [flagBus, setFlagBus] = useState(null); // bus whose flag menu is open
+  const [flagBus, setFlagBus] = useState(null);
 
   const [employees, setEmployees] = useState([]);
   const saveTimer = useRef(null);
@@ -90,7 +91,6 @@ export default function TurnoverSheet() {
     };
   }, []);
 
-  // Universal flags (shared with every sheet).
   useEffect(() => {
     let alive = true;
     const load = () =>
@@ -121,7 +121,6 @@ export default function TurnoverSheet() {
     });
   }
 
-  // Shared lots: load + poll the Lot Sheet (don't clobber unsaved local edits).
   useEffect(() => {
     let alive = true;
     const load = () =>
@@ -130,11 +129,7 @@ export default function TurnoverSheet() {
         .then((d) => {
           if (!alive || !d || !d.sheet || lotDirty.current) return;
           const s = d.sheet;
-          setLots({
-            north: s.lots?.north || [],
-            east: s.lots?.east || [],
-            fence: s.lots?.fence || [],
-          });
+          setLots({ north: s.lots?.north || [], east: s.lots?.east || [], fence: s.lots?.fence || [] });
         })
         .catch(() => {})
         .finally(() => alive && setLotsLoaded(true));
@@ -166,13 +161,8 @@ export default function TurnoverSheet() {
         });
     }, 500);
   }
-  function addToLot(key, bus) {
-    patchLots({ ...lots, [key]: [...(lots[key] || []), bus] });
-  }
-  function removeFromLot(key, i) {
-    // Flags persist — only the lot membership changes.
-    patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) });
-  }
+  const addToLot = (key, bus) => patchLots({ ...lots, [key]: [...(lots[key] || []), bus] });
+  const removeFromLot = (key, i) => patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) });
   function moveInLot(key, i, dir) {
     const arr = [...(lots[key] || [])];
     const j = i + dir;
@@ -181,9 +171,7 @@ export default function TurnoverSheet() {
     patchLots({ ...lots, [key]: arr });
   }
   function locateLot(bus) {
-    for (const k of ["north", "east", "fence"]) {
-      if ((lots[k] || []).includes(bus)) return `${k.toUpperCase()} LOT`;
-    }
+    for (const k of ["north", "east", "fence"]) if ((lots[k] || []).includes(bus)) return `${k.toUpperCase()} LOT`;
     return "";
   }
 
@@ -199,7 +187,6 @@ export default function TurnoverSheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fontPx, flags]);
 
-  // Turnover-only data: load + autosave.
   useEffect(() => {
     let alive = true;
     fetch(`/api/state/${STORAGE_KEY}`)
@@ -238,9 +225,7 @@ export default function TurnoverSheet() {
   function setShift(value) {
     setData((d) => ({ ...d, shift: d.shift === value ? "" : value }));
   }
-  function hasContent(d) {
-    return !!(d && (d.shift || Object.values(d.cells || {}).some((v) => v && String(v).trim())));
-  }
+  const hasContent = (d) => !!(d && (d.shift || Object.values(d.cells || {}).some((v) => v && String(v).trim())));
 
   async function archiveCurrent() {
     if (!hasContent(data)) return;
@@ -251,7 +236,7 @@ export default function TurnoverSheet() {
     }).catch(() => {});
   }
   async function clearAll() {
-    if (!window.confirm("Clear this Turnover sheet? The current one is saved to Prev Sheets first. (The shared lots and bus flags are NOT cleared.)")) return;
+    if (!window.confirm("Clear this Turnover sheet? The current one is saved to Prev Sheets first. (Shared lots and bus flags are NOT cleared.)")) return;
     await archiveCurrent();
     setData(emptyData());
   }
@@ -275,113 +260,101 @@ export default function TurnoverSheet() {
     });
   }
 
-  // Employee autofill cell (turnover-only).
   const E = (key, props = {}) => (
     <EmployeeInput value={data.cells[key] || ""} onChange={(v) => setCell(key, v)} employees={employees} {...props} />
   );
-  // Plain free-text cell (turnover-only).
   const C = (key, props = {}) => (
     <input className="turnt__in" value={data.cells[key] || ""} onChange={(e) => setCell(key, e.target.value)} {...props} />
   );
 
-  // One slot of a shared lot: MECH (employee) | VEH# (shared list) | REASON
-  // (the bus's flags; click to open the flag menu). Empty slots stay blank.
-  function lotSlot(lotKey, i) {
-    const bus = (lots[lotKey] || [])[i] || "";
+  // A lot slot: MECH (employee) | VEH# (shared list; click to add/reorder) |
+  // REASON (the bus's flags; click to edit flags). Empty slots open the editor.
+  function lotSlot(lotKey, idx, reasonSpan) {
+    const bus = (lots[lotKey] || [])[idx] || "";
     return (
       <>
         <td className="turnt__c">{bus ? E(`mech-${bus}`, { className: "turnt__in turnt__in--c" }) : null}</td>
-        <td className="turnt__c turnt__veh">{bus ? busLabel(bus) : ""}</td>
-        <td colSpan={2} className={`turnt__reason ${bus ? "turnt__reason--btn" : ""}`} onClick={bus ? () => setFlagBus(bus) : undefined}>
-          {bus ? flagsFullDisplay(flags[bus]) || <span className="turnt__reasonhint">＋ flag</span> : ""}
+        <td className="turnt__c turnt__veh turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
+          {bus ? busLabel(bus) : ""}
         </td>
-      </>
-    );
-  }
-  // Right-side East Lot slot (REASON spans 3 columns).
-  function eastSlot(i) {
-    const bus = (lots.east || [])[i] || "";
-    return (
-      <>
-        <td className="turnt__c">{bus ? E(`mech-${bus}`, { className: "turnt__in turnt__in--c" }) : null}</td>
-        <td className="turnt__c turnt__veh">{bus ? busLabel(bus) : ""}</td>
-        <td colSpan={3} className={`turnt__reason ${bus ? "turnt__reason--btn" : ""}`} onClick={bus ? () => setFlagBus(bus) : undefined}>
+        <td
+          colSpan={reasonSpan}
+          className="turnt__reason turnt__reason--btn"
+          onClick={bus ? () => setFlagBus(bus) : () => setEditingLot(lotKey)}
+        >
           {bus ? flagsFullDisplay(flags[bus]) || <span className="turnt__reasonhint">＋ flag</span> : ""}
         </td>
       </>
     );
   }
 
-  // Build the 36 shared body rows (left North/Fence/R-C/Apron + right East/Lane/Calloff).
-  const LEFT = [];
-  for (let i = 0; i < NORTH_SLOTS; i++) LEFT.push({ type: "north", i });
-  LEFT.push({ type: "fenceHdr" });
-  for (let i = 0; i < FENCE_SLOTS; i++) LEFT.push({ type: "fence", i });
-  LEFT.push({ type: "rcHdr" });
-  for (let i = 0; i < RC_LINES; i++) LEFT.push({ type: "rc", i });
-  LEFT.push({ type: "apronHdr" });
-  for (let i = 0; i < APRON_LINES; i++) LEFT.push({ type: "apron", i });
-
-  const RIGHT = [];
-  for (let i = 0; i < EAST_SLOTS; i++) RIGHT.push({ type: "east", i });
-  RIGHT.push({ type: "laneHdr" });
-  for (let i = 0; i < LANE_LINES; i++) RIGHT.push({ type: "lane", i });
-  RIGHT.push({ type: "callHdr" });
-  for (let i = 0; i < CALLOFF_LINES; i++) RIGHT.push({ type: "calloff", i });
-  const BODY = Math.max(LEFT.length, RIGHT.length);
-
-  function leftCells(spec) {
-    if (!spec) return <td colSpan={4} />;
-    if (spec.type === "north") return lotSlot("north", spec.i);
-    if (spec.type === "fence") return lotSlot("fence", spec.i);
-    if (spec.type === "fenceHdr")
-      return (
+  // Build the left/right cells for each spreadsheet body row (6–41).
+  let northIdx = 0;
+  let eastIdx = 0;
+  const rows = [];
+  for (let sr = BODY_START; sr <= BODY_END; sr++) {
+    let left;
+    if (sr === FENCE_ROW) {
+      const fence = (lots.fence || []).map((b) => busLabel(b)).join(", ");
+      left = (
         <>
           <td />
-          <td colSpan={3} className="turnt__seclbl turnt__seclbl--btn" onClick={() => setEditingLot("fence")}>
-            FENCE <span className="turnt__edit">✎</span>
+          <td className="turnt__veh turnt__seclbl">FENCE</td>
+          <td colSpan={2} className="turnt__reason turnt__reason--btn" onClick={() => setEditingLot("fence")}>
+            {fence || <span className="turnt__reasonhint">✎</span>}
           </td>
         </>
       );
-    if (spec.type === "rcHdr")
-      return (
+    } else if (sr === RC_ROW) {
+      left = (
         <>
           <td />
-          <td colSpan={3} className="turnt__seclbl">R/C</td>
+          <td className="turnt__veh turnt__seclbl">R/C</td>
+          <td colSpan={2}>{C("rc")}</td>
         </>
       );
-    if (spec.type === "apronHdr")
-      return (
+    } else if (sr === APRON_ROW) {
+      left = (
         <>
           <td />
-          <td colSpan={3} className="turnt__seclbl">APRON</td>
+          <td className="turnt__veh turnt__seclbl">APRON</td>
+          <td colSpan={2}>{C("apron")}</td>
         </>
       );
-    if (spec.type === "rc") return <td colSpan={4}>{C(`rc-${spec.i}`)}</td>;
-    if (spec.type === "apron") return <td colSpan={4}>{C(`apron-${spec.i}`)}</td>;
-    return <td colSpan={4} />;
-  }
-  function rightCells(spec) {
-    if (!spec) return <td colSpan={5} />;
-    if (spec.type === "east") return eastSlot(spec.i);
-    if (spec.type === "laneHdr")
-      return (
+    } else {
+      left = lotSlot("north", northIdx++, 2);
+    }
+
+    let right;
+    if (sr === LANE_HDR) {
+      right = (
         <>
           <td className="turnt__head" colSpan={2}>NORTH LANE</td>
           <td className="turnt__head" colSpan={3}>SOUTH LANE</td>
         </>
       );
-    if (spec.type === "lane")
-      return (
+    } else if (sr > LANE_HDR && sr < CALL_HDR) {
+      const i = sr - LANE_HDR - 1;
+      right = (
         <>
-          <td colSpan={2}>{C(`nlane-${spec.i}`)}</td>
-          <td colSpan={3}>{C(`slane-${spec.i}`)}</td>
+          <td colSpan={2}>{C(`nlane-${i}`)}</td>
+          <td colSpan={3}>{C(`slane-${i}`)}</td>
         </>
       );
-    if (spec.type === "callHdr")
-      return <td className="turnt__head" colSpan={5}>EMPLOYEE CALLOFFS</td>;
-    if (spec.type === "calloff") return <td colSpan={5}>{E(`calloff-${spec.i}`)}</td>;
-    return <td colSpan={5} />;
+    } else if (sr === CALL_HDR) {
+      right = <td className="turnt__head" colSpan={5}>EMPLOYEE CALLOFFS</td>;
+    } else if (sr > CALL_HDR) {
+      right = <td colSpan={5}>{E(`calloff-${sr - CALL_HDR - 1}`)}</td>;
+    } else {
+      right = lotSlot("east", eastIdx++, 3);
+    }
+
+    rows.push(
+      <tr key={sr}>
+        {left}
+        {right}
+      </tr>
+    );
   }
 
   return (
@@ -415,10 +388,20 @@ export default function TurnoverSheet() {
               <col style={{ width: "8.1%" }} />
             </colgroup>
             <tbody>
-              {/* Title + shift selector */}
+              {/* Title (top-right) */}
               <tr className="turnt__band">
+                <td colSpan={5} />
                 <td colSpan={4} className="turnt__brand">SHIFT TURNOVER</td>
-                <td colSpan={5} className="turnt__shiftpick">
+              </tr>
+              {/* Foreman (left) + shift selector (right, spans 2 rows) */}
+              <tr className="turnt__band">
+                <td colSpan={3} className="turnt__field">
+                  <span className="turnt__fieldlbl">FOREMAN / SR:</span>
+                  {C("foreman", { className: "turnt__in turnt__in--fill" })}
+                </td>
+                <td />
+                <td />
+                <td colSpan={4} rowSpan={2} className="turnt__shiftpick">
                   {SHIFTS.map(([id, lbl], i) => (
                     <span key={id}>
                       {i > 0 && <span className="turnt__shiftsep">|</span>}
@@ -429,18 +412,16 @@ export default function TurnoverSheet() {
                   ))}
                 </td>
               </tr>
-              {/* Foreman + date */}
+              {/* Date (left) */}
               <tr className="turnt__band">
-                <td colSpan={4} className="turnt__field">
-                  <span className="turnt__fieldlbl">FOREMAN / SR:</span>
-                  {C("foreman", { className: "turnt__in turnt__in--fill" })}
-                </td>
-                <td colSpan={5} className="turnt__field">
+                <td colSpan={3} className="turnt__field">
                   <span className="turnt__fieldlbl">DATE:</span>
                   {C("date", { className: "turnt__in turnt__in--fill" })}
                 </td>
+                <td />
+                <td />
               </tr>
-              {/* Section headers (click to add/reorder buses) */}
+              {/* Section headers (click the header OR a vehicle number to manage buses) */}
               <tr className="turnt__head">
                 <td>MECH.</td>
                 <td>VEH #</td>
@@ -453,14 +434,8 @@ export default function TurnoverSheet() {
                   EAST LOT - REASON <span className="turnt__edit">✎</span>
                 </td>
               </tr>
-              {/* Shared body */}
-              {Array.from({ length: BODY }, (_, r) => (
-                <tr key={r}>
-                  {leftCells(LEFT[r])}
-                  {rightCells(RIGHT[r])}
-                </tr>
-              ))}
-              {/* Bay table (full width) */}
+              {rows}
+              {/* Bay table */}
               <tr className="turnt__head">
                 <td />
                 <td>BAY</td>
@@ -472,8 +447,11 @@ export default function TurnoverSheet() {
                 return (
                   <tr key={`bay-${n}`}>
                     <td />
-                    <td className="turnt__bayno">{n}</td>
-                    <td colSpan={3}>{E(`bay1h-${n}`)}</td>
+                    <td className="turnt__c">{C(`bay-${n}`, { className: "turnt__in turnt__in--c" })}</td>
+                    <td colSpan={3} className="turnt__bay">
+                      <span className="turnt__bayno">{n})</span>
+                      {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
+                    </td>
                     <td colSpan={4}>{E(`bay2h-${n}`)}</td>
                   </tr>
                 );
@@ -497,12 +475,7 @@ export default function TurnoverSheet() {
       )}
 
       {flagBus && (
-        <ManagerPanel
-          flags={flags}
-          initialBus={flagBus}
-          onClose={() => setFlagBus(null)}
-          onBusFlagsUpdated={onBusFlagsUpdated}
-        />
+        <ManagerPanel flags={flags} initialBus={flagBus} onClose={() => setFlagBus(null)} onBusFlagsUpdated={onBusFlagsUpdated} />
       )}
 
       {prevOpen && (

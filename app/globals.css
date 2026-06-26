@@ -1991,7 +1991,7 @@ button {
   padding-bottom: 2px;
 }
 .turnt__shiftpick {
-  text-align: right;
+  text-align: center;
   white-space: nowrap;
 }
 .turnt__shiftsep {
@@ -2052,14 +2052,22 @@ td.turnt__head {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+.turnt__veh--btn {
+  cursor: pointer;
+}
 .turnt__reason {
   text-align: left;
 }
 .turnt__reasonhint {
   color: var(--muted);
 }
+.turnt__bay {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
 .turnt__bayno {
-  text-align: center;
+  flex: 0 0 auto;
   font-weight: 600;
 }
 .turnt__in {
