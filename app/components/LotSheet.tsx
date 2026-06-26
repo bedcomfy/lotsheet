@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   SLOTS,
   FRONT_COLUMNS,
@@ -24,23 +25,34 @@ import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
 import SheetSettings from "./SheetSettings";
+import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
 
 // Back-of-sheet ordered lists.
-const LOTS = [
+const LOTS: { key: string; title: string }[] = [
   { key: "north", title: "NORTH LOT" },
   { key: "east", title: "EAST LOT" },
   { key: "fence", title: "FENCE" },
 ];
 // Friendly names for EVERY shared lot (incl. the Turnover-managed ones) so the
 // duplicate guard can report where a bus already sits.
-const LOT_LOCATION_LABELS = {
+const LOT_LOCATION_LABELS: Record<string, string> = {
   north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
   northlane: "North Lane", southlane: "South Lane", bay: "Bay",
 };
 
-function emptySheet() {
+type LotStringField = "time" | "date" | "offProperty" | "inShop";
+
+const EMPTY_FLAG: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+
+// Tolerate the old { num, color, status } cell shape from earlier saved sheets.
+function cellToNum(v: unknown): string {
+  if (!v) return "";
+  return typeof v === "string" ? v : (v as { num?: string }).num || "";
+}
+
+function emptySheet(): LotSheetData {
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -59,19 +71,19 @@ function emptySheet() {
 
 // Read a query param on the very first render (used by the server-side PDF,
 // which loads this page at /?print=1&maint=1 with a headless browser).
-function param(name) {
+function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
 }
 
 export default function LotSheet() {
   const { label: busLabel } = useBusMaster();
-  const [sheet, setSheet] = useState(emptySheet);
+  const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
-  const [editing, setEditing] = useState(null); // { id, subLabel }
-  const [savedAt, setSavedAt] = useState(null);
-  const [flags, setFlags] = useState({}); // bus number -> flagId
+  const [editing, setEditing] = useState<{ id: string; subLabel: string } | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [flags, setFlags] = useState<FlagMap>({}); // bus number -> flag entry
   const [managerOpen, setManagerOpen] = useState(false);
   // PDF render mode: the page is opened headless at /?print=1; don't write to
   // the server and expose a readiness marker the PDF generator waits for.
@@ -85,13 +97,13 @@ export default function LotSheet() {
     if (param("maint") === "1") setShowMaint(true);
   }, []);
   const [fontDelta, setFontDelta] = useState(0); // size relative to Standard (px)
-  const [editingLot, setEditingLot] = useState(null); // which back-of-sheet lot
+  const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
-  const saveTimer = useRef(null);
-  const prewarmTimer = useRef(null); // debounce for background PDF pre-build
-  const lastSyncRef = useRef(null); // JSON of the sheet known to match the server
-  const sheetRef = useRef(sheet); // always-current sheet, for the poll loop
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
+  const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
+  const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
     sheetRef.current = sheet;
   }, [sheet]);
@@ -107,7 +119,7 @@ export default function LotSheet() {
   useEffect(() => {
     localStorage.setItem("lotsheet:fontDelta", String(fontDelta));
   }, [fontDelta]);
-  function changeFont(d) {
+  function changeFont(d: number) {
     setFontDelta((f) => Math.max(-4, Math.min(4, f + d)));
   }
 
@@ -208,18 +220,16 @@ export default function LotSheet() {
     return () => clearInterval(iv);
   }, [loaded]);
 
-  function setField(field, value) {
+  function setField(field: LotStringField, value: string) {
     setSheet((s) => ({ ...s, [field]: value }));
   }
 
-  function getNum(id) {
-    const v = sheet.cells[id];
-    if (!v) return "";
-    // Tolerate the old {num,color,status} shape from earlier saved sheets.
-    return typeof v === "string" ? v : v.num || "";
+  function getNum(id: string | null): string {
+    if (!id) return "";
+    return cellToNum(sheet.cells[id]);
   }
 
-  function saveNum(id, num) {
+  function saveNum(id: string, num: string) {
     setSheet((s) => {
       const cells = { ...s.cells };
       if (num) cells[id] = num;
@@ -228,11 +238,11 @@ export default function LotSheet() {
     });
   }
 
-  function flagFor(num) {
-    return (num && flags[num]) || { flags: [], note: "" };
+  function flagFor(num: string): FlagEntry {
+    return (num && flags[num]) || EMPTY_FLAG;
   }
 
-  function onBusFlagsUpdated(bus, entry) {
+  function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
     setFlags((prev) => {
       const next = { ...prev };
       const empty =
@@ -244,16 +254,16 @@ export default function LotSheet() {
     });
   }
 
-  function sheetHasContent(s) {
+  function sheetHasContent(s: LotSheetData | null | undefined): boolean {
     const cells = s && s.cells ? Object.values(s.cells).filter(Boolean).length : 0;
     const lots = s && s.lots
-      ? Object.values(s.lots).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0)
+      ? Object.values(s.lots).reduce((n: number, a) => n + (Array.isArray(a) ? a.length : 0), 0)
       : 0;
     return cells + lots > 0;
   }
 
   // Save a copy into Prev Sheets (server-side) before it's discarded.
-  async function archiveSheet(s) {
+  async function archiveSheet(s: LotSheetData) {
     if (!sheetHasContent(s)) return;
     try {
       await fetch("/api/sheet/history", {
@@ -264,10 +274,10 @@ export default function LotSheet() {
     } catch {}
   }
 
-  function gridHasContent(s) {
+  function gridHasContent(s: LotSheetData | null | undefined): boolean {
     return !!(s && s.cells && Object.values(s.cells).filter(Boolean).length > 0);
   }
-  function lotsHaveContent(s) {
+  function lotsHaveContent(s: LotSheetData | null | undefined): boolean {
     return !!(
       s &&
       s.lots &&
@@ -309,7 +319,7 @@ export default function LotSheet() {
   // Bring a previous sheet back as the current shared sheet. The sheet that's up
   // now is archived first (so it isn't lost), and the imported one leaves the
   // archive since you're continuing it.
-  async function importSheet(imported, id) {
+  async function importSheet(imported: any, id?: string) {
     if (!imported) return;
     await archiveSheet(sheet);
     if (id) {
@@ -321,7 +331,7 @@ export default function LotSheet() {
     setPrevOpen(false);
   }
 
-  function openCell(id, subLabel) {
+  function openCell(id: string, subLabel: string) {
     setEditing({ id, subLabel });
   }
 
@@ -352,7 +362,7 @@ export default function LotSheet() {
         return;
       }
       if (isMobile) {
-        w.location = target;
+        w.location.href = target;
         return;
       }
       // Desktop: show the PDF in an iframe and pop the print dialog once it loads.
@@ -381,31 +391,31 @@ export default function LotSheet() {
   }
 
   // ---- back-of-sheet lot lists ----
-  function lotList(key) {
-    return (sheet.lots && sheet.lots[key]) || [];
+  function lotList(key: string): string[] {
+    return (sheet.lots && sheet.lots[key as LotKey]) || [];
   }
-  function addToLot(key, bus) {
+  function addToLot(key: string, bus: string) {
     setSheet((s) => {
-      const lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      return { ...s, lots: { ...lots, [key]: [...(lots[key] || []), bus] } };
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      return { ...s, lots: { ...lots, [key]: [...(lots[key as LotKey] || []), bus] } as Lots };
     });
   }
-  function removeFromLot(key, index) {
+  function removeFromLot(key: string, index: number) {
     setSheet((s) => {
-      const lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
       // Flags are NEVER auto-cleared when a bus leaves a lot — they persist
       // until a user clears them in the flag menu.
-      return { ...s, lots: { ...lots, [key]: lots[key].filter((_, i) => i !== index) } };
+      return { ...s, lots: { ...lots, [key]: (lots[key as LotKey] || []).filter((_, i) => i !== index) } as Lots };
     });
   }
-  function moveInLot(key, index, dir) {
+  function moveInLot(key: string, index: number, dir: number) {
     setSheet((s) => {
-      const lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      const arr = [...(lots[key] || [])];
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = [...(lots[key as LotKey] || [])];
       const j = index + dir;
       if (j < 0 || j >= arr.length) return s;
       [arr[index], arr[j]] = [arr[j], arr[index]];
-      return { ...s, lots: { ...lots, [key]: arr } };
+      return { ...s, lots: { ...lots, [key]: arr } as Lots };
     });
   }
 
@@ -413,11 +423,11 @@ export default function LotSheet() {
   // back-of-sheet lot — excluding one cell id (the one being edited). Returns a
   // human location ("Row 9 · #39", "North Lot") or "" if it's not on the sheet.
   // A bus may only appear in one place, so this powers the duplicate guard.
-  function locateBus(num, exceptCellId) {
+  function locateBus(num: string, exceptCellId: string | null): string {
     if (!num) return "";
     for (const [id, v] of Object.entries(sheet.cells || {})) {
       if (id === exceptCellId) continue;
-      const n = typeof v === "string" ? v : v && v.num;
+      const n = cellToNum(v);
       if (n === num) return cellLocationLabel(id);
     }
     // Check every shared lot (North/East/Fence on this sheet, plus the
@@ -431,7 +441,7 @@ export default function LotSheet() {
   }
 
   // ---- cell renderer ----
-  function Cell({ id, slotLabel }) {
+  function Cell({ id, slotLabel }: { id: string | null; slotLabel: string | number | null }) {
     const num = getNum(id);
     const entry = num ? flagFor(num) : null;
     const disp = entry ? flagDisplay(entry) : "";
@@ -449,7 +459,7 @@ export default function LotSheet() {
       <button
         type="button"
         className={`cell ${num ? "cell--filled" : ""}`}
-        onClick={() => openCell(id, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
+        onClick={() => openCell(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
       >
         {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
         {num && <TypeCodes num={num} className="cell__types" />}
@@ -469,9 +479,9 @@ export default function LotSheet() {
   const flagSummary = groupFlaggedBuses(flags);
 
   // Where each bus currently sits on the grid (bus number -> "Row 5 · #85").
-  const busLocations = {};
+  const busLocations: Record<string, string[]> = {};
   for (const [id, v] of Object.entries(sheet.cells || {})) {
-    const n = typeof v === "string" ? v : v && v.num;
+    const n = cellToNum(v);
     if (!n) continue;
     const loc = cellLocationLabel(id);
     if (loc) (busLocations[n] = busLocations[n] || []).push(loc);
@@ -529,7 +539,7 @@ export default function LotSheet() {
       </div>
 
       {/* The printable sheet */}
-      <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE + fontDelta}px` }}>
+      <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE + fontDelta}px` } as CSSProperties}>
         <div className={`sheet ${showMaint ? "sheet--maint" : ""}`}>
           {/* Header */}
           <div className="head">
@@ -621,7 +631,7 @@ export default function LotSheet() {
                 if (slot === "X") {
                   return <Cell key={`b${b}c${c}`} id={null} slotLabel="X" />;
                 }
-                return <Cell key={`b${b}c${c}`} id={numberedCellId(slot)} slotLabel={slot} />;
+                return <Cell key={`b${b}c${c}`} id={numberedCellId(slot as number)} slotLabel={slot} />;
               })
             )}
           </div>
