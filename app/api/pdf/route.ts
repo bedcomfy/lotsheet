@@ -19,20 +19,21 @@ const PDF_VERSION = "17";
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
-function stable(v) {
+function stable(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(stable);
   if (v && typeof v === "object") {
-    return Object.keys(v)
+    const obj = v as Record<string, unknown>;
+    return Object.keys(obj)
       .sort()
-      .reduce((o, k) => {
-        o[k] = stable(v[k]);
+      .reduce<Record<string, unknown>>((o, k) => {
+        o[k] = stable(obj[k]);
         return o;
       }, {});
   }
   return v;
 }
 
-function signature(data, maint) {
+function signature(data: unknown, maint: boolean): string {
   return createHash("sha1")
     .update(JSON.stringify({ v: PDF_VERSION, maint: !!maint, data: stable(data ?? null) }))
     .digest("hex");
@@ -40,7 +41,7 @@ function signature(data, maint) {
 
 // The data a sheet's PDF is built from — used for the cache signature so a
 // cached PDF is reused until the underlying sheet actually changes.
-async function sheetData(path) {
+async function sheetData(path: string) {
   if (path === "/") {
     const [{ sheet }, flags] = await Promise.all([getSheet(), getFlags()]);
     return { sheet, flags };
@@ -62,9 +63,10 @@ const PDF_HEADERS = {
 };
 
 // Local dev sets CHROME_EXECUTABLE_PATH to a normal Chrome; production uses the
-// bundled @sparticuz/chromium build.
-async function launchBrowser() {
-  const puppeteer = (await import("puppeteer-core")).default;
+// bundled @sparticuz/chromium build. The puppeteer/chromium objects are typed
+// loosely (any) — this is runtime glue around external headless-Chrome libs.
+async function launchBrowser(): Promise<any> {
+  const puppeteer: any = (await import("puppeteer-core")).default;
 
   const localPath = process.env.CHROME_EXECUTABLE_PATH;
   if (localPath) {
@@ -79,7 +81,7 @@ async function launchBrowser() {
   // libraries (libnss3, etc.) — Vercel runs on Lambda but doesn't set the env
   // var the package checks. Must be set before importing it.
   process.env.AWS_EXECUTION_ENV = "AWS_Lambda_nodejs20.x";
-  const chromium = (await import("@sparticuz/chromium")).default;
+  const chromium: any = (await import("@sparticuz/chromium")).default;
   chromium.setGraphicsMode = false;
   return puppeteer.launch({
     args: chromium.args,
@@ -93,7 +95,7 @@ async function launchBrowser() {
 // `<path>?print=1` and expose a #print-ready marker when loaded.
 const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover"]);
 
-async function renderPdf(req, maint, path, fz) {
+async function renderPdf(req: Request, maint: boolean, path: string, fz: number | null): Promise<Buffer> {
   const host = req.headers.get("host");
   const proto =
     req.headers.get("x-forwarded-proto") ||
@@ -104,9 +106,9 @@ async function renderPdf(req, maint, path, fz) {
   // On a cold start the chromium binary is still being extracted to /tmp when we
   // try to spawn it, which fails with "spawn ETXTBSY" (text file busy). Retry a
   // couple of times with a short backoff so a cold print doesn't just error out.
-  let lastErr;
+  let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
-    let browser;
+    let browser: any;
     try {
       browser = await launchBrowser();
       const page = await browser.newPage();
@@ -114,7 +116,7 @@ async function renderPdf(req, maint, path, fz) {
       await page.waitForSelector("#print-ready", { timeout: 20000 });
       const pdf = await page.pdf({ format: "letter", printBackground: true, preferCSSPageSize: true });
       return Buffer.from(pdf);
-    } catch (err) {
+    } catch (err: any) {
       lastErr = err;
       const msg = String(err?.message || err);
       const transient = /ETXTBSY|spawn|Failed to launch|Target closed|Protocol error/i.test(msg);
@@ -127,7 +129,7 @@ async function renderPdf(req, maint, path, fz) {
   throw lastErr;
 }
 
-export async function GET(req) {
+export async function GET(req: Request) {
   const url = new URL(req.url);
   const maint = url.searchParams.get("maint") === "1";
   const prewarm = url.searchParams.get("prewarm") === "1";
@@ -147,15 +149,15 @@ export async function GET(req) {
     const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
       if (prewarm) return Response.json({ ok: true, cached: true });
-      return new Response(Buffer.from(cached.data, "base64"), { status: 200, headers });
+      return new Response(Buffer.from(cached.data, "base64") as unknown as BodyInit, { status: 200, headers });
     }
 
     // Cache miss — generate (the slow path) and store for next time.
     const pdf = await renderPdf(req, maint, path, fz);
     await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
-    return new Response(pdf, { status: 200, headers });
-  } catch (err) {
+    return new Response(pdf as unknown as BodyInit, { status: 200, headers });
+  } catch (err: any) {
     let diag = "";
     try {
       const fs = await import("node:fs");
