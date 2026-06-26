@@ -89,8 +89,6 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   const [showFlags, setShowFlags] = useState(false); // print WITH the R/H/I flags?
   const [managerOpen, setManagerOpen] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
-  const [pdfReady, setPdfReady] = useState(false); // a cached PDF matches the current sheet → Print PDF is instant
-  const prewarmSeq = useRef(0); // guards against an older prewarm marking a newer edit "ready"
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -147,23 +145,15 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   // "Print PDF" is instant. Keyed to fz so the prewarm matches what we print.
   function schedulePrewarm() {
     if (printMode) return;
-    setPdfReady(false); // gray Print PDF until this rebuild lands
-    const seq = ++prewarmSeq.current;
     clearTimeout(prewarmTimer.current);
     prewarmTimer.current = setTimeout(() => {
-      // When the prewarm settles the cache holds the current sheet, so a click is
-      // instant. Ignore a stale prewarm if a newer edit has since been scheduled.
-      fetch(`/api/pdf?path=/${storageKey}&fz=${fontPx}&maint=${showFlags ? 1 : 0}&prewarm=1`)
-        .catch(() => {})
-        .finally(() => {
-          if (seq === prewarmSeq.current) setPdfReady(true);
-        });
+      fetch(`/api/pdf?path=/${storageKey}&fz=${fontPx}&maint=${showFlags ? 1 : 0}&prewarm=1`).catch(() => {});
     }, 1500);
   }
   useEffect(() => {
     if (loaded) schedulePrewarm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontPx, showFlags, busFlags, loaded]);
+  }, [fontPx, showFlags, busFlags]);
 
   useEffect(() => {
     let alive = true;
@@ -181,7 +171,6 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
 
   useEffect(() => {
     if (!loaded || printMode) return;
-    setPdfReady(false); // unsaved edit — its PDF isn't built yet
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       fetch(`/api/state/${storageKey}`, {
@@ -330,13 +319,8 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
         <button className="btn" onClick={clearAll}>
           Clear
         </button>
-        <button
-          className="btn btn--primary"
-          onClick={printPdf}
-          disabled={!pdfReady}
-          title={pdfReady ? "Generate the PDF and open the print dialog" : "Preparing the print file… ready in a moment"}
-        >
-          {pdfReady ? "Print PDF" : "Preparing…"}
+        <button className="btn btn--primary" onClick={printPdf}>
+          Print PDF
         </button>
       </div>
 
