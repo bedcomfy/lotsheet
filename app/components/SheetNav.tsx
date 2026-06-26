@@ -5,8 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 
+export interface SheetLink {
+  path: string;
+  label: string;
+}
+
 // The sheets available in the hub. Add new ones here.
-export const SHEETS = [
+export const SHEETS: SheetLink[] = [
   { path: "/", label: "Lot Sheet" },
   { path: "/turnover", label: "Turnover Sheet" },
   { path: "/fuel", label: "Fuel Sheet" },
@@ -16,7 +21,7 @@ export const SHEETS = [
 export default function SheetNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const current = SHEETS.some((s) => s.path === pathname) ? pathname : "/";
+  const current = pathname && SHEETS.some((s) => s.path === pathname) ? pathname : "/";
   const [busListOpen, setBusListOpen] = useState(false);
   const [employeesOpen, setEmployeesOpen] = useState(false);
 

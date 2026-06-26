@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useScrollLock } from "../lib/useScrollLock";
+import type { HistoryEntry } from "../lib/store";
 
-function savedLabel(iso) {
+function savedLabel(iso: string | null | undefined): string {
   if (!iso) return "";
   try {
     return new Date(iso).toLocaleString([], {
@@ -17,12 +18,20 @@ function savedLabel(iso) {
   }
 }
 
+interface SheetHistoryProps {
+  apiBase: string;
+  title?: string;
+  describe?: (sheet: any) => { title: string; meta: string };
+  onImport: (sheet: unknown, id: string) => void;
+  onClose: () => void;
+}
+
 // Generic "Prev Sheets" browser. `apiBase` is the history endpoint
 // (e.g. /api/state/fuel/history); `describe(sheet)` returns { title, meta }.
-export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }) {
+export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }: SheetHistoryProps) {
   useScrollLock();
-  const [sheets, setSheets] = useState(null); // null = loading
-  const [busy, setBusy] = useState(null);
+  const [sheets, setSheets] = useState<HistoryEntry[] | null>(null); // null = loading
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(apiBase)
@@ -32,12 +41,12 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
   }, [apiBase]);
 
   useEffect(() => {
-    const k = (e) => e.key === "Escape" && onClose();
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [onClose]);
 
-  async function remove(id) {
+  async function remove(id: string) {
     if (!window.confirm("Delete this saved sheet permanently?")) return;
     setBusy(id);
     try {
