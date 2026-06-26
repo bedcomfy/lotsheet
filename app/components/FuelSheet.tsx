@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator, fuelFlagSections } from "../lib/grid";
@@ -8,10 +9,24 @@ import { useBusMaster } from "./BusMasterProvider";
 import SheetSettings from "./SheetSettings";
 import ManagerPanel from "./ManagerPanel";
 import SheetHistory from "./SheetHistory";
+import type { FlagEntry, FlagMap } from "../lib/types";
 
 const FONT_DEFAULT = 14;
 const FONT_MIN = 8;
 const FONT_MAX = 16;
+
+interface FuelEntry {
+  gals: string;
+  serv: string;
+}
+interface FuelData {
+  date: string;
+  ns: string;
+  start: string;
+  end: string;
+  entries: Record<string, FuelEntry>;
+}
+type FuelStringField = "date" | "ns" | "start" | "end";
 
 // The Fuel/DEF list now comes from the master "lane" membership (active + the
 // Fuel/DEF toggle), kept in the sheet's familiar order: the original column
@@ -19,7 +34,7 @@ const FONT_MAX = 16;
 // columns × 35 rows (the paper layout) unless the lane outgrows it.
 const BASE_ORDER = FUEL_COLUMNS.flat().map(String);
 
-function buildLaneColumns(laneList) {
+function buildLaneColumns(laneList: string[]) {
   const laneSet = new Set(laneList);
   const baseSet = new Set(BASE_ORDER);
   const ordered = BASE_ORDER.filter((n) => laneSet.has(n));
@@ -27,7 +42,7 @@ function buildLaneColumns(laneList) {
   const list = [...ordered, ...extras];
   const total = list.length;
   const rows = Math.max(35, Math.ceil((total + 1) / 4));
-  const columns = [[], [], [], []];
+  const columns: (string | null)[][] = [[], [], [], []];
   for (let i = 0; i < total; i++) columns[Math.floor(i / rows)][i % rows] = list[i];
   for (const c of columns) while (c.length < rows) c.push(null);
   return { columns, rows, total };
@@ -35,45 +50,51 @@ function buildLaneColumns(laneList) {
 
 // Read a query param on the client (the headless PDF loads this page at
 // <path>?print=1).
-function param(name) {
+function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
 }
 const COL_HEADERS = ["BUS", "GALS", "SERV", "BUS", "GALS", "SERV", "BUS", "GALS", "SERV", "BUS", "GALS", "SERV"];
 
-function emptyData() {
+function emptyData(): FuelData {
   return { date: "", ns: "", start: "", end: "", entries: {} };
 }
 // The date the sheet is printed, as MM/DD/YY (e.g. 06/25/26).
-function printDate() {
+function printDate(): string {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${mm}/${dd}/${String(d.getFullYear()).slice(-2)}`;
 }
-function sanitizeGals(raw) {
+function sanitizeGals(raw: string): string {
   let s = String(raw).replace(/[^0-9.]/g, "");
   const i = s.indexOf(".");
   if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, "");
   return s.slice(0, 6);
 }
 
-export default function FuelSheet({ title, storageKey, showShiftFields = false }) {
-  const [data, setData] = useState(emptyData);
+interface FuelSheetProps {
+  title: string;
+  storageKey: string;
+  showShiftFields?: boolean;
+}
+
+export default function FuelSheet({ title, storageKey, showShiftFields = false }: FuelSheetProps) {
+  const [data, setData] = useState<FuelData>(emptyData);
   const [loaded, setLoaded] = useState(false);
-  const [savedAt, setSavedAt] = useState(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
-  const [busFlags, setBusFlags] = useState({}); // universal flags: { bus: { flags:[...] } }
+  const [busFlags, setBusFlags] = useState<FlagMap>({}); // universal flags: { bus: { flags:[...] } }
   const [showFlags, setShowFlags] = useState(false); // print WITH the R/H/I flags?
   const [managerOpen, setManagerOpen] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
-  const saveTimer = useRef(null);
-  const prewarmTimer = useRef(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Keep the local flag map in sync when the editor changes a bus (it also posts
   // to /api/flags itself), so the indicators + summary update immediately.
-  function onFlagsUpdated(bus, entry) {
+  function onFlagsUpdated(bus: string, entry: FlagEntry) {
     setBusFlags((prev) => ({ ...prev, [bus]: entry }));
   }
 
@@ -167,10 +188,10 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     return () => clearTimeout(saveTimer.current);
   }, [data, loaded, storageKey, printMode]);
 
-  function setField(field, value) {
+  function setField(field: FuelStringField, value: string) {
     setData((d) => ({ ...d, [field]: value }));
   }
-  function setEntry(bus, key, value) {
+  function setEntry(bus: string, key: keyof FuelEntry, value: string) {
     setData((d) => {
       const cur = d.entries[bus] || { gals: "", serv: "" };
       const next = { ...cur, [key]: value };
@@ -180,7 +201,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
       return { ...d, entries };
     });
   }
-  function hasContent(d) {
+  function hasContent(d: FuelData | null | undefined): boolean {
     return !!(d && (Object.keys(d.entries || {}).length || d.date || d.ns || d.start || d.end));
   }
   // Save a copy into Prev Sheets (server-side) before it's discarded/replaced.
@@ -199,7 +220,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   }
   // The current sheet is archived first (so it isn't lost), the chosen one is
   // loaded, and it leaves the archive since you're continuing it.
-  async function importSheet(imported, id) {
+  async function importSheet(imported: any, id?: string) {
     if (!imported) return;
     await archiveCurrent();
     setData({ ...emptyData(), ...imported });
@@ -226,7 +247,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   const { columns, rows, total } = buildLaneColumns(laneBuses());
 
   // The 3 cells for one column-group at a given row (BUS, GALS, SERV).
-  function groupCells(g, r) {
+  function groupCells(g: number, r: number) {
     // "Total: N" sits in the last group's last row (matching the original).
     if (g === 3 && r === rows - 1) {
       return [
@@ -303,7 +324,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
         </button>
       </div>
 
-      <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` }}>
+      <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
         <div className={`sheet fuel-sheet ${showFlags ? "fuel-sheet--flags" : ""}`}>
           <table className="fuelt">
             <tbody>
@@ -354,7 +375,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
       </div>
 
       {showSummary && (
-        <div className="sheet-scroll fuelsum-scroll" style={{ "--ffz": `${fontPx}px` }}>
+        <div className="sheet-scroll fuelsum-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
           <div className={`sheet fuel-sheet fuelsum ${showFlags ? "fuel-sheet--flags" : ""}`}>
             <div className="fuelsum__head">
               <div className="fuelsum__title">SERVICE LANE</div>
