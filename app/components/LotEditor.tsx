@@ -13,13 +13,14 @@ interface LotEditorProps {
   list: string[];
   flags?: FlagMap;
   locate?: (bus: string, exceptId: string | null) => string;
+  onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onAdd: (bus: string) => void;
   onRemove: (i: number) => void;
   onMove: (i: number, dir: number) => void;
   onClose: () => void;
 }
 
-export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
+export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -38,6 +39,17 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
       setVal(b);
       return;
     }
+    onAdd(b);
+    setVal("");
+    setDup("");
+    ref.current?.focus({ preventScroll: true });
+  }
+
+  // The bus is somewhere else — pull it out of there and add it here.
+  function moveHere() {
+    const b = sanitizeBus(val);
+    if (b.length < 4) return;
+    onRelocate?.(b);
     onAdd(b);
     setVal("");
     setDup("");
@@ -85,8 +97,15 @@ export default function LotEditor({ title, list, flags = {}, locate, onAdd, onRe
         </div>
         {dup && (
           <div className="modal__warn">
-            Bus {busLabel(val)} is already on the sheet at <strong>{dup}</strong>. Remove it
-            there first — a bus can only be in one place.
+            Bus {busLabel(val)} is currently at <strong>{dup}</strong>.
+            <div className="modal__warnactions">
+              <button className="btn btn--primary btn--mini" onClick={moveHere}>
+                Move it here
+              </button>
+              <button className="btn btn--mini" onClick={() => { setDup(""); setVal(""); }}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
         {showWarn && !dup && (

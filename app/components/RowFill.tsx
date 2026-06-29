@@ -51,10 +51,11 @@ interface RowFillProps {
   getNum: (id: string) => string;
   saveNum: (id: string, v: string) => void;
   locate?: (bus: string, exceptId: string | null) => string;
+  onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onClose: () => void;
 }
 
-export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillProps) {
+export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }: RowFillProps) {
   const { isKnown: isKnownBus } = useBusMaster();
   const [berto, setBerto] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -155,7 +156,23 @@ export default function RowFill({ getNum, saveNum, locate, onClose }: RowFillPro
             }
           }}
         />
-        {isDupHere && dup && <span className="rf__dup">already at {dup.where}</span>}
+        {isDupHere && dup && (
+          <span className="rf__dup">
+            at {dup.where}
+            <button
+              type="button"
+              className="rf__move"
+              onClick={() => {
+                onRelocate?.(dup.value);
+                saveNum(dup.id, dup.value);
+                setDup(null);
+                focusNext(dup.id);
+              }}
+            >
+              move here
+            </button>
+          </span>
+        )}
       </label>
     );
   }

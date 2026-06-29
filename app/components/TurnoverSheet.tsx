@@ -233,6 +233,22 @@ export default function TurnoverSheet() {
     return "";
   }
 
+  // Pull a bus out of whichever lot it currently sits in so it can be added
+  // elsewhere — powers the lot editor's "Move it here". BAY is positional
+  // (10 fixed spots) so we blank the slot instead of removing it.
+  function relocateBus(bus: string) {
+    if (!bus) return;
+    const next = { ...lots } as TurnoverLots;
+    let changed = false;
+    for (const k of Object.keys(next) as LotKey[]) {
+      const arr = next[k] || [];
+      if (!arr.includes(bus)) continue;
+      next[k] = k === "bay" ? arr.map((b) => (b === bus ? "" : b)) : arr.filter((b) => b !== bus);
+      changed = true;
+    }
+    if (changed) patchLots(next);
+  }
+
   function schedulePrewarm() {
     if (printMode) return;
     clearTimeout(prewarmTimer.current);
@@ -565,6 +581,7 @@ export default function TurnoverSheet() {
           list={lots[editingLot] || []}
           flags={flags}
           locate={(bus) => locateLot(bus)}
+          onRelocate={relocateBus}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}

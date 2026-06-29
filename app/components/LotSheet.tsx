@@ -441,6 +441,26 @@ export default function LotSheet() {
     return "";
   }
 
+  // Pull a bus out of wherever it currently sits (any grid cell or any lot) so
+  // it can be dropped into a new spot — powers the editors' "Move it here".
+  // BAY is positional (10 fixed spots) so we blank the slot instead of removing it.
+  function relocateBus(num: string) {
+    if (!num) return;
+    setSheet((s) => {
+      const cells = { ...s.cells };
+      for (const [id, v] of Object.entries(cells)) {
+        if (cellToNum(v) === num) delete cells[id];
+      }
+      const lots: Lots = { ...(s.lots || {}) };
+      for (const k of Object.keys(lots) as LotKey[]) {
+        const arr = lots[k];
+        if (!Array.isArray(arr) || !arr.includes(num)) continue;
+        lots[k] = k === "bay" ? arr.map((b) => (b === num ? "" : b)) : arr.filter((b) => b !== num);
+      }
+      return { ...s, cells, lots };
+    });
+  }
+
   // ---- cell renderer ----
   function Cell({ id, slotLabel }: { id: string | null; slotLabel: string | number | null }) {
     const num = getNum(id);
@@ -721,6 +741,7 @@ export default function LotSheet() {
           flags={flags}
           cellId={editing.id}
           locate={locateBus}
+          onRelocate={relocateBus}
           onSave={(num) => {
             saveNum(editing.id, num);
             setEditing(null);
@@ -742,6 +763,7 @@ export default function LotSheet() {
           getNum={getNum}
           saveNum={saveNum}
           locate={locateBus}
+          onRelocate={relocateBus}
           onClose={() => setFillOpen(false)}
         />
       )}
@@ -756,6 +778,7 @@ export default function LotSheet() {
           list={lotList(editingLot)}
           flags={flags}
           locate={locateBus}
+          onRelocate={relocateBus}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}

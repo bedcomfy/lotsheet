@@ -14,11 +14,12 @@ interface CellEditorProps {
   flags?: FlagMap;
   cellId: string;
   locate?: (bus: string, exceptId: string | null) => string;
+  onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onSave: (v: string) => void;
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -34,6 +35,13 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
         return;
       }
     }
+    onSave(n);
+  }
+
+  // The bus is somewhere else — pull it out of there and drop it here.
+  function moveHere() {
+    const n = num.trim();
+    onRelocate?.(n);
     onSave(n);
   }
 
@@ -87,8 +95,15 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onS
         />
         {dup && (
           <div className="modal__warn">
-            Bus {busLabel(num)} is already on the sheet at <strong>{dup}</strong>. Remove it
-            there first — a bus can only be in one place.
+            Bus {busLabel(num)} is currently at <strong>{dup}</strong>.
+            <div className="modal__warnactions">
+              <button className="btn btn--primary btn--mini" onClick={moveHere}>
+                Move it here
+              </button>
+              <button className="btn btn--mini" onClick={() => setDup("")}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
         {showWarning && !dup && (
