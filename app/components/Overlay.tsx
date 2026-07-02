@@ -1,6 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 interface OverlayProps {
@@ -25,6 +26,21 @@ interface OverlayProps {
 // that opened the dialog and the browser scrolls it into view — the "page jumps
 // after editing a box" bug.
 export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", children }: OverlayProps) {
+  // Pin the page's scroll position across the dialog's lifetime. Focus
+  // prevention alone doesn't stop every jump — iOS in particular shifts the
+  // underlying document when the on-screen keyboard opens/closes — so we
+  // remember exactly where the user was and put them back there on close
+  // (again after the keyboard finishes collapsing).
+  useEffect(() => {
+    const x = window.scrollX;
+    const y = window.scrollY;
+    return () => {
+      const restore = () => window.scrollTo(x, y);
+      requestAnimationFrame(restore);
+      setTimeout(restore, 60); // after the scroll-lock is released
+      setTimeout(restore, 300); // after the mobile keyboard finishes closing
+    };
+  }, []);
   return (
     <Dialog.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>

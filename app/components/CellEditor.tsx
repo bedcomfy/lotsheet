@@ -17,11 +17,13 @@ interface CellEditorProps {
   locate?: (bus: string, exceptId: string | null) => string;
   onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
+  sendTargets?: { key: string; label: string }[]; // lots this bus can be sent to
+  onSendToLot?: (bus: string, lotKey: string) => void;
   onSave: (v: string) => void;
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -135,6 +137,18 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
                 <span className="flag-readout__note"> (manager)</span>
               )}
             </span>
+          </div>
+        )}
+
+        {/* Send the bus that's parked in this cell straight to a lot — no dragging. */}
+        {onSendToLot && !!sendTargets?.length && value && num === value && (
+          <div className="sendrow">
+            <span className="sendrow__lbl">Send to</span>
+            {sendTargets.map((t) => (
+              <button key={t.key} className="btn btn--mini" onClick={() => onSendToLot(num, t.key)}>
+                {t.label}
+              </button>
+            ))}
           </div>
         )}
 

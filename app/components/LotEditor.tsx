@@ -19,6 +19,7 @@ interface LotEditorProps {
   locate?: (bus: string, exceptId: string | null) => string;
   onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
+  recent?: string[]; // buses recently taken off the sheet — one-tap re-add chips
   onAdd: (bus: string) => void;
   onRemove: (i: number) => void;
   onMove: (i: number, dir: number) => void;
@@ -97,7 +98,7 @@ function LotRow({ sortId, bus, i, count, fdisp, sortable, onEditFlags, onMove, o
   );
 }
 
-export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onEditFlags, onAdd, onRemove, onMove, onReorder, onClose }: LotEditorProps) {
+export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onEditFlags, recent, onAdd, onRemove, onMove, onReorder, onClose }: LotEditorProps) {
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -203,6 +204,18 @@ export default function LotEditor({ title, list, flags = {}, locate, onRelocate,
         {showWarn && !dup && (
           <div className="modal__warn">
             {val} isn&apos;t on the bus list — double-check it. Press Add to use it anyway.
+          </div>
+        )}
+
+        {/* Buses recently taken off the sheet — tap to add them here. */}
+        {!!recent?.length && (
+          <div className="recentrow">
+            <span className="recentrow__lbl">Recent</span>
+            {recent.map((b) => (
+              <button key={b} type="button" className="recentchip" onClick={() => add(b)}>
+                {busLabel(b)}
+              </button>
+            ))}
           </div>
         )}
 

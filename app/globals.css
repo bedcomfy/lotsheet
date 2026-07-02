@@ -1445,6 +1445,77 @@ button {
   color: var(--muted);
 }
 
+/* ---------- Undo toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #111827;
+  color: #fff;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: calc(100vw - 24px);
+}
+.toast__btn {
+  border: none;
+  background: transparent;
+  color: #93c5fd;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+
+/* ---------- "Send to…" row (cell editor) ---------- */
+.sendrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.sendrow__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ---------- Recent buses (lot editor) ---------- */
+.recentrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+.recentrow__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.recentchip {
+  border: 1px solid #d1d5db;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.recentchip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* ---------- Back of sheet (lot lists) ---------- */
 .back-sheet {
   background: var(--paper);

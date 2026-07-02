@@ -225,6 +225,10 @@ export default function LotSheet() {
   const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
   const [findMsg, setFindMsg] = useState(""); // where the searched bus is
   const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [undoState, setUndoState] = useState<{ label: string } | null>(null); // undo toast
+  const undoSheetRef = useRef<LotSheetData | null>(null); // the sheet as it was before the change
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [recent, setRecent] = useState<string[]>([]); // buses recently taken off the sheet (quick re-add)
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -377,7 +381,33 @@ export default function LotSheet() {
     return cellToNum(sheet.cells[id]);
   }
 
+  // ---- undo (one step, for the bigger actions) ----
+  // Snapshot the sheet BEFORE a change and offer to put it back for a few
+  // seconds. The snapshot is the previous immutable state object, so this is
+  // cheap and exact; undoing autosaves like any other edit.
+  function offerUndo(label: string) {
+    undoSheetRef.current = sheetRef.current;
+    setUndoState({ label });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndoState(null), 6000);
+  }
+  function undoNow() {
+    if (undoSheetRef.current) setSheet(undoSheetRef.current);
+    undoSheetRef.current = null;
+    setUndoState(null);
+    clearTimeout(undoTimer.current);
+  }
+
+  // Remember buses that just left the sheet so the lot editors can offer them
+  // as one-tap chips (newest first, capped, session-only).
+  function noteRemoved(bus: string) {
+    if (!bus) return;
+    setRecent((r) => [bus, ...r.filter((b) => b !== bus)].slice(0, 8));
+  }
+
   function saveNum(id: string, num: string) {
+    const prev = getNum(id);
+    if (prev && prev !== num) noteRemoved(prev);
     setSheet((s) => {
       const cells = { ...s.cells };
       if (num) cells[id] = num;
@@ -445,6 +475,7 @@ export default function LotSheet() {
       return;
     }
     await archiveSheet(sheet);
+    offerUndo("Grid cleared");
     setSheet((s) => ({ ...emptySheet(), lots: s.lots }));
   }
 
@@ -459,6 +490,7 @@ export default function LotSheet() {
       return;
     }
     await archiveSheet(sheet);
+    offerUndo("Lots cleared");
     // Clear only the back-of-sheet lots; keep the Turnover-managed lots
     // (R/C, Apron, Lanes, Bay) intact.
     setSheet((s) => ({ ...s, lots: { ...(s.lots || {}), north: [], east: [], fence: [] } }));
@@ -505,6 +537,8 @@ export default function LotSheet() {
     if (overData?.cellId) {
       const to = overData.cellId;
       if (to === from) return;
+      const displacedNow = cellToNum(sheet.cells[to]);
+      offerUndo(displacedNow ? `Swapped ${num} ↔ ${displacedNow}` : `Moved ${num}`);
       setSheet((s) => {
         const cells = { ...s.cells };
         const displaced = cellToNum(cells[to]);
@@ -515,6 +549,7 @@ export default function LotSheet() {
       });
     } else if (overData?.lotKey) {
       const key = overData.lotKey as LotKey;
+      offerUndo(`${num} → ${LOT_LOCATION_LABELS[key] || key}`);
       setSheet((s) => {
         const cells = { ...s.cells };
         delete cells[from];
@@ -523,6 +558,20 @@ export default function LotSheet() {
         return { ...s, cells, lots: { ...lots, [key]: arr.includes(num) ? arr : [...arr, num] } };
       });
     }
+  }
+
+  // "Send to…" from the cell editor: take the bus out of its cell and append it
+  // to the chosen back-of-sheet lot — no dragging across the page needed.
+  function sendCellBusToLot(cellId: string, bus: string, key: string) {
+    offerUndo(`${bus} → ${LOT_LOCATION_LABELS[key] || key}`);
+    setSheet((s) => {
+      const cells = { ...s.cells };
+      delete cells[cellId];
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = lots[key as LotKey] || [];
+      return { ...s, cells, lots: { ...lots, [key]: arr.includes(bus) ? arr : [...arr, bus] } };
+    });
+    setEditing(null);
   }
 
   // Quietly (re)build the PDF in the background so a later "Print PDF" click is
@@ -591,6 +640,8 @@ export default function LotSheet() {
     });
   }
   function removeFromLot(key: string, index: number) {
+    const removed = (sheet.lots?.[key as LotKey] || [])[index];
+    if (removed) noteRemoved(removed);
     setSheet((s) => {
       const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
       // Flags are NEVER auto-cleared when a bus leaves a lot — they persist
@@ -682,6 +733,7 @@ export default function LotSheet() {
   // BAY is positional (10 fixed spots) so we blank the slot instead of removing it.
   function relocateBus(num: string) {
     if (!num) return;
+    offerUndo(`Moved ${num}`);
     setSheet((s) => {
       const cells = { ...s.cells };
       for (const [id, v] of Object.entries(cells)) {
@@ -949,6 +1001,8 @@ export default function LotSheet() {
           cellId={editing.id}
           locate={locateBus}
           onRelocate={relocateBus}
+          sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
+          onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
           onEditFlags={(bus) => {
             setEditing(null);
             setFlagBus(bus);
@@ -990,6 +1044,7 @@ export default function LotSheet() {
           flags={flags}
           locate={locateBus}
           onRelocate={relocateBus}
+          recent={recent.filter((b) => !locateBus(b, null))}
           onEditFlags={(bus) => setFlagBus(bus)}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
@@ -1007,6 +1062,16 @@ export default function LotSheet() {
           onBusFlagsUpdated={onBusFlagsUpdated}
           onClose={() => setFlagBus(null)}
         />
+      )}
+
+      {/* Undo toast for the bigger actions (clears, drags, sends) */}
+      {undoState && (
+        <div className="toast no-print" role="status">
+          <span>{undoState.label}</span>
+          <button className="toast__btn" onClick={undoNow}>
+            Undo
+          </button>
+        </div>
       )}
     </div>
   );
