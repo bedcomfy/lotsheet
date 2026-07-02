@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
+import { Flag } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -15,11 +16,12 @@ interface CellEditorProps {
   cellId: string;
   locate?: (bus: string, exceptId: string | null) => string;
   onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
+  onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
   onSave: (v: string) => void;
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -116,7 +118,11 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
         )}
 
         {showReadout && (
-          <div className="flag-readout">
+          <div
+            className={`flag-readout ${onEditFlags ? "flag-readout--btn" : ""}`}
+            onClick={onEditFlags ? () => onEditFlags(num) : undefined}
+            title={onEditFlags ? "Edit this bus's flags" : undefined}
+          >
             <TypeCodes num={num} className="flag-readout__codes" />
             <span>
               {typeLabels}
@@ -136,6 +142,11 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
           <button className="btn btn--ghost" onClick={() => onSave("")}>
             Clear
           </button>
+          {onEditFlags && num.length >= 4 && (
+            <button className="btn" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
+              <Flag size={15} /> Flags
+            </button>
+          )}
           <div className="toolbar__spacer" />
           <button className="btn" onClick={onClose}>
             Cancel

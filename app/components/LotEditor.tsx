@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flagsFullDisplay } from "../lib/grid";
+import { Flag } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -14,13 +15,14 @@ interface LotEditorProps {
   flags?: FlagMap;
   locate?: (bus: string, exceptId: string | null) => string;
   onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
+  onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
   onAdd: (bus: string) => void;
   onRemove: (i: number) => void;
   onMove: (i: number, dir: number) => void;
   onClose: () => void;
 }
 
-export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
+export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onEditFlags, onAdd, onRemove, onMove, onClose }: LotEditorProps) {
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -129,6 +131,16 @@ export default function LotEditor({ title, list, flags = {}, locate, onRelocate,
                 {fdisp && <span className="lotitem__flag">{fdisp}</span>}
               </div>
               <div className="lotitem__actions">
+                {onEditFlags && (
+                  <button
+                    className="lotitem__move"
+                    onClick={() => onEditFlags(bus)}
+                    aria-label="Edit flags"
+                    title="Edit this bus's flags"
+                  >
+                    <Flag size={13} />
+                  </button>
+                )}
                 <button
                   className="lotitem__move"
                   onClick={() => onMove(i, -1)}

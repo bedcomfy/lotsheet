@@ -582,6 +582,7 @@ export default function TurnoverSheet() {
           flags={flags}
           locate={(bus) => locateLot(bus)}
           onRelocate={relocateBus}
+          onEditFlags={(bus) => setFlagBus(bus)}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}

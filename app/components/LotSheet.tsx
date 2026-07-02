@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import {
   SLOTS,
   FRONT_COLUMNS,
@@ -77,6 +89,124 @@ function param(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+// ---- drag-and-drop cells ----
+// Top-level components (NOT defined inside LotSheet) so they keep their identity
+// across re-renders — an inline component would remount mid-drag and break dnd.
+// Every cell is a drop target; a cell with a bus is also draggable. Tap still
+// opens the editor (mouse drags need ~6px of movement, touch a long-press).
+
+interface GridCellProps {
+  id: string | null;
+  slotLabel: string | number | null;
+  num: string;
+  entry: FlagEntry | null;
+  onOpen: (id: string, subLabel: string) => void;
+}
+
+function GridCell({ id, slotLabel, num, entry, onOpen }: GridCellProps) {
+  const { label: busLabel } = useBusMaster();
+  const blocked = slotLabel === "X";
+  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !id || !num });
+  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: !id });
+  if (blocked) {
+    return (
+      <div className="cell cell--blocked">
+        <span className="cell__x">X</span>
+      </div>
+    );
+  }
+  const disp = entry ? flagDisplay(entry) : "";
+  const miles = entry ? inspMilesDisplay(entry) : "";
+  const pin = entry ? pinnedFlagText(entry) : "";
+  return (
+    <button
+      type="button"
+      ref={(el) => {
+        drag.setNodeRef(el);
+        drop.setNodeRef(el);
+      }}
+      {...drag.listeners}
+      {...drag.attributes}
+      className={`cell ${num ? "cell--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
+        drop.isOver ? "cell--dropover" : ""
+      }`}
+      onClick={() => onOpen(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
+    >
+      {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
+      {num && <TypeCodes num={num} className="cell__types" />}
+      <span className="cell__num">{busLabel(num)}</span>
+      {(disp || miles || pin) && (
+        <span className="cell__meta">
+          {disp && <span className="cell__flag">{disp}</span>}
+          {miles && <span className="cell__insp">{miles}</span>}
+          {pin && <span className="cell__pin">{pin}</span>}
+        </span>
+      )}
+    </button>
+  );
+}
+
+interface FrontCellProps {
+  c: number;
+  num: string;
+  entry: FlagEntry | null;
+  onOpen: (id: string, subLabel: string) => void;
+}
+
+function FrontCell({ c, num, entry, onOpen }: FrontCellProps) {
+  const { label: busLabel } = useBusMaster();
+  const id = frontCellId(c);
+  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !num });
+  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id } });
+  const disp = entry ? flagDisplay(entry) : "";
+  const miles = entry ? inspMilesDisplay(entry) : "";
+  const pin = entry ? pinnedFlagText(entry) : "";
+  return (
+    <button
+      type="button"
+      ref={(el) => {
+        drag.setNodeRef(el);
+        drop.setNodeRef(el);
+      }}
+      {...drag.listeners}
+      {...drag.attributes}
+      className={`front ${num ? "front--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
+        drop.isOver ? "cell--dropover" : ""
+      }`}
+      onClick={() => onOpen(id, `ROW ${c + 1} — front bus`)}
+    >
+      {num && <TypeCodes num={num} className="front__types" />}
+      <span className="cell__num">{busLabel(num)}</span>
+      {disp && <span className="front__flag">{disp}</span>}
+      {miles && <span className="front__flag front__insp">{miles}</span>}
+      {pin && <span className="front__flag front__pin">{pin}</span>}
+    </button>
+  );
+}
+
+// A back-of-sheet lot box that accepts a dragged bus (drops it at the end of
+// that lot's list) and still opens the lot editor on tap.
+function BackLotBox({ lotKey, onOpen, children }: { lotKey: string; onOpen: () => void; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `lot:${lotKey}`, data: { lotKey } });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`backlot ${isOver ? "backlot--dropover" : ""}`}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function LotSheet() {
   const { label: busLabel } = useBusMaster();
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
@@ -86,6 +216,16 @@ export default function LotSheet() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [flags, setFlags] = useState<FlagMap>({}); // bus number -> flag entry
   const [managerOpen, setManagerOpen] = useState(false);
+  const [flagBus, setFlagBus] = useState<string | null>(null); // open the flag editor on this bus
+  const [dragNum, setDragNum] = useState<string | null>(null); // bus being dragged (for the overlay chip)
+  const suppressClickUntil = useRef(0); // swallow the click that follows a drag
+  // Mouse: a drag starts after 6px of movement, so plain clicks still open the
+  // editor. Touch: a short hold starts the drag, so normal taps and scrolling
+  // keep working.
+  const dndSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
+  );
   // PDF render mode: the page is opened headless at /?print=1; don't write to
   // the server and expose a readiness marker the PDF generator waits for.
   const [printMode, setPrintMode] = useState(false);
@@ -333,7 +473,49 @@ export default function LotSheet() {
   }
 
   function openCell(id: string, subLabel: string) {
+    // A drag fires a click on the source cell when it ends — don't open the editor for it.
+    if (Date.now() < suppressClickUntil.current) return;
     setEditing({ id, subLabel });
+  }
+
+  // ---- drag-and-drop ----
+  function onDragStart(e: DragStartEvent) {
+    setDragNum((e.active.data.current?.num as string) || null);
+  }
+  function onDragCancel() {
+    setDragNum(null);
+    suppressClickUntil.current = Date.now() + 300;
+  }
+  // Drop on a cell: empty = move, occupied = swap the two buses.
+  // Drop on a back-of-sheet lot box: leave the grid and join that lot's list.
+  function onDragEnd(e: DragEndEvent) {
+    setDragNum(null);
+    suppressClickUntil.current = Date.now() + 300;
+    const from = e.active.data.current?.cellId as string | undefined;
+    const num = e.active.data.current?.num as string | undefined;
+    if (!from || !num || !e.over) return;
+    const overData = e.over.data.current as { cellId?: string; lotKey?: string } | undefined;
+    if (overData?.cellId) {
+      const to = overData.cellId;
+      if (to === from) return;
+      setSheet((s) => {
+        const cells = { ...s.cells };
+        const displaced = cellToNum(cells[to]);
+        cells[to] = num;
+        if (displaced) cells[from] = displaced; // swap
+        else delete cells[from]; // move
+        return { ...s, cells };
+      });
+    } else if (overData?.lotKey) {
+      const key = overData.lotKey as LotKey;
+      setSheet((s) => {
+        const cells = { ...s.cells };
+        delete cells[from];
+        const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+        const arr = lots[key] || [];
+        return { ...s, cells, lots: { ...lots, [key]: arr.includes(num) ? arr : [...arr, num] } };
+      });
+    }
   }
 
   // Quietly (re)build the PDF in the background so a later "Print PDF" click is
@@ -461,39 +643,10 @@ export default function LotSheet() {
     });
   }
 
-  // ---- cell renderer ----
-  function Cell({ id, slotLabel }: { id: string | null; slotLabel: string | number | null }) {
+  // A cell's current bus + flag entry, for the top-level GridCell/FrontCell.
+  function cellProps(id: string) {
     const num = getNum(id);
-    const entry = num ? flagFor(num) : null;
-    const disp = entry ? flagDisplay(entry) : "";
-    const miles = entry ? inspMilesDisplay(entry) : "";
-    const pin = entry ? pinnedFlagText(entry) : "";
-    const blocked = slotLabel === "X";
-    if (blocked) {
-      return (
-        <div className="cell cell--blocked">
-          <span className="cell__x">X</span>
-        </div>
-      );
-    }
-    return (
-      <button
-        type="button"
-        className={`cell ${num ? "cell--filled" : ""}`}
-        onClick={() => openCell(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
-      >
-        {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
-        {num && <TypeCodes num={num} className="cell__types" />}
-        <span className="cell__num">{busLabel(num)}</span>
-        {(disp || miles || pin) && (
-          <span className="cell__meta">
-            {disp && <span className="cell__flag">{disp}</span>}
-            {miles && <span className="cell__insp">{miles}</span>}
-            {pin && <span className="cell__pin">{pin}</span>}
-          </span>
-        )}
-      </button>
-    );
+    return { num, entry: num ? flagFor(num) : null };
   }
 
   // Buses with flags, grouped by most-severe flag, for the back-of-sheet summary.
@@ -560,6 +713,7 @@ export default function LotSheet() {
       </div>
 
       {/* The printable sheet */}
+      <DndContext sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
       <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE + fontDelta}px` } as CSSProperties}>
         <div className={`sheet ${showMaint ? "sheet--maint" : ""}`}>
           {/* Header */}
@@ -613,26 +767,7 @@ export default function LotSheet() {
           <div className="frontrow">
             {Array.from({ length: COLUMN_COUNT }).map((_, c) => {
               if (c >= FRONT_COLUMNS) return <div key={`f${c}`} className="front front--empty" />;
-              const id = frontCellId(c);
-              const num = getNum(id);
-              const entry = num ? flagFor(num) : null;
-              const disp = entry ? flagDisplay(entry) : "";
-              const miles = entry ? inspMilesDisplay(entry) : "";
-              const pin = entry ? pinnedFlagText(entry) : "";
-              return (
-                <button
-                  key={`f${c}`}
-                  type="button"
-                  className={`front ${num ? "front--filled" : ""}`}
-                  onClick={() => openCell(id, `ROW ${c + 1} — front bus`)}
-                >
-                  {num && <TypeCodes num={num} className="front__types" />}
-                  <span className="cell__num">{busLabel(num)}</span>
-                  {disp && <span className="front__flag">{disp}</span>}
-                  {miles && <span className="front__flag front__insp">{miles}</span>}
-                  {pin && <span className="front__flag front__pin">{pin}</span>}
-                </button>
-              );
+              return <FrontCell key={`f${c}`} c={c} {...cellProps(frontCellId(c))} onOpen={openCell} />;
             })}
           </div>
 
@@ -647,12 +782,14 @@ export default function LotSheet() {
             {SLOTS.map((band, b) =>
               band.map((slot, c) => {
                 if (c === COLUMN_COUNT - 1) {
-                  return <Cell key={`b${b}c${c}`} id={row11CellId(b)} slotLabel={null} />;
+                  const id = row11CellId(b);
+                  return <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} onOpen={openCell} />;
                 }
                 if (slot === "X") {
-                  return <Cell key={`b${b}c${c}`} id={null} slotLabel="X" />;
+                  return <GridCell key={`b${b}c${c}`} id={null} slotLabel="X" num="" entry={null} onOpen={openCell} />;
                 }
-                return <Cell key={`b${b}c${c}`} id={numberedCellId(slot as number)} slotLabel={slot} />;
+                const id = numberedCellId(slot as number);
+                return <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} onOpen={openCell} />;
               })
             )}
           </div>
@@ -670,19 +807,7 @@ export default function LotSheet() {
         <div className="back-sheet">
           <div className="back__cols">
             {LOTS.map((lot) => (
-              <div
-                className="backlot"
-                key={lot.key}
-                role="button"
-                tabIndex={0}
-                onClick={() => setEditingLot(lot.key)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setEditingLot(lot.key);
-                  }
-                }}
-              >
+              <BackLotBox key={lot.key} lotKey={lot.key} onOpen={() => setEditingLot(lot.key)}>
                 <div className="backlot__head">
                   {lot.title}
                   <span className="backlot__count"> ({lotList(lot.key).length})</span>
@@ -700,7 +825,7 @@ export default function LotSheet() {
                     );
                   })}
                 </ol>
-              </div>
+              </BackLotBox>
             ))}
           </div>
 
@@ -731,6 +856,17 @@ export default function LotSheet() {
         </div>
       </div>
 
+      {/* The bus chip that follows the pointer while dragging */}
+      <DragOverlay dropAnimation={null}>
+        {dragNum ? (
+          <div className="dragchip">
+            <TypeCodes num={dragNum} />
+            {busLabel(dragNum)}
+          </div>
+        ) : null}
+      </DragOverlay>
+      </DndContext>
+
       {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
       {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
 
@@ -742,6 +878,10 @@ export default function LotSheet() {
           cellId={editing.id}
           locate={locateBus}
           onRelocate={relocateBus}
+          onEditFlags={(bus) => {
+            setEditing(null);
+            setFlagBus(bus);
+          }}
           onSave={(num) => {
             saveNum(editing.id, num);
             setEditing(null);
@@ -779,10 +919,21 @@ export default function LotSheet() {
           flags={flags}
           locate={locateBus}
           onRelocate={relocateBus}
+          onEditFlags={(bus) => setFlagBus(bus)}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
           onClose={() => setEditingLot(null)}
+        />
+      )}
+
+      {/* Flag editor opened straight from a bus (grid cell or lot row) */}
+      {flagBus && (
+        <ManagerPanel
+          flags={flags}
+          initialBus={flagBus}
+          onBusFlagsUpdated={onBusFlagsUpdated}
+          onClose={() => setFlagBus(null)}
         />
       )}
     </div>
