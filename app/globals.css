@@ -1546,6 +1546,33 @@ button {
 .statchip--warn:hover {
   border-color: #d97706;
 }
+/* Note input with a one-tap "remove note" X */
+.noterow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.noterow .detailbox__text {
+  padding-right: 36px; /* keep text clear of the X */
+}
+.noterow__clear {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.noterow__clear:hover {
+  color: #b91c1c;
+  background: var(--surface-hover);
+}
 /* Section divider inside the Missing buses list */
 .lotlist__section {
   margin: 14px 0 4px;

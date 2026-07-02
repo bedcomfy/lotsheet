@@ -11,6 +11,7 @@ import {
   INSPECTION_OPTIONS,
   entryHasContent,
 } from "../lib/grid";
+import { X } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -86,14 +87,30 @@ function MilesInput({ value, onSave }: { value: number | string | null; onSave: 
 function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: string) => void }) {
   const [v, setV] = useState(value || "");
   return (
-    <input
-      className="detailbox__text"
-      placeholder="Type a note…"
-      value={v}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => v !== (value || "") && onSave(v)}
-      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-    />
+    <div className="noterow">
+      <input
+        className="detailbox__text"
+        placeholder="Type a note…"
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => v !== (value || "") && onSave(v)}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+      />
+      {!!v && (
+        <button
+          type="button"
+          className="noterow__clear"
+          onClick={() => {
+            setV("");
+            onSave("");
+          }}
+          aria-label="Remove note"
+          title="Remove the note"
+        >
+          <X size={15} />
+        </button>
+      )}
+    </div>
   );
 }
 

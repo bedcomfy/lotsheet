@@ -52,7 +52,7 @@ SLOTS.forEach((band) => {
   });
 });
 
-// Human-readable spot for a cell id, e.g. "Row 5 · #85", "Row 3 front",
+// Human-readable spot for a cell id, e.g. "Row 5 · #85", "Row 3 · front",
 // "Row 11". Empty string for an unknown id. Columns are labelled ROW 1..11.
 export function cellLocationLabel(id: string): string {
   if (!id) return "";
@@ -64,7 +64,7 @@ export function cellLocationLabel(id: string): string {
   }
   if (id[0] === "f") {
     const c = parseInt(id.slice(1), 10);
-    return `Row ${c + 1} front`;
+    return `Row ${c + 1} · front`;
   }
   return "";
 }
