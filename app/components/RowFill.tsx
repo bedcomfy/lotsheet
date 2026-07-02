@@ -183,6 +183,8 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
     rowNums.length === 1
       ? `ROW ${rowNums[0]}`
       : `ROW ${rowNums.slice(0, -1).join(", ")} & ${rowNums[rowNums.length - 1]}`;
+  // How much of this screen is filled in — quick sense of what's left to walk.
+  const filled = order.filter((cellId) => !!getNum(cellId)).length;
 
   function go(delta: number) {
     setStep((p) => Math.max(0, Math.min(groups.length - 1, p + delta)));
@@ -214,7 +216,9 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
           <button className="btn" onClick={() => go(-1)} disabled={step === 0}>
             ‹ Prev
           </button>
-          <div className="rf__which">{which}</div>
+          <div className="rf__which">
+            {which} <span className="rf__count">{filled}/{order.length}</span>
+          </div>
           {cols.length > 1 && (
             <button className="btn btn--mini" onClick={() => setSwapped((s) => !s)}>
               ⇄ Swap

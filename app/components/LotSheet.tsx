@@ -29,7 +29,8 @@ import {
   cellLocationLabel,
   pinnedFlagText,
 } from "../lib/grid";
-import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown } from "lucide-react";
+import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown, Search } from "lucide-react";
+import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanel";
@@ -127,6 +128,7 @@ function GridCell({ id, slotLabel, num, entry, onOpen }: GridCellProps) {
       }}
       {...drag.listeners}
       {...drag.attributes}
+      data-cellid={id ?? undefined}
       className={`cell ${num ? "cell--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
         drop.isOver ? "cell--dropover" : ""
       }`}
@@ -170,6 +172,7 @@ function FrontCell({ c, num, entry, onOpen }: FrontCellProps) {
       }}
       {...drag.listeners}
       {...drag.attributes}
+      data-cellid={id}
       className={`front ${num ? "front--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
         drop.isOver ? "cell--dropover" : ""
       }`}
@@ -191,6 +194,7 @@ function BackLotBox({ lotKey, onOpen, children }: { lotKey: string; onOpen: () =
   return (
     <div
       ref={setNodeRef}
+      data-lotkey={lotKey}
       className={`backlot ${isOver ? "backlot--dropover" : ""}`}
       role="button"
       tabIndex={0}
@@ -208,7 +212,7 @@ function BackLotBox({ lotKey, onOpen, children }: { lotKey: string; onOpen: () =
 }
 
 export default function LotSheet() {
-  const { label: busLabel } = useBusMaster();
+  const { label: busLabel, isKnown } = useBusMaster();
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
@@ -218,6 +222,9 @@ export default function LotSheet() {
   const [managerOpen, setManagerOpen] = useState(false);
   const [flagBus, setFlagBus] = useState<string | null>(null); // open the flag editor on this bus
   const [dragNum, setDragNum] = useState<string | null>(null); // bus being dragged (for the overlay chip)
+  const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
+  const [findMsg, setFindMsg] = useState(""); // where the searched bus is
+  const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -601,6 +608,17 @@ export default function LotSheet() {
       return { ...s, lots: { ...lots, [key]: arr } as Lots };
     });
   }
+  // Drag-to-reorder inside a lot list: lift the bus at `from` and drop it at `to`.
+  function reorderInLot(key: string, from: number, to: number) {
+    setSheet((s) => {
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = [...(lots[key as LotKey] || [])];
+      if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return s;
+      const [bus] = arr.splice(from, 1);
+      arr.splice(to, 0, bus);
+      return { ...s, lots: { ...lots, [key]: arr } as Lots };
+    });
+  }
 
   // Find where a bus already sits on the sheet — grid cell, front, ROW 11, or a
   // back-of-sheet lot — excluding one cell id (the one being edited). Returns a
@@ -621,6 +639,42 @@ export default function LotSheet() {
       if (Array.isArray(arr) && arr.includes(num)) return LOT_LOCATION_LABELS[key] || key;
     }
     return "";
+  }
+
+  // Toolbar "find bus": scroll to the bus on the sheet and flash it, and say
+  // where it is ("Row 5 · #43", "North Lot", …) — or that it isn't placed.
+  function findBus(raw?: string) {
+    const v = sanitizeBus(raw ?? findVal);
+    if (v.length < 4) return;
+    const where = locateBus(v, null);
+    clearTimeout(findMsgTimer.current);
+    setFindMsg(where || "Not on the sheet");
+    findMsgTimer.current = setTimeout(() => setFindMsg(""), 3000);
+    if (!where) return;
+    const flash = (selector: string) => {
+      const el = document.querySelector(selector);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("is-found");
+      setTimeout(() => el.classList.remove("is-found"), 2200);
+      return true;
+    };
+    // A grid cell? (front row + ROW 11 included — they're all in sheet.cells.)
+    for (const [id, cv] of Object.entries(sheet.cells || {})) {
+      if (cellToNum(cv) === v) {
+        flash(`[data-cellid="${id}"]`);
+        return;
+      }
+    }
+    // A back-of-sheet lot box on this page (Turnover-managed lots have no box
+    // here — the message alone covers those).
+    const lots = sheet.lots || {};
+    for (const [key, arr] of Object.entries(lots)) {
+      if (Array.isArray(arr) && arr.includes(v)) {
+        flash(`[data-lotkey="${key}"]`);
+        return;
+      }
+    }
   }
 
   // Pull a bus out of wherever it currently sits (any grid cell or any lot) so
@@ -671,6 +725,23 @@ export default function LotSheet() {
       {/* Toolbar — never printed */}
       <div className="toolbar no-print">
         <div className="toolbar__title">Lot Sheet</div>
+        <div className="findbox" title="Type a bus number to jump to it on the sheet">
+          <Search size={15} />
+          <input
+            className="findbox__in"
+            placeholder="Find bus"
+            inputMode="numeric"
+            value={findVal}
+            onChange={(e) => {
+              const v = sanitizeBus(e.target.value);
+              setFindVal(v);
+              setFindMsg("");
+              if (isKnown(v)) findBus(v);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && findBus()}
+          />
+          {findMsg && <span className="findbox__msg">{findMsg}</span>}
+        </div>
         <div className="toolbar__spacer" />
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
@@ -923,6 +994,7 @@ export default function LotSheet() {
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
+          onReorder={(from, to) => reorderInLot(editingLot, from, to)}
           onClose={() => setEditingLot(null)}
         />
       )}

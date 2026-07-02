@@ -1129,11 +1129,20 @@ button {
 
 /* ---------- Small screens (phones) — screen only, never print ---------- */
 @media screen and (max-width: 480px) {
-  /* Toolbar wraps instead of overflowing off-screen */
+  /* Toolbar: ONE row you can swipe sideways — no tall stack of wrapped buttons */
   .toolbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     gap: 6px;
     padding: 8px 10px;
+  }
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .toolbar > * {
+    flex: none;
   }
   .toolbar__spacer {
     display: none;
@@ -1142,11 +1151,14 @@ button {
     display: none;
   }
   .toolbar__title {
-    width: 100%;
-    margin-bottom: 2px;
+    font-size: 14px;
   }
   .toolbar .btn {
     padding: 9px 12px;
+    white-space: nowrap;
+  }
+  .toolbar__check {
+    white-space: nowrap;
   }
   .toolbar__font {
     margin-left: auto;
@@ -1357,6 +1369,80 @@ button {
   font-size: 15px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   pointer-events: none;
+}
+
+/* ---------- Find bus (toolbar) ---------- */
+.findbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d1d5db;
+  border-radius: var(--ctl-radius);
+  background: var(--paper);
+  color: var(--muted);
+}
+.findbox:focus-within {
+  border-color: var(--accent);
+}
+.findbox__in {
+  border: none;
+  outline: none;
+  width: 82px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.findbox__msg {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+/* Flash the found bus (grid cell or lot box) */
+.is-found {
+  animation: foundpulse 2.2s ease;
+}
+@keyframes foundpulse {
+  0%,
+  55% {
+    box-shadow: inset 0 0 0 3px var(--accent);
+    background: var(--accent-soft);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+/* ---------- Lot editor: drag-to-reorder ---------- */
+.lotitem__grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  padding: 6px 2px;
+  cursor: grab;
+  touch-action: none; /* the handle drags; the rest of the row scrolls/taps */
+}
+.lotitem__grip:active {
+  cursor: grabbing;
+}
+.lotitem--dragging {
+  opacity: 0.85;
+  background: var(--accent-soft);
+  border-radius: 8px;
+  position: relative;
+  z-index: 5;
+}
+
+/* Fill Rows progress (filled / total on this screen) */
+.rf__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
 }
 
 /* ---------- Back of sheet (lot lists) ---------- */

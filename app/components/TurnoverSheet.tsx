@@ -222,6 +222,14 @@ export default function TurnoverSheet() {
     [arr[i], arr[j]] = [arr[j], arr[i]];
     patchLots({ ...lots, [key]: arr } as TurnoverLots);
   }
+  // Drag-to-reorder inside a lot list: lift the bus at `from` and drop it at `to`.
+  function reorderInLot(key: LotKey, from: number, to: number) {
+    const arr = [...(lots[key] || [])];
+    if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return;
+    const [bus] = arr.splice(from, 1);
+    arr.splice(to, 0, bus);
+    patchLots({ ...lots, [key]: arr } as TurnoverLots);
+  }
   const LOT_LABELS: Record<LotKey, string> = {
     north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
     northlane: "North Lane", southlane: "South Lane", bay: "Bay",
@@ -586,6 +594,7 @@ export default function TurnoverSheet() {
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
+          onReorder={(from, to) => reorderInLot(editingLot, from, to)}
           onClose={() => setEditingLot(null)}
         />
       )}
