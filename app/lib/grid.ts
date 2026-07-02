@@ -111,6 +111,7 @@ export const FLAGS: FlagDef[] = [
   { id: "hold", label: "HOLD" },
   { id: "split", label: "SPLIT" },
   { id: "service", label: "NEEDS SERVICE" },
+  { id: "followup", label: "F/Up" },
   { id: "cards", label: "CARDS" },
   { id: "braketest", label: "BRAKE TEST" },
   { id: "ac", label: "A/C" },
@@ -131,7 +132,8 @@ const FLAG_NAMES: Record<string, string> = {
   legal: "Legal", safety: "Safety", offprop: "Off property", eng: "Engine",
   trans: "Transmission", oos: "Out of service", inspection: "Inspection",
   retorque: "Retorque", hold: "Hold", split: "Split", service: "Needs service",
-  cards: "Cards", braketest: "Brake test", ac: "A/C", cleaning: "Needs cleaning",
+  followup: "Follow up", cards: "Cards", braketest: "Brake test", ac: "A/C",
+  cleaning: "Needs cleaning",
 };
 export function flagName(id: string): string {
   return FLAG_NAMES[id] || flagLabel(id);
@@ -146,8 +148,8 @@ export interface Department {
 // Flags grouped by department, for the editor. A flag may appear in more than
 // one department (shared); the By bus view shows it once, under the first one.
 export const DEPARTMENTS: Department[] = [
-  { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold"] },
-  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "split"] },
+  { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold", "followup"] },
+  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "split", "followup"] },
   { id: "safety", label: "Safety", flags: ["safety", "legal"] },
 ];
 
@@ -191,6 +193,7 @@ export const FLAG_SEVERITY = [
   "hold",
   "split",
   "service",
+  "followup",
   "cards",
   "braketest",
   "ac",

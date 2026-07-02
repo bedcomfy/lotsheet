@@ -1499,6 +1499,34 @@ button {
   white-space: nowrap;
 }
 
+/* ---------- Edit Flags as a menu (was a full page) ---------- */
+.modal--flags {
+  max-width: 640px;
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  flex-direction: column;
+}
+.modal--flags .manager__inner {
+  max-width: none;
+}
+
+/* iOS Safari auto-zooms the page when focusing an input smaller than 16px —
+   and inside a locked overlay that zoom gets stuck. Keep every MENU control at
+   16px on phones. (The printable sheets keep their own sizes — not touched.) */
+@media screen and (max-width: 699px) {
+  .detailbox__num,
+  .detailbox__text,
+  .emprow__name,
+  .emprow__badge,
+  .findbox__in,
+  .buslist__sel,
+  .appnav__select,
+  .csv__area {
+    font-size: 16px;
+  }
+}
+
 /* ---------- Toolbar stats chip ---------- */
 .statchip {
   font-size: 12px;

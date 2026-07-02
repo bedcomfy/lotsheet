@@ -19,7 +19,9 @@ import type { FlagEntry, FlagMap } from "../lib/types";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
-const REQUIRE_DETAIL = new Set(["retorque"]); // can't add without picking a detail (hold's reason is optional)
+// Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
+const NOTE_FLAG = "__note";
+const REQUIRE_DETAIL = new Set(["retorque", NOTE_FLAG]); // can't add without picking a detail (hold's reason is optional)
 // A shared flag's "home" department (the first one it's listed in) — used so the
 // By bus view shows each flag once even when it's in two departments.
 const PRIMARY_DEPT: Record<string, string> = {};
@@ -37,7 +39,9 @@ function entrySummary(entry: FlagEntry | null | undefined): string {
     }
     return flagName(id);
   });
-  if (entry.note && entry.note.trim()) parts.push("Note");
+  // Show the note itself, not just the word "Note".
+  const note = (entry.note || "").trim();
+  if (note) parts.push(`“${note.length > 46 ? note.slice(0, 45) + "…" : note}”`);
   return parts.join(", ");
 }
 
@@ -335,10 +339,12 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     ? numbers.filter((n) => n.includes(q)).slice(0, 60)
     : Object.keys(flags).filter((b) => entryHasContent(flags[b])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  // By flag: buses carrying the picked flag.
+  // By flag: buses carrying the picked flag ("Other" = buses with a note).
   const deptObj = DEPARTMENTS.find((d) => d.id === dept) || DEPARTMENTS[0];
   const flagBuses = Object.keys(flags)
-    .filter((b) => (flags[b].flags || []).includes(pickedFlag))
+    .filter((b) =>
+      pickedFlag === NOTE_FLAG ? !!(flags[b].note || "").trim() : (flags[b].flags || []).includes(pickedFlag)
+    )
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   function addBusToFlag(busArg?: string) {
@@ -356,6 +362,11 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   }
   function removeFromFlag(bus: string) {
     const cur = getEntry(bus);
+    if (pickedFlag === NOTE_FLAG) {
+      save(bus, { ...cur, note: "" });
+      setPending((p) => p.filter((b) => b !== bus));
+      return;
+    }
     const patch: FlagEntry = { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
     if (pickedFlag === "inspection") patch.inspOption = "";
     if (pickedFlag === "retorque") patch.retorqueTires = [];
@@ -382,7 +393,12 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     : flagBuses;
 
   return (
-    <Overlay onClose={onClose} contentClassName="manager no-print" label="Edit flags">
+    <Overlay
+      onClose={onClose}
+      overlayClassName="modal-backdrop no-print"
+      contentClassName="modal modal--tall modal--flags"
+      label="Edit flags"
+    >
       <div className="manager__inner">
         <div className="manager__bar">
           <div className="manager__title">Edit flags</div>
@@ -469,6 +485,15 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                   {flagName(id)}
                 </button>
               ))}
+              <button
+                className={`deptchip ${pickedFlag === NOTE_FLAG ? `deptchip--on--${dept}` : ""}`}
+                onClick={() => {
+                  setPickedFlag(NOTE_FLAG);
+                  setPending([]);
+                }}
+              >
+                Other (note)
+              </button>
             </div>
 
             <div className="byflag__add">
@@ -490,14 +515,15 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
             </div>
             {REQUIRE_DETAIL.has(pickedFlag) && (
               <div className="byflag__hint">
-                Add a bus, then pick its {pickedFlag === "retorque" ? "tire(s)" : "reason"} below — it won't save until you
-                do.
+                Add a bus, then {pickedFlag === NOTE_FLAG ? "type its note" : `pick its ${pickedFlag === "retorque" ? "tire(s)" : "reason"}`} below —
+                it won&apos;t save until you do.
               </div>
             )}
 
             <div className="byflag__bar">
               <span className="byflag__count">
-                {flagBuses.length} bus{flagBuses.length === 1 ? "" : "es"} flagged {flagName(pickedFlag)}
+                {flagBuses.length} bus{flagBuses.length === 1 ? "" : "es"}{" "}
+                {pickedFlag === NOTE_FLAG ? "with a note" : `flagged ${flagName(pickedFlag)}`}
               </span>
             </div>
 
@@ -524,6 +550,16 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                     )}
                     {pickedFlag === "inspection" && (
                       <InspOptionPicker key={bus} option={entry.inspOption || ""} onChange={(o) => save(bus, { ...getEntry(bus), inspOption: o })} />
+                    )}
+                    {pickedFlag === NOTE_FLAG && (
+                      <NoteInput
+                        key={bus}
+                        value={entry.note}
+                        onSave={(n) => {
+                          save(bus, { ...getEntry(bus), note: n });
+                          if (n.trim()) setPending((p) => p.filter((b) => b !== bus));
+                        }}
+                      />
                     )}
                   </div>
                 );
