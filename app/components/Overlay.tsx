@@ -21,6 +21,9 @@ interface OverlayProps {
 //
 // onOpenAutoFocus is prevented so opening a dialog never yanks the page — the
 // editors that want an input focused do it themselves with { preventScroll: true }.
+// onCloseAutoFocus is prevented too: Radix otherwise returns focus to the button
+// that opened the dialog and the browser scrolls it into view — the "page jumps
+// after editing a box" bug.
 export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", children }: OverlayProps) {
   return (
     <Dialog.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -30,6 +33,7 @@ export default function Overlay({ onClose, contentClassName, overlayClassName, l
           className={contentClassName}
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <Dialog.Title className="sr-only">{label}</Dialog.Title>
           {children}

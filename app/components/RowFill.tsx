@@ -135,6 +135,7 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
           inputMode="numeric"
           enterKeyHint="next"
           value={val}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => {
             const v = sanitizeBus(e.target.value);
             const where = v && locate ? locate(v, id) : "";
