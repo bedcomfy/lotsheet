@@ -416,9 +416,11 @@ button {
   font-weight: 400 !important;
 }
 
-/* On wider screens (tablet/desktop) show the sheet as a real portrait page,
-   with the grid filling it — so the website looks like the printout. */
-@media screen and (min-width: 700px) {
+/* Show the sheet as a real portrait page (8.5x11) with the grid filling it —
+   so the website looks like the printout. This now applies on EVERY screen:
+   phones keep a 720px-wide sheet (panned inside .sheet-scroll), so locking the
+   paper proportions keeps the cells from looking stretched there too. */
+@media screen {
   .sheet {
     aspect-ratio: 8.5 / 11;
     display: flex;
