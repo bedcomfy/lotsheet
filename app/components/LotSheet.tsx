@@ -29,7 +29,7 @@ import {
   cellLocationLabel,
   pinnedFlagText,
 } from "../lib/grid";
-import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown, Search, Share2, ListChecks } from "lucide-react";
+import { LayoutGrid, Flag, Eraser, ListX, History, FileDown, Search, Share2, ListChecks } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -38,7 +38,7 @@ import TypeCodes from "./TypeCodes";
 import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
-import SheetSettings from "./SheetSettings";
+import ToolMenu from "./ToolMenu";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -252,7 +252,6 @@ export default function LotSheet() {
     if (param("print") === "1") setPrintMode(true);
     if (param("maint") === "1") setShowMaint(true);
   }, []);
-  const [fontDelta, setFontDelta] = useState(0); // size relative to Standard (px)
   const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
@@ -264,20 +263,9 @@ export default function LotSheet() {
     sheetRef.current = sheet;
   }, [sheet]);
 
-  // "Standard" already runs +2px bigger than the base; the slider is ±4 of that.
+  // The sheet text runs +2px over the base sizes (the old adjustable "Sheet
+  // Settings" stepper is gone — everyone gets the standard size).
   const FONT_BASE = 2;
-
-  // Load + persist the text-size preference (per device).
-  useEffect(() => {
-    const v = parseInt(localStorage.getItem("lotsheet:fontDelta") || "0", 10);
-    if (!Number.isNaN(v)) setFontDelta(Math.max(-4, Math.min(4, v)));
-  }, []);
-  useEffect(() => {
-    localStorage.setItem("lotsheet:fontDelta", String(fontDelta));
-  }, [fontDelta]);
-  function changeFont(d: number) {
-    setFontDelta((f) => Math.max(-4, Math.min(4, f + d)));
-  }
 
   // Load the shared current sheet from the server. Show the device cache first
   // so the page isn't blank on a slow connection, then sync with the server.
@@ -965,42 +953,41 @@ export default function LotSheet() {
         <button className="btn" onClick={() => setManagerOpen(true)}>
           <Flag size={16} /> Edit Flags
         </button>
-        <button
-          className={`btn ${selectMode ? "btn--primary" : ""}`}
-          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-          title="Select several buses, then send or clear them all at once"
-        >
-          <ListChecks size={16} /> Select
-        </button>
-        <button className="btn" onClick={newSheet}>
-          <Eraser size={16} /> Clear Grid
-        </button>
-        <button className="btn" onClick={clearLots}>
-          <ListX size={16} /> Clear Lots
-        </button>
-        <button className="btn" onClick={() => setPrevOpen(true)}>
-          <History size={16} /> Prev Sheets
-        </button>
-        <button className="btn" onClick={shareSheet} title="Share the sheet as text (for a group chat)">
-          <Share2 size={16} /> Share
-        </button>
-        <SheetSettings
-          fontPx={12 + fontDelta}
-          minPx={8}
-          maxPx={16}
-          onFontPx={(px) => setFontDelta(Math.max(-4, Math.min(4, px - 12)))}
-        />
-        <label className="toolbar__check" title="Include the bus type codes and maintenance flags on the printout">
-          <input
-            type="checkbox"
-            checked={showMaint}
-            onChange={(e) => setShowMaint(e.target.checked)}
-          />
-          Maintenance info
-        </label>
-        <button className="btn" onClick={() => window.print()} title="Print using the browser (may vary by device)">
-          <Printer size={16} /> Print
-        </button>
+        <ToolMenu>
+          <button
+            className="toolmenu__item"
+            onClick={() => setSelectMode(true)}
+            title="Select several buses, then send or clear them all at once"
+          >
+            <ListChecks size={16} /> Select buses
+          </button>
+          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
+            <History size={16} /> Prev Sheets
+          </button>
+          <button className="toolmenu__item" onClick={shareSheet} title="Share the sheet as text (for a group chat)">
+            <Share2 size={16} /> Share as text
+          </button>
+          <div className="toolmenu__sep" />
+          <button className="toolmenu__item toolmenu__item--danger" onClick={newSheet}>
+            <Eraser size={16} /> Clear Grid
+          </button>
+          <button className="toolmenu__item toolmenu__item--danger" onClick={clearLots}>
+            <ListX size={16} /> Clear Lots
+          </button>
+          <div className="toolmenu__sep" />
+          <label
+            className="toolmenu__item"
+            onClick={(e) => e.stopPropagation()}
+            title="Include the bus type codes and maintenance flags on the printout"
+          >
+            <input
+              type="checkbox"
+              checked={showMaint}
+              onChange={(e) => setShowMaint(e.target.checked)}
+            />
+            Maintenance info
+          </label>
+        </ToolMenu>
         <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
           <FileDown size={16} /> Print PDF
         </button>
@@ -1008,7 +995,7 @@ export default function LotSheet() {
 
       {/* The printable sheet */}
       <DndContext sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
-      <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE + fontDelta}px` } as CSSProperties}>
+      <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
         <div className={`sheet ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}
           <div className="head">

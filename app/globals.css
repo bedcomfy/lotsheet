@@ -71,11 +71,8 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
+  display: inline-block;
 }
 .appnav__picker {
   display: inline-flex;
@@ -2123,53 +2120,52 @@ button {
   font-size: 13px;
 }
 
-/* ---------- Sheet Settings dropdown (font size, future per-sheet options) --- */
-.setmenu {
+/* ---------- "More ▾" toolbar dropdown ---------- */
+.toolmenu {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
 }
-.setmenu__panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 60;
-  min-width: 210px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-  padding: 10px 12px;
+/* Fixed-position panel (measured from the button) so the phone's horizontally
+   scrolling toolbar can't clip it. */
+.toolmenu__panel {
+  position: fixed;
+  z-index: 45;
+  min-width: 224px;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  padding: 6px;
 }
-.setmenu__row {
+.toolmenu__item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-.setmenu__label {
-  font-size: 13px;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 600;
-}
-.setmenu__stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.setmenu__val {
-  min-width: 46px;
-  text-align: center;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-.setmenu__check {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-align: left;
   cursor: pointer;
 }
-.setmenu__check input {
-  width: 16px;
-  height: 16px;
+.toolmenu__item:hover {
+  background: var(--surface-hover);
+}
+.toolmenu__item--danger {
+  color: #b91c1c;
+}
+.toolmenu__item input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+}
+.toolmenu__sep {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 5px 6px;
 }
 
 /* ---------- Print ---------- */

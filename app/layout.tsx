@@ -5,14 +5,14 @@ import SheetNav from "./components/SheetNav";
 import { BusMasterProvider } from "./components/BusMasterProvider";
 
 export const metadata: Metadata = {
-  title: "Pace Sheets",
+  title: "Pace Northwest Sheets",
   description: "Digital garage sheets — lot, turnover, fuel",
   // Installable app ("Add to Home Screen"): real icon, full-screen standalone
   // launch with no browser bars. The manifest lives in app/manifest.ts.
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Pace Sheets",
+    title: "Pace NW Sheets",
   },
   icons: {
     icon: "/logo.png",

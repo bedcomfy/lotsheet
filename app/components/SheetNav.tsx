@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bus, List, Users } from "lucide-react";
+import { List, Users } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 
@@ -29,8 +29,9 @@ export default function SheetNav() {
   return (
     <div className="appnav no-print">
       <span className="appnav__brand">
-        <span className="appnav__logo"><Bus size={18} /></span>
-        Pace Sheets
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="appnav__logo" src="/logo.png" alt="" />
+        Pace Northwest Sheets
       </span>
       <label className="appnav__picker">
         <span className="appnav__pickerlabel">Sheet</span>

@@ -4,8 +4,8 @@ import type { MetadataRoute } from "next";
 // standalone launch with no browser chrome. Next serves this at /manifest.webmanifest.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pace Sheets",
-    short_name: "Pace Sheets",
+    name: "Pace Northwest Sheets",
+    short_name: "Pace NW Sheets",
     description: "Digital garage sheets — lot, turnover, fuel, DEF",
     start_url: "/",
     display: "standalone",

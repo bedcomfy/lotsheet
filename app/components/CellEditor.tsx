@@ -133,9 +133,6 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
               {miles ? `${flagText ? " · " : ""}${miles}` : ""}
               {flagText && note ? ", " : ""}
               {note && <em>“{note}”</em>}
-              {(flagText || note || miles) && (
-                <span className="flag-readout__note"> (manager)</span>
-              )}
             </span>
           </div>
         )}

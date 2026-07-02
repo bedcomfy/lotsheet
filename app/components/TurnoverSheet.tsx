@@ -7,7 +7,7 @@ import { flagsFullDisplay } from "../lib/grid";
 import { History, Eraser, FileDown, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
-import SheetSettings from "./SheetSettings";
+import ToolMenu from "./ToolMenu";
 import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanel";
@@ -84,15 +84,9 @@ export default function TurnoverSheet() {
       if (!Number.isNaN(fz)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, fz)));
       setPrintFlags(param("maint") === "1");
     } else {
-      const v = parseInt(localStorage.getItem(`pace:font:${STORAGE_KEY}`) || "", 10);
-      if (!Number.isNaN(v)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, v)));
       setPrintFlags(localStorage.getItem(`pace:flags:${STORAGE_KEY}`) !== "0"); // default on
     }
   }, []);
-  useEffect(() => {
-    if (printMode) return;
-    localStorage.setItem(`pace:font:${STORAGE_KEY}`, String(fontPx));
-  }, [fontPx, printMode]);
   useEffect(() => {
     if (printMode) return;
     localStorage.setItem(`pace:flags:${STORAGE_KEY}`, printFlags ? "1" : "0");
@@ -498,13 +492,20 @@ export default function TurnoverSheet() {
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
         </span>
-        <SheetSettings fontPx={fontPx} minPx={FONT_MIN} maxPx={FONT_MAX} onFontPx={setFontPx} />
-        <label className="toolbar__check" title="Off = print a completely blank form">
-          <input type="checkbox" checked={printFlags} onChange={(e) => setPrintFlags(e.target.checked)} />
-          Print with flags
-        </label>
-        <button className="btn" onClick={() => setPrevOpen(true)}><History size={16} /> Prev Sheets</button>
-        <button className="btn" onClick={clearAll}><Eraser size={16} /> Clear</button>
+        <ToolMenu>
+          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
+            <History size={16} /> Prev Sheets
+          </button>
+          <div className="toolmenu__sep" />
+          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
+            <Eraser size={16} /> Clear sheet
+          </button>
+          <div className="toolmenu__sep" />
+          <label className="toolmenu__item" onClick={(e) => e.stopPropagation()} title="Off = print a completely blank form">
+            <input type="checkbox" checked={printFlags} onChange={(e) => setPrintFlags(e.target.checked)} />
+            Print with flags
+          </label>
+        </ToolMenu>
         <button className="btn btn--primary" onClick={printPdf}><FileDown size={16} /> Print PDF</button>
       </div>
 

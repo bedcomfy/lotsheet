@@ -7,7 +7,7 @@ import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator, fuelFlagSections } from "../lib/grid";
 import { Flag, History, Eraser, FileDown } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
-import SheetSettings from "./SheetSettings";
+import ToolMenu from "./ToolMenu";
 import ManagerPanel from "./ManagerPanel";
 import SheetHistory from "./SheetHistory";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -130,17 +130,6 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
       alive = false;
     };
   }, []);
-
-  // Font size preference (per device, per sheet).
-  useEffect(() => {
-    if (param("print") === "1") return; // print uses the ?fz value, not storage
-    const v = parseInt(localStorage.getItem(`pace:font:${storageKey}`) || "", 10);
-    if (!Number.isNaN(v)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, v)));
-  }, [storageKey]);
-  useEffect(() => {
-    if (printMode) return;
-    localStorage.setItem(`pace:font:${storageKey}`, String(fontPx));
-  }, [fontPx, storageKey, printMode]);
 
   // Quietly (re)build the cached PDF after edits (or a font change) so the next
   // "Print PDF" is instant. Keyed to fz so the prewarm matches what we print.
@@ -306,20 +295,27 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
         </span>
-        <SheetSettings fontPx={fontPx} minPx={FONT_MIN} maxPx={FONT_MAX} onFontPx={setFontPx} />
-        <label className="toolbar__check" title="Print the R/H/I flags and the flagged-buses page">
-          <input type="checkbox" checked={showFlags} onChange={(e) => setShowFlags(e.target.checked)} />
-          Print with flags
-        </label>
         <button className="btn" onClick={() => setManagerOpen(true)}>
           <Flag size={16} /> Edit Flags
         </button>
-        <button className="btn" onClick={() => setPrevOpen(true)}>
-          <History size={16} /> Prev Sheets
-        </button>
-        <button className="btn" onClick={clearAll}>
-          <Eraser size={16} /> Clear
-        </button>
+        <ToolMenu>
+          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
+            <History size={16} /> Prev Sheets
+          </button>
+          <div className="toolmenu__sep" />
+          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
+            <Eraser size={16} /> Clear sheet
+          </button>
+          <div className="toolmenu__sep" />
+          <label
+            className="toolmenu__item"
+            onClick={(e) => e.stopPropagation()}
+            title="Print the R/H/I flags and the flagged-buses page"
+          >
+            <input type="checkbox" checked={showFlags} onChange={(e) => setShowFlags(e.target.checked)} />
+            Print with flags
+          </label>
+        </ToolMenu>
         <button className="btn btn--primary" onClick={printPdf}>
           <FileDown size={16} /> Print PDF
         </button>
