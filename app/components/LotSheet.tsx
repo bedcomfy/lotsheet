@@ -216,7 +216,7 @@ export default function LotSheet() {
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
-  const [editing, setEditing] = useState<{ id: string; subLabel: string } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; subLabel: string; seed?: string } | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [flags, setFlags] = useState<FlagMap>({}); // bus number -> flag entry
   const [managerOpen, setManagerOpen] = useState(false);
@@ -515,6 +515,56 @@ export default function LotSheet() {
     // A drag fires a click on the source cell when it ends — don't open the editor for it.
     if (Date.now() < suppressClickUntil.current) return;
     setEditing({ id, subLabel });
+  }
+
+  // ---- keyboard power mode (spreadsheet feel, desktop) ----
+  // Move focus to the nearest cell in a direction, judged geometrically from the
+  // rendered layout — works across the front row, the grid, and ROW 11.
+  function moveCellFocus(fromEl: HTMLElement, dir: "left" | "right" | "up" | "down") {
+    const cells = Array.from(document.querySelectorAll<HTMLElement>("[data-cellid]"));
+    const r = fromEl.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const horiz = dir === "left" || dir === "right";
+    let best: HTMLElement | null = null;
+    let bestScore = Infinity;
+    for (const el of cells) {
+      if (el === fromEl) continue;
+      const b = el.getBoundingClientRect();
+      const dx = b.left + b.width / 2 - cx;
+      const dy = b.top + b.height / 2 - cy;
+      const primary = horiz ? (dir === "left" ? -dx : dx) : dir === "up" ? -dy : dy;
+      const cross = horiz ? Math.abs(dy) : Math.abs(dx);
+      if (primary < 2) continue; // must actually lie in that direction
+      if (cross > (horiz ? r.height : r.width) * 0.9) continue; // stay in the same row/column
+      const score = primary + cross * 4;
+      if (score < bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+    best?.focus();
+  }
+
+  // On a focused cell: arrows move, a digit starts typing the bus right away,
+  // Backspace/Delete clears the cell, Escape drops out of keyboard mode.
+  function onSheetKeyDown(e: React.KeyboardEvent) {
+    const el = e.target as HTMLElement;
+    const cellId = el.getAttribute ? el.getAttribute("data-cellid") : null;
+    if (!cellId) return;
+    const key = e.key;
+    if (key === "ArrowLeft" || key === "ArrowRight" || key === "ArrowUp" || key === "ArrowDown") {
+      e.preventDefault();
+      moveCellFocus(el, key === "ArrowLeft" ? "left" : key === "ArrowRight" ? "right" : key === "ArrowUp" ? "up" : "down");
+    } else if (/^\d$/.test(key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      setEditing({ id: cellId, subLabel: cellLocationLabel(cellId), seed: key });
+    } else if (key === "Backspace" || key === "Delete") {
+      e.preventDefault();
+      saveNum(cellId, "");
+    } else if (key === "Escape") {
+      el.blur();
+    }
   }
 
   // ---- drag-and-drop ----
@@ -838,7 +888,7 @@ export default function LotSheet() {
       {/* The printable sheet */}
       <DndContext sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
       <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE + fontDelta}px` } as CSSProperties}>
-        <div className={`sheet ${showMaint ? "sheet--maint" : ""}`}>
+        <div className={`sheet ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}
           <div className="head">
             <div className="head__logo">
@@ -996,7 +1046,7 @@ export default function LotSheet() {
       {editing && (
         <CellEditor
           subLabel={editing.subLabel}
-          value={getNum(editing.id)}
+          value={editing.seed != null ? editing.seed : getNum(editing.id)}
           flags={flags}
           cellId={editing.id}
           locate={locateBus}
@@ -1008,8 +1058,13 @@ export default function LotSheet() {
             setFlagBus(bus);
           }}
           onSave={(num) => {
-            saveNum(editing.id, num);
+            const id = editing.id;
+            saveNum(id, num);
             setEditing(null);
+            // Keyboard flow: put focus back on the cell so arrows keep working.
+            requestAnimationFrame(() =>
+              document.querySelector<HTMLElement>(`[data-cellid="${id}"]`)?.focus({ preventScroll: true })
+            );
           }}
           onClose={() => setEditing(null)}
         />

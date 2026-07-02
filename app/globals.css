@@ -36,6 +36,10 @@ body {
   color: var(--ink);
   font-family: var(--font-sheet);
   -webkit-text-size-adjust: 100%;
+  /* The PAGE never scrolls sideways — wide content (the sheet) pans inside its
+     own scroll area instead, so the nav/toolbar stay on screen. `clip` doesn't
+     create a scroll container, so the sticky toolbar keeps working. */
+  overflow-x: clip;
 }
 
 button {
@@ -49,6 +53,7 @@ button {
 .appnav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap; /* fits phone widths instead of widening the page */
   gap: 10px;
   padding: 10px 16px;
   background: var(--paper);
@@ -384,6 +389,8 @@ button {
 .sheet-scroll {
   padding: 14px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain; /* don't hand sideways pans to the page/history swipe */
 }
 .sheet {
   background: var(--paper);
@@ -392,6 +399,16 @@ button {
   margin: 0 auto;
   padding: 16px 18px 22px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+/* Phones: keep the sheet at a READABLE width and pan it inside .sheet-scroll
+   with one finger — no pinch-zooming the whole page (which dragged the toolbar
+   away and overshot to the right). The back-of-sheet lists match, so the two
+   pages line up while panning. */
+@media screen and (max-width: 699px) {
+  .sheet,
+  .back-sheet {
+    min-width: 720px;
+  }
 }
 /* The paper form has no bold anywhere — keep every word on the sheet regular. */
 .sheet,
@@ -1344,6 +1361,12 @@ button {
 .cell,
 .front {
   touch-action: manipulation;
+}
+/* Keyboard mode: the focused cell shows a clear ring (arrow keys move it). */
+.cell:focus-visible,
+.front:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .cell--dragsrc {
   opacity: 0.35;
