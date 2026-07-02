@@ -871,7 +871,8 @@ export default function LotSheet() {
     0
   );
   // Missing = ACTIVE buses on the roster that aren't anywhere on the sheet
-  // (no grid cell and no lot). Tap the chip to see exactly which ones.
+  // (no grid cell and no lot). A bus flagged OFF PROPERTY or IN SHOP is
+  // accounted for — listed for reference, but it doesn't count as missing.
   const placedBuses = new Set<string>();
   for (const v of Object.values(sheet.cells || {})) {
     const n = cellToNum(v);
@@ -880,10 +881,16 @@ export default function LotSheet() {
   for (const arr of Object.values(sheet.lots || {})) {
     if (Array.isArray(arr)) for (const b of arr) if (b) placedBuses.add(b);
   }
-  const missingBuses = masterBuses
+  const notPlaced = masterBuses
     .filter((b) => b.status !== "retired" && !placedBuses.has(b.num))
     .map((b) => b.num)
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const isAccountedFor = (bus: string) => {
+    const f = flags[bus]?.flags || [];
+    return f.includes("offprop") || f.includes("shop");
+  };
+  const missingBuses = notPlaced.filter((b) => !isAccountedFor(b));
+  const accountedBuses = notPlaced.filter(isAccountedFor);
 
   // The whole sheet as clean text — for pasting into a group chat at handoff.
   function buildShareText(): string {
@@ -1245,8 +1252,11 @@ export default function LotSheet() {
               <div className="modal__title">Missing buses</div>
               <div className="modal__sub">
                 {missingBuses.length
-                  ? `${missingBuses.length} active bus${missingBuses.length === 1 ? "" : "es"} not on the grid or in any lot.`
-                  : "Every active bus is on the sheet."}
+                  ? `${missingBuses.length} active bus${missingBuses.length === 1 ? "" : "es"} unaccounted for.`
+                  : "Every active bus is accounted for."}
+                {accountedBuses.length
+                  ? ` ${accountedBuses.length} off property / in shop.`
+                  : ""}
               </div>
             </div>
             <button className="modal__close" onClick={() => setMissingOpen(false)} aria-label="Close">
@@ -1254,27 +1264,33 @@ export default function LotSheet() {
             </button>
           </div>
           <div className="lotlist">
-            {missingBuses.map((bus) => {
+            {[...missingBuses, ...accountedBuses].map((bus, i) => {
               const fdisp = flagsFullDisplay(flagFor(bus));
+              const firstAccounted = i === missingBuses.length && accountedBuses.length > 0;
               return (
-                <div className="lotitem" key={bus}>
-                  <div className="lotitem__info">
-                    <span className="lotitem__bus">{busLabel(bus)}</span>
-                    <TypeCodes num={bus} />
-                    {fdisp && <span className="lotitem__flag">{fdisp}</span>}
-                  </div>
-                  <div className="lotitem__actions">
-                    <button
-                      className="lotitem__move"
-                      onClick={() => {
-                        setMissingOpen(false);
-                        setFlagBus(bus);
-                      }}
-                      aria-label="Edit flags"
-                      title="Edit this bus's flags"
-                    >
-                      <Flag size={13} />
-                    </button>
+                <div key={bus}>
+                  {firstAccounted && (
+                    <div className="lotlist__section">Off property / in shop (not missing)</div>
+                  )}
+                  <div className="lotitem">
+                    <div className="lotitem__info">
+                      <span className="lotitem__bus">{busLabel(bus)}</span>
+                      <TypeCodes num={bus} />
+                      {fdisp && <span className="lotitem__flag">{fdisp}</span>}
+                    </div>
+                    <div className="lotitem__actions">
+                      <button
+                        className="lotitem__move"
+                        onClick={() => {
+                          setMissingOpen(false);
+                          setFlagBus(bus);
+                        }}
+                        aria-label="Edit flags"
+                        title="Edit this bus's flags"
+                      >
+                        <Flag size={13} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -103,6 +103,7 @@ export const FLAGS: FlagDef[] = [
   { id: "legal", label: "LEGAL" },
   { id: "safety", label: "SAFETY" },
   { id: "offprop", label: "OFF PROPERTY" },
+  { id: "shop", label: "SHOP" },
   { id: "eng", label: "ENG" },
   { id: "trans", label: "TRANS" },
   { id: "oos", label: "OUT OF SERVICE" },
@@ -129,7 +130,7 @@ export function flagLabel(id: string | null | undefined): string {
 
 // Friendly names for the flag editor (the printed code stays = flagLabel).
 const FLAG_NAMES: Record<string, string> = {
-  legal: "Legal", safety: "Safety", offprop: "Off property", eng: "Engine",
+  legal: "Legal", safety: "Safety", offprop: "Off property", shop: "In shop", eng: "Engine",
   trans: "Transmission", oos: "Out of service", inspection: "Inspection",
   retorque: "Retorque", hold: "Hold", split: "Split", service: "Needs service",
   followup: "Follow up", cards: "Cards", braketest: "Brake test", ac: "A/C",
@@ -149,7 +150,7 @@ export interface Department {
 // one department (shared); the By bus view shows it once, under the first one.
 export const DEPARTMENTS: Department[] = [
   { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold", "followup"] },
-  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "split", "followup"] },
+  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "shop", "split", "followup"] },
   { id: "safety", label: "Safety", flags: ["safety", "legal"] },
 ];
 
@@ -185,6 +186,7 @@ export const FLAG_SEVERITY = [
   "legal",
   "safety",
   "offprop",
+  "shop",
   "eng",
   "trans",
   "oos",
