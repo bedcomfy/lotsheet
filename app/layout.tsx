@@ -7,6 +7,17 @@ import { BusMasterProvider } from "./components/BusMasterProvider";
 export const metadata: Metadata = {
   title: "Pace Sheets",
   description: "Digital garage sheets — lot, turnover, fuel",
+  // Installable app ("Add to Home Screen"): real icon, full-screen standalone
+  // launch with no browser bars. The manifest lives in app/manifest.ts.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Pace Sheets",
+  },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export const viewport: Viewport = {

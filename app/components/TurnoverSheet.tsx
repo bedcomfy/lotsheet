@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { flagsFullDisplay } from "../lib/grid";
-import { History, Eraser, FileDown } from "lucide-react";
+import { History, Eraser, FileDown, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import SheetSettings from "./SheetSettings";
@@ -49,7 +49,7 @@ function emptyData(): TurnoverData {
 }
 
 export default function TurnoverSheet() {
-  const { label: busLabel } = useBusMaster();
+  const { label: busLabel, isKnown } = useBusMaster();
   const [data, setData] = useState<TurnoverData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -57,6 +57,9 @@ export default function TurnoverSheet() {
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
+  const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
+  const [findMsg, setFindMsg] = useState(""); // which lot the searched bus is in
+  const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [lots, setLots] = useState<TurnoverLots>({
     north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [],
@@ -239,6 +242,16 @@ export default function TurnoverSheet() {
       if ((lots[k] || []).includes(bus)) return LOT_LABELS[k];
     }
     return "";
+  }
+
+  // Toolbar "find bus": say which lot the bus is in on this sheet.
+  function findBus(raw?: string) {
+    const v = sanitizeBus(raw ?? findVal);
+    if (v.length < 4) return;
+    const where = locateLot(v);
+    clearTimeout(findMsgTimer.current);
+    setFindMsg(where || "Not on this sheet");
+    findMsgTimer.current = setTimeout(() => setFindMsg(""), 3000);
   }
 
   // Pull a bus out of whichever lot it currently sits in so it can be added
@@ -464,6 +477,23 @@ export default function TurnoverSheet() {
 
       <div className="toolbar no-print">
         <div className="toolbar__title">Turnover Sheet</div>
+        <div className="findbox" title="Type a bus number to see which lot it's in">
+          <Search size={15} />
+          <input
+            className="findbox__in"
+            placeholder="Find bus"
+            inputMode="numeric"
+            value={findVal}
+            onChange={(e) => {
+              const v = sanitizeBus(e.target.value);
+              setFindVal(v);
+              setFindMsg("");
+              if (isKnown(v)) findBus(v);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && findBus()}
+          />
+          {findMsg && <span className="findbox__msg">{findMsg}</span>}
+        </div>
         <div className="toolbar__spacer" />
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}

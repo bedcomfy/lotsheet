@@ -29,7 +29,7 @@ import {
   cellLocationLabel,
   pinnedFlagText,
 } from "../lib/grid";
-import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown, Search } from "lucide-react";
+import { LayoutGrid, Flag, Eraser, ListX, History, Printer, FileDown, Search, Share2, ListChecks } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -101,10 +101,11 @@ interface GridCellProps {
   slotLabel: string | number | null;
   num: string;
   entry: FlagEntry | null;
+  selected?: boolean;
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function GridCell({ id, slotLabel, num, entry, onOpen }: GridCellProps) {
+function GridCell({ id, slotLabel, num, entry, selected, onOpen }: GridCellProps) {
   const { label: busLabel } = useBusMaster();
   const blocked = slotLabel === "X";
   const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !id || !num });
@@ -131,7 +132,7 @@ function GridCell({ id, slotLabel, num, entry, onOpen }: GridCellProps) {
       data-cellid={id ?? undefined}
       className={`cell ${num ? "cell--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
         drop.isOver ? "cell--dropover" : ""
-      }`}
+      } ${selected ? "cell--selected" : ""}`}
       onClick={() => onOpen(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
     >
       {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
@@ -152,10 +153,11 @@ interface FrontCellProps {
   c: number;
   num: string;
   entry: FlagEntry | null;
+  selected?: boolean;
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function FrontCell({ c, num, entry, onOpen }: FrontCellProps) {
+function FrontCell({ c, num, entry, selected, onOpen }: FrontCellProps) {
   const { label: busLabel } = useBusMaster();
   const id = frontCellId(c);
   const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !num });
@@ -175,7 +177,7 @@ function FrontCell({ c, num, entry, onOpen }: FrontCellProps) {
       data-cellid={id}
       className={`front ${num ? "front--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
         drop.isOver ? "cell--dropover" : ""
-      }`}
+      } ${selected ? "cell--selected" : ""}`}
       onClick={() => onOpen(id, `ROW ${c + 1} — front bus`)}
     >
       {num && <TypeCodes num={num} className="front__types" />}
@@ -229,6 +231,8 @@ export default function LotSheet() {
   const undoSheetRef = useRef<LotSheetData | null>(null); // the sheet as it was before the change
   const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [recent, setRecent] = useState<string[]>([]); // buses recently taken off the sheet (quick re-add)
+  const [selectMode, setSelectMode] = useState(false); // multi-select: tap buses, act on all at once
+  const [selected, setSelected] = useState<string[]>([]); // selected cell ids
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -397,6 +401,13 @@ export default function LotSheet() {
     setUndoState(null);
     clearTimeout(undoTimer.current);
   }
+  // Same toast, no Undo — for confirmations like "Copied to clipboard".
+  function showNotice(label: string) {
+    undoSheetRef.current = null;
+    setUndoState({ label });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndoState(null), 3000);
+  }
 
   // Remember buses that just left the sheet so the lot editors can offer them
   // as one-tap chips (newest first, capped, session-only).
@@ -514,7 +525,48 @@ export default function LotSheet() {
   function openCell(id: string, subLabel: string) {
     // A drag fires a click on the source cell when it ends — don't open the editor for it.
     if (Date.now() < suppressClickUntil.current) return;
+    // Select mode: taps toggle the bus in/out of the selection instead.
+    if (selectMode) {
+      if (!getNum(id)) return; // only buses can be selected
+      setSelected((sel) => (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]));
+      return;
+    }
     setEditing({ id, subLabel });
+  }
+
+  // ---- multi-select bulk actions ----
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelected([]);
+  }
+  function bulkSendToLot(key: string) {
+    const ids = selected.filter((id) => getNum(id));
+    if (!ids.length) return;
+    offerUndo(`${ids.length} bus${ids.length === 1 ? "" : "es"} → ${LOT_LOCATION_LABELS[key] || key}`);
+    setSheet((s) => {
+      const cells = { ...s.cells };
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = [...(lots[key as LotKey] || [])];
+      for (const id of ids) {
+        const bus = cellToNum(cells[id]);
+        if (bus && !arr.includes(bus)) arr.push(bus);
+        delete cells[id];
+      }
+      return { ...s, cells, lots: { ...lots, [key]: arr } };
+    });
+    exitSelectMode();
+  }
+  function bulkClearCells() {
+    const ids = selected.filter((id) => getNum(id));
+    if (!ids.length) return;
+    offerUndo(`Cleared ${ids.length} bus${ids.length === 1 ? "" : "es"}`);
+    for (const id of ids) noteRemoved(getNum(id));
+    setSheet((s) => {
+      const cells = { ...s.cells };
+      for (const id of ids) delete cells[id];
+      return { ...s, cells };
+    });
+    exitSelectMode();
   }
 
   // ---- keyboard power mode (spreadsheet feel, desktop) ----
@@ -822,6 +874,62 @@ export default function LotSheet() {
     (e.flags || []).includes("offprop")
   ).length;
 
+  // Quick stats for the toolbar chip.
+  const onGridCount = Object.values(sheet.cells || {}).filter((v) => cellToNum(v)).length;
+  const inLotsCount = Object.values(sheet.lots || {}).reduce(
+    (n: number, arr) => n + (Array.isArray(arr) ? arr.filter(Boolean).length : 0),
+    0
+  );
+
+  // The whole sheet as clean text — for pasting into a group chat at handoff.
+  function buildShareText(): string {
+    const lines: string[] = [];
+    lines.push(`PACE LOT SHEET — ${[sheet.date, sheet.time].filter(Boolean).join(" ")}`);
+    lines.push(
+      `On grid: ${onGridCount} · In lots: ${inLotsCount} · Off property: ${offPropertyCount}` +
+        (sheet.inShop ? ` · In shop: ${sheet.inShop}` : "")
+    );
+    const gridEntries = Object.entries(sheet.cells || {})
+      .map(([id, v]) => ({ loc: cellLocationLabel(id), bus: cellToNum(v) }))
+      .filter((e) => e.bus && e.loc)
+      .sort((a, b) => a.loc.localeCompare(b.loc, undefined, { numeric: true }));
+    if (gridEntries.length) {
+      lines.push("", "GRID:");
+      for (const e of gridEntries) lines.push(`${e.loc}: ${busLabel(e.bus)}`);
+    }
+    for (const [key, arr] of Object.entries(sheet.lots || {})) {
+      const buses = (Array.isArray(arr) ? arr : []).filter(Boolean);
+      if (!buses.length) continue;
+      lines.push("", `${(LOT_LOCATION_LABELS[key] || key).toUpperCase()} (${buses.length}): ${buses.map((b) => busLabel(b)).join(", ")}`);
+    }
+    if (flagSummary.length) {
+      lines.push("", "FLAGS:");
+      for (const g of flagSummary)
+        for (const bus of g.buses) lines.push(`${busLabel(bus)}: ${flagsFullDisplay(flagFor(bus))}`);
+    }
+    return lines.join("\n");
+  }
+
+  // Native share sheet where available (straight into a group chat); clipboard
+  // fallback elsewhere.
+  async function shareSheet() {
+    const text = buildShareText();
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ text });
+      } catch {
+        /* user closed the share sheet */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showNotice("Copied to clipboard");
+    } catch {
+      showNotice("Couldn't copy — try again");
+    }
+  }
+
   return (
     <div className="app">
       {/* Toolbar — never printed */}
@@ -845,6 +953,9 @@ export default function LotSheet() {
           {findMsg && <span className="findbox__msg">{findMsg}</span>}
         </div>
         <div className="toolbar__spacer" />
+        <span className="statchip" title="Buses on the grid · buses in the lots">
+          {onGridCount} on grid · {inLotsCount} in lots
+        </span>
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
@@ -854,6 +965,13 @@ export default function LotSheet() {
         <button className="btn" onClick={() => setManagerOpen(true)}>
           <Flag size={16} /> Edit Flags
         </button>
+        <button
+          className={`btn ${selectMode ? "btn--primary" : ""}`}
+          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          title="Select several buses, then send or clear them all at once"
+        >
+          <ListChecks size={16} /> Select
+        </button>
         <button className="btn" onClick={newSheet}>
           <Eraser size={16} /> Clear Grid
         </button>
@@ -862,6 +980,9 @@ export default function LotSheet() {
         </button>
         <button className="btn" onClick={() => setPrevOpen(true)}>
           <History size={16} /> Prev Sheets
+        </button>
+        <button className="btn" onClick={shareSheet} title="Share the sheet as text (for a group chat)">
+          <Share2 size={16} /> Share
         </button>
         <SheetSettings
           fontPx={12 + fontDelta}
@@ -940,7 +1061,15 @@ export default function LotSheet() {
           <div className="frontrow">
             {Array.from({ length: COLUMN_COUNT }).map((_, c) => {
               if (c >= FRONT_COLUMNS) return <div key={`f${c}`} className="front front--empty" />;
-              return <FrontCell key={`f${c}`} c={c} {...cellProps(frontCellId(c))} onOpen={openCell} />;
+              return (
+                <FrontCell
+                  key={`f${c}`}
+                  c={c}
+                  {...cellProps(frontCellId(c))}
+                  selected={selected.includes(frontCellId(c))}
+                  onOpen={openCell}
+                />
+              );
             })}
           </div>
 
@@ -956,13 +1085,17 @@ export default function LotSheet() {
               band.map((slot, c) => {
                 if (c === COLUMN_COUNT - 1) {
                   const id = row11CellId(b);
-                  return <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} onOpen={openCell} />;
+                  return (
+                    <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} selected={selected.includes(id)} onOpen={openCell} />
+                  );
                 }
                 if (slot === "X") {
                   return <GridCell key={`b${b}c${c}`} id={null} slotLabel="X" num="" entry={null} onOpen={openCell} />;
                 }
                 const id = numberedCellId(slot as number);
-                return <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} onOpen={openCell} />;
+                return (
+                  <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} selected={selected.includes(id)} onOpen={openCell} />
+                );
               })
             )}
           </div>
@@ -1119,13 +1252,40 @@ export default function LotSheet() {
         />
       )}
 
-      {/* Undo toast for the bigger actions (clears, drags, sends) */}
+      {/* Multi-select action bar: tap buses on the grid, then act on all of them */}
+      {selectMode && (
+        <div className="selectbar no-print">
+          <span className="selectbar__count">
+            {selected.length ? `${selected.length} selected` : "Tap buses to select"}
+          </span>
+          {LOTS.map((l) => (
+            <button
+              key={l.key}
+              className="btn btn--mini"
+              disabled={!selected.length}
+              onClick={() => bulkSendToLot(l.key)}
+            >
+              → {LOT_LOCATION_LABELS[l.key] || l.title}
+            </button>
+          ))}
+          <button className="btn btn--mini btn--ghost" disabled={!selected.length} onClick={bulkClearCells}>
+            Clear
+          </button>
+          <button className="btn btn--mini" onClick={exitSelectMode}>
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Undo toast for the bigger actions (clears, drags, sends); plain notices reuse it */}
       {undoState && (
         <div className="toast no-print" role="status">
           <span>{undoState.label}</span>
-          <button className="toast__btn" onClick={undoNow}>
-            Undo
-          </button>
+          {undoSheetRef.current && (
+            <button className="toast__btn" onClick={undoNow}>
+              Undo
+            </button>
+          )}
         </div>
       )}
     </div>
