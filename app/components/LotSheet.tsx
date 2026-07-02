@@ -39,6 +39,7 @@ import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
+import Overlay from "./Overlay";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -214,7 +215,7 @@ function BackLotBox({ lotKey, onOpen, children }: { lotKey: string; onOpen: () =
 }
 
 export default function LotSheet() {
-  const { label: busLabel, isKnown } = useBusMaster();
+  const { label: busLabel, isKnown, buses: masterBuses } = useBusMaster();
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
@@ -233,6 +234,7 @@ export default function LotSheet() {
   const [recent, setRecent] = useState<string[]>([]); // buses recently taken off the sheet (quick re-add)
   const [selectMode, setSelectMode] = useState(false); // multi-select: tap buses, act on all at once
   const [selected, setSelected] = useState<string[]>([]); // selected cell ids
+  const [missingOpen, setMissingOpen] = useState(false); // "which buses are missing" list
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -868,6 +870,20 @@ export default function LotSheet() {
     (n: number, arr) => n + (Array.isArray(arr) ? arr.filter(Boolean).length : 0),
     0
   );
+  // Missing = ACTIVE buses on the roster that aren't anywhere on the sheet
+  // (no grid cell and no lot). Tap the chip to see exactly which ones.
+  const placedBuses = new Set<string>();
+  for (const v of Object.values(sheet.cells || {})) {
+    const n = cellToNum(v);
+    if (n) placedBuses.add(n);
+  }
+  for (const arr of Object.values(sheet.lots || {})) {
+    if (Array.isArray(arr)) for (const b of arr) if (b) placedBuses.add(b);
+  }
+  const missingBuses = masterBuses
+    .filter((b) => b.status !== "retired" && !placedBuses.has(b.num))
+    .map((b) => b.num)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   // The whole sheet as clean text — for pasting into a group chat at handoff.
   function buildShareText(): string {
@@ -941,9 +957,13 @@ export default function LotSheet() {
           {findMsg && <span className="findbox__msg">{findMsg}</span>}
         </div>
         <div className="toolbar__spacer" />
-        <span className="statchip" title="Buses on the grid · buses in the lots">
-          {onGridCount} on grid · {inLotsCount} in lots
-        </span>
+        <button
+          className={`statchip ${missingBuses.length ? "statchip--warn" : ""}`}
+          onClick={() => setMissingOpen(true)}
+          title="Tap to see which buses are missing from the sheet"
+        >
+          {onGridCount} on grid · {inLotsCount} in lots · {missingBuses.length} missing
+        </button>
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
@@ -953,14 +973,14 @@ export default function LotSheet() {
         <button className="btn" onClick={() => setManagerOpen(true)}>
           <Flag size={16} /> Edit Flags
         </button>
+        <button
+          className={`btn ${selectMode ? "btn--primary" : ""}`}
+          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          title="Select several buses, then send or clear them all at once"
+        >
+          <ListChecks size={16} /> Select
+        </button>
         <ToolMenu>
-          <button
-            className="toolmenu__item"
-            onClick={() => setSelectMode(true)}
-            title="Select several buses, then send or clear them all at once"
-          >
-            <ListChecks size={16} /> Select buses
-          </button>
           <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
             <History size={16} /> Prev Sheets
           </button>
@@ -1210,6 +1230,63 @@ export default function LotSheet() {
 
       {prevOpen && (
         <PrevSheets onImport={importSheet} onClose={() => setPrevOpen(false)} />
+      )}
+
+      {/* Which active buses aren't anywhere on the sheet (tap the stats chip) */}
+      {missingOpen && (
+        <Overlay
+          onClose={() => setMissingOpen(false)}
+          overlayClassName="modal-backdrop no-print"
+          contentClassName="modal modal--tall"
+          label="Missing buses"
+        >
+          <div className="modal__head">
+            <div>
+              <div className="modal__title">Missing buses</div>
+              <div className="modal__sub">
+                {missingBuses.length
+                  ? `${missingBuses.length} active bus${missingBuses.length === 1 ? "" : "es"} not on the grid or in any lot.`
+                  : "Every active bus is on the sheet."}
+              </div>
+            </div>
+            <button className="modal__close" onClick={() => setMissingOpen(false)} aria-label="Close">
+              ×
+            </button>
+          </div>
+          <div className="lotlist">
+            {missingBuses.map((bus) => {
+              const fdisp = flagsFullDisplay(flagFor(bus));
+              return (
+                <div className="lotitem" key={bus}>
+                  <div className="lotitem__info">
+                    <span className="lotitem__bus">{busLabel(bus)}</span>
+                    <TypeCodes num={bus} />
+                    {fdisp && <span className="lotitem__flag">{fdisp}</span>}
+                  </div>
+                  <div className="lotitem__actions">
+                    <button
+                      className="lotitem__move"
+                      onClick={() => {
+                        setMissingOpen(false);
+                        setFlagBus(bus);
+                      }}
+                      aria-label="Edit flags"
+                      title="Edit this bus's flags"
+                    >
+                      <Flag size={13} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="modal__actions">
+            <div className="toolbar__spacer" />
+            <button className="btn btn--primary" onClick={() => setMissingOpen(false)}>
+              Done
+            </button>
+          </div>
+        </Overlay>
       )}
 
       {editingLot && (

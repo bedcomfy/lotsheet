@@ -1524,15 +1524,27 @@ button {
   }
 }
 
-/* ---------- Toolbar stats chip ---------- */
+/* ---------- Toolbar stats chip (tap to see the missing buses) ---------- */
 .statchip {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
   background: var(--surface-hover);
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 5px 11px;
   white-space: nowrap;
+  cursor: pointer;
+}
+.statchip:hover {
+  border-color: #c3c8d0;
+}
+.statchip--warn {
+  color: #92400e;
+  background: #fdf3e7;
+}
+.statchip--warn:hover {
+  border-color: #d97706;
 }
 
 /* ---------- Multi-select ---------- */
