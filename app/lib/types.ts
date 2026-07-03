@@ -7,7 +7,8 @@
 
 // ---------- Back-of-sheet lots ----------
 // North/East/Fence live on the Lot Sheet; R/C, Apron, the Lanes, and Bay are
-// managed from the Turnover sheet. All are shared via the lot sheet's object.
+// managed from the Turnover sheet; Cards is a screen-only shop area (never
+// printed). All are shared via the lot sheet's object.
 export type LotKey =
   | "north"
   | "east"
@@ -16,10 +17,11 @@ export type LotKey =
   | "apron"
   | "northlane"
   | "southlane"
-  | "bay";
+  | "bay"
+  | "cards";
 
-// Each lot is an ordered list of bus numbers (Bay uses fixed slots, so it may
-// contain "" gaps).
+// Each lot is an ordered list of bus numbers (Bay and Cards use fixed slots,
+// so they may contain "" gaps).
 export type Lots = { [K in LotKey]?: string[] };
 
 // ---------- The shared Lot Sheet ----------

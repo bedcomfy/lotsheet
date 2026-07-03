@@ -62,7 +62,7 @@ export default function TurnoverSheet() {
   const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [lots, setLots] = useState<TurnoverLots>({
-    north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [],
+    north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [], cards: [],
   });
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
@@ -168,6 +168,7 @@ export default function TurnoverSheet() {
             northlane: s.lots?.northlane || [],
             southlane: s.lots?.southlane || [],
             bay: s.lots?.bay || [],
+            cards: s.lots?.cards || [],
           });
         })
         .catch(() => {})
@@ -229,7 +230,7 @@ export default function TurnoverSheet() {
   }
   const LOT_LABELS: Record<LotKey, string> = {
     north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
-    northlane: "North Lane", southlane: "South Lane", bay: "Bay",
+    northlane: "North Lane", southlane: "South Lane", bay: "Bay", cards: "Cards",
   };
   function locateLot(bus: string): string {
     for (const k of Object.keys(LOT_LABELS) as LotKey[]) {
@@ -258,7 +259,10 @@ export default function TurnoverSheet() {
     for (const k of Object.keys(next) as LotKey[]) {
       const arr = next[k] || [];
       if (!arr.includes(bus)) continue;
-      next[k] = k === "bay" ? arr.map((b) => (b === bus ? "" : b)) : arr.filter((b) => b !== bus);
+      next[k] =
+        k === "bay" || k === "cards"
+          ? arr.map((b) => (b === bus ? "" : b)) // positional: blank the slot
+          : arr.filter((b) => b !== bus);
       changed = true;
     }
     if (changed) patchLots(next);

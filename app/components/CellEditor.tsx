@@ -68,7 +68,13 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
   const showReadout = num.length >= 4 && (types.length > 0 || flagText || note || miles);
 
   return (
-    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal" label="Bus number">
+    <Overlay
+      onClose={onClose}
+      overlayClassName="modal-backdrop no-print"
+      contentClassName="modal"
+      label="Bus number"
+      onOpenFocus={() => inputRef.current?.focus({ preventScroll: true })}
+    >
         <div className="modal__head">
           <div>
             <div className="modal__title">Bus number</div>
@@ -84,6 +90,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
           className="modal__input"
           value={num}
           inputMode="numeric"
+          onFocus={(e) => e.target.select()}
           onChange={(e) => {
             const v = sanitizeBus(e.target.value);
             setNum(v);

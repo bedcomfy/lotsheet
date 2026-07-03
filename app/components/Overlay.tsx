@@ -13,6 +13,10 @@ interface OverlayProps {
   overlayClassName?: string;
   // Accessible name for screen readers (visually hidden).
   label?: string;
+  // Focus a specific element during the open cycle (still within the user's
+  // tap, so iOS brings the keyboard up). Use focus({ preventScroll: true })
+  // inside to keep the no-jump guarantee.
+  onOpenFocus?: () => void;
   children: ReactNode;
 }
 
@@ -25,7 +29,7 @@ interface OverlayProps {
 // onCloseAutoFocus is prevented too: Radix otherwise returns focus to the button
 // that opened the dialog and the browser scrolls it into view — the "page jumps
 // after editing a box" bug.
-export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", children }: OverlayProps) {
+export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", onOpenFocus, children }: OverlayProps) {
   // Pin the page's scroll position across the dialog's lifetime. Focus
   // prevention alone doesn't stop every jump — iOS in particular shifts the
   // underlying document when the on-screen keyboard opens/closes — so we
@@ -48,7 +52,10 @@ export default function Overlay({ onClose, contentClassName, overlayClassName, l
         <Dialog.Content
           className={contentClassName}
           aria-describedby={undefined}
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault(); // never let Radix's default focus scroll the page
+            onOpenFocus?.();
+          }}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <Dialog.Title className="sr-only">{label}</Dialog.Title>

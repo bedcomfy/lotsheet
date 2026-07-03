@@ -14,6 +14,7 @@ import type { FlagMap } from "../lib/types";
 
 interface LotEditorProps {
   title: string;
+  subtitle?: string;
   list: string[];
   flags?: FlagMap;
   locate?: (bus: string, exceptId: string | null) => string;
@@ -98,7 +99,7 @@ function LotRow({ sortId, bus, i, count, fdisp, sortable, onEditFlags, onMove, o
   );
 }
 
-export default function LotEditor({ title, list, flags = {}, locate, onRelocate, onEditFlags, recent, onAdd, onRemove, onMove, onReorder, onClose }: LotEditorProps) {
+export default function LotEditor({ title, subtitle, list, flags = {}, locate, onRelocate, onEditFlags, recent, onAdd, onRemove, onMove, onReorder, onClose }: LotEditorProps) {
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -163,11 +164,17 @@ export default function LotEditor({ title, list, flags = {}, locate, onRelocate,
   }
 
   return (
-    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label={title}>
+    <Overlay
+      onClose={onClose}
+      overlayClassName="modal-backdrop no-print"
+      contentClassName="modal modal--tall"
+      label={title}
+      onOpenFocus={() => ref.current?.focus({ preventScroll: true })}
+    >
         <div className="modal__head">
           <div>
             <div className="modal__title">{title}</div>
-            <div className="modal__sub">Buses print on the back in the order you add them.</div>
+            <div className="modal__sub">{subtitle || "Buses print on the back in the order you add them."}</div>
           </div>
           <button className="modal__close" onClick={onClose} aria-label="Close">
             ×

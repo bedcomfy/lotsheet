@@ -28,8 +28,10 @@ import {
   groupFlaggedBuses,
   cellLocationLabel,
   pinnedFlagText,
+  DEPARTMENTS,
+  flagName,
 } from "../lib/grid";
-import { LayoutGrid, Flag, Eraser, ListX, History, FileDown, Search, Share2, ListChecks } from "lucide-react";
+import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -54,7 +56,7 @@ const LOTS: { key: string; title: string }[] = [
 // duplicate guard can report where a bus already sits.
 const LOT_LOCATION_LABELS: Record<string, string> = {
   north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
-  northlane: "North Lane", southlane: "South Lane", bay: "Bay",
+  northlane: "North Lane", southlane: "South Lane", bay: "Bay", cards: "Cards",
 };
 
 type LotStringField = "time" | "date" | "offProperty" | "inShop";
@@ -235,6 +237,7 @@ export default function LotSheet() {
   const [selectMode, setSelectMode] = useState(false); // multi-select: tap buses, act on all at once
   const [selected, setSelected] = useState<string[]>([]); // selected cell ids
   const [missingOpen, setMissingOpen] = useState(false); // "which buses are missing" list
+  const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -558,6 +561,49 @@ export default function LotSheet() {
     });
     exitSelectMode();
   }
+  // Save a bus's flag entry (server + local state), same as the flag editor does.
+  function postFlagEntry(bus: string, entry: FlagEntry) {
+    fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bus,
+        flags: entry.flags,
+        note: entry.note,
+        inspMiles: entry.inspMiles ?? null,
+        holdReason: entry.holdReason ?? "",
+        retorqueTires: entry.retorqueTires || [],
+        inspOption: entry.inspOption ?? "",
+      }),
+    }).catch(() => {});
+    onBusFlagsUpdated(bus, entry);
+  }
+  // Add/remove one flag on EVERY selected bus at once.
+  function bulkFlag(flagId: string) {
+    const action = flagPick;
+    setFlagPick(null);
+    if (!action) return;
+    const buses = Array.from(new Set(selected.map((id) => getNum(id)).filter(Boolean)));
+    if (!buses.length) return;
+    for (const bus of buses) {
+      const cur: FlagEntry = flags[bus] || { ...EMPTY_FLAG };
+      if (action === "add") {
+        if (cur.flags.includes(flagId)) continue;
+        postFlagEntry(bus, { ...cur, flags: [...cur.flags, flagId] });
+      } else {
+        if (!cur.flags.includes(flagId)) continue;
+        const patch: FlagEntry = { ...cur, flags: cur.flags.filter((f) => f !== flagId) };
+        if (flagId === "inspection") patch.inspOption = "";
+        if (flagId === "retorque") patch.retorqueTires = [];
+        if (flagId === "hold") patch.holdReason = "";
+        postFlagEntry(bus, patch);
+      }
+    }
+    showNotice(
+      `${flagName(flagId)} ${action === "add" ? "added to" : "removed from"} ${buses.length} bus${buses.length === 1 ? "" : "es"}`
+    );
+    exitSelectMode();
+  }
 
   // ---- keyboard power mode (spreadsheet feel, desktop) ----
   // Move focus to the nearest cell in a direction, judged geometrically from the
@@ -835,7 +881,10 @@ export default function LotSheet() {
       for (const k of Object.keys(lots) as LotKey[]) {
         const arr = lots[k];
         if (!Array.isArray(arr) || !arr.includes(num)) continue;
-        lots[k] = k === "bay" ? arr.map((b) => (b === num ? "" : b)) : arr.filter((b) => b !== num);
+        lots[k] =
+          k === "bay" || k === "cards"
+            ? arr.map((b) => (b === num ? "" : b)) // positional: blank the slot
+            : arr.filter((b) => b !== num);
       }
       return { ...s, cells, lots };
     });
@@ -863,6 +912,17 @@ export default function LotSheet() {
   const offPropertyCount = Object.values(flags).filter((e) =>
     (e.flags || []).includes("offprop")
   ).length;
+
+  // "# OF VEHICLES IN SHOP" is auto-counted too: everything on the Shop page
+  // (Apron + Bays + Cards) plus any bus flagged IN SHOP.
+  const inShopSet = new Set<string>();
+  for (const k of ["apron", "bay", "cards"] as const) {
+    for (const b of sheet.lots?.[k] || []) if (b) inShopSet.add(b);
+  }
+  for (const [bus, e] of Object.entries(flags)) {
+    if ((e.flags || []).includes("shop")) inShopSet.add(bus);
+  }
+  const inShopCount = inShopSet.size;
 
   // Quick stats for the toolbar chip.
   const onGridCount = Object.values(sheet.cells || {}).filter((v) => cellToNum(v)).length;
@@ -1064,9 +1124,10 @@ export default function LotSheet() {
             <div className="counter">
               <label># OF VEHICLES IN SHOP:</label>
               <input
-                value={sheet.inShop}
-                onChange={(e) => setField("inShop", e.target.value)}
-                inputMode="numeric"
+                className="counter__auto"
+                value={inShopCount}
+                readOnly
+                title="Auto-counted from the Shop page (Apron, Bays, Cards) plus buses flagged IN SHOP"
               />
             </div>
           </div>
@@ -1348,6 +1409,12 @@ export default function LotSheet() {
               → {LOT_LOCATION_LABELS[l.key] || l.title}
             </button>
           ))}
+          <button className="btn btn--mini" disabled={!selected.length} onClick={() => setFlagPick("add")}>
+            <Flag size={14} /> Add flag
+          </button>
+          <button className="btn btn--mini" disabled={!selected.length} onClick={() => setFlagPick("remove")}>
+            <FlagOff size={14} /> Remove flag
+          </button>
           <button className="btn btn--mini btn--ghost" disabled={!selected.length} onClick={bulkClearCells}>
             Clear
           </button>
@@ -1355,6 +1422,66 @@ export default function LotSheet() {
             Done
           </button>
         </div>
+      )}
+
+      {/* Which flag to add to / remove from every selected bus */}
+      {flagPick && (
+        <Overlay
+          onClose={() => setFlagPick(null)}
+          overlayClassName="modal-backdrop no-print"
+          contentClassName="modal modal--tall"
+          label={flagPick === "add" ? "Add a flag" : "Remove a flag"}
+        >
+          <div className="modal__head">
+            <div>
+              <div className="modal__title">{flagPick === "add" ? "Add a flag" : "Remove a flag"}</div>
+              <div className="modal__sub">
+                {flagPick === "add"
+                  ? `Applies to all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`
+                  : `Removed from all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`}
+                {flagPick === "add" ? " (Retorque needs tires — set it per bus in Edit Flags.)" : ""}
+              </div>
+            </div>
+            <button className="modal__close" onClick={() => setFlagPick(null)} aria-label="Close">
+              ×
+            </button>
+          </div>
+          <div className="lotlist">
+            {(() => {
+              const seen = new Set<string>();
+              return DEPARTMENTS.map((dept) => {
+                const ids = dept.flags.filter((id) => {
+                  if (seen.has(id)) return false;
+                  if (flagPick === "add" && id === "retorque") return false;
+                  seen.add(id);
+                  return true;
+                });
+                if (!ids.length) return null;
+                return (
+                  <div className="busedit__dept" key={dept.id}>
+                    <div className={`busedit__depthead busedit__depthead--${dept.id}`}>
+                      <span className="busedit__dot" />
+                      {dept.label}
+                    </div>
+                    <div className="busedit__chips">
+                      {ids.map((id) => (
+                        <button key={id} className="deptchip" onClick={() => bulkFlag(id)}>
+                          {flagName(id)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+          <div className="modal__actions">
+            <div className="toolbar__spacer" />
+            <button className="btn" onClick={() => setFlagPick(null)}>
+              Cancel
+            </button>
+          </div>
+        </Overlay>
       )}
 
       {/* Undo toast for the bigger actions (clears, drags, sends); plain notices reuse it */}

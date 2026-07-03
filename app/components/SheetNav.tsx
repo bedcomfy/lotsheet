@@ -15,6 +15,7 @@ export interface SheetLink {
 export const SHEETS: SheetLink[] = [
   { path: "/", label: "Lot Sheet" },
   { path: "/turnover", label: "Turnover Sheet" },
+  { path: "/shop", label: "Shop" },
   { path: "/fuel", label: "Fuel Sheet" },
   { path: "/def", label: "DEF Sheet" },
 ];

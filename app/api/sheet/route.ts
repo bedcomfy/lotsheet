@@ -21,17 +21,35 @@ export async function PUT(req: Request) {
 }
 
 // Merge ONLY the back-of-sheet lots into the stored sheet, server-side, leaving
-// the grid cells (and everything else) untouched. Used by the Turnover sheet so
-// it shares the North/East/Fence lots two-way without overwriting the lot grid.
+// the grid cells (and everything else) untouched. Used by the Turnover and Shop
+// pages so they share the lots two-way without overwriting the lot grid.
 // (Reasons are NOT stored here — a bus's "reason" on the Turnover is its
 // universal flags, edited via the flag menu and kept independent of placement.)
+//
+// `clearBuses` (optional) removes those buses from EVERYWHERE — every grid cell
+// and every lot (positional lots keep their slot, blanked) — applied BEFORE the
+// lots merge. Powers "Move it here" from pages that don't own the grid cells.
 export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { sheet } = await getSheet();
   const base: LotSheet = (sheet && typeof sheet === "object" ? sheet : {}) as LotSheet;
-  const next: LotSheet = { ...base };
+  const next: LotSheet = { ...base, cells: { ...(base.cells || {}) }, lots: { ...(base.lots || {}) } };
+  if (Array.isArray(body.clearBuses) && body.clearBuses.length) {
+    const clear = new Set(body.clearBuses.filter((b: unknown) => typeof b === "string"));
+    for (const [id, v] of Object.entries(next.cells)) {
+      const num = typeof v === "string" ? v : (v as { num?: string })?.num || "";
+      if (clear.has(num)) delete next.cells[id];
+    }
+    const POSITIONAL = new Set(["bay", "cards"]);
+    for (const [key, arr] of Object.entries(next.lots as Lots)) {
+      if (!Array.isArray(arr)) continue;
+      (next.lots as Record<string, string[]>)[key] = POSITIONAL.has(key)
+        ? arr.map((b) => (clear.has(b) ? "" : b))
+        : arr.filter((b) => !clear.has(b));
+    }
+  }
   if (body.lots && typeof body.lots === "object") {
-    next.lots = { ...(base.lots || {}), ...(body.lots as Lots) };
+    next.lots = { ...next.lots, ...(body.lots as Lots) };
   }
   const updatedAt = await setSheet(next);
   return NextResponse.json({ ok: true, updatedAt, lots: next.lots || {} });

@@ -118,6 +118,7 @@ export const FLAGS: FlagDef[] = [
   { id: "braketest", label: "BRAKE TEST" },
   { id: "ac", label: "A/C" },
   { id: "cleaning", label: "NEEDS CLEANING" },
+  { id: "rfs", label: "READY FOR SERVICE" },
 ];
 
 // A Hold bus has a reason. These are the quick-picks; a free-text box also
@@ -135,7 +136,7 @@ const FLAG_NAMES: Record<string, string> = {
   trans: "Transmission", oos: "Out of service", inspection: "Inspection",
   retorque: "Retorque", hold: "Hold", split: "Split", service: "Needs service",
   followup: "Follow up", cards: "Cards", braketest: "Brake test", ac: "A/C",
-  cleaning: "Needs cleaning",
+  cleaning: "Needs cleaning", rfs: "Ready for service",
 };
 export function flagName(id: string): string {
   return FLAG_NAMES[id] || flagLabel(id);
@@ -150,8 +151,8 @@ export interface Department {
 // Flags grouped by department, for the editor. A flag may appear in more than
 // one department (shared); the By bus view shows it once, under the first one.
 export const DEPARTMENTS: Department[] = [
-  { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold", "followup"] },
-  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "shop", "split", "followup"] },
+  { id: "service", label: "Service", flags: ["service", "cleaning", "cards", "braketest", "retorque", "inspection", "hold", "followup", "rfs"] },
+  { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "shop", "split", "followup", "rfs"] },
   { id: "safety", label: "Safety", flags: ["safety", "legal", "accident"] },
 ];
 
@@ -202,6 +203,7 @@ export const FLAG_SEVERITY = [
   "braketest",
   "ac",
   "cleaning",
+  "rfs",
 ];
 
 // Flags that print on the grid even when "Maintenance info" is off, because
