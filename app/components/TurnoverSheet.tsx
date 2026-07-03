@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { flagsFullDisplay } from "../lib/grid";
-import { History, Eraser, FileDown, Search } from "lucide-react";
+import { History, Eraser, FileDown, Search, X } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
@@ -49,7 +49,7 @@ function emptyData(): TurnoverData {
 }
 
 export default function TurnoverSheet() {
-  const { label: busLabel, isKnown } = useBusMaster();
+  const { label: busLabel } = useBusMaster();
   const [data, setData] = useState<TurnoverData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -58,8 +58,6 @@ export default function TurnoverSheet() {
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
   const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
-  const [findMsg, setFindMsg] = useState(""); // which lot the searched bus is in
-  const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [lots, setLots] = useState<TurnoverLots>({
     north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [], cards: [],
@@ -234,20 +232,18 @@ export default function TurnoverSheet() {
   };
   function locateLot(bus: string): string {
     for (const k of Object.keys(LOT_LABELS) as LotKey[]) {
-      if ((lots[k] || []).includes(bus)) return LOT_LABELS[k];
+      const idx = (lots[k] || []).indexOf(bus);
+      if (idx === -1) continue;
+      // Positional lots say exactly which spot ("Bay 3", "Card 5").
+      return k === "bay" || k === "cards" ? `${LOT_LABELS[k]} ${idx + 1}` : LOT_LABELS[k];
     }
     return "";
   }
 
-  // Toolbar "find bus": say which lot the bus is in on this sheet.
-  function findBus(raw?: string) {
-    const v = sanitizeBus(raw ?? findVal);
-    if (v.length < 4) return;
-    const where = locateLot(v);
-    clearTimeout(findMsgTimer.current);
-    setFindMsg(where || "Not on this sheet");
-    findMsgTimer.current = setTimeout(() => setFindMsg(""), 3000);
-  }
+  // The live search: the message is derived, so it stays up (and stays correct
+  // as the lots change) until the box is cleared.
+  const foundBus = findVal.length >= 4 ? findVal : "";
+  const foundWhere = foundBus ? locateLot(foundBus) : "";
 
   // Pull a bus out of whichever lot it currently sits in so it can be added
   // elsewhere — powers the lot editor's "Move it here". BAY is positional
@@ -482,15 +478,15 @@ export default function TurnoverSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onChange={(e) => {
-              const v = sanitizeBus(e.target.value);
-              setFindVal(v);
-              setFindMsg("");
-              if (isKnown(v)) findBus(v);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && findBus()}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
           />
-          {findMsg && <span className="findbox__msg">{findMsg}</span>}
+          {foundBus && <span className="findbox__msg">{foundWhere || "Not on this sheet"}</span>}
+          {findVal && (
+            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="toolbar__spacer" />
         <span className="toolbar__saved">
@@ -592,6 +588,8 @@ export default function TurnoverSheet() {
               </tr>
               {Array.from({ length: BAY_ROWS }, (_, i) => {
                 const n = i + 1;
+                const bayBus = (lots.bay || [])[i] || "";
+                const bayFlags = bayBus && bayBus !== "X" ? flagsFullDisplay(flags[bayBus]) : "";
                 return (
                   <tr key={`bay-${n}`}>
                     <td />
@@ -599,13 +597,25 @@ export default function TurnoverSheet() {
                       <input
                         className="turnt__in turnt__in--c"
                         inputMode="numeric"
-                        value={(lots.bay || [])[i] || ""}
+                        value={bayBus}
                         onChange={(e) => setBayBus(i, e.target.value)}
                       />
                     </td>
                     <td colSpan={3}>
                       <div className="turnt__fline">
                         <span className="turnt__bayno">{n})</span>
+                        {/* The bay bus's flags (auto, tap to edit) — the typed
+                            text next to them stays free for extra notes. */}
+                        {bayFlags && (
+                          <button
+                            type="button"
+                            className="turnt__bayflag"
+                            onClick={() => setFlagBus(bayBus)}
+                            title="This bus's flags — tap to edit"
+                          >
+                            {bayFlags}
+                          </button>
+                        )}
                         {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
                       </div>
                     </td>

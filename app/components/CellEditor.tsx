@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
-import { Flag } from "lucide-react";
+import { Flag, Ban } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -19,11 +19,12 @@ interface CellEditorProps {
   onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
   sendTargets?: { key: string; label: string }[]; // lots this bus can be sent to
   onSendToLot?: (bus: string, lotKey: string) => void;
+  blockable?: boolean; // allow marking the spot unusable (an "X", like ROW 10's)
   onSave: (v: string) => void;
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, blockable, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -145,7 +146,7 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
         )}
 
         {/* Send the bus that's parked in this cell straight to a lot — no dragging. */}
-        {onSendToLot && !!sendTargets?.length && value && num === value && (
+        {onSendToLot && !!sendTargets?.length && value && value !== "X" && num === value && (
           <div className="sendrow">
             <span className="sendrow__lbl">Send to</span>
             {sendTargets.map((t) => (
@@ -160,6 +161,15 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
           <button className="btn btn--ghost" onClick={() => onSave("")}>
             Clear
           </button>
+          {blockable && (
+            <button
+              className="btn"
+              onClick={() => onSave(value === "X" ? "" : "X")}
+              title={value === "X" ? "Reopen this spot" : "Mark this spot unusable (prints an X, like ROW 10's)"}
+            >
+              <Ban size={15} /> {value === "X" ? "Unblock" : "Block"}
+            </button>
+          )}
           {onEditFlags && num.length >= 4 && (
             <button className="btn" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
               <Flag size={15} /> Flags

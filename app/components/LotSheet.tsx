@@ -31,7 +31,7 @@ import {
   DEPARTMENTS,
   flagName,
 } from "../lib/grid";
-import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks } from "lucide-react";
+import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -105,14 +105,16 @@ interface GridCellProps {
   num: string;
   entry: FlagEntry | null;
   selected?: boolean;
+  foundBus?: string; // the searched bus — steady highlight while it matches
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function GridCell({ id, slotLabel, num, entry, selected, onOpen }: GridCellProps) {
+function GridCell({ id, slotLabel, num, entry, selected, foundBus, onOpen }: GridCellProps) {
   const { label: busLabel } = useBusMaster();
-  const blocked = slotLabel === "X";
-  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !id || !num });
-  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: !id });
+  const blocked = slotLabel === "X"; // the form's own X (ROW 10) — not editable
+  const xed = num === "X"; // user-blocked spot — tap to unblock via the editor
+  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !id || !num || xed });
+  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: !id || xed });
   if (blocked) {
     return (
       <div className="cell cell--blocked">
@@ -120,6 +122,7 @@ function GridCell({ id, slotLabel, num, entry, selected, onOpen }: GridCellProps
       </div>
     );
   }
+  const found = !!foundBus && num === foundBus;
   const disp = entry ? flagDisplay(entry) : "";
   const miles = entry ? inspMilesDisplay(entry) : "";
   const pin = entry ? pinnedFlagText(entry) : "";
@@ -133,20 +136,26 @@ function GridCell({ id, slotLabel, num, entry, selected, onOpen }: GridCellProps
       {...drag.listeners}
       {...drag.attributes}
       data-cellid={id ?? undefined}
-      className={`cell ${num ? "cell--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
-        drop.isOver ? "cell--dropover" : ""
-      } ${selected ? "cell--selected" : ""}`}
+      className={`cell ${num && !xed ? "cell--filled" : ""} ${xed ? "cell--blocked" : ""} ${
+        drag.isDragging ? "cell--dragsrc" : ""
+      } ${drop.isOver ? "cell--dropover" : ""} ${selected ? "cell--selected" : ""} ${found ? "cell--found" : ""}`}
       onClick={() => onOpen(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
     >
       {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
-      {num && <TypeCodes num={num} className="cell__types" />}
-      <span className="cell__num">{busLabel(num)}</span>
-      {(disp || miles || pin) && (
-        <span className="cell__meta">
-          {disp && <span className="cell__flag">{disp}</span>}
-          {miles && <span className="cell__insp">{miles}</span>}
-          {pin && <span className="cell__pin">{pin}</span>}
-        </span>
+      {xed ? (
+        <span className="cell__x">X</span>
+      ) : (
+        <>
+          {num && <TypeCodes num={num} className="cell__types" />}
+          <span className="cell__num">{busLabel(num)}</span>
+          {(disp || miles || pin) && (
+            <span className="cell__meta">
+              {disp && <span className="cell__flag">{disp}</span>}
+              {miles && <span className="cell__insp">{miles}</span>}
+              {pin && <span className="cell__pin">{pin}</span>}
+            </span>
+          )}
+        </>
       )}
     </button>
   );
@@ -157,14 +166,17 @@ interface FrontCellProps {
   num: string;
   entry: FlagEntry | null;
   selected?: boolean;
+  foundBus?: string;
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function FrontCell({ c, num, entry, selected, onOpen }: FrontCellProps) {
+function FrontCell({ c, num, entry, selected, foundBus, onOpen }: FrontCellProps) {
   const { label: busLabel } = useBusMaster();
   const id = frontCellId(c);
-  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !num });
-  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id } });
+  const xed = num === "X";
+  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !num || xed });
+  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: xed });
+  const found = !!foundBus && num === foundBus;
   const disp = entry ? flagDisplay(entry) : "";
   const miles = entry ? inspMilesDisplay(entry) : "";
   const pin = entry ? pinnedFlagText(entry) : "";
@@ -178,29 +190,35 @@ function FrontCell({ c, num, entry, selected, onOpen }: FrontCellProps) {
       {...drag.listeners}
       {...drag.attributes}
       data-cellid={id}
-      className={`front ${num ? "front--filled" : ""} ${drag.isDragging ? "cell--dragsrc" : ""} ${
-        drop.isOver ? "cell--dropover" : ""
-      } ${selected ? "cell--selected" : ""}`}
+      className={`front ${num && !xed ? "front--filled" : ""} ${xed ? "cell--blocked" : ""} ${
+        drag.isDragging ? "cell--dragsrc" : ""
+      } ${drop.isOver ? "cell--dropover" : ""} ${selected ? "cell--selected" : ""} ${found ? "cell--found" : ""}`}
       onClick={() => onOpen(id, `ROW ${c + 1} — front bus`)}
     >
-      {num && <TypeCodes num={num} className="front__types" />}
-      <span className="cell__num">{busLabel(num)}</span>
-      {disp && <span className="front__flag">{disp}</span>}
-      {miles && <span className="front__flag front__insp">{miles}</span>}
-      {pin && <span className="front__flag front__pin">{pin}</span>}
+      {xed ? (
+        <span className="cell__x">X</span>
+      ) : (
+        <>
+          {num && <TypeCodes num={num} className="front__types" />}
+          <span className="cell__num">{busLabel(num)}</span>
+          {disp && <span className="front__flag">{disp}</span>}
+          {miles && <span className="front__flag front__insp">{miles}</span>}
+          {pin && <span className="front__flag front__pin">{pin}</span>}
+        </>
+      )}
     </button>
   );
 }
 
 // A back-of-sheet lot box that accepts a dragged bus (drops it at the end of
 // that lot's list) and still opens the lot editor on tap.
-function BackLotBox({ lotKey, onOpen, children }: { lotKey: string; onOpen: () => void; children: ReactNode }) {
+function BackLotBox({ lotKey, found, onOpen, children }: { lotKey: string; found?: boolean; onOpen: () => void; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: `lot:${lotKey}`, data: { lotKey } });
   return (
     <div
       ref={setNodeRef}
       data-lotkey={lotKey}
-      className={`backlot ${isOver ? "backlot--dropover" : ""}`}
+      className={`backlot ${isOver ? "backlot--dropover" : ""} ${found ? "backlot--found" : ""}`}
       role="button"
       tabIndex={0}
       onClick={onOpen}
@@ -228,8 +246,6 @@ export default function LotSheet() {
   const [flagBus, setFlagBus] = useState<string | null>(null); // open the flag editor on this bus
   const [dragNum, setDragNum] = useState<string | null>(null); // bus being dragged (for the overlay chip)
   const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
-  const [findMsg, setFindMsg] = useState(""); // where the searched bus is
-  const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [undoState, setUndoState] = useState<{ label: string } | null>(null); // undo toast
   const undoSheetRef = useRef<LotSheetData | null>(null); // the sheet as it was before the change
   const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -520,7 +536,8 @@ export default function LotSheet() {
     if (Date.now() < suppressClickUntil.current) return;
     // Select mode: taps toggle the bus in/out of the selection instead.
     if (selectMode) {
-      if (!getNum(id)) return; // only buses can be selected
+      const n = getNum(id);
+      if (!n || n === "X") return; // only buses can be selected (not blocked spots)
       setSelected((sel) => (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]));
       return;
     }
@@ -533,7 +550,10 @@ export default function LotSheet() {
     setSelected([]);
   }
   function bulkSendToLot(key: string) {
-    const ids = selected.filter((id) => getNum(id));
+    const ids = selected.filter((id) => {
+      const n = getNum(id);
+      return n && n !== "X";
+    });
     if (!ids.length) return;
     offerUndo(`${ids.length} bus${ids.length === 1 ? "" : "es"} → ${LOT_LOCATION_LABELS[key] || key}`);
     setSheet((s) => {
@@ -550,7 +570,10 @@ export default function LotSheet() {
     exitSelectMode();
   }
   function bulkClearCells() {
-    const ids = selected.filter((id) => getNum(id));
+    const ids = selected.filter((id) => {
+      const n = getNum(id);
+      return n && n !== "X";
+    });
     if (!ids.length) return;
     offerUndo(`Cleared ${ids.length} bus${ids.length === 1 ? "" : "es"}`);
     for (const id of ids) noteRemoved(getNum(id));
@@ -583,7 +606,7 @@ export default function LotSheet() {
     const action = flagPick;
     setFlagPick(null);
     if (!action) return;
-    const buses = Array.from(new Set(selected.map((id) => getNum(id)).filter(Boolean)));
+    const buses = Array.from(new Set(selected.map((id) => getNum(id)).filter((b) => b && b !== "X")));
     if (!buses.length) return;
     for (const bus of buses) {
       const cur: FlagEntry = flags[bus] || { ...EMPTY_FLAG };
@@ -825,20 +848,23 @@ export default function LotSheet() {
     // places.
     const lots = sheet.lots || {};
     for (const [key, arr] of Object.entries(lots)) {
-      if (Array.isArray(arr) && arr.includes(num)) return LOT_LOCATION_LABELS[key] || key;
+      if (!Array.isArray(arr)) continue;
+      const idx = arr.indexOf(num);
+      if (idx === -1) continue;
+      const label = LOT_LOCATION_LABELS[key] || key;
+      // Positional lots say exactly which spot ("Bay 3", "Card 5").
+      return key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
     }
     return "";
   }
 
-  // Toolbar "find bus": scroll to the bus on the sheet and flash it, and say
-  // where it is ("Row 5 · #43", "North Lot", …) — or that it isn't placed.
+  // Toolbar "find bus": scroll to the bus and flash it. The message + steady
+  // highlight are DERIVED from the search text, so they stay up (and stay
+  // correct as the sheet changes) until the search is cleared.
   function findBus(raw?: string) {
     const v = sanitizeBus(raw ?? findVal);
     if (v.length < 4) return;
     const where = locateBus(v, null);
-    clearTimeout(findMsgTimer.current);
-    setFindMsg(where || "Not on the sheet");
-    findMsgTimer.current = setTimeout(() => setFindMsg(""), 3000);
     if (!where) return;
     const flash = (selector: string) => {
       const el = document.querySelector(selector);
@@ -903,7 +929,7 @@ export default function LotSheet() {
   const busLocations: Record<string, string[]> = {};
   for (const [id, v] of Object.entries(sheet.cells || {})) {
     const n = cellToNum(v);
-    if (!n) continue;
+    if (!n || n === "X") continue;
     const loc = cellLocationLabel(id);
     if (loc) (busLocations[n] = busLocations[n] || []).push(loc);
   }
@@ -917,17 +943,24 @@ export default function LotSheet() {
   // (Apron + Bays + Cards) plus any bus flagged IN SHOP.
   const inShopSet = new Set<string>();
   for (const k of ["apron", "bay", "cards"] as const) {
-    for (const b of sheet.lots?.[k] || []) if (b) inShopSet.add(b);
+    for (const b of sheet.lots?.[k] || []) if (b && b !== "X") inShopSet.add(b);
   }
   for (const [bus, e] of Object.entries(flags)) {
     if ((e.flags || []).includes("shop")) inShopSet.add(bus);
   }
   const inShopCount = inShopSet.size;
 
-  // Quick stats for the toolbar chip.
-  const onGridCount = Object.values(sheet.cells || {}).filter((v) => cellToNum(v)).length;
+  // The live search: message + steady highlight persist until the box clears.
+  const foundBus = findVal.length >= 4 ? findVal : "";
+  const foundWhere = foundBus ? locateBus(foundBus, null) : "";
+
+  // Quick stats for the toolbar chip ("X" = a blocked spot, not a bus).
+  const onGridCount = Object.values(sheet.cells || {}).filter((v) => {
+    const n = cellToNum(v);
+    return n && n !== "X";
+  }).length;
   const inLotsCount = Object.values(sheet.lots || {}).reduce(
-    (n: number, arr) => n + (Array.isArray(arr) ? arr.filter(Boolean).length : 0),
+    (n: number, arr) => n + (Array.isArray(arr) ? arr.filter((b) => b && b !== "X").length : 0),
     0
   );
   // Missing = ACTIVE buses on the roster that aren't anywhere on the sheet
@@ -962,14 +995,14 @@ export default function LotSheet() {
     );
     const gridEntries = Object.entries(sheet.cells || {})
       .map(([id, v]) => ({ loc: cellLocationLabel(id), bus: cellToNum(v) }))
-      .filter((e) => e.bus && e.loc)
+      .filter((e) => e.bus && e.bus !== "X" && e.loc)
       .sort((a, b) => a.loc.localeCompare(b.loc, undefined, { numeric: true }));
     if (gridEntries.length) {
       lines.push("", "GRID:");
       for (const e of gridEntries) lines.push(`${e.loc}: ${busLabel(e.bus)}`);
     }
     for (const [key, arr] of Object.entries(sheet.lots || {})) {
-      const buses = (Array.isArray(arr) ? arr : []).filter(Boolean);
+      const buses = (Array.isArray(arr) ? arr : []).filter((b) => b && b !== "X");
       if (!buses.length) continue;
       lines.push("", `${(LOT_LOCATION_LABELS[key] || key).toUpperCase()} (${buses.length}): ${buses.map((b) => busLabel(b)).join(", ")}`);
     }
@@ -1013,15 +1046,20 @@ export default function LotSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
+            onFocus={(e) => e.target.select()}
             onChange={(e) => {
               const v = sanitizeBus(e.target.value);
               setFindVal(v);
-              setFindMsg("");
               if (isKnown(v)) findBus(v);
             }}
             onKeyDown={(e) => e.key === "Enter" && findBus()}
           />
-          {findMsg && <span className="findbox__msg">{findMsg}</span>}
+          {foundBus && <span className="findbox__msg">{foundWhere || "Not on the sheet"}</span>}
+          {findVal && (
+            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="toolbar__spacer" />
         <button
@@ -1142,6 +1180,7 @@ export default function LotSheet() {
                   c={c}
                   {...cellProps(frontCellId(c))}
                   selected={selected.includes(frontCellId(c))}
+                  foundBus={foundBus}
                   onOpen={openCell}
                 />
               );
@@ -1161,7 +1200,7 @@ export default function LotSheet() {
                 if (c === COLUMN_COUNT - 1) {
                   const id = row11CellId(b);
                   return (
-                    <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} selected={selected.includes(id)} onOpen={openCell} />
+                    <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} onOpen={openCell} />
                   );
                 }
                 if (slot === "X") {
@@ -1169,7 +1208,7 @@ export default function LotSheet() {
                 }
                 const id = numberedCellId(slot as number);
                 return (
-                  <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} selected={selected.includes(id)} onOpen={openCell} />
+                  <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} onOpen={openCell} />
                 );
               })
             )}
@@ -1188,7 +1227,12 @@ export default function LotSheet() {
         <div className="back-sheet">
           <div className="back__cols">
             {LOTS.map((lot) => (
-              <BackLotBox key={lot.key} lotKey={lot.key} onOpen={() => setEditingLot(lot.key)}>
+              <BackLotBox
+                key={lot.key}
+                lotKey={lot.key}
+                found={!!foundBus && lotList(lot.key).includes(foundBus)}
+                onOpen={() => setEditingLot(lot.key)}
+              >
                 <div className="backlot__head">
                   {lot.title}
                   <span className="backlot__count"> ({lotList(lot.key).length})</span>
@@ -1259,6 +1303,7 @@ export default function LotSheet() {
           cellId={editing.id}
           locate={locateBus}
           onRelocate={relocateBus}
+          blockable
           sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
           onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
           onEditFlags={(bus) => {

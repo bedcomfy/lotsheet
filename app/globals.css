@@ -1422,6 +1422,27 @@ button {
   color: var(--accent);
   white-space: nowrap;
 }
+.findbox__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.findbox__clear:hover {
+  color: #b91c1c;
+  background: var(--surface-hover);
+}
+/* Steady highlight on the searched bus (until the search box is cleared) */
+.cell--found,
+.backlot--found {
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  background: #fef3c7;
+}
 /* Flash the found bus (grid cell or lot box) */
 .is-found {
   animation: foundpulse 2.2s ease;
@@ -1702,6 +1723,22 @@ button {
   justify-content: center;
   color: #c3c8d0;
   margin-top: 8px;
+}
+/* Blocked (X'd out) spot */
+.shopslot--blocked {
+  background: #f3f4f6;
+}
+.shopslot__x {
+  font-size: 20px;
+  font-weight: 700;
+  color: #6b7280;
+  margin-top: 4px;
+}
+/* The searched bus's slot / chip stays lit until the search clears */
+.shopslot--found,
+.apronchip--found {
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  background: #fef3c7;
 }
 .apronchips {
   display: flex;
@@ -2668,6 +2705,21 @@ td.turnt__head {
 .turnt__bayno {
   flex: 0 0 auto;
 }
+/* The bay bus's flags under 1ST HALF — auto from the flag system, tap to edit.
+   The input next to it stays free for extra hand-typed notes. */
+.turnt__bayflag {
+  flex: 0 1 auto;
+  max-width: 55%;
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 0.85em;
+  line-height: 1.15;
+  text-align: left;
+  white-space: normal;
+  padding: 0 2px;
+  cursor: pointer;
+}
 .turnt__in {
   width: 100%;
   border: none;
@@ -2763,6 +2815,7 @@ td.turnt__head {
   .turn-sheet--blank .turnt__in,
   .turn-sheet--blank .turnt__veh,
   .turn-sheet--blank .turnt__reason,
+  .turn-sheet--blank .turnt__bayflag,
   .turn-sheet--blank .turnt__listbus {
     visibility: hidden;
   }

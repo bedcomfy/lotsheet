@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, X } from "lucide-react";
 import { cellLocationLabel, flagDisplay, flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -37,7 +37,7 @@ function cellToNum(v: unknown): string {
 }
 
 export default function ShopSheet() {
-  const { label: busLabel, isKnown } = useBusMaster();
+  const { label: busLabel } = useBusMaster();
   const [lots, setLots] = useState<ShopLots>(EMPTY_LOTS);
   const [cellsSnap, setCellsSnap] = useState<Record<string, unknown>>({}); // grid cells, read-only (for locate)
   const [loaded, setLoaded] = useState(false);
@@ -47,8 +47,6 @@ export default function ShopSheet() {
   const [apronOpen, setApronOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<{ key: "bay" | "cards"; i: number } | null>(null);
   const [findVal, setFindVal] = useState("");
-  const [findMsg, setFindMsg] = useState("");
-  const findMsgTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const lotDirty = useRef(false);
   const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -148,7 +146,9 @@ export default function ShopSheet() {
       const idx = arr.indexOf(bus);
       if (idx === -1) continue;
       if (exceptId === `${key}:${idx}`) continue; // the slot being edited
-      return LOT_LABELS[key as LotKey] || key;
+      const label = LOT_LABELS[key as LotKey] || key;
+      // Positional lots say exactly which spot ("Bay 3", "Card 5").
+      return key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
     }
     return "";
   }
@@ -203,33 +203,35 @@ export default function ShopSheet() {
     patchLots({ ...lotsRef.current, apron: arr });
   }
 
-  function findBus(raw?: string) {
-    const v = sanitizeBus(raw ?? findVal);
-    if (v.length < 4) return;
-    const where = locateBus(v, null);
-    clearTimeout(findMsgTimer.current);
-    setFindMsg(where || "Not placed anywhere");
-    findMsgTimer.current = setTimeout(() => setFindMsg(""), 3000);
-  }
+  // The live search: the message is derived, so it stays up (and stays correct
+  // as things move) until the box is cleared; the matching slot stays lit.
+  const foundBus = findVal.length >= 4 ? findVal : "";
+  const foundWhere = foundBus ? locateBus(foundBus, null) : "";
 
   // One fixed slot button (Bay n / Card n). Green when the bus is flagged
-  // Ready for Service — done in the shop, waiting to go out.
+  // Ready for Service — done in the shop, waiting to go out. "X" = blocked spot.
   function slotButton(key: "bay" | "cards", spots: number, i: number) {
     const bus = (lots[key] || [])[i] || "";
-    const entry = bus ? flags[bus] : undefined;
+    const xed = bus === "X";
+    const entry = bus && !xed ? flags[bus] : undefined;
     const disp = entry ? flagDisplay(entry) : "";
     const rfs = !!entry?.flags?.includes("rfs");
+    const found = !!foundBus && bus === foundBus;
     return (
       <button
         key={`${key}-${i}`}
         type="button"
-        className={`shopslot ${bus ? "shopslot--filled" : ""} ${rfs ? "shopslot--rfs" : ""}`}
+        className={`shopslot ${bus && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
+          rfs ? "shopslot--rfs" : ""
+        } ${found ? "shopslot--found" : ""}`}
         onClick={() => setEditingSlot({ key, i })}
       >
         <span className="shopslot__label">
           {key === "bay" ? "BAY" : "CARD"} {i + 1}
         </span>
-        {bus ? (
+        {xed ? (
+          <span className="shopslot__x">X</span>
+        ) : bus ? (
           <>
             <span className="shopslot__bus">{busLabel(bus)}</span>
             <TypeCodes num={bus} />
@@ -245,7 +247,7 @@ export default function ShopSheet() {
   }
 
   const inShopCount = new Set(
-    [...apron, ...(lots.bay || []), ...(lots.cards || [])].filter(Boolean)
+    [...apron, ...(lots.bay || []), ...(lots.cards || [])].filter((b) => b && b !== "X")
   ).size;
 
   return (
@@ -259,15 +261,15 @@ export default function ShopSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onChange={(e) => {
-              const v = sanitizeBus(e.target.value);
-              setFindVal(v);
-              setFindMsg("");
-              if (isKnown(v)) findBus(v);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && findBus()}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
           />
-          {findMsg && <span className="findbox__msg">{findMsg}</span>}
+          {foundBus && <span className="findbox__msg">{foundWhere || "Not placed anywhere"}</span>}
+          {findVal && (
+            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className="toolbar__spacer" />
         <span className="statchip">{inShopCount} in the shop</span>
@@ -298,7 +300,7 @@ export default function ShopSheet() {
           <div className="apronchips">
             {apron.length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
             {apron.map((bus, i) => (
-              <span className="apronchip" key={`${bus}-${i}`}>
+              <span className={`apronchip ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`} key={`${bus}-${i}`}>
                 {busLabel(bus)}
                 <TypeCodes num={bus} />
               </span>
@@ -338,6 +340,7 @@ export default function ShopSheet() {
           cellId={`${editingSlot.key}:${editingSlot.i}`}
           locate={locateBus}
           onRelocate={relocateBus}
+          blockable
           onEditFlags={(bus) => {
             setEditingSlot(null);
             setFlagBus(bus);
