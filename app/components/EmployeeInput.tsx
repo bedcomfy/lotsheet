@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { HTMLAttributes, KeyboardEvent } from "react";
 import type { Employee } from "../lib/types";
 
@@ -22,7 +23,9 @@ interface EmployeeInputProps {
 // A text input that suggests from the employee list as you type (matching name
 // OR badge). Tab / Enter / click fills the highlighted name. Free text is always
 // allowed — not everyone (e.g. contractors) is in the list. The dropdown is
-// position:fixed so it isn't clipped by the table cell's overflow:hidden.
+// position:fixed AND portaled to <body>: table cells clip via overflow:hidden,
+// and iOS Safari clips fixed elements inside momentum-scrolling containers
+// (the sheet's pan area), so it must render outside both.
 export default function EmployeeInput({
   value,
   onChange,
@@ -95,27 +98,31 @@ export default function EmployeeInput({
         onBlur={() => setTimeout(() => setOpen(false), 120)}
         onKeyDown={onKey}
       />
-      {open && matches.length > 0 && rect && (
-        <ul
-          className="empac"
-          style={{ position: "fixed", left: rect.left, top: rect.top, minWidth: rect.width }}
-        >
-          {matches.map((e, i) => (
-            <li
-              key={`${e.name}|${e.badge}|${i}`}
-              className={`empac__item ${i === hi ? "is-hi" : ""}`}
-              onMouseDown={(ev) => {
-                ev.preventDefault();
-                pick(e);
-              }}
-              onMouseEnter={() => setHi(i)}
-            >
-              <span className="empac__name">{e.name || "(no name)"}</span>
-              {e.badge && <span className="empac__badge">#{e.badge}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
+      {open &&
+        matches.length > 0 &&
+        rect &&
+        createPortal(
+          <ul
+            className="empac"
+            style={{ position: "fixed", left: rect.left, top: rect.top, minWidth: rect.width }}
+          >
+            {matches.map((e, i) => (
+              <li
+                key={`${e.name}|${e.badge}|${i}`}
+                className={`empac__item ${i === hi ? "is-hi" : ""}`}
+                onMouseDown={(ev) => {
+                  ev.preventDefault();
+                  pick(e);
+                }}
+                onMouseEnter={() => setHi(i)}
+              >
+                <span className="empac__name">{e.name || "(no name)"}</span>
+                {e.badge && <span className="empac__badge">#{e.badge}</span>}
+              </li>
+            ))}
+          </ul>,
+          document.body
+        )}
     </>
   );
 }

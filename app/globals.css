@@ -2395,7 +2395,7 @@ button {
    scrolling toolbar can't clip it. */
 .toolmenu__panel {
   position: fixed;
-  z-index: 45;
+  z-index: 60; /* above the sticky toolbar and everything on the page */
   min-width: 224px;
   background: var(--paper);
   border: 1px solid var(--border-soft);
