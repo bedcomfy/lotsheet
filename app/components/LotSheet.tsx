@@ -1417,10 +1417,7 @@ export default function LotSheet() {
           onToggleLock={() => toggleLock(editing.id)}
           sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
           onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
-          onEditFlags={(bus) => {
-            setEditing(null);
-            setFlagBus(bus);
-          }}
+          onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
           onSave={(num) => {
             const id = editing.id;
             saveNum(id, num);
@@ -1498,10 +1495,7 @@ export default function LotSheet() {
                     <div className="lotitem__actions">
                       <button
                         className="lotitem__move"
-                        onClick={() => {
-                          setMissingOpen(false);
-                          setFlagBus(bus);
-                        }}
+                        onClick={() => setFlagBus(bus)} /* stacks on top — Done returns here */
                         aria-label="Edit flags"
                         title="Edit this bus's flags"
                       >
@@ -1670,10 +1664,7 @@ export default function LotSheet() {
           locate={locateBus}
           onRelocate={relocateBus}
           blockable
-          onEditFlags={(bus) => {
-            setEditingBay(null);
-            setFlagBus(bus);
-          }}
+          onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
           onSave={(num) => {
             setBaySlot(editingBay, num);
             setEditingBay(null);

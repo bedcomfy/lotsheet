@@ -371,10 +371,7 @@ export default function ShopSheet() {
           locate={locateBus}
           onRelocate={relocateBus}
           blockable
-          onEditFlags={(bus) => {
-            setEditingBay(null);
-            setFlagBus(bus);
-          }}
+          onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
           onSave={(num) => {
             setBaySlot(editingBay, num);
             setEditingBay(null);
