@@ -13,10 +13,9 @@ import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 
 // Everything "inside the shop" in one place: the Apron (buses parked anywhere on
 // it — a simple list), the Bays (10 fixed spots, any of them can be empty), and
-// Cards (12 fixed spots — SCREEN-ONLY, never printed; also used as overflow
-// parking, where the Ready for Service flag marks a finished bus).
+// Cards (a simple list too — no fixed spots; SCREEN-ONLY, never printed; also
+// used as overflow parking, where the Ready for Service flag marks a finished bus).
 const BAY_SPOTS = 10;
-const CARD_SPOTS = 12;
 
 type ShopLots = Record<LotKey, string[]>;
 
@@ -44,8 +43,8 @@ export default function ShopSheet() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [flags, setFlags] = useState<FlagMap>({});
   const [flagBus, setFlagBus] = useState<string | null>(null);
-  const [apronOpen, setApronOpen] = useState(false);
-  const [editingSlot, setEditingSlot] = useState<{ key: "bay" | "cards"; i: number } | null>(null);
+  const [editingList, setEditingList] = useState<"apron" | "cards" | null>(null); // list editor (Apron / Cards)
+  const [editingBay, setEditingBay] = useState<number | null>(null); // one fixed bay spot
   const [findVal, setFindVal] = useState("");
 
   const lotDirty = useRef(false);
@@ -147,8 +146,8 @@ export default function ShopSheet() {
       if (idx === -1) continue;
       if (exceptId === `${key}:${idx}`) continue; // the slot being edited
       const label = LOT_LABELS[key as LotKey] || key;
-      // Positional lots say exactly which spot ("Bay 3", "Card 5").
-      return key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
+      // Bays are positional, so say exactly which one ("Bay 3").
+      return key === "bay" ? `${label} ${idx + 1}` : label;
     }
     return "";
   }
@@ -169,49 +168,52 @@ export default function ShopSheet() {
     for (const k of Object.keys(next) as LotKey[]) {
       const arr = next[k] || [];
       if (!arr.includes(bus)) continue;
-      next[k] = k === "bay" || k === "cards" ? arr.map((b) => (b === bus ? "" : b)) : arr.filter((b) => b !== bus);
+      next[k] = k === "bay" ? arr.map((b) => (b === bus ? "" : b)) : arr.filter((b) => b !== bus);
     }
     lotsRef.current = next;
     setLots(next);
   }
 
-  // Set one fixed slot (bay/cards) to a bus (or "" to clear it).
-  function setSlot(key: "bay" | "cards", spots: number, i: number, num: string) {
+  // Set one fixed BAY spot to a bus (or "" / "X").
+  function setBaySlot(i: number, num: string) {
     const cur = lotsRef.current;
-    const arr = Array.from({ length: spots }, (_, j) => (cur[key] || [])[j] || "");
+    const arr = Array.from({ length: BAY_SPOTS }, (_, j) => (cur.bay || [])[j] || "");
     arr[i] = num;
-    patchLots({ ...cur, [key]: arr });
+    patchLots({ ...cur, bay: arr });
   }
 
-  // Apron list helpers (same behavior as the other lot lists).
-  const apron = lots.apron || [];
-  const addToApron = (bus: string) => patchLots({ ...lotsRef.current, apron: [...(lotsRef.current.apron || []), bus] });
-  const removeFromApron = (i: number) =>
-    patchLots({ ...lotsRef.current, apron: (lotsRef.current.apron || []).filter((_, j) => j !== i) });
-  function moveInApron(i: number, dir: number) {
-    const arr = [...(lotsRef.current.apron || [])];
+  // List helpers for the free lots here (Apron and Cards — kept blank-free).
+  const listOf = (key: "apron" | "cards") => (lots[key] || []).filter((b) => b);
+  const addToList = (key: "apron" | "cards", bus: string) =>
+    patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []).filter((b) => b), bus] });
+  const removeFromList = (key: "apron" | "cards", i: number) =>
+    patchLots({ ...lotsRef.current, [key]: (lotsRef.current[key] || []).filter((b) => b).filter((_, j) => j !== i) });
+  function moveInList(key: "apron" | "cards", i: number, dir: number) {
+    const arr = (lotsRef.current[key] || []).filter((b) => b);
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
-    patchLots({ ...lotsRef.current, apron: arr });
+    patchLots({ ...lotsRef.current, [key]: arr });
   }
-  function reorderInApron(from: number, to: number) {
-    const arr = [...(lotsRef.current.apron || [])];
+  function reorderInList(key: "apron" | "cards", from: number, to: number) {
+    const arr = (lotsRef.current[key] || []).filter((b) => b);
     if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return;
     const [bus] = arr.splice(from, 1);
     arr.splice(to, 0, bus);
-    patchLots({ ...lotsRef.current, apron: arr });
+    patchLots({ ...lotsRef.current, [key]: arr });
   }
+  const apron = listOf("apron");
+  const cards = listOf("cards");
 
   // The live search: the message is derived, so it stays up (and stays correct
   // as things move) until the box is cleared; the matching slot stays lit.
   const foundBus = findVal.length >= 4 ? findVal : "";
   const foundWhere = foundBus ? locateBus(foundBus, null) : "";
 
-  // One fixed slot button (Bay n / Card n). Green when the bus is flagged
-  // Ready for Service — done in the shop, waiting to go out. "X" = blocked spot.
-  function slotButton(key: "bay" | "cards", spots: number, i: number) {
-    const bus = (lots[key] || [])[i] || "";
+  // One fixed BAY slot button. Green when the bus is flagged Ready for Service
+  // — done in the shop, waiting to go out. "X" = blocked spot.
+  function slotButton(i: number) {
+    const bus = (lots.bay || [])[i] || "";
     const xed = bus === "X";
     const entry = bus && !xed ? flags[bus] : undefined;
     const disp = entry ? flagDisplay(entry) : "";
@@ -219,16 +221,14 @@ export default function ShopSheet() {
     const found = !!foundBus && bus === foundBus;
     return (
       <button
-        key={`${key}-${i}`}
+        key={`bay-${i}`}
         type="button"
         className={`shopslot ${bus && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
           rfs ? "shopslot--rfs" : ""
         } ${found ? "shopslot--found" : ""}`}
-        onClick={() => setEditingSlot({ key, i })}
+        onClick={() => setEditingBay(i)}
       >
-        <span className="shopslot__label">
-          {key === "bay" ? "BAY" : "CARD"} {i + 1}
-        </span>
+        <span className="shopslot__label">BAY {i + 1}</span>
         {xed ? (
           <span className="shopslot__x">X</span>
         ) : bus ? (
@@ -247,7 +247,7 @@ export default function ShopSheet() {
   }
 
   const inShopCount = new Set(
-    [...apron, ...(lots.bay || []), ...(lots.cards || [])].filter((b) => b && b !== "X")
+    [...apron, ...cards, ...(lots.bay || [])].filter((b) => b && b !== "X")
   ).size;
 
   return (
@@ -284,11 +284,11 @@ export default function ShopSheet() {
           className="shopcard shopcard--btn"
           role="button"
           tabIndex={0}
-          onClick={() => setApronOpen(true)}
+          onClick={() => setEditingList("apron")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              setApronOpen(true);
+              setEditingList("apron");
             }
           }}
         >
@@ -311,63 +311,88 @@ export default function ShopSheet() {
         <section className="shopcard">
           <div className="shopcard__head">BAYS</div>
           <div className="shopcard__sub">Tap a bay to set or change its bus — any bay can be empty.</div>
-          <div className="shopslots">
-            {Array.from({ length: BAY_SPOTS }, (_, i) => slotButton("bay", BAY_SPOTS, i))}
-          </div>
+          <div className="shopslots">{Array.from({ length: BAY_SPOTS }, (_, i) => slotButton(i))}</div>
         </section>
 
-        <section className="shopcard shopcard--wide">
+        <section
+          className="shopcard shopcard--btn shopcard--wide"
+          role="button"
+          tabIndex={0}
+          onClick={() => setEditingList("cards")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setEditingList("cards");
+            }
+          }}
+        >
           <div className="shopcard__head">
-            CARDS
+            CARDS <span className="shopcard__count">({cards.length})</span>
+            <span className="backlot__edit"> ✎ edit</span>
             <span className="shopcard__legend">
               <span className="shopcard__legenddot" /> Ready for Service
             </span>
           </div>
           <div className="shopcard__sub">
-            Screen-only — never printed. Also used as overflow parking; flag a finished bus Ready for Service.
+            No fixed spots — screen-only, never printed. Also overflow parking; green = Ready for Service.
           </div>
-          <div className="shopslots">
-            {Array.from({ length: CARD_SPOTS }, (_, i) => slotButton("cards", CARD_SPOTS, i))}
+          <div className="apronchips">
+            {cards.length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
+            {cards.map((bus, i) => {
+              const rfs = !!flags[bus]?.flags?.includes("rfs");
+              return (
+                <span
+                  className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`}
+                  key={`${bus}-${i}`}
+                >
+                  {busLabel(bus)}
+                  <TypeCodes num={bus} />
+                </span>
+              );
+            })}
           </div>
         </section>
       </div>
 
-      {editingSlot && (
+      {editingBay != null && (
         <CellEditor
-          subLabel={`${editingSlot.key === "bay" ? "Bay" : "Card"} ${editingSlot.i + 1}`}
-          value={(lots[editingSlot.key] || [])[editingSlot.i] || ""}
+          subLabel={`Bay ${editingBay + 1}`}
+          value={(lots.bay || [])[editingBay] || ""}
           flags={flags}
-          cellId={`${editingSlot.key}:${editingSlot.i}`}
+          cellId={`bay:${editingBay}`}
           locate={locateBus}
           onRelocate={relocateBus}
           blockable
           onEditFlags={(bus) => {
-            setEditingSlot(null);
+            setEditingBay(null);
             setFlagBus(bus);
           }}
           onSave={(num) => {
-            const spots = editingSlot.key === "bay" ? BAY_SPOTS : CARD_SPOTS;
-            setSlot(editingSlot.key, spots, editingSlot.i, num);
-            setEditingSlot(null);
+            setBaySlot(editingBay, num);
+            setEditingBay(null);
           }}
-          onClose={() => setEditingSlot(null)}
+          onClose={() => setEditingBay(null)}
         />
       )}
 
-      {apronOpen && (
+      {editingList && (
         <LotEditor
-          title="Apron"
-          subtitle="Buses anywhere on the apron — the order shows on the Turnover sheet."
-          list={apron}
+          title={editingList === "apron" ? "Apron" : "Cards"}
+          subtitle={
+            editingList === "apron"
+              ? "Buses anywhere on the apron — the order shows on the Turnover sheet."
+              : "No fixed spots — screen-only, never printed."
+          }
+          list={listOf(editingList)}
           flags={flags}
           locate={locateBus}
           onRelocate={relocateBus}
           onEditFlags={(bus) => setFlagBus(bus)}
-          onAdd={addToApron}
-          onRemove={removeFromApron}
-          onMove={moveInApron}
-          onReorder={reorderInApron}
-          onClose={() => setApronOpen(false)}
+          onAdd={(bus) => addToList(editingList, bus)}
+          onRemove={(i) => removeFromList(editingList, i)}
+          onMove={(i, dir) => moveInList(editingList, i, dir)}
+          onReorder={(from, to) => reorderInList(editingList, from, to)}
+          onClose={() => setEditingList(null)}
         />
       )}
 

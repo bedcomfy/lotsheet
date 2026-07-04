@@ -774,33 +774,29 @@ button {
   background: rgba(0, 0, 0, 0.45);
   z-index: 50;
 }
-/* Mobile = bottom sheet; desktop = centered. */
+/* Menus sit near the TOP on phones — the on-screen keyboard can never cover
+   them (a bottom sheet got blocked whenever the keyboard opened). Desktop
+   centers them. */
 .modal {
   position: fixed;
   z-index: 51;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0 auto;
-  width: 100%;
+  left: 50%;
+  top: 5dvh;
+  transform: translateX(-50%);
+  width: calc(100% - 20px);
   max-width: 460px;
   background: #fff;
   color: var(--ink); /* don't inherit the dark nav's white text */
-  border-radius: 16px 16px 0 0;
-  padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25);
-  max-height: 90dvh; /* scroll within the dialog if it's tall */
+  border-radius: 16px;
+  padding: 16px 18px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  max-height: 88dvh; /* scroll within the dialog if it's tall */
   overflow-y: auto;
 }
 @media (min-width: 540px) {
   .modal {
-    left: 50%;
-    right: auto;
-    bottom: auto;
     top: 50%;
     transform: translate(-50%, -50%);
-    margin: 0;
-    border-radius: 16px;
   }
   .modal--wide {
     max-width: 820px;
@@ -1763,91 +1759,32 @@ button {
   background: #f8fafc;
 }
 
-/* ---------- SHOP strip on the lot sheet (screen-only) ---------- */
-.shopstrip {
-  max-width: 878px; /* sheet max-width + the scroll padding */
-  margin: 0 auto;
-  padding: 0 14px 14px;
+/* ---------- The SHOP menu on the lot sheet (screen-only dialog) ---------- */
+.modal--shop {
+  max-width: 560px;
 }
-.shopstrip__bar {
+.shopmenu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.shopmenu__sec {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 12px;
+}
+.shopmenu__head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
-  border-radius: 12px;
-  padding: 4px 12px 4px 6px;
-}
-.shopstrip__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: none;
-  background: transparent;
+  gap: 8px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: var(--ink);
-  padding: 8px;
-  cursor: pointer;
-  flex: 1;
-  text-align: left;
+  margin-bottom: 9px;
 }
-.shopstrip__count {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.shopstrip__link {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-  text-decoration: none;
-  white-space: nowrap;
-}
-.shopstrip__body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  margin-top: -8px;
-  padding: 14px 12px 12px;
-}
-.shopstrip__sec {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.shopstrip__lbl {
-  min-width: 48px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-}
-.shopstrip__none {
-  font-size: 13px;
-  color: var(--muted);
-}
-.shopstrip__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid #d5d9df;
-  border-radius: 8px;
-  padding: 3px 8px;
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  background: #f8fafc;
-}
-.shopstrip__pos {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--muted);
+/* Ready for Service chip (Cards) */
+.apronchip--rfs {
+  background: #e1f5ee;
+  border-color: #1d9e75;
 }
 
 /* Locked spot indicator (screen only) */

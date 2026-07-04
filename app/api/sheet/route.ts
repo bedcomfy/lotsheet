@@ -40,7 +40,7 @@ export async function PATCH(req: Request) {
       const num = typeof v === "string" ? v : (v as { num?: string })?.num || "";
       if (clear.has(num)) delete next.cells[id];
     }
-    const POSITIONAL = new Set(["bay", "cards"]);
+    const POSITIONAL = new Set(["bay"]); // fixed spots keep their slot, blanked
     for (const [key, arr] of Object.entries(next.lots as Lots)) {
       if (!Array.isArray(arr)) continue;
       (next.lots as Record<string, string[]>)[key] = POSITIONAL.has(key)

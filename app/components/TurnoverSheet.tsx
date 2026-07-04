@@ -234,8 +234,8 @@ export default function TurnoverSheet() {
     for (const k of Object.keys(LOT_LABELS) as LotKey[]) {
       const idx = (lots[k] || []).indexOf(bus);
       if (idx === -1) continue;
-      // Positional lots say exactly which spot ("Bay 3", "Card 5").
-      return k === "bay" || k === "cards" ? `${LOT_LABELS[k]} ${idx + 1}` : LOT_LABELS[k];
+      // Bays are positional, so say exactly which one ("Bay 3").
+      return k === "bay" ? `${LOT_LABELS[k]} ${idx + 1}` : LOT_LABELS[k];
     }
     return "";
   }
@@ -256,7 +256,7 @@ export default function TurnoverSheet() {
       const arr = next[k] || [];
       if (!arr.includes(bus)) continue;
       next[k] =
-        k === "bay" || k === "cards"
+        k === "bay"
           ? arr.map((b) => (b === bus ? "" : b)) // positional: blank the slot
           : arr.filter((b) => b !== bus);
       changed = true;

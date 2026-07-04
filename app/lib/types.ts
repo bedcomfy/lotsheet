@@ -20,8 +20,8 @@ export type LotKey =
   | "bay"
   | "cards";
 
-// Each lot is an ordered list of bus numbers (Bay and Cards use fixed slots,
-// so they may contain "" gaps).
+// Each lot is an ordered list of bus numbers (Bay uses fixed slots, so it may
+// contain "" gaps; Cards is a plain list — no fixed spots).
 export type Lots = { [K in LotKey]?: string[] };
 
 // ---------- The shared Lot Sheet ----------

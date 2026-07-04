@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
   DndContext,
@@ -32,7 +31,7 @@ import {
   DEPARTMENTS,
   flagName,
 } from "../lib/grid";
-import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, ChevronRight, ChevronDown } from "lucide-react";
+import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, Plus } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -46,6 +45,7 @@ import Overlay from "./Overlay";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
+const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
 // Back-of-sheet ordered lists.
 const LOTS: { key: string; title: string }[] = [
@@ -268,18 +268,8 @@ export default function LotSheet() {
   const [selected, setSelected] = useState<string[]>([]); // selected cell ids
   const [missingOpen, setMissingOpen] = useState(false); // "which buses are missing" list
   const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
-  const [shopOpen, setShopOpen] = useState(false); // the screen-only SHOP strip below the sheet
-  useEffect(() => {
-    setShopOpen(localStorage.getItem("pace:lot:shopstrip") === "1");
-  }, []);
-  function toggleShopStrip() {
-    setShopOpen((o) => {
-      try {
-        localStorage.setItem("pace:lot:shopstrip", o ? "0" : "1");
-      } catch {}
-      return !o;
-    });
-  }
+  const [shopOpen, setShopOpen] = useState(false); // the Shop menu (edit Apron/Bays/Cards from here)
+  const [editingBay, setEditingBay] = useState<number | null>(null); // bay slot editor (from the Shop menu)
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -876,30 +866,34 @@ export default function LotSheet() {
       .finally(go);
   }
 
-  // ---- back-of-sheet lot lists ----
+  // ---- shared lot lists (North/East/Fence + Apron/Cards from the Shop menu) ----
+  // Lists are kept blank-free (Bay is the only positional lot and has its own
+  // setter below).
   function lotList(key: string): string[] {
-    return (sheet.lots && sheet.lots[key as LotKey]) || [];
+    return ((sheet.lots && sheet.lots[key as LotKey]) || []).filter((b) => b);
   }
   function addToLot(key: string, bus: string) {
     setSheet((s) => {
       const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      return { ...s, lots: { ...lots, [key]: [...(lots[key as LotKey] || []), bus] } as Lots };
+      const arr = (lots[key as LotKey] || []).filter((b) => b);
+      return { ...s, lots: { ...lots, [key]: [...arr, bus] } as Lots };
     });
   }
   function removeFromLot(key: string, index: number) {
-    const removed = (sheet.lots?.[key as LotKey] || [])[index];
-    if (removed) noteRemoved(removed);
+    const removed = lotList(key)[index];
+    if (removed && removed !== "X") noteRemoved(removed);
     setSheet((s) => {
       const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = (lots[key as LotKey] || []).filter((b) => b);
       // Flags are NEVER auto-cleared when a bus leaves a lot — they persist
       // until a user clears them in the flag menu.
-      return { ...s, lots: { ...lots, [key]: (lots[key as LotKey] || []).filter((_, i) => i !== index) } as Lots };
+      return { ...s, lots: { ...lots, [key]: arr.filter((_, i) => i !== index) } as Lots };
     });
   }
   function moveInLot(key: string, index: number, dir: number) {
     setSheet((s) => {
       const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      const arr = [...(lots[key as LotKey] || [])];
+      const arr = (lots[key as LotKey] || []).filter((b) => b);
       const j = index + dir;
       if (j < 0 || j >= arr.length) return s;
       [arr[index], arr[j]] = [arr[j], arr[index]];
@@ -910,11 +904,20 @@ export default function LotSheet() {
   function reorderInLot(key: string, from: number, to: number) {
     setSheet((s) => {
       const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
-      const arr = [...(lots[key as LotKey] || [])];
+      const arr = (lots[key as LotKey] || []).filter((b) => b);
       if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return s;
       const [bus] = arr.splice(from, 1);
       arr.splice(to, 0, bus);
       return { ...s, lots: { ...lots, [key]: arr } as Lots };
+    });
+  }
+  // Bay is positional: set one of the 10 fixed spots (or "" / "X").
+  function setBaySlot(i: number, num: string) {
+    setSheet((s) => {
+      const lots: Lots = { north: [], east: [], fence: [], ...(s.lots || {}) };
+      const arr = Array.from({ length: BAY_SPOTS }, (_, j) => (lots.bay || [])[j] || "");
+      arr[i] = num;
+      return { ...s, lots: { ...lots, bay: arr } as Lots };
     });
   }
 
@@ -937,9 +940,10 @@ export default function LotSheet() {
       if (!Array.isArray(arr)) continue;
       const idx = arr.indexOf(num);
       if (idx === -1) continue;
+      if (exceptCellId === `${key}:${idx}`) continue; // the slot being edited
       const label = LOT_LOCATION_LABELS[key] || key;
-      // Positional lots say exactly which spot ("Bay 3", "Card 5").
-      return key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
+      // Bays are positional, so say exactly which one ("Bay 3").
+      return key === "bay" ? `${label} ${idx + 1}` : label;
     }
     return "";
   }
@@ -994,7 +998,7 @@ export default function LotSheet() {
         const arr = lots[k];
         if (!Array.isArray(arr) || !arr.includes(num)) continue;
         lots[k] =
-          k === "bay" || k === "cards"
+          k === "bay"
             ? arr.map((b) => (b === num ? "" : b)) // positional: blank the slot
             : arr.filter((b) => b !== num);
       }
@@ -1026,7 +1030,7 @@ export default function LotSheet() {
     const label = LOT_LOCATION_LABELS[key] || key;
     arr.forEach((b, idx) => {
       if (!b || b === "X") return;
-      const loc = key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
+      const loc = key === "bay" ? `${label} ${idx + 1}` : label;
       (busLocations[b] = busLocations[b] || []).push(loc);
     });
   }
@@ -1181,6 +1185,13 @@ export default function LotSheet() {
           title="Select several buses, then send or clear them all at once"
         >
           <ListChecks size={16} /> Select
+        </button>
+        <button
+          className="btn"
+          onClick={() => setShopOpen(true)}
+          title="Everything inside the shop — Apron, Bays, Cards (screen-only, never printed)"
+        >
+          <Wrench size={16} /> Shop
         </button>
         <ToolMenu>
           <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
@@ -1390,51 +1401,6 @@ export default function LotSheet() {
       </DragOverlay>
       </DndContext>
 
-      {/* SHOP at a glance — screen-only (never prints), so the lot sheet can
-          pinpoint every bus without touching the printout. Edit on the Shop page. */}
-      {!printMode && (
-        <div className="shopstrip no-print">
-          <div className="shopstrip__bar">
-            <button className="shopstrip__toggle" onClick={toggleShopStrip} aria-expanded={shopOpen}>
-              {shopOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-              <Wrench size={14} /> SHOP
-              <span className="shopstrip__count">
-                {inShopCount} bus{inShopCount === 1 ? "" : "es"}
-              </span>
-            </button>
-            <Link className="shopstrip__link" href="/shop">
-              Open Shop page →
-            </Link>
-          </div>
-          {shopOpen && (
-            <div className="shopstrip__body">
-              {(
-                [
-                  ["Apron", sheet.lots?.apron || [], false],
-                  ["Bays", sheet.lots?.bay || [], true],
-                  ["Cards", sheet.lots?.cards || [], true],
-                ] as [string, string[], boolean][]
-              ).map(([label, arr, positional]) => (
-                <div className="shopstrip__sec" key={label}>
-                  <span className="shopstrip__lbl">{label}</span>
-                  {arr.filter((b) => b).length === 0 && <span className="shopstrip__none">—</span>}
-                  {arr.map((b, i) => {
-                    if (!b) return null;
-                    const isFound = !!foundBus && b === foundBus;
-                    return (
-                      <span key={`${label}${i}`} className={`shopstrip__chip ${isFound ? "apronchip--found" : ""}`}>
-                        {positional && <span className="shopstrip__pos">{`${label === "Bays" ? "B" : "C"}${i + 1}`}</span>}
-                        {b === "X" ? "✕" : busLabel(b)}
-                      </span>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
       {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
 
@@ -1558,7 +1524,14 @@ export default function LotSheet() {
 
       {editingLot && (
         <LotEditor
-          title={LOTS.find((l) => l.key === editingLot)?.title || ""}
+          title={LOT_LOCATION_LABELS[editingLot] || LOTS.find((l) => l.key === editingLot)?.title || ""}
+          subtitle={
+            editingLot === "apron"
+              ? "Buses anywhere on the apron — the order shows on the Turnover sheet."
+              : editingLot === "cards"
+                ? "No fixed spots — screen-only, never printed."
+                : undefined
+          }
           list={lotList(editingLot)}
           flags={flags}
           locate={locateBus}
@@ -1570,6 +1543,134 @@ export default function LotSheet() {
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
           onReorder={(from, to) => reorderInLot(editingLot, from, to)}
           onClose={() => setEditingLot(null)}
+        />
+      )}
+
+      {/* The SHOP menu — edit Apron / Bays / Cards right from the lot sheet.
+          Screen-only data flows; the printout is never touched. */}
+      {shopOpen && (
+        <Overlay
+          onClose={() => setShopOpen(false)}
+          overlayClassName="modal-backdrop no-print"
+          contentClassName="modal modal--tall modal--shop"
+          label="Shop"
+        >
+          <div className="modal__head">
+            <div>
+              <div className="modal__title">Shop</div>
+              <div className="modal__sub">
+                {inShopCount} bus{inShopCount === 1 ? "" : "es"} inside · shared live with the Shop page
+              </div>
+            </div>
+            <button className="modal__close" onClick={() => setShopOpen(false)} aria-label="Close">
+              ×
+            </button>
+          </div>
+
+          <div className="shopmenu">
+            <div className="shopmenu__sec">
+              <div className="shopmenu__head">
+                Apron <span className="shopcard__count">({lotList("apron").length})</span>
+                <button className="btn btn--mini" onClick={() => setEditingLot("apron")}>
+                  Edit
+                </button>
+              </div>
+              <div className="apronchips">
+                {lotList("apron").length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
+                {lotList("apron").map((b, i) => (
+                  <span key={`a${i}`} className={`apronchip ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}>
+                    {busLabel(b)}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="shopmenu__sec">
+              <div className="shopmenu__head">Bays</div>
+              <div className="shopslots">
+                {Array.from({ length: BAY_SPOTS }, (_, i) => {
+                  const b = (sheet.lots?.bay || [])[i] || "";
+                  const xed = b === "X";
+                  const entry = b && !xed ? flags[b] : undefined;
+                  const disp = entry ? flagDisplay(entry) : "";
+                  const rfs = !!entry?.flags?.includes("rfs");
+                  const isFound = !!foundBus && b === foundBus;
+                  return (
+                    <button
+                      key={`bay${i}`}
+                      type="button"
+                      className={`shopslot ${b && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
+                        rfs ? "shopslot--rfs" : ""
+                      } ${isFound ? "shopslot--found" : ""}`}
+                      onClick={() => setEditingBay(i)}
+                    >
+                      <span className="shopslot__label">BAY {i + 1}</span>
+                      {xed ? (
+                        <span className="shopslot__x">X</span>
+                      ) : b ? (
+                        <>
+                          <span className="shopslot__bus">{busLabel(b)}</span>
+                          {disp && <span className="shopslot__flag">{disp}</span>}
+                        </>
+                      ) : (
+                        <span className="shopslot__empty">
+                          <Plus size={15} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="shopmenu__sec">
+              <div className="shopmenu__head">
+                Cards <span className="shopcard__count">({lotList("cards").length})</span>
+                <button className="btn btn--mini" onClick={() => setEditingLot("cards")}>
+                  Edit
+                </button>
+                <span className="shopcard__legend">
+                  <span className="shopcard__legenddot" /> Ready for Service
+                </span>
+              </div>
+              <div className="apronchips">
+                {lotList("cards").length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
+                {lotList("cards").map((b, i) => {
+                  const rfs = !!flags[b]?.flags?.includes("rfs");
+                  return (
+                    <span
+                      key={`c${i}`}
+                      className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}
+                    >
+                      {busLabel(b)}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* One bay's spot, edited from the Shop menu */}
+      {editingBay != null && (
+        <CellEditor
+          subLabel={`Bay ${editingBay + 1}`}
+          value={(sheet.lots?.bay || [])[editingBay] || ""}
+          flags={flags}
+          cellId={`bay:${editingBay}`}
+          locate={locateBus}
+          onRelocate={relocateBus}
+          blockable
+          onEditFlags={(bus) => {
+            setEditingBay(null);
+            setFlagBus(bus);
+          }}
+          onSave={(num) => {
+            setBaySlot(editingBay, num);
+            setEditingBay(null);
+          }}
+          onClose={() => setEditingBay(null)}
         />
       )}
 
