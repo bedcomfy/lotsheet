@@ -31,8 +31,9 @@ export interface LotSheet {
   date?: string;
   offProperty?: string;
   inShop?: string;
-  cells: Record<string, string>; // grid cell id -> bus number
+  cells: Record<string, string>; // grid cell id -> bus number ("X" = blocked spot)
   lots: Lots;
+  locks?: string[]; // cell ids whose bus survives "Clear Grid"
 }
 
 // ---------- Universal bus flags ----------

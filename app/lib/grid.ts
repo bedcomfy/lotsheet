@@ -266,12 +266,21 @@ export function inspMilesDisplay(entry: FlagEntry | null | undefined): string {
   return `Miles ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 }
 
-// All of a bus's flag labels, ordered most → least severe.
+// All of a bus's flag labels, ordered most → least severe. HOLD carries its
+// reason inline ("HOLD (Cubs Bus)") so every full display shows it.
 export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
   const flags = (entry?.flags || [])
     .slice()
     .sort((a, b) => FLAG_SEVERITY.indexOf(a) - FLAG_SEVERITY.indexOf(b));
-  return flags.map(flagLabel).filter(Boolean);
+  return flags
+    .map((id) => {
+      const label = flagLabel(id);
+      if (!label) return "";
+      const reason = (entry?.holdReason || "").trim();
+      if (id === "hold" && reason) return `${label} (${reason})`;
+      return label;
+    })
+    .filter(Boolean);
 }
 
 // Every flag spelled out in full, plus the custom "Other" note text (not just a

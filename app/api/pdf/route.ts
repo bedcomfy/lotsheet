@@ -15,7 +15,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "18"; // bay flags on turnover 1st half; auto in-shop count; blocked spots
+const PDF_VERSION = "19"; // hold reason in full flag displays; lot locations in the flag summary
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).

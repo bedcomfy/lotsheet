@@ -1763,6 +1763,107 @@ button {
   background: #f8fafc;
 }
 
+/* ---------- SHOP strip on the lot sheet (screen-only) ---------- */
+.shopstrip {
+  max-width: 878px; /* sheet max-width + the scroll padding */
+  margin: 0 auto;
+  padding: 0 14px 14px;
+}
+.shopstrip__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 4px 12px 4px 6px;
+}
+.shopstrip__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  padding: 8px;
+  cursor: pointer;
+  flex: 1;
+  text-align: left;
+}
+.shopstrip__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.shopstrip__link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.shopstrip__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  margin-top: -8px;
+  padding: 14px 12px 12px;
+}
+.shopstrip__sec {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.shopstrip__lbl {
+  min-width: 48px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.shopstrip__none {
+  font-size: 13px;
+  color: var(--muted);
+}
+.shopstrip__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d5d9df;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: #f8fafc;
+}
+.shopstrip__pos {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* Locked spot indicator (screen only) */
+.cell__lockicon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: #6b7280;
+  line-height: 0;
+}
+
+/* The editors' action rows can hold several buttons now */
+.modal__actions {
+  flex-wrap: wrap;
+}
+
 /* ---------- Multi-select ---------- */
 .cell--selected {
   box-shadow: inset 0 0 0 2px var(--accent);

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
-import { Flag, Ban } from "lucide-react";
+import { Flag, Ban, Lock, Unlock } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -20,11 +20,13 @@ interface CellEditorProps {
   sendTargets?: { key: string; label: string }[]; // lots this bus can be sent to
   onSendToLot?: (bus: string, lotKey: string) => void;
   blockable?: boolean; // allow marking the spot unusable (an "X", like ROW 10's)
+  locked?: boolean; // this spot's bus survives "Clear Grid"
+  onToggleLock?: () => void;
   onSave: (v: string) => void;
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, blockable, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, blockable, locked, onToggleLock, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -168,6 +170,15 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
               title={value === "X" ? "Reopen this spot" : "Mark this spot unusable (prints an X, like ROW 10's)"}
             >
               <Ban size={15} /> {value === "X" ? "Unblock" : "Block"}
+            </button>
+          )}
+          {onToggleLock && value && value !== "X" && num === value && (
+            <button
+              className="btn"
+              onClick={onToggleLock}
+              title={locked ? "Unlock — Clear Grid will remove it again" : "Keep this bus in place through Clear Grid"}
+            >
+              {locked ? <Unlock size={15} /> : <Lock size={15} />} {locked ? "Unlock" : "Lock"}
             </button>
           )}
           {onEditFlags && num.length >= 4 && (

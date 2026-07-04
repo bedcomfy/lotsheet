@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
   DndContext,
@@ -31,7 +32,7 @@ import {
   DEPARTMENTS,
   flagName,
 } from "../lib/grid";
-import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X } from "lucide-react";
+import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, ChevronRight, ChevronDown } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import CellEditor from "./CellEditor";
@@ -83,6 +84,7 @@ function emptySheet(): LotSheetData {
     inShop: "",
     cells: {}, // id -> bus number string
     lots: { north: [], east: [], fence: [] }, // back-of-sheet ordered lists
+    locks: [], // cell ids whose bus survives "Clear Grid"
   };
 }
 
@@ -106,10 +108,11 @@ interface GridCellProps {
   entry: FlagEntry | null;
   selected?: boolean;
   foundBus?: string; // the searched bus — steady highlight while it matches
+  locked?: boolean; // survives "Clear Grid"
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function GridCell({ id, slotLabel, num, entry, selected, foundBus, onOpen }: GridCellProps) {
+function GridCell({ id, slotLabel, num, entry, selected, foundBus, locked, onOpen }: GridCellProps) {
   const { label: busLabel } = useBusMaster();
   const blocked = slotLabel === "X"; // the form's own X (ROW 10) — not editable
   const xed = num === "X"; // user-blocked spot — tap to unblock via the editor
@@ -142,6 +145,11 @@ function GridCell({ id, slotLabel, num, entry, selected, foundBus, onOpen }: Gri
       onClick={() => onOpen(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
     >
       {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
+      {locked && num && !xed && (
+        <span className="cell__lockicon no-print" title="Locked — survives Clear Grid">
+          <Lock size={9} />
+        </span>
+      )}
       {xed ? (
         <span className="cell__x">X</span>
       ) : (
@@ -167,10 +175,11 @@ interface FrontCellProps {
   entry: FlagEntry | null;
   selected?: boolean;
   foundBus?: string;
+  locked?: boolean;
   onOpen: (id: string, subLabel: string) => void;
 }
 
-function FrontCell({ c, num, entry, selected, foundBus, onOpen }: FrontCellProps) {
+function FrontCell({ c, num, entry, selected, foundBus, locked, onOpen }: FrontCellProps) {
   const { label: busLabel } = useBusMaster();
   const id = frontCellId(c);
   const xed = num === "X";
@@ -195,6 +204,11 @@ function FrontCell({ c, num, entry, selected, foundBus, onOpen }: FrontCellProps
       } ${drop.isOver ? "cell--dropover" : ""} ${selected ? "cell--selected" : ""} ${found ? "cell--found" : ""}`}
       onClick={() => onOpen(id, `ROW ${c + 1} — front bus`)}
     >
+      {locked && num && !xed && (
+        <span className="cell__lockicon no-print" title="Locked — survives Clear Grid">
+          <Lock size={9} />
+        </span>
+      )}
       {xed ? (
         <span className="cell__x">X</span>
       ) : (
@@ -254,6 +268,18 @@ export default function LotSheet() {
   const [selected, setSelected] = useState<string[]>([]); // selected cell ids
   const [missingOpen, setMissingOpen] = useState(false); // "which buses are missing" list
   const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
+  const [shopOpen, setShopOpen] = useState(false); // the screen-only SHOP strip below the sheet
+  useEffect(() => {
+    setShopOpen(localStorage.getItem("pace:lot:shopstrip") === "1");
+  }, []);
+  function toggleShopStrip() {
+    setShopOpen((o) => {
+      try {
+        localStorage.setItem("pace:lot:shopstrip", o ? "0" : "1");
+      } catch {}
+      return !o;
+    });
+  }
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -427,12 +453,23 @@ export default function LotSheet() {
 
   function saveNum(id: string, num: string) {
     const prev = getNum(id);
-    if (prev && prev !== num) noteRemoved(prev);
+    if (prev && prev !== "X" && prev !== num) noteRemoved(prev);
     setSheet((s) => {
       const cells = { ...s.cells };
       if (num) cells[id] = num;
       else delete cells[id];
-      return { ...s, cells };
+      // Clearing a spot lifts its lock (an empty spot has nothing to protect).
+      const locks = num ? s.locks : (s.locks || []).filter((x) => x !== id);
+      return { ...s, cells, locks };
+    });
+  }
+
+  // ---- locked spots (survive "Clear Grid") ----
+  const isLocked = (id: string) => (sheet.locks || []).includes(id);
+  function toggleLock(id: string) {
+    setSheet((s) => {
+      const cur = s.locks || [];
+      return { ...s, locks: cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id] };
     });
   }
 
@@ -496,7 +533,18 @@ export default function LotSheet() {
     }
     await archiveSheet(sheet);
     offerUndo("Grid cleared");
-    setSheet((s) => ({ ...emptySheet(), lots: s.lots }));
+    // Locked buses stay put through the clear (and blocked X spots stay blocked).
+    setSheet((s) => {
+      const kept: Record<string, string> = {};
+      for (const id of s.locks || []) {
+        const n = cellToNum(s.cells[id]);
+        if (n) kept[id] = n;
+      }
+      for (const [id, v] of Object.entries(s.cells || {})) {
+        if (cellToNum(v) === "X") kept[id] = "X";
+      }
+      return { ...emptySheet(), lots: s.lots, locks: s.locks || [], cells: kept };
+    });
   }
 
   // Clears just the back-of-sheet lots (North / East / Fence).
@@ -534,10 +582,10 @@ export default function LotSheet() {
   function openCell(id: string, subLabel: string) {
     // A drag fires a click on the source cell when it ends — don't open the editor for it.
     if (Date.now() < suppressClickUntil.current) return;
-    // Select mode: taps toggle the bus in/out of the selection instead.
+    // Select mode: taps toggle the spot in/out of the selection instead.
+    // Buses, empty spots, and blocked spots are all selectable — the bar's
+    // actions each apply to the spots they make sense for.
     if (selectMode) {
-      const n = getNum(id);
-      if (!n || n === "X") return; // only buses can be selected (not blocked spots)
       setSelected((sel) => (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]));
       return;
     }
@@ -584,6 +632,44 @@ export default function LotSheet() {
     });
     exitSelectMode();
   }
+  // Block empty spots / reopen blocked ones — for everything selected at once.
+  function bulkBlockToggle() {
+    const empties = selected.filter((id) => !getNum(id));
+    const xs = selected.filter((id) => getNum(id) === "X");
+    if (!empties.length && !xs.length) return;
+    offerUndo("Blocked spots updated");
+    setSheet((s) => {
+      const cells = { ...s.cells };
+      for (const id of empties) cells[id] = "X";
+      for (const id of xs) delete cells[id];
+      return { ...s, cells };
+    });
+    exitSelectMode();
+  }
+  // Lock (or unlock) every selected bus in place — locked buses survive Clear Grid.
+  function bulkLockToggle() {
+    const ids = selected.filter((id) => {
+      const n = getNum(id);
+      return n && n !== "X";
+    });
+    if (!ids.length) return;
+    const allLocked = ids.every((id) => isLocked(id));
+    offerUndo(
+      allLocked
+        ? `Unlocked ${ids.length} bus${ids.length === 1 ? "" : "es"}`
+        : `Locked ${ids.length} bus${ids.length === 1 ? "" : "es"} in place`
+    );
+    setSheet((s) => {
+      const cur = new Set(s.locks || []);
+      for (const id of ids) {
+        if (allLocked) cur.delete(id);
+        else cur.add(id);
+      }
+      return { ...s, locks: Array.from(cur) };
+    });
+    exitSelectMode();
+  }
+
   // Save a bus's flag entry (server + local state), same as the flag editor does.
   function postFlagEntry(bus: string, entry: FlagEntry) {
     fetch("/api/flags", {
@@ -933,6 +1019,17 @@ export default function LotSheet() {
     const loc = cellLocationLabel(id);
     if (loc) (busLocations[n] = busLocations[n] || []).push(loc);
   }
+  // Lots too (Apron, Bay 3, Cards 5, North Lot, …) so the flag summary can say
+  // where EVERY flagged bus sits, not just the ones on the grid.
+  for (const [key, arr] of Object.entries(sheet.lots || {})) {
+    if (!Array.isArray(arr)) continue;
+    const label = LOT_LOCATION_LABELS[key] || key;
+    arr.forEach((b, idx) => {
+      if (!b || b === "X") return;
+      const loc = key === "bay" || key === "cards" ? `${label} ${idx + 1}` : label;
+      (busLocations[b] = busLocations[b] || []).push(loc);
+    });
+  }
 
   // "# OF VEHICLES OFF PROPERTY" is auto-counted from the OFF PROPERTY flag.
   const offPropertyCount = Object.values(flags).filter((e) =>
@@ -1181,6 +1278,7 @@ export default function LotSheet() {
                   {...cellProps(frontCellId(c))}
                   selected={selected.includes(frontCellId(c))}
                   foundBus={foundBus}
+                  locked={isLocked(frontCellId(c))}
                   onOpen={openCell}
                 />
               );
@@ -1200,7 +1298,7 @@ export default function LotSheet() {
                 if (c === COLUMN_COUNT - 1) {
                   const id = row11CellId(b);
                   return (
-                    <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} onOpen={openCell} />
+                    <GridCell key={`b${b}c${c}`} id={id} slotLabel={null} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} locked={isLocked(id)} onOpen={openCell} />
                   );
                 }
                 if (slot === "X") {
@@ -1208,7 +1306,7 @@ export default function LotSheet() {
                 }
                 const id = numberedCellId(slot as number);
                 return (
-                  <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} onOpen={openCell} />
+                  <GridCell key={`b${b}c${c}`} id={id} slotLabel={slot} {...cellProps(id)} selected={selected.includes(id)} foundBus={foundBus} locked={isLocked(id)} onOpen={openCell} />
                 );
               })
             )}
@@ -1292,6 +1390,51 @@ export default function LotSheet() {
       </DragOverlay>
       </DndContext>
 
+      {/* SHOP at a glance — screen-only (never prints), so the lot sheet can
+          pinpoint every bus without touching the printout. Edit on the Shop page. */}
+      {!printMode && (
+        <div className="shopstrip no-print">
+          <div className="shopstrip__bar">
+            <button className="shopstrip__toggle" onClick={toggleShopStrip} aria-expanded={shopOpen}>
+              {shopOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+              <Wrench size={14} /> SHOP
+              <span className="shopstrip__count">
+                {inShopCount} bus{inShopCount === 1 ? "" : "es"}
+              </span>
+            </button>
+            <Link className="shopstrip__link" href="/shop">
+              Open Shop page →
+            </Link>
+          </div>
+          {shopOpen && (
+            <div className="shopstrip__body">
+              {(
+                [
+                  ["Apron", sheet.lots?.apron || [], false],
+                  ["Bays", sheet.lots?.bay || [], true],
+                  ["Cards", sheet.lots?.cards || [], true],
+                ] as [string, string[], boolean][]
+              ).map(([label, arr, positional]) => (
+                <div className="shopstrip__sec" key={label}>
+                  <span className="shopstrip__lbl">{label}</span>
+                  {arr.filter((b) => b).length === 0 && <span className="shopstrip__none">—</span>}
+                  {arr.map((b, i) => {
+                    if (!b) return null;
+                    const isFound = !!foundBus && b === foundBus;
+                    return (
+                      <span key={`${label}${i}`} className={`shopstrip__chip ${isFound ? "apronchip--found" : ""}`}>
+                        {positional && <span className="shopstrip__pos">{`${label === "Bays" ? "B" : "C"}${i + 1}`}</span>}
+                        {b === "X" ? "✕" : busLabel(b)}
+                      </span>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
       {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
 
@@ -1304,6 +1447,8 @@ export default function LotSheet() {
           locate={locateBus}
           onRelocate={relocateBus}
           blockable
+          locked={isLocked(editing.id)}
+          onToggleLock={() => toggleLock(editing.id)}
           sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
           onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
           onEditFlags={(bus) => {
@@ -1442,7 +1587,7 @@ export default function LotSheet() {
       {selectMode && (
         <div className="selectbar no-print">
           <span className="selectbar__count">
-            {selected.length ? `${selected.length} selected` : "Tap buses to select"}
+            {selected.length ? `${selected.length} selected` : "Tap spots to select"}
           </span>
           {LOTS.map((l) => (
             <button
@@ -1459,6 +1604,22 @@ export default function LotSheet() {
           </button>
           <button className="btn btn--mini" disabled={!selected.length} onClick={() => setFlagPick("remove")}>
             <FlagOff size={14} /> Remove flag
+          </button>
+          <button
+            className="btn btn--mini"
+            disabled={!selected.length}
+            onClick={bulkLockToggle}
+            title="Locked buses stay put when the grid is cleared"
+          >
+            <Lock size={14} /> Lock
+          </button>
+          <button
+            className="btn btn--mini"
+            disabled={!selected.length}
+            onClick={bulkBlockToggle}
+            title="Block selected empty spots with an X (reopens selected X spots)"
+          >
+            <Ban size={14} /> Block
           </button>
           <button className="btn btn--mini btn--ghost" disabled={!selected.length} onClick={bulkClearCells}>
             Clear
