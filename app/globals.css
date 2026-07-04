@@ -1709,9 +1709,11 @@ button {
 }
 .shopslot__flag {
   font-size: 10px;
-  line-height: 1.15;
+  line-height: 1.2;
   color: #b91c1c;
   text-align: center;
+  white-space: normal; /* the full flags + note wrap inside the slot */
+  overflow-wrap: anywhere;
 }
 .shopslot__empty {
   display: inline-flex;
@@ -1749,14 +1751,26 @@ button {
 .apronchip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap; /* the flags line wraps underneath the number */
+  gap: 3px 6px;
+  max-width: 100%;
   border: 1px solid #d5d9df;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 6px 12px;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   background: #f8fafc;
+}
+/* The bus's FULL flags (hold reason, inspection option, whole note) — the most
+   important info for a shop bus. */
+.apronchip__flags {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #b91c1c;
+  white-space: normal;
 }
 
 /* ---------- The SHOP menu on the lot sheet (screen-only dialog) ---------- */

@@ -1577,11 +1577,15 @@ export default function LotSheet() {
               </div>
               <div className="apronchips">
                 {lotList("apron").length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
-                {lotList("apron").map((b, i) => (
-                  <span key={`a${i}`} className={`apronchip ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}>
-                    {busLabel(b)}
-                  </span>
-                ))}
+                {lotList("apron").map((b, i) => {
+                  const f = flagsFullDisplay(flagFor(b));
+                  return (
+                    <span key={`a${i}`} className={`apronchip ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}>
+                      {busLabel(b)}
+                      {f && <span className="apronchip__flags">{f}</span>}
+                    </span>
+                  );
+                })}
               </div>
             </div>
 
@@ -1592,7 +1596,9 @@ export default function LotSheet() {
                   const b = (sheet.lots?.bay || [])[i] || "";
                   const xed = b === "X";
                   const entry = b && !xed ? flags[b] : undefined;
-                  const disp = entry ? flagDisplay(entry) : "";
+                  // Full flags (hold reason, inspection option, the whole note)
+                  // — the most important info for a shop bus.
+                  const disp = entry ? flagsFullDisplay(entry) : "";
                   const rfs = !!entry?.flags?.includes("rfs");
                   const isFound = !!foundBus && b === foundBus;
                   return (
@@ -1637,12 +1643,14 @@ export default function LotSheet() {
                 {lotList("cards").length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
                 {lotList("cards").map((b, i) => {
                   const rfs = !!flags[b]?.flags?.includes("rfs");
+                  const f = flagsFullDisplay(flagFor(b));
                   return (
                     <span
                       key={`c${i}`}
                       className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}
                     >
                       {busLabel(b)}
+                      {f && <span className="apronchip__flags">{f}</span>}
                     </span>
                   );
                 })}

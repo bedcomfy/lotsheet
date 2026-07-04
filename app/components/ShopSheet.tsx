@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Search, Plus, X } from "lucide-react";
-import { cellLocationLabel, flagDisplay, flagsFullDisplay } from "../lib/grid";
+import { cellLocationLabel, flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
@@ -216,7 +216,9 @@ export default function ShopSheet() {
     const bus = (lots.bay || [])[i] || "";
     const xed = bus === "X";
     const entry = bus && !xed ? flags[bus] : undefined;
-    const disp = entry ? flagDisplay(entry) : "";
+    // Full flags (hold reason, inspection option, the whole note) — they're the
+    // most important info for a shop bus.
+    const disp = entry ? flagsFullDisplay(entry) : "";
     const rfs = !!entry?.flags?.includes("rfs");
     const found = !!foundBus && bus === foundBus;
     return (
@@ -299,12 +301,16 @@ export default function ShopSheet() {
           <div className="shopcard__sub">Buses anywhere on the apron — tap to add or manage.</div>
           <div className="apronchips">
             {apron.length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
-            {apron.map((bus, i) => (
-              <span className={`apronchip ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`} key={`${bus}-${i}`}>
-                {busLabel(bus)}
-                <TypeCodes num={bus} />
-              </span>
-            ))}
+            {apron.map((bus, i) => {
+              const f = flagsFullDisplay(flags[bus]);
+              return (
+                <span className={`apronchip ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`} key={`${bus}-${i}`}>
+                  {busLabel(bus)}
+                  <TypeCodes num={bus} />
+                  {f && <span className="apronchip__flags">{f}</span>}
+                </span>
+              );
+            })}
           </div>
         </section>
 
@@ -340,6 +346,7 @@ export default function ShopSheet() {
             {cards.length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
             {cards.map((bus, i) => {
               const rfs = !!flags[bus]?.flags?.includes("rfs");
+              const f = flagsFullDisplay(flags[bus]);
               return (
                 <span
                   className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`}
@@ -347,6 +354,7 @@ export default function ShopSheet() {
                 >
                   {busLabel(bus)}
                   <TypeCodes num={bus} />
+                  {f && <span className="apronchip__flags">{f}</span>}
                 </span>
               );
             })}
