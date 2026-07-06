@@ -1033,6 +1033,21 @@ button {
     max-width: 820px;
   }
 }
+/* Inputs never inherit the dark surface's text color — keep every field inside
+   a menu light (the paper sheets aren't affected; their inputs live in .sheet,
+   not in these overlays). */
+.modal input,
+.modal textarea,
+.manager__inner input,
+.manager__inner textarea {
+  color: var(--text);
+}
+.modal input::placeholder,
+.modal textarea::placeholder,
+.manager__inner input::placeholder,
+.manager__inner textarea::placeholder {
+  color: var(--text-dim);
+}
 .modal__head {
   display: flex;
   align-items: flex-start;
@@ -1553,6 +1568,10 @@ button {
   text-align: center;
   letter-spacing: 0.04em;
   background: transparent;
+  color: var(--text);
+}
+.rf__input::placeholder {
+  color: var(--text-dim);
 }
 .rf__input:focus {
   outline: none;
