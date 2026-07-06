@@ -1212,7 +1212,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--edge);
 }
 .manager__title {
@@ -1640,6 +1640,9 @@ button {
   border-radius: 10px;
   padding: 4px 8px;
   min-height: 52px;
+  /* Fill the box so it's one uniform color (the input inside shares it, no
+     lighter rectangle). */
+  background: var(--surface-2);
   /* Let the 1fr grid columns shrink so 4-wide (Berto 3·4·5·6) fits the screen
      instead of overflowing. */
   min-width: 0;
@@ -1669,6 +1672,7 @@ button {
 }
 .rf__box--empty {
   border: none;
+  background: transparent;
 }
 .rf__label {
   font-size: 12px;
@@ -1895,7 +1899,7 @@ button {
 
 /* ---------- Edit Flags as a menu (was a full page) ---------- */
 .modal--flags {
-  max-width: 640px;
+  max-width: 480px;
   padding-left: 0;
   padding-right: 0;
   display: flex;
@@ -1903,6 +1907,15 @@ button {
 }
 .modal--flags .manager__inner {
   max-width: none;
+}
+/* Editing a single bus: size to content instead of stretching to full height
+   (the modal itself scrolls if a bus has a lot of flags). */
+.manager__inner--fit {
+  flex: none;
+}
+.manager__inner--fit .manager__list {
+  flex: none;
+  overflow: visible;
 }
 
 /* iOS Safari auto-zooms the page when focusing an input smaller than 16px —

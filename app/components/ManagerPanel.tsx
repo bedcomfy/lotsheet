@@ -456,7 +456,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
       contentClassName="modal modal--tall modal--flags"
       label="Edit flags"
     >
-      <div className="manager__inner">
+      <div className={`manager__inner${tab === "bus" && openBus ? " manager__inner--fit" : ""}`}>
         <div className="manager__bar">
           {tab === "bus" && openBus ? (
             <>
@@ -477,14 +477,18 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           </button>
         </div>
 
-        <div className="tabs">
-          <button className={`tab ${tab === "bus" ? "tab--on" : ""}`} onClick={() => setTab("bus")}>
-            By bus
-          </button>
-          <button className={`tab ${tab === "flag" ? "tab--on" : ""}`} onClick={() => setTab("flag")}>
-            By flag
-          </button>
-        </div>
+        {/* The By bus / By flag tabs are only useful when browsing — hide them
+            while editing a single bus so that view stays compact. */}
+        {!(tab === "bus" && openBus) && (
+          <div className="tabs">
+            <button className={`tab ${tab === "bus" ? "tab--on" : ""}`} onClick={() => setTab("bus")}>
+              By bus
+            </button>
+            <button className={`tab ${tab === "flag" ? "tab--on" : ""}`} onClick={() => setTab("flag")}>
+              By flag
+            </button>
+          </div>
+        )}
 
         {tab === "bus" &&
           (openBus ? (
