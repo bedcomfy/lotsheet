@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import {
   DEPARTMENTS,
   flagName,
+  flagLabel,
   RETORQUE_TIRES,
   retorqueTiresDisplay,
   HOLD_REASONS,
   inspMilesDisplay,
   INSPECTION_OPTIONS,
   entryHasContent,
+  searchFlags,
+  COMMON_FLAGS,
 } from "../lib/grid";
-import { X } from "lucide-react";
+import { X, Plus, Check, ChevronLeft, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
@@ -23,17 +26,13 @@ const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
 // Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
 const NOTE_FLAG = "__note";
 const REQUIRE_DETAIL = new Set(["retorque", NOTE_FLAG]); // can't add without picking a detail (hold's reason is optional)
-// A shared flag's "home" department (the first one it's listed in) — used so the
-// By bus view shows each flag once even when it's in two departments.
-const PRIMARY_DEPT: Record<string, string> = {};
-DEPARTMENTS.forEach((d) => d.flags.forEach((f) => (f in PRIMARY_DEPT ? null : (PRIMARY_DEPT[f] = d.id))));
 
 // Short text summary of a bus's flags for the list rows.
 function entrySummary(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
   const parts = (entry.flags || []).map((id) => {
     if (id === "retorque") return `Retorque (${retorqueTiresDisplay(entry.retorqueTires)})`;
-    if (id === "hold") return `Hold (${entry.holdReason})`;
+    if (id === "hold") return `Hold${(entry.holdReason || "").trim() ? ` (${entry.holdReason})` : ""}`;
     if (id === "inspection") {
       const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
       return o ? `Inspection (${o})` : "Inspection";
@@ -46,44 +45,7 @@ function entrySummary(entry: FlagEntry | null | undefined): string {
   return parts.join(", ");
 }
 
-// ---- detail pickers ----
-function MilesInput({ value, onSave }: { value: number | string | null; onSave: (v: number | null) => void }) {
-  const has = value !== null && value !== undefined && value !== "";
-  const [sign, setSign] = useState(has && Number(value) < 0 ? -1 : 1);
-  const [mag, setMag] = useState(has ? String(Math.abs(Number(value))) : "");
-  function commit(ns: number, nm: string) {
-    const m = String(nm).replace(/\D/g, "");
-    onSave(m === "" ? null : ns * parseInt(m, 10));
-  }
-  return (
-    <div className="detailbox">
-      <span className="detailbox__label">Miles</span>
-      <button
-        type="button"
-        className="btn btn--mini"
-        onClick={() => {
-          const ns = sign === 1 ? -1 : 1;
-          setSign(ns);
-          commit(ns, mag);
-        }}
-        aria-label="Toggle miles to-go or overdue"
-      >
-        {sign < 0 ? "−" : "+"}
-      </button>
-      <input
-        className="detailbox__num"
-        inputMode="numeric"
-        placeholder="0"
-        value={mag}
-        onChange={(e) => setMag(e.target.value.replace(/\D/g, ""))}
-        onBlur={() => commit(sign, mag)}
-        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-      />
-      <span className="detailbox__hint">{sign < 0 ? "overdue" : "to go"}</span>
-    </div>
-  );
-}
-
+// ---- detail pickers (shown inline under an active detail flag) ----
 function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: string) => void }) {
   const [v, setV] = useState(value || "");
   return (
@@ -187,7 +149,7 @@ function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; on
 function InspOptionPicker({ option, onChange }: { option: string | undefined; onChange: (o: string) => void }) {
   return (
     <div className="detailbox detailbox--col">
-      <div className="detailbox__label">Inspection (optional)</div>
+      <div className="detailbox__label">Inspection type (optional)</div>
       <div className="reasonpick">
         {INSPECTION_OPTIONS.map((o) => (
           <button
@@ -204,42 +166,49 @@ function InspOptionPicker({ option, onChange }: { option: string | undefined; on
   );
 }
 
-// ---- the grouped editor for one bus ----
-function BusFlagEditor({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagEntry) => void }) {
-  // openDept: detail-flag id -> the department its picker opens under (present =
-  // picker shown). A pre-existing on-flag falls back to its primary department.
-  const [openDept, setOpenDept] = useState<Record<string, string>>({});
+// ---- the search-first editor for ONE bus ----
+// Current flags sit at the top as removable pills; a search box finds any of the
+// (many) flags; the handful used daily are one-tap chips when the search is
+// empty. Detail flags (hold / inspection / retorque) reveal their picker inline.
+function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagEntry) => void }) {
+  const [query, setQuery] = useState("");
+  // Detail flags whose picker is open but not yet satisfied — really only
+  // retorque, which isn't "on" until a tire is picked.
+  const [openDetails, setOpenDetails] = useState<Set<string>>(new Set());
+  const [noteOpen, setNoteOpen] = useState(false);
+
   const isActive = (id: string) =>
     id === "retorque" ? (entry.retorqueTires || []).length > 0 : entry.flags.includes(id);
-  const pickerShown = (id: string) => isActive(id) || id in openDept;
-  const pickerDept = (id: string) => openDept[id] || PRIMARY_DEPT[id];
-  const setOpen = (id: string, dept: string) => setOpenDept((m) => ({ ...m, [id]: dept }));
-  const close = (id: string, _dept?: string) =>
-    setOpenDept((m) => {
-      const n = { ...m };
-      delete n[id];
+  const detailShown = (id: string) => isActive(id) || openDetails.has(id);
+  const openDetail = (id: string) => setOpenDetails((s) => new Set(s).add(id));
+  const closeDetail = (id: string) =>
+    setOpenDetails((s) => {
+      const n = new Set(s);
+      n.delete(id);
       return n;
     });
 
-  function toggle(id: string, dept: string) {
+  // Add a flag (or, if it's already on, just make sure its picker is showing).
+  function add(id: string) {
     if (id === "retorque") {
-      if (isActive("retorque")) {
-        onChange({ ...entry, flags: entry.flags.filter((f) => f !== "retorque"), retorqueTires: [] });
-        close("retorque");
-      } else if ("retorque" in openDept) {
-        close("retorque"); // opened but no tire picked yet — just close it
-      } else {
-        setOpen("retorque", dept); // the flag is added once a tire is picked
-      }
+      if (!isActive("retorque")) openDetail("retorque"); // flag lands once a tire is picked
       return;
     }
-    const on = entry.flags.includes(id);
-    const flags = on ? entry.flags.filter((f) => f !== id) : [...entry.flags, id];
-    const patch: FlagEntry = { ...entry, flags };
-    if (id === "inspection" && on) patch.inspOption = "";
-    if (id === "hold" && on) patch.holdReason = "";
+    if (!entry.flags.includes(id)) onChange({ ...entry, flags: [...entry.flags, id] });
+    if (DETAIL_FLAGS.has(id)) openDetail(id);
+  }
+  function remove(id: string) {
+    const patch: FlagEntry = { ...entry, flags: entry.flags.filter((f) => f !== id) };
+    if (id === "inspection") patch.inspOption = "";
+    if (id === "hold") patch.holdReason = "";
+    if (id === "retorque") patch.retorqueTires = [];
     onChange(patch);
-    if (DETAIL_FLAGS.has(id)) (on ? close : setOpen)(id, dept);
+    closeDetail(id);
+  }
+  // Search results / chips toggle: on -> off, off -> on.
+  function toggle(id: string) {
+    if (isActive(id) || (id !== "retorque" && entry.flags.includes(id))) remove(id);
+    else add(id);
   }
   function setTires(tires: string[]) {
     const flags = tires.length
@@ -248,61 +217,115 @@ function BusFlagEditor({ entry, onChange }: { entry: FlagEntry; onChange: (e: Fl
         : [...entry.flags, "retorque"]
       : entry.flags.filter((f) => f !== "retorque");
     onChange({ ...entry, flags, retorqueTires: tires });
-    if (!tires.length) close("retorque");
-  }
-  function setReason(reason: string) {
-    onChange({ ...entry, holdReason: reason });
   }
 
-  function chipLabel(id: string) {
-    if (id === "retorque" && isActive("retorque")) return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
-    if (id === "hold" && isActive("hold") && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
-    if (id === "inspection" && isActive("inspection")) {
+  function pillLabel(id: string) {
+    if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
+    if (id === "hold" && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
+    if (id === "inspection") {
       const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
       return o ? `Inspection · ${o}` : "Inspection";
     }
     return flagName(id);
   }
 
+  // Active flags as pills, most-severe first (severity == FLAGS order here).
+  const active = entry.flags.slice().sort((a, b) => flagLabel(a).localeCompare(flagLabel(b)));
+  const results = searchFlags(query);
+  const common = COMMON_FLAGS.filter((id) => !entry.flags.includes(id) && !isActive(id));
+  const hasNote = !!(entry.note || "").trim();
+
   return (
-    <div className="busedit">
-      {DEPARTMENTS.map((dept) => {
-        return (
-          <div className="busedit__dept" key={dept.id}>
-            <div className={`busedit__depthead busedit__depthead--${dept.id}`}>
-              <span className="busedit__dot" />
-              {dept.label}
-            </div>
-            <div className="busedit__chips">
-              {dept.flags.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={`deptchip ${isActive(id) || id in openDept ? `deptchip--on--${dept.id}` : ""}`}
-                  onClick={() => toggle(id, dept.id)}
-                >
-                  {isActive(id) ? "✓ " : ""}
-                  {chipLabel(id)}
+    <div className="flagpick">
+      {active.length > 0 && (
+        <div className="flagpick__active">
+          {active.map((id) => (
+            <span className="fpill" key={id}>
+              {pillLabel(id)}
+              <button className="fpill__x" onClick={() => remove(id)} aria-label={`Remove ${flagName(id)}`}>
+                <X size={14} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Inline detail pickers for whichever detail flags are active/opening. */}
+      {["hold", "inspection", "retorque"]
+        .filter((id) => detailShown(id))
+        .map((id) => (
+          <div className="flagpick__detail" key={`${id}-detail`}>
+            {id === "retorque" && <TirePicker tires={entry.retorqueTires || []} onChange={setTires} />}
+            {id === "hold" && (
+              <HoldReasonPicker reason={entry.holdReason || ""} onChange={(r) => onChange({ ...entry, holdReason: r })} />
+            )}
+            {id === "inspection" && (
+              <InspOptionPicker option={entry.inspOption || ""} onChange={(o) => onChange({ ...entry, inspOption: o })} />
+            )}
+          </div>
+        ))}
+
+      <div className="flagpick__searchwrap">
+        <Search size={17} className="flagpick__searchic" />
+        <input
+          className="flagpick__search"
+          placeholder="Search or type a flag…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {!!query && (
+          <button className="flagpick__searchx" onClick={() => setQuery("")} aria-label="Clear search">
+            <X size={15} />
+          </button>
+        )}
+      </div>
+
+      {query ? (
+        <div className="flagpick__results">
+          {results.length === 0 && <div className="flagpick__none">No flags match “{query}”.</div>}
+          {results.map((f) => {
+            const on = isActive(f.id) || entry.flags.includes(f.id);
+            return (
+              <button
+                key={f.id}
+                className={`flagresult ${on ? "flagresult--on" : ""}`}
+                onClick={() => {
+                  toggle(f.id);
+                  setQuery("");
+                }}
+              >
+                <span className="flagresult__ic">{on ? <Check size={16} /> : <Plus size={16} />}</span>
+                <span>{flagName(f.id)}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        common.length > 0 && (
+          <div>
+            <div className="flagpick__label">Most used</div>
+            <div className="flagpick__chips">
+              {common.map((id) => (
+                <button key={id} className="flagchip" onClick={() => add(id)}>
+                  {flagName(id)}
                 </button>
               ))}
             </div>
-            {dept.flags
-              .filter((id) => DETAIL_FLAGS.has(id) && pickerShown(id) && pickerDept(id) === dept.id)
-              .map((id) => (
-                <div key={`${id}-detail`}>
-                  {id === "retorque" && <TirePicker tires={entry.retorqueTires || []} onChange={setTires} />}
-                  {id === "hold" && <HoldReasonPicker reason={entry.holdReason || ""} onChange={setReason} />}
-                  {id === "inspection" && (
-                    <InspOptionPicker option={entry.inspOption || ""} onChange={(o) => onChange({ ...entry, inspOption: o })} />
-                  )}
-                </div>
-              ))}
           </div>
-        );
-      })}
-      <div className="busedit__noterow">
-        <span className="detailbox__label">Other note</span>
-        <NoteInput value={entry.note} onSave={(n) => onChange({ ...entry, note: n })} />
+        )
+      )}
+
+      <div className="flagpick__noteblock">
+        {noteOpen || hasNote ? (
+          <>
+            <div className="flagpick__label">Note</div>
+            <NoteInput value={entry.note} onSave={(n) => onChange({ ...entry, note: n })} />
+          </>
+        ) : (
+          <button className="flagpick__addnote" onClick={() => setNoteOpen(true)}>
+            <Plus size={15} /> Add a note
+          </button>
+        )}
       </div>
     </div>
   );
@@ -325,7 +348,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   const [busInput, setBusInput] = useState("");
   const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
 
-  // Typing a full bus number on the By bus tab opens its flag menu automatically.
+  // Typing a full bus number on the By bus tab opens its flag editor.
   useEffect(() => {
     const t = query.trim();
     if (t && isKnown(t)) setOpenBus(t);
@@ -354,7 +377,9 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   const q = query.trim();
   const busList = q
     ? numbers.filter((n) => n.includes(q)).slice(0, 60)
-    : Object.keys(flags).filter((b) => entryHasContent(flags[b])).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    : Object.keys(flags)
+        .filter((b) => entryHasContent(flags[b]))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   // By flag: buses carrying the picked flag ("Other" = buses with a note).
   const deptObj = DEPARTMENTS.find((d) => d.id === dept) || DEPARTMENTS[0];
@@ -369,8 +394,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     if (bus.length < 4) return;
     setBusInput("");
     if (REQUIRE_DETAIL.has(pickedFlag)) {
-      // Detail flags: add the bus to a pending list shown with its picker; it
-      // only saves once a tire/reason is chosen.
       if (!flagBuses.includes(bus) && !pending.includes(bus)) setPending((p) => [...p, bus]);
       return;
     }
@@ -418,7 +441,19 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     >
       <div className="manager__inner">
         <div className="manager__bar">
-          <div className="manager__title">Edit flags</div>
+          {tab === "bus" && openBus ? (
+            <>
+              <button className="busdetail__back" onClick={() => setOpenBus(null)} aria-label="Back to bus list">
+                <ChevronLeft size={20} />
+              </button>
+              <span className="busdetail__num">{label(openBus)}</span>
+              <span className="busblock__type">
+                <TypeCodes num={openBus} />
+              </span>
+            </>
+          ) : (
+            <div className="manager__title">Edit flags</div>
+          )}
           <div className="toolbar__spacer" />
           <button className="btn" onClick={onClose}>
             Done
@@ -434,42 +469,39 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           </button>
         </div>
 
-        {tab === "bus" && (
-          <>
-            <input
-              className="manager__search"
-              placeholder="Search bus number…"
-              value={query}
-              inputMode="numeric"
-              onChange={(e) => setQuery(e.target.value)}
-            />
+        {tab === "bus" &&
+          (openBus ? (
             <div className="manager__list">
-              {busList.length === 0 && (
-                <div className="lotlist__empty">
-                  {q ? "No buses match." : "No flagged buses yet — search a bus number to flag it."}
-                </div>
-              )}
-              {busList.map((bus) => {
-                const entry = getEntry(bus);
-                const open = openBus === bus;
-                const sum = entrySummary(entry);
-                return (
-                  <div className={`busblock ${open ? "busblock--open" : ""}`} key={bus}>
-                    <button className="busblock__head" onClick={() => setOpenBus(open ? null : bus)}>
-                      <span className="busblock__num">{label(bus)}</span>
-                      <span className="busblock__type">
-                        <TypeCodes num={bus} />
-                      </span>
-                      <span className="busblock__sum">{sum || "No flags"}</span>
-                      <span className="busblock__chev">{open ? "▾" : "▸"}</span>
-                    </button>
-                    {open && <BusFlagEditor key={bus} entry={entry} onChange={(e) => save(bus, e)} />}
-                  </div>
-                );
-              })}
+              <FlagPicker key={openBus} entry={getEntry(openBus)} onChange={(e) => save(openBus, e)} />
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              <input
+                className="manager__search"
+                placeholder="Search bus number…"
+                value={query}
+                inputMode="numeric"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <div className="manager__list">
+                {busList.length === 0 && (
+                  <div className="lotlist__empty">
+                    {q ? "No buses match." : "No flagged buses yet — search a bus number to flag it."}
+                  </div>
+                )}
+                {busList.map((bus) => (
+                  <button className="busrow" key={bus} onClick={() => setOpenBus(bus)}>
+                    <span className="busblock__num">{label(bus)}</span>
+                    <span className="busblock__type">
+                      <TypeCodes num={bus} />
+                    </span>
+                    <span className="busblock__sum">{entrySummary(getEntry(bus)) || "No flags"}</span>
+                    <span className="busblock__chev">▸</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ))}
 
         {tab === "flag" && (
           <div className="byflag">

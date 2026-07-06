@@ -182,6 +182,52 @@ export function retorqueTiresDisplay(tires: string[] | null | undefined): string
 // The assignable flags (everything except "none").
 export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
 
+// The flags surfaced as one-tap "most used" chips (in order) when the flag
+// search box is empty — the handful this garage reaches for every day. The long
+// tail is always one search away, so this list stays short on purpose.
+export const COMMON_FLAGS = ["service", "cleaning", "hold", "inspection", "retorque", "oos", "offprop", "braketest"];
+
+// Extra search words so a flag can be found by terms that aren't in its name
+// (e.g. searching "air" or "climate" finds A/C). Keep these lowercase.
+const FLAG_ALIASES: Record<string, string[]> = {
+  ac: ["air conditioning", "climate", "heat", "cold"],
+  oos: ["down", "broke", "broken", "dead"],
+  rfs: ["ready", "done", "finished", "complete"],
+  eng: ["engine", "motor"],
+  trans: ["transmission", "gearbox", "shifting"],
+  offprop: ["gone", "away", "off site"],
+  braketest: ["brake", "brakes"],
+  cleaning: ["dirty", "wash", "clean"],
+  service: ["fuel", "def", "fluids", "oil"],
+  followup: ["follow up", "revisit", "check back", "recheck"],
+  cards: ["card"],
+  inspection: ["pm", "preventive"],
+  accident: ["crash", "collision", "wreck"],
+  legal: ["law"],
+};
+
+// Find assignable flags matching a typed query, by friendly name, printed
+// label, or alias. Names that START with the query rank above ones that merely
+// contain it; ties break alphabetically. Empty query returns nothing (the
+// caller shows the "most used" chips instead).
+export function searchFlags(query: string): FlagDef[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const scored: { f: FlagDef; rank: number }[] = [];
+  for (const f of ASSIGNABLE_FLAGS) {
+    const hay = [flagName(f.id).toLowerCase(), f.label.toLowerCase(), ...(FLAG_ALIASES[f.id] || [])];
+    let rank = Infinity;
+    for (const h of hay) {
+      const i = h.indexOf(q);
+      if (i === 0) rank = Math.min(rank, 0);
+      else if (i > 0) rank = Math.min(rank, 1);
+    }
+    if (rank !== Infinity) scored.push({ f, rank });
+  }
+  scored.sort((a, b) => a.rank - b.rank || flagName(a.f.id).localeCompare(flagName(b.f.id)));
+  return scored.map((s) => s.f);
+}
+
 // Flag severity, most → least severe — used to pick which flag to show when a
 // bus has several. A custom note ("Other") is the least severe of all.
 export const FLAG_SEVERITY = [
