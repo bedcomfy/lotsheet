@@ -28,9 +28,17 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
+// Applies the saved (or default) theme to <html> BEFORE first paint, so the
+// dark chrome never flashes light on load. Defaults to dark — the app's look —
+// unless the device has saved "light".
+const THEME_INIT = `(function(){try{var t=localStorage.getItem('pace:theme');document.documentElement.setAttribute('data-theme',t==='light'?'light':'dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+      </head>
       <body>
         <BusMasterProvider>
           <SheetNav />

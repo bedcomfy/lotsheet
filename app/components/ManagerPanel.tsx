@@ -13,6 +13,9 @@ import {
   entryHasContent,
   searchFlags,
   COMMON_FLAGS,
+  ASSIGNABLE_FLAGS,
+  BUS_TYPES,
+  flagTier,
 } from "../lib/grid";
 import { X, Plus, Check, ChevronLeft, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
@@ -26,6 +29,14 @@ const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
 // Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
 const NOTE_FLAG = "__note";
 const REQUIRE_DETAIL = new Set(["retorque", NOTE_FLAG]); // can't add without picking a detail (hold's reason is optional)
+// Pill color follows severity, reusing the department pill palettes:
+// high = red (safety palette), med = amber (maintenance), low = blue (service).
+const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
+// Full type name(s) for a bus (e.g. "Pulse", "Pulse · Hybrid"). The master's
+// types() gives category ids or lot codes, so match on either.
+function typeNames(codes: string[]): string {
+  return codes.map((c) => BUS_TYPES.find((t) => t.id === c || t.code === c)?.label || c).join(" · ");
+}
 
 // Short text summary of a bus's flags for the list rows.
 function entrySummary(entry: FlagEntry | null | undefined): string {
@@ -240,7 +251,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
       {active.length > 0 && (
         <div className="flagpick__active">
           {active.map((id) => (
-            <span className="fpill" key={id}>
+            <span className={`fpill fpill--${TIER_CLASS[flagTier(id)]}`} key={id}>
               {pillLabel(id)}
               <button className="fpill__x" onClick={() => remove(id)} aria-label={`Remove ${flagName(id)}`}>
                 <X size={14} />
@@ -301,18 +312,24 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
           })}
         </div>
       ) : (
-        common.length > 0 && (
-          <div>
-            <div className="flagpick__label">Most used</div>
-            <div className="flagpick__chips">
-              {common.map((id) => (
-                <button key={id} className="flagchip" onClick={() => add(id)}>
-                  {flagName(id)}
-                </button>
-              ))}
+        <>
+          {common.length > 0 && (
+            <div>
+              <div className="flagpick__label">Most used here</div>
+              <div className="flagpick__chips">
+                {common.map((id) => (
+                  <button key={id} className="flagchip" onClick={() => add(id)}>
+                    {flagName(id)}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
+          <div className="flagpick__hint">
+            <Search size={16} />
+            <span>Type to reach any of {ASSIGNABLE_FLAGS.length} flags — hold, engine, brakes, A/C…</span>
           </div>
-        )
+        </>
       )}
 
       <div className="flagpick__noteblock">
@@ -339,7 +356,7 @@ interface ManagerPanelProps {
 }
 
 export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }: ManagerPanelProps) {
-  const { numbers, isKnown, label } = useBusMaster();
+  const { numbers, isKnown, label, types } = useBusMaster();
   const [tab, setTab] = useState<"bus" | "flag">("bus");
   const [query, setQuery] = useState(initialBus || "");
   const [openBus, setOpenBus] = useState<string | null>(initialBus || null);
@@ -447,9 +464,9 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                 <ChevronLeft size={20} />
               </button>
               <span className="busdetail__num">{label(openBus)}</span>
-              <span className="busblock__type">
-                <TypeCodes num={openBus} />
-              </span>
+              {typeNames(types(openBus)).length > 0 && (
+                <span className="busdetail__type">{typeNames(types(openBus))}</span>
+              )}
             </>
           ) : (
             <div className="manager__title">Edit flags</div>

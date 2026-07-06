@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { List, Users } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
+import ThemeToggle from "./ThemeToggle";
 
 export interface SheetLink {
   path: string;
@@ -54,6 +55,7 @@ export default function SheetNav() {
       <button className="appnav__btn" onClick={() => setEmployeesOpen(true)}>
         <Users size={16} /> Employees
       </button>
+      <ThemeToggle />
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}
       {employeesOpen && <EmployeesEditor onClose={() => setEmployeesOpen(false)} />}
     </div>

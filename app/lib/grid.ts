@@ -182,6 +182,17 @@ export function retorqueTiresDisplay(tires: string[] | null | undefined): string
 // The assignable flags (everything except "none").
 export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
 
+// Colour a flag by how serious it is, so a bus reads at a glance:
+//   high (red)  — out of service / serious mechanical / safety
+//   med (amber) — needs attention or in progress
+//   low (blue)  — routine service
+export function flagTier(id: string): "high" | "med" | "low" {
+  if (["legal", "safety", "accident", "oos", "eng", "trans"].includes(id)) return "high";
+  if (["hold", "inspection", "retorque", "split", "braketest", "ac", "shop", "offprop", "followup"].includes(id))
+    return "med";
+  return "low"; // service, cleaning, cards, rfs
+}
+
 // The flags surfaced as one-tap "most used" chips (in order) when the flag
 // search box is empty — the handful this garage reaches for every day. The long
 // tail is always one search away, so this list stays short on purpose.
