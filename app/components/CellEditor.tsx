@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { typeInfo, flagLabel, inspMilesDisplay } from "../lib/grid";
-import { Flag, Ban, Lock, Unlock } from "lucide-react";
+import { typeInfo, flagName, flagTier, inspMilesDisplay, retorqueTiresDisplay } from "../lib/grid";
+import { Flag, Ban, Lock, Unlock, Eraser, ChevronRight } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
-import TypeCodes from "./TypeCodes";
 import type { FlagEntry, FlagMap } from "../lib/types";
+
+// Pill color by severity (shared language with the flag editor).
+const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
 
 interface CellEditorProps {
   subLabel?: string;
@@ -64,11 +66,28 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
   const typeLabels = types
     .map((t) => typeInfo(t)?.label)
     .filter(Boolean)
-    .join(", ");
-  const flagText = (entry?.flags || []).map((f) => flagLabel(f)).join(", ");
+    .join(" · ");
   const note = (entry?.note || "").trim();
-  const miles = inspMilesDisplay(entry);
-  const showReadout = num.length >= 4 && (types.length > 0 || flagText || note || miles);
+  // A bus's flags, most-serious first, so the worst shows up front.
+  const activeFlags = (entry?.flags || [])
+    .slice()
+    .sort((a, b) => tierRank(flagTier(a)) - tierRank(flagTier(b)));
+  const isBus = num.length >= 4 && known;
+
+  function pillText(id: string) {
+    if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry?.retorqueTires)}`;
+    if (id === "hold") return (entry?.holdReason || "").trim() ? `Hold · ${entry?.holdReason}` : "Hold";
+    if (id === "inspection") {
+      const o = (entry?.inspOption || "").trim() || inspMilesDisplay(entry);
+      return o ? `Inspection · ${o}` : "Inspection";
+    }
+    return flagName(id);
+  }
+
+  // Quiet secondary actions only when they apply to this spot.
+  const showClear = !!value && value !== "X";
+  const showLock = !!onToggleLock && !!value && value !== "X" && num === value;
+  const hasSecondary = showClear || blockable || showLock;
 
   return (
     <Overlay
@@ -78,122 +97,129 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
       label="Bus number"
       onOpenFocus={() => inputRef.current?.focus({ preventScroll: true })}
     >
-        <div className="modal__head">
-          <div>
-            <div className="modal__title">Bus number</div>
-            {subLabel && <div className="modal__sub">{subLabel}</div>}
-          </div>
-          <button className="modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+      <div className="modal__head">
+        <div>
+          <div className="modal__title">Bus number</div>
+          {subLabel && <div className="modal__sub">{subLabel}</div>}
         </div>
+        <button className="modal__close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
+      </div>
 
-        <input
-          ref={inputRef}
-          className="modal__input"
-          value={num}
-          inputMode="numeric"
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => {
-            const v = sanitizeBus(e.target.value);
-            setNum(v);
-            setDup("");
-            // Autocomplete: save & close the moment a valid bus is entered,
-            // matching the lot editor and Fill Rows (blocked if it's a duplicate).
-            if (isKnownBus(v)) trySave(v);
-          }}
-          placeholder="Bus number"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") trySave();
-          }}
-        />
-        {dup && (
-          <div className="modal__warn">
-            Bus {busLabel(num)} is currently at <strong>{dup}</strong>.
-            <div className="modal__warnactions">
-              <button className="btn btn--primary btn--mini" onClick={moveHere}>
-                Move it here
-              </button>
-              <button className="btn btn--mini" onClick={() => setDup("")}>
-                Cancel
-              </button>
-            </div>
+      <input
+        ref={inputRef}
+        className="modal__input"
+        value={num}
+        inputMode="numeric"
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => {
+          const v = sanitizeBus(e.target.value);
+          setNum(v);
+          setDup("");
+          // Autocomplete: save & close the moment a valid bus is entered,
+          // matching the lot editor and Fill Rows (blocked if it's a duplicate).
+          if (isKnownBus(v)) trySave(v);
+        }}
+        placeholder="Bus number"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") trySave();
+        }}
+      />
+      {dup && (
+        <div className="modal__warn">
+          Bus {busLabel(num)} is currently at <strong>{dup}</strong>.
+          <div className="modal__warnactions">
+            <button className="btn btn--primary btn--mini" onClick={moveHere}>
+              Move it here
+            </button>
+            <button className="btn btn--mini" onClick={() => setDup("")}>
+              Cancel
+            </button>
           </div>
-        )}
-        {showWarning && !dup && (
-          <div className="modal__warn">
-            {num} isn&apos;t on the bus list — double-check it. You can still save it.
-          </div>
-        )}
-        {num.length >= 4 && known && (
-          <div className="modal__ok">✓ {busLabel(num)} is on the list</div>
-        )}
+        </div>
+      )}
+      {showWarning && !dup && (
+        <div className="modal__warn">
+          {num} isn&apos;t on the bus list — double-check it. You can still save it.
+        </div>
+      )}
 
-        {showReadout && (
-          <div
-            className={`flag-readout ${onEditFlags ? "flag-readout--btn" : ""}`}
-            onClick={onEditFlags ? () => onEditFlags(num) : undefined}
-            title={onEditFlags ? "Edit this bus's flags" : undefined}
-          >
-            <TypeCodes num={num} className="flag-readout__codes" />
-            <span>
-              {typeLabels}
-              {typeLabels && (flagText || note) ? " · " : ""}
-              {flagText}
-              {miles ? `${flagText ? " · " : ""}${miles}` : ""}
-              {flagText && note ? ", " : ""}
-              {note && <em>“{note}”</em>}
-            </span>
+      {isBus && (
+        <>
+          <div className="cellstatus">
+            ✓ On the list{typeLabels ? ` · ${typeLabels}` : ""}
           </div>
-        )}
+          {onEditFlags && (
+            <button className="cellflags" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
+              {activeFlags.length > 0 || note ? (
+                <span className="cellflags__pills">
+                  {activeFlags.map((id) => (
+                    <span key={id} className={`fpill fpill--${TIER_CLASS[flagTier(id)]}`}>
+                      {pillText(id)}
+                    </span>
+                  ))}
+                  {note && <span className="fpill">“{note}”</span>}
+                </span>
+              ) : (
+                <span className="cellflags__add">
+                  <Flag size={14} /> Add flags
+                </span>
+              )}
+              <ChevronRight size={18} className="cellflags__chev" />
+            </button>
+          )}
+        </>
+      )}
 
-        {/* Send the bus that's parked in this cell straight to a lot — no dragging. */}
-        {onSendToLot && !!sendTargets?.length && value && value !== "X" && num === value && (
-          <div className="sendrow">
-            <span className="sendrow__lbl">Send to</span>
-            {sendTargets.map((t) => (
-              <button key={t.key} className="btn btn--mini" onClick={() => onSendToLot(num, t.key)}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Send the bus that's parked in this cell straight to a lot — no dragging. */}
+      {onSendToLot && !!sendTargets?.length && value && value !== "X" && num === value && (
+        <div className="sendrow">
+          <span className="sendrow__lbl">Send to</span>
+          {sendTargets.map((t) => (
+            <button key={t.key} className="btn btn--mini" onClick={() => onSendToLot(num, t.key)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-        <div className="modal__actions">
-          <button className="btn btn--ghost" onClick={() => onSave("")}>
-            Clear
-          </button>
+      <button className="btn btn--primary btn--block modal__save" onClick={() => trySave()}>
+        Save
+      </button>
+
+      {hasSecondary && (
+        <div className="cellact-row">
+          {showClear && (
+            <button className="cellact cellact--danger" onClick={() => onSave("")}>
+              <Eraser size={16} /> Clear
+            </button>
+          )}
           {blockable && (
             <button
-              className="btn"
+              className="cellact"
               onClick={() => onSave(value === "X" ? "" : "X")}
               title={value === "X" ? "Reopen this spot" : "Mark this spot unusable (prints an X, like ROW 10's)"}
             >
-              <Ban size={15} /> {value === "X" ? "Unblock" : "Block"}
+              <Ban size={16} /> {value === "X" ? "Unblock" : "Block"}
             </button>
           )}
-          {onToggleLock && value && value !== "X" && num === value && (
+          {showLock && (
             <button
-              className="btn"
+              className="cellact"
               onClick={onToggleLock}
               title={locked ? "Unlock — Clear Grid will remove it again" : "Keep this bus in place through Clear Grid"}
             >
-              {locked ? <Unlock size={15} /> : <Lock size={15} />} {locked ? "Unlock" : "Lock"}
+              {locked ? <Unlock size={16} /> : <Lock size={16} />} {locked ? "Unlock" : "Lock"}
             </button>
           )}
-          {onEditFlags && num.length >= 4 && (
-            <button className="btn" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
-              <Flag size={15} /> Flags
-            </button>
-          )}
-          <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn--primary" onClick={() => trySave()}>
-            Save
-          </button>
         </div>
+      )}
     </Overlay>
   );
+}
+
+// high -> 0, med -> 1, low -> 2 (for sorting flags most-serious first).
+function tierRank(tier: string): number {
+  return tier === "high" ? 0 : tier === "med" ? 1 : 2;
 }
