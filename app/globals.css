@@ -134,6 +134,10 @@ button {
   object-fit: contain;
   display: inline-block;
 }
+/* Dark mode: recolor the blue mark to pure white (same shape, kept in sync). */
+:root[data-theme="dark"] .appnav__logo {
+  filter: brightness(0) invert(1);
+}
 .appnav__picker {
   display: inline-flex;
   align-items: center;
