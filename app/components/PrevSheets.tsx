@@ -114,12 +114,9 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
           })}
         </div>
 
-        <div className="modal__actions">
-          <div className="toolbar__spacer" />
-          <button className="btn btn--primary" onClick={onClose}>
-            Done
-          </button>
-        </div>
+        <button className="btn btn--block modal__save" onClick={onClose}>
+          Done
+        </button>
     </Overlay>
   );
 }

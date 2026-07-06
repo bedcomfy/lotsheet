@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash2, Plus } from "lucide-react";
 import Overlay from "./Overlay";
 import type { Employee } from "../lib/types";
 
@@ -95,25 +96,19 @@ export default function EmployeesEditor({ onClose }: EmployeesEditorProps) {
                 value={r.badge || ""}
                 onChange={(e) => setRow(i, "badge", e.target.value)}
               />
-              <button className="busrow__clear" onClick={() => removeRow(i)}>
-                Remove
+              <button className="lotitem__del" onClick={() => removeRow(i)} aria-label="Remove employee" title="Remove">
+                <Trash2 size={16} />
               </button>
             </div>
           ))}
         </div>
 
-        <div className="modal__actions">
-          <button className="btn" onClick={addRow}>
-            + Add employee
-          </button>
-          <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="btn btn--primary" onClick={save} disabled={saving}>
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
+        <button className="btn btn--block emplist__add" onClick={addRow}>
+          <Plus size={16} /> Add employee
+        </button>
+        <button className="btn btn--primary btn--block modal__save" onClick={save} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </button>
     </Overlay>
   );
 }

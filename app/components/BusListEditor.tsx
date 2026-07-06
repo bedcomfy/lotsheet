@@ -178,9 +178,6 @@ function Editor({ onClose }: BusListEditorProps) {
           </button>
           <span className="buslist__hint">{dirty ? "Unsaved changes" : ""}</span>
           <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
-            Cancel
-          </button>
           <button className="btn btn--primary" disabled={saving} onClick={save}>
             {saving ? "Saving…" : "Save"}
           </button>

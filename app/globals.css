@@ -213,7 +213,7 @@ button {
   gap: 8px;
   flex-wrap: wrap;
   padding: 8px 4px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--edge);
 }
 .buslist__row--retired {
   opacity: 0.62;
@@ -228,9 +228,9 @@ button {
   font-size: 13px;
   padding: 5px 7px;
   border-radius: 7px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--ink);
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
 }
 .buslist__model {
   min-width: 150px;
@@ -249,11 +249,11 @@ button {
 }
 .buslist__info {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .buslist__hint {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .csv__area {
   width: 100%;
@@ -264,7 +264,9 @@ button {
   font-size: 12px;
   line-height: 1.5;
   padding: 10px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
   border-radius: 8px;
   white-space: pre;
   overflow: auto;
@@ -275,9 +277,20 @@ button {
   padding: 6px 2px;
 }
 .pwgate__err {
-  color: #b91c1c;
+  color: var(--danger);
   font-size: 13px;
   padding: 0 2px 6px;
+}
+/* Native selects inside menus follow the dark surface (the closed control; the
+   OS-drawn option list stays native). */
+.modal select,
+.manager__inner select {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--edge-strong);
+}
+.emplist__add {
+  margin-top: 8px;
 }
 
 /* ---------- Flag editor (departments + detail pickers) ---------- */
@@ -1054,6 +1067,13 @@ button {
 .manager__inner input::placeholder,
 .manager__inner textarea::placeholder {
   color: var(--text-dim);
+}
+/* ...and never a white field behind that light text (checkboxes excluded). */
+.modal input:not([type="checkbox"]):not([type="radio"]),
+.modal textarea,
+.manager__inner input:not([type="checkbox"]):not([type="radio"]),
+.manager__inner textarea {
+  background: var(--surface-2);
 }
 .modal__head {
   display: flex;
@@ -3245,14 +3265,18 @@ td.turnt__head {
 .emprow__name {
   flex: 1 1 auto;
   min-width: 0;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 15px;
 }
 .emprow__badge {
   flex: 0 0 110px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 15px;
