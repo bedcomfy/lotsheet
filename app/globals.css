@@ -486,26 +486,26 @@ button {
 .byflag { padding: 14px 16px 0; }
 .byflag .manager__list { padding-left: 0; padding-right: 0; }
 .depttabs { display: flex; gap: 10px; margin-bottom: 14px; }
-.depttab { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; font-size: 13px; font-weight: 600; color: #374151; }
-.depttab--on.depttab--service { background: #e8f1fc; border-color: #2563eb; color: #1e40af; }
-.depttab--on.depttab--maintenance { background: #fdf3e7; border-color: #d97706; color: #92400e; }
-.depttab--on.depttab--safety { background: #fdecec; border-color: #dc2626; color: #991b1b; }
-.byflag__note { font-size: 13px; color: #374151; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; }
-.byflag__hint { font-size: 12px; color: #6b7280; margin-top: -4px; margin-bottom: 4px; }
-.linkbtn { background: none; border: none; color: #2563eb; font: inherit; padding: 0; text-decoration: underline; }
-.busitem__detail { font-size: 13px; color: #6b7280; }
+.depttab { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid var(--edge-strong); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text-dim); }
+.depttab--on.depttab--service { background: var(--pill-service-bg); border-color: var(--pill-service-ed); color: var(--pill-service-tx); }
+.depttab--on.depttab--maintenance { background: var(--pill-maintenance-bg); border-color: var(--pill-maintenance-ed); color: var(--pill-maintenance-tx); }
+.depttab--on.depttab--safety { background: var(--pill-safety-bg); border-color: var(--pill-safety-ed); color: var(--pill-safety-tx); }
+.byflag__note { font-size: 13px; color: var(--text); background: var(--surface-2); border: 1px solid var(--edge); border-radius: 10px; padding: 12px; }
+.byflag__hint { font-size: 12px; color: var(--text-dim); margin-top: -4px; margin-bottom: 4px; }
+.linkbtn { background: none; border: none; color: var(--accent); font: inherit; padding: 0; text-decoration: underline; }
+.busitem__detail { font-size: 13px; color: var(--text-dim); }
 .flagpicker { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-.flagrow { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
+.flagrow { border: 1px solid var(--edge); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
 .flagrow__head { display: flex; align-items: center; gap: 10px; }
 .placeholder {
   max-width: 600px;
   margin: 48px auto;
   text-align: center;
-  color: var(--muted);
+  color: var(--text-dim);
   padding: 0 16px;
 }
 .placeholder h2 {
-  color: var(--ink);
+  color: var(--text);
   margin-bottom: 6px;
 }
 
@@ -1048,14 +1048,14 @@ button {
   background: transparent;
   font-size: 26px;
   line-height: 1;
-  color: var(--muted);
+  color: var(--text-dim);
   padding: 0 4px;
 }
 .modal__label {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-dim);
   margin: 12px 0 6px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -1066,9 +1066,11 @@ button {
   font-weight: 700;
   text-align: center;
   padding: 12px;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--edge-strong);
   border-radius: 12px;
   letter-spacing: 0.06em;
+  background: var(--surface-2);
+  color: var(--text);
 }
 .modal__input:focus {
   outline: none;
@@ -1077,9 +1079,9 @@ button {
 .modal__warn {
   margin-top: 8px;
   font-size: 12px;
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--pill-maintenance-tx);
+  background: var(--pill-maintenance-bg);
+  border: 1px solid var(--pill-maintenance-ed);
   border-radius: 8px;
   padding: 8px 10px;
 }
@@ -1092,7 +1094,7 @@ button {
   margin-top: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #15803d;
+  color: #5dcaa5;
 }
 .swatches {
   display: flex;
@@ -1257,23 +1259,25 @@ button {
   color: #fff;
 }
 .busrow__clear {
-  border: 1px solid #fca5a5;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid var(--pill-safety-ed);
+  background: var(--surface);
+  color: #f08a8a;
   border-radius: 8px;
   padding: 5px 10px;
   font-size: 12px;
 }
 .busrow__saving {
   font-size: 11px;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .busrow__note {
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--edge-strong);
   border-radius: 8px;
   font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
 }
 
 /* By-flag screen */
@@ -1332,8 +1336,8 @@ button {
   gap: 8px;
   margin-top: 12px;
   padding: 8px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
   border-radius: 8px;
   font-size: 13px;
 }
@@ -1353,14 +1357,14 @@ button {
   height: 22px;
   padding: 0 6px;
   border-radius: 6px;
-  background: #eef2ff;
-  color: #1d4ed8;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 700;
   font-size: 12px;
   flex: 0 0 auto;
 }
 .flag-readout__note {
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .flag-readout__codes {
   flex: 0 0 auto;
@@ -1470,7 +1474,7 @@ button {
 .rf__hint {
   padding: 0 14px 8px;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .rf__grid {
   flex: 1 1 auto;
@@ -1484,19 +1488,19 @@ button {
 .rf__colhead {
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--surface);
   text-align: center;
   font-weight: 700;
   font-size: 14px;
   padding: 6px 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--edge);
   z-index: 1;
 }
 .rf__box {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--edge-strong);
   border-radius: 10px;
   padding: 4px 8px;
   min-height: 52px;
@@ -1522,17 +1526,17 @@ button {
 }
 .rf__box--blocked {
   justify-content: center;
-  color: var(--muted);
+  color: var(--text-dim);
   font-weight: 700;
   font-size: 20px;
-  background: #f3f4f6;
+  background: var(--surface-2);
 }
 .rf__box--empty {
   border: none;
 }
 .rf__label {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-dim);
   min-width: 30px;
   font-variant-numeric: tabular-nums;
 }
@@ -1610,7 +1614,8 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text);
   border: 2px solid var(--accent);
   border-radius: 10px;
   padding: 8px 14px;
@@ -1627,10 +1632,10 @@ button {
   gap: 6px;
   height: 36px;
   padding: 0 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--edge-strong);
   border-radius: var(--ctl-radius);
-  background: var(--paper);
-  color: var(--muted);
+  background: var(--surface);
+  color: var(--text-dim);
 }
 .findbox:focus-within {
   border-color: var(--accent);
@@ -1641,7 +1646,11 @@ button {
   width: 82px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
+  background: transparent;
+}
+.findbox__in::placeholder {
+  color: var(--text-dim);
 }
 .findbox__msg {
   font-size: 12px;
@@ -1776,8 +1785,8 @@ button {
 .statchip {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
-  background: var(--surface-hover);
+  color: var(--text-dim);
+  background: var(--surface-2);
   border: 1px solid transparent;
   border-radius: 999px;
   padding: 5px 11px;
@@ -1785,14 +1794,14 @@ button {
   cursor: pointer;
 }
 .statchip:hover {
-  border-color: #c3c8d0;
+  border-color: var(--edge-strong);
 }
 .statchip--warn {
-  color: #92400e;
-  background: #fdf3e7;
+  color: var(--pill-maintenance-tx);
+  background: var(--pill-maintenance-bg);
 }
 .statchip--warn:hover {
-  border-color: #d97706;
+  border-color: var(--pill-maintenance-ed);
 }
 /* Note input with a one-tap "remove note" X */
 .noterow {
@@ -1812,7 +1821,7 @@ button {
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--muted);
+  color: var(--text-dim);
   padding: 6px;
   border-radius: 6px;
   cursor: pointer;
@@ -1825,10 +1834,10 @@ button {
 .lotlist__section {
   margin: 14px 0 4px;
   padding-top: 10px;
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px solid var(--edge);
   font-size: 12px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -1851,8 +1860,9 @@ button {
   }
 }
 .shopcard {
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
   border-radius: 14px;
   padding: 14px 16px 16px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
@@ -1874,11 +1884,11 @@ button {
 .shopcard__count {
   font-size: 13px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .shopcard__sub {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text-dim);
   margin: 3px 0 12px;
 }
 .shopcard__legend {
@@ -1888,7 +1898,7 @@ button {
   gap: 6px;
   font-size: 11px;
   font-weight: 600;
-  color: #0f6e56;
+  color: #5dcaa5;
 }
 .shopcard__legenddot {
   width: 10px;
@@ -1910,9 +1920,10 @@ button {
   gap: 3px;
   min-height: 78px;
   padding: 8px 6px;
-  border: 1px solid #d5d9df;
+  border: 1px solid var(--edge-strong);
   border-radius: 10px;
-  background: var(--paper);
+  background: var(--surface-2);
+  color: var(--text);
   cursor: pointer;
   transition: border-color 0.12s;
 }
@@ -1920,17 +1931,17 @@ button {
   border-color: var(--accent);
 }
 .shopslot--filled {
-  background: #f8fafc;
+  background: var(--surface-3);
 }
 /* Flagged Ready for Service — done in the shop, waiting to go out */
 .shopslot--rfs {
-  background: #e1f5ee;
+  background: rgba(29, 158, 117, 0.18);
   border-color: #1d9e75;
 }
 .shopslot__label {
   font-size: 10px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text-dim);
   letter-spacing: 0.05em;
 }
 .shopslot__bus {
@@ -1941,7 +1952,7 @@ button {
 .shopslot__flag {
   font-size: 10px;
   line-height: 1.2;
-  color: #b91c1c;
+  color: #f08a8a;
   text-align: center;
   white-space: normal; /* the full flags + note wrap inside the slot */
   overflow-wrap: anywhere;
@@ -1950,24 +1961,24 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #c3c8d0;
+  color: var(--text-dim);
   margin-top: 8px;
 }
 /* Blocked (X'd out) spot */
 .shopslot--blocked {
-  background: #f3f4f6;
+  background: var(--surface-3);
 }
 .shopslot__x {
   font-size: 20px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-dim);
   margin-top: 4px;
 }
 /* The searched bus's slot / chip stays lit until the search clears */
 .shopslot--found,
 .apronchip--found {
   box-shadow: inset 0 0 0 2px #f59e0b;
-  background: #fef3c7;
+  background: rgba(245, 158, 11, 0.22);
 }
 .apronchips {
   display: flex;
@@ -1977,7 +1988,7 @@ button {
 }
 .apronchips__empty {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .apronchip {
   display: inline-flex;
@@ -1985,13 +1996,14 @@ button {
   flex-wrap: wrap; /* the flags line wraps underneath the number */
   gap: 3px 6px;
   max-width: 100%;
-  border: 1px solid #d5d9df;
+  border: 1px solid var(--edge-strong);
   border-radius: 12px;
   padding: 6px 12px;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  background: #f8fafc;
+  background: var(--surface-2);
+  color: var(--text);
 }
 /* The bus's FULL flags (hold reason, inspection option, whole note) — the most
    important info for a shop bus. */
@@ -2000,7 +2012,7 @@ button {
   font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
-  color: #b91c1c;
+  color: #f08a8a;
   white-space: normal;
 }
 
@@ -2014,7 +2026,7 @@ button {
   gap: 16px;
 }
 .shopmenu__sec {
-  border-top: 1px solid var(--border-soft);
+  border-top: 1px solid var(--edge);
   padding-top: 12px;
 }
 .shopmenu__head {
@@ -2028,7 +2040,7 @@ button {
 }
 /* Ready for Service chip (Cards) */
 .apronchip--rfs {
-  background: #e1f5ee;
+  background: rgba(29, 158, 117, 0.18);
   border-color: #1d9e75;
 }
 
@@ -2062,11 +2074,12 @@ button {
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
   border-radius: 14px;
   padding: 10px 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   max-width: calc(100vw - 20px);
 }
 .selectbar__count {
@@ -2086,7 +2099,7 @@ button {
 .sendrow__lbl {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 
 /* ---------- Recent buses (lot editor) ---------- */
@@ -2100,12 +2113,12 @@ button {
 .recentrow__lbl {
   font-size: 12px;
   font-weight: 600;
-  color: var(--muted);
+  color: var(--text-dim);
 }
 .recentchip {
-  border: 1px solid #d1d5db;
-  background: var(--paper);
-  color: var(--ink);
+  border: 1px solid var(--edge-strong);
+  background: var(--surface);
+  color: var(--text);
   border-radius: 999px;
   padding: 5px 12px;
   font-size: 13px;
@@ -2259,7 +2272,7 @@ button {
   flex: 1;
 }
 .lotlist__empty {
-  color: var(--muted);
+  color: var(--text-dim);
   font-size: 13px;
   padding: 12px 2px;
 }
@@ -2268,7 +2281,7 @@ button {
   align-items: center;
   gap: 8px;
   padding: 8px 2px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--edge);
 }
 /* The info group flexes/wraps; the actions group is fixed-width on the right so
    the up/down arrows always line up regardless of flag length. */
@@ -2287,7 +2300,7 @@ button {
   gap: 8px;
 }
 .lotitem__idx {
-  color: var(--muted);
+  color: var(--text-dim);
   width: 26px;
   font-variant-numeric: tabular-nums;
 }
@@ -2297,8 +2310,9 @@ button {
   font-variant-numeric: tabular-nums;
 }
 .lotitem__move {
-  border: 1px solid #d1d5db;
-  background: #fff;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface);
+  color: var(--text);
   border-radius: 8px;
   width: 38px;
   height: 38px;
@@ -2367,7 +2381,7 @@ button {
   font-size: calc(10px + var(--fz, 0px));
 }
 .lotitem__flag {
-  color: #b91c1c;
+  color: #f08a8a;
   font-size: 12px;
 }
 
@@ -2377,7 +2391,7 @@ button {
   align-items: center;
   gap: 10px;
   padding: 10px 2px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--edge);
 }
 .prevsheet__when {
   font-weight: 700;
@@ -2645,10 +2659,10 @@ button {
   position: fixed;
   z-index: 60; /* above the sticky toolbar and everything on the page */
   min-width: 224px;
-  background: var(--paper);
-  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  border: 1px solid var(--edge);
   border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   padding: 6px;
 }
 .toolmenu__item {
@@ -2662,15 +2676,15 @@ button {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
   text-align: left;
   cursor: pointer;
 }
 .toolmenu__item:hover {
-  background: var(--surface-hover);
+  background: var(--surface-2);
 }
 .toolmenu__item--danger {
-  color: #b91c1c;
+  color: #f08a8a;
 }
 .toolmenu__item input[type="checkbox"] {
   width: 17px;
@@ -2678,7 +2692,7 @@ button {
 }
 .toolmenu__sep {
   height: 1px;
-  background: var(--border-soft);
+  background: var(--edge);
   margin: 5px 6px;
 }
 
