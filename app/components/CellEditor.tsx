@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { typeInfo, flagName, flagTier, inspMilesDisplay, retorqueTiresDisplay } from "../lib/grid";
+import { typeInfo } from "../lib/grid";
 import { Flag, Ban, Lock, Unlock, Eraser, ChevronRight } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
+import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import type { FlagEntry, FlagMap } from "../lib/types";
-
-// Pill color by severity (shared language with the flag editor).
-const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
 
 interface CellEditorProps {
   subLabel?: string;
@@ -68,21 +66,8 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
     .filter(Boolean)
     .join(" · ");
   const note = (entry?.note || "").trim();
-  // A bus's flags, most-serious first, so the worst shows up front.
-  const activeFlags = (entry?.flags || [])
-    .slice()
-    .sort((a, b) => tierRank(flagTier(a)) - tierRank(flagTier(b)));
+  const hasFlagContent = (entry?.flags || []).length > 0 || !!note;
   const isBus = num.length >= 4 && known;
-
-  function pillText(id: string) {
-    if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry?.retorqueTires)}`;
-    if (id === "hold") return (entry?.holdReason || "").trim() ? `Hold · ${entry?.holdReason}` : "Hold";
-    if (id === "inspection") {
-      const o = (entry?.inspOption || "").trim() || inspMilesDisplay(entry);
-      return o ? `Inspection · ${o}` : "Inspection";
-    }
-    return flagName(id);
-  }
 
   // Quiet secondary actions only when they apply to this spot.
   const showClear = !!value && value !== "X";
@@ -152,14 +137,9 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
           </div>
           {onEditFlags && (
             <button className="cellflags" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
-              {activeFlags.length > 0 || note ? (
+              {hasFlagContent ? (
                 <span className="cellflags__pills">
-                  {activeFlags.map((id) => (
-                    <span key={id} className={`fpill fpill--${TIER_CLASS[flagTier(id)]}`}>
-                      {pillText(id)}
-                    </span>
-                  ))}
-                  {note && <span className="fpill">“{note}”</span>}
+                  <FlagPills entry={entry} />
                 </span>
               ) : (
                 <span className="cellflags__add">
@@ -217,9 +197,4 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
       )}
     </Overlay>
   );
-}
-
-// high -> 0, med -> 1, low -> 2 (for sorting flags most-serious first).
-function tierRank(tier: string): number {
-  return tier === "high" ? 0 : tier === "med" ? 1 : 2;
 }

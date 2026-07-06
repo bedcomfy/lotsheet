@@ -2429,18 +2429,57 @@ button {
   font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
-.lotitem__move {
+.lotitem__move,
+.lotitem__del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--edge-strong);
   background: var(--surface);
   color: var(--text);
   border-radius: 8px;
   width: 38px;
   height: 38px;
-  font-size: 18px;
   line-height: 1;
 }
 .lotitem__move:disabled {
   opacity: 0.35;
+}
+.lotitem__del {
+  color: var(--danger);
+}
+.lotitem__del:hover {
+  border-color: var(--danger);
+}
+/* Tappable flag area on a lot row (colored pills, or an "add flags" hint). */
+.lotitem__flags,
+.lotitem__flagpills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lotitem__flags {
+  border: none;
+  background: transparent;
+  padding: 3px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.lotitem__flags:hover {
+  background: var(--surface-2);
+}
+.lotitem .fpill {
+  font-size: 11px;
+  padding: 3px 9px;
+}
+.lotitem__addflags {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
 }
 
 /* Manager warning banner (e.g. inspection cap reached) */

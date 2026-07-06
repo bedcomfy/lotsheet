@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { flagsFullDisplay } from "../lib/grid";
-import { Flag, GripVertical } from "lucide-react";
+import { Flag, GripVertical, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
+import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
-import type { FlagMap } from "../lib/types";
+import type { FlagEntry, FlagMap } from "../lib/types";
 
 interface LotEditorProps {
   title: string;
@@ -35,16 +35,17 @@ interface LotRowProps {
   bus: string;
   i: number;
   count: number;
-  fdisp: string;
+  entry?: FlagEntry | null;
   sortable: boolean;
   onEditFlags?: (bus: string) => void;
   onMove: (i: number, dir: number) => void;
   onRemove: (i: number) => void;
 }
 
-function LotRow({ sortId, bus, i, count, fdisp, sortable, onEditFlags, onMove, onRemove }: LotRowProps) {
+function LotRow({ sortId, bus, i, count, entry, sortable, onEditFlags, onMove, onRemove }: LotRowProps) {
   const { label: busLabel } = useBusMaster();
   const s = useSortable({ id: sortId, disabled: !sortable });
+  const hasFlags = !!(entry && ((entry.flags || []).length > 0 || (entry.note || "").trim()));
   return (
     <div
       ref={s.setNodeRef}
@@ -67,21 +68,19 @@ function LotRow({ sortId, bus, i, count, fdisp, sortable, onEditFlags, onMove, o
         <span className="lotitem__idx">{i + 1}.</span>
         <span className="lotitem__bus">{busLabel(bus)}</span>
         <TypeCodes num={bus} />
-        {fdisp && <span className="lotitem__flag">{fdisp}</span>}
+        {/* Flags as colored pills; the whole area taps into the flag editor
+            (an "add flags" hint shows when the bus has none). */}
+        {onEditFlags ? (
+          <button className="lotitem__flags" onClick={() => onEditFlags(bus)} title="Edit this bus's flags">
+            {hasFlags ? <FlagPills entry={entry} /> : <span className="lotitem__addflags"><Flag size={12} /> Add flags</span>}
+          </button>
+        ) : (
+          hasFlags && <span className="lotitem__flagpills"><FlagPills entry={entry} /></span>
+        )}
       </div>
       <div className="lotitem__actions">
-        {onEditFlags && (
-          <button
-            className="lotitem__move"
-            onClick={() => onEditFlags(bus)}
-            aria-label="Edit flags"
-            title="Edit this bus's flags"
-          >
-            <Flag size={13} />
-          </button>
-        )}
         <button className="lotitem__move" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label="Move up">
-          ↑
+          <ChevronUp size={17} />
         </button>
         <button
           className="lotitem__move"
@@ -89,10 +88,10 @@ function LotRow({ sortId, bus, i, count, fdisp, sortable, onEditFlags, onMove, o
           disabled={i === count - 1}
           aria-label="Move down"
         >
-          ↓
+          <ChevronDown size={17} />
         </button>
-        <button className="busrow__clear" onClick={() => onRemove(i)}>
-          Remove
+        <button className="lotitem__del" onClick={() => onRemove(i)} aria-label={`Remove ${busLabel(bus)}`} title="Remove">
+          <Trash2 size={16} />
         </button>
       </div>
     </div>
@@ -239,7 +238,7 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
                   bus={bus}
                   i={i}
                   count={list.length}
-                  fdisp={flagsFullDisplay(flags[bus])}
+                  entry={flags[bus]}
                   sortable={!!onReorder}
                   onEditFlags={onEditFlags}
                   onMove={onMove}
@@ -250,12 +249,9 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
           </SortableContext>
         </DndContext>
 
-        <div className="modal__actions">
-          <div className="toolbar__spacer" />
-          <button className="btn btn--primary" onClick={onClose}>
-            Done
-          </button>
-        </div>
+        <button className="btn btn--block modal__save" onClick={onClose}>
+          Done
+        </button>
     </Overlay>
   );
 }
