@@ -17,9 +17,10 @@ import {
   BUS_TYPES,
   flagTier,
 } from "../lib/grid";
-import { X, Plus, Check, ChevronLeft, Search } from "lucide-react";
+import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay from "./Overlay";
+import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -36,24 +37,6 @@ const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance",
 // types() gives category ids or lot codes, so match on either.
 function typeNames(codes: string[]): string {
   return codes.map((c) => BUS_TYPES.find((t) => t.id === c || t.code === c)?.label || c).join(" · ");
-}
-
-// Short text summary of a bus's flags for the list rows.
-function entrySummary(entry: FlagEntry | null | undefined): string {
-  if (!entry) return "";
-  const parts = (entry.flags || []).map((id) => {
-    if (id === "retorque") return `Retorque (${retorqueTiresDisplay(entry.retorqueTires)})`;
-    if (id === "hold") return `Hold${(entry.holdReason || "").trim() ? ` (${entry.holdReason})` : ""}`;
-    if (id === "inspection") {
-      const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
-      return o ? `Inspection (${o})` : "Inspection";
-    }
-    return flagName(id);
-  });
-  // Show the note itself, not just the word "Note".
-  const note = (entry.note || "").trim();
-  if (note) parts.push(`“${note.length > 46 ? note.slice(0, 45) + "…" : note}”`);
-  return parts.join(", ");
 }
 
 // ---- detail pickers (shown inline under an active detail flag) ----
@@ -510,16 +493,28 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                     {q ? "No buses match." : "No flagged buses yet — search a bus number to flag it."}
                   </div>
                 )}
-                {busList.map((bus) => (
-                  <button className="busrow" key={bus} onClick={() => setOpenBus(bus)}>
-                    <span className="busblock__num">{label(bus)}</span>
-                    <span className="busblock__type">
-                      <TypeCodes num={bus} />
-                    </span>
-                    <span className="busblock__sum">{entrySummary(getEntry(bus)) || "No flags"}</span>
-                    <span className="busblock__chev">▸</span>
-                  </button>
-                ))}
+                {busList.map((bus) => {
+                  const e = getEntry(bus);
+                  const hasContent = (e.flags || []).length > 0 || !!(e.note || "").trim();
+                  return (
+                    <button className="busrow" key={bus} onClick={() => setOpenBus(bus)}>
+                      <div className="busrow__main">
+                        <div className="busrow__top">
+                          <span className="busrow__num">{label(bus)}</span>
+                          <TypeCodes num={bus} />
+                        </div>
+                        <div className="busrow__pills">
+                          {hasContent ? (
+                            <FlagPills entry={e} />
+                          ) : (
+                            <span className="busrow__none">No flags — tap to add</span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="busrow__chev" size={18} />
+                    </button>
+                  );
+                })}
               </div>
             </>
           ))}

@@ -334,21 +334,54 @@ button {
 
 /* ---------- Search-first flag editor (one bus) ---------- */
 /* A single-bus master row (tap to open its flag editor). */
+/* Browse list of flagged buses — a dense, left-aligned list (not fat cards). */
 .busrow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 13px 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--edge);
-  border-radius: 12px;
+  padding: 11px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--edge);
+  border-radius: 0;
   text-align: left;
   color: var(--text);
-  margin-bottom: 8px;
 }
-.busrow:hover { border-color: var(--edge-strong); }
+.busrow:hover { background: var(--surface-2); }
 .busrow:active { background: var(--surface-3); }
+.busrow__main {
+  flex: 1;
+  min-width: 0;
+}
+.busrow__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.busrow__num {
+  font-weight: 700;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.busrow__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.busrow .fpill {
+  font-size: 11px;
+  padding: 3px 9px;
+}
+.busrow__none {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.busrow__chev {
+  color: var(--text-dim);
+  flex: none;
+}
 /* Bus header shown in the top bar while editing one bus. */
 .busdetail__back {
   display: inline-flex;
@@ -1262,34 +1295,6 @@ button {
 }
 
 /* By-bus rows */
-.busrow {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 6px;
-  border-bottom: 1px solid #f1f5f9;
-}
-.busrow__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.busrow__num {
-  width: 56px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.busrow__type {
-  display: inline-flex;
-  align-items: center;
-  min-width: 80px;
-  font-size: 13px;
-}
-.busrow__flags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
 .fchip {
   border: 1px solid #d1d5db;
   background: #fff;
