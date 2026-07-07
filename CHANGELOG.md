@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 - 2026-07-07
+
+- Restored Fill Rows as a full-screen workflow that covers the app sidebar.
+- Fixed dialog scroll locking so the sheet no longer shifts when menus open.
+
 ## 0.1.2 - 2026-07-07
 
 - Fixed printed sheet dates/times to use Chicago, IL time.

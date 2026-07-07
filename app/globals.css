@@ -99,6 +99,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  scrollbar-gutter: stable;
   background: var(--app-bg);
   color: var(--text);
   font-family: var(--font-sheet);
@@ -234,12 +235,30 @@ button {
   body {
     padding-left: 248px;
   }
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+    scrollbar-gutter: auto !important;
+  }
+  body[data-scroll-locked] {
+    padding-left: 248px !important;
+    padding-top: 0 !important;
+    margin-right: 0 !important;
+  }
 }
 
 @media screen and (max-width: 899px) {
   body {
     padding-top: 66px;
     --sticky-top: 66px;
+  }
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+    scrollbar-gutter: auto !important;
+  }
+  body[data-scroll-locked] {
+    padding-left: 0 !important;
+    padding-top: 66px !important;
+    margin-right: 0 !important;
   }
   .appnav {
     inset: 0 0 auto 0;
@@ -1235,16 +1254,6 @@ button {
 .modal.modal--gate {
   max-width: 430px;
 }
-.modal--rowfill {
-  width: min(760px, calc(100% - 20px));
-  max-width: 760px;
-  padding: 0;
-  overflow: hidden;
-}
-.modal--rowfill .manager__inner {
-  max-width: none;
-  max-height: 88dvh;
-}
 @media (min-width: 540px) {
   .modal {
     top: 50%;
@@ -1393,12 +1402,15 @@ button {
   position: fixed;
   inset: 0;
   /* Full-screen cover (no bleed-through). */
-  z-index: 60;
+  z-index: 130;
   background: var(--surface);
   color: var(--text);
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.manager--rowfill .manager__inner {
+  max-width: 860px;
 }
 /* Keep the manager content narrow so rows are compact (less mouse travel). */
 .manager__inner {
