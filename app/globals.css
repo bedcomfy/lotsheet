@@ -3330,3 +3330,211 @@ td.turnt__head {
     outline: none;
   }
 }
+
+/* ---------- Work Order (Oracle eAM) sheet — white paper, black grid ---------- */
+/* The sheet is always white paper (screen + print). Controls INSIDE it use
+   fixed light-mode colors so they read on white in either theme. */
+.wo-sheet {
+  background: var(--paper);
+  color: var(--ink);
+  width: 100%;
+  max-width: 780px;
+  margin: 14px auto;
+  padding: 26px 30px 30px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+}
+.wo-sheet__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+.wo-sheet__label {
+  font-weight: 700;
+  flex: 1;
+}
+.wo-head-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.wo-logo {
+  width: 82px;
+  height: auto;
+  object-fit: contain;
+}
+.wo-title {
+  font-size: 23px;
+  font-weight: 800;
+  margin: 0;
+}
+.wo-head {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+.wo-head td {
+  border: 1px solid #111;
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+.wo-lbl {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wo-in {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  padding: 2px 0;
+  outline: none;
+}
+.wo-in--c {
+  text-align: center;
+}
+.wo-in::placeholder {
+  color: #c8c8c8;
+}
+.wo-ops,
+.wo-parts {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wo-ops th,
+.wo-ops td,
+.wo-parts th,
+.wo-parts td {
+  border: 1px solid #111;
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.wo-ops th,
+.wo-parts th {
+  font-weight: 700;
+}
+.wo-ops td,
+.wo-parts td {
+  height: 32px;
+}
+/* the screen-only action column has no printed border */
+.wo-ops td.wo-opact,
+.wo-ops th.wo-opact,
+.wo-parts td.wo-opact,
+.wo-parts th.wo-opact {
+  border: none;
+  width: 40px;
+  text-align: center;
+}
+.wo-badge__lbl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wo-badge__lbl > span {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.wo-completion {
+  margin: 14px 0 8px;
+}
+/* screen-only editing controls (styled for the white sheet) */
+.wo-addrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 2px;
+  cursor: pointer;
+}
+.wo-addrow:hover {
+  text-decoration: underline;
+}
+.wo-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+}
+.wo-iconbtn--danger {
+  color: #b91c1c;
+}
+.wo-iconbtn:hover {
+  background: #f3f4f6;
+}
+.wo-iconbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.wo-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  background: #f8fafc;
+}
+.wo-share__lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+.wo-share__op {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.wo-share__opnum {
+  font-size: 12px;
+  color: #6b7280;
+}
+.wo-share__chip {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wo-share__chip--on {
+  background: #e8f1fc;
+  border-color: #2563eb;
+  color: #1e40af;
+  font-weight: 600;
+}
+.wo-addemp {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 24px;
+}
+
+@media print {
+  .wo-sheet {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+  .wo-sheet:last-child {
+    page-break-after: auto;
+  }
+}

@@ -4,7 +4,7 @@ import { getState, setState } from "../../../lib/store";
 export const dynamic = "force-dynamic";
 
 // Sheets allowed to use the shared keyed store. Add new sheet keys here.
-const ALLOWED = new Set(["fuel", "def", "turnover"]);
+const ALLOWED = new Set(["fuel", "def", "turnover", "workorder"]);
 
 interface KeyParams {
   params: { key: string };
