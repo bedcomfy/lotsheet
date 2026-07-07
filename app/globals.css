@@ -362,8 +362,8 @@ textarea:focus-visible {
 
 @media screen and (max-width: 899px) {
   body {
-    padding-top: 66px;
-    --sticky-top: 66px;
+    padding-top: 0;
+    --sticky-top: 56px;
   }
   html body[data-scroll-locked] {
     margin-right: 0 !important;
@@ -371,14 +371,20 @@ textarea:focus-visible {
   }
   body[data-scroll-locked] {
     padding-left: 0 !important;
-    padding-top: 66px !important;
+    padding-top: 0 !important;
     margin-right: 0 !important;
   }
+  /* Sticky in the normal flow (NOT position:fixed) — the iOS-safe header
+     pattern. A fixed bar + body padding-top desynced on iOS and left a dead
+     black gap under the bar; an in-flow sticky bar can't. */
   .appnav {
-    inset: 0 0 auto 0;
+    position: sticky;
+    top: 0;
+    inset: auto;
     width: auto;
-    min-height: 66px;
-    padding: 10px 12px;
+    height: 56px;
+    min-height: 0;
+    padding: 8px 12px;
     flex-direction: row;
     align-items: center;
     gap: 10px;
@@ -405,6 +411,18 @@ textarea:focus-visible {
   }
   .appnav__sub,
   .appnav__section {
+    display: none;
+  }
+  /* ...but keep the theme toggle reachable on mobile — it lives in the bottom
+     section, which we re-show compact at the right of the bar. */
+  .appnav__section--bottom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+    flex: none;
+  }
+  .appnav__section--bottom .appnav__sectionlabel {
     display: none;
   }
   .appnav__picker {
