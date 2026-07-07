@@ -41,7 +41,7 @@ import LotEditor from "./LotEditor";
 import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
-import Overlay from "./Overlay";
+import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
@@ -1595,7 +1595,7 @@ export default function LotSheet() {
                   : ""}
               </div>
             </div>
-            <button className="modal__close" onClick={() => setMissingOpen(false)} aria-label="Close">
+            <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
               ×
             </button>
           </div>
@@ -1631,7 +1631,7 @@ export default function LotSheet() {
           </div>
           <div className="modal__actions">
             <div className="toolbar__spacer" />
-            <button className="btn btn--primary" onClick={() => setMissingOpen(false)}>
+            <button className="btn btn--primary" onClick={closeOverlayFromEvent}>
               Done
             </button>
           </div>
@@ -1678,7 +1678,7 @@ export default function LotSheet() {
                 {inShopCount} bus{inShopCount === 1 ? "" : "es"} inside · shared live with the Shop page
               </div>
             </div>
-            <button className="modal__close" onClick={() => setShopOpen(false)} aria-label="Close">
+            <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
               ×
             </button>
           </div>

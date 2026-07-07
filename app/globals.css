@@ -1666,6 +1666,10 @@ textarea:focus-visible {
 .modal-backdrop[data-state="closed"] {
   animation: overlayBlurOut 0.16s cubic-bezier(.4,0,1,1);
 }
+.modal-backdrop.is-closing {
+  pointer-events: none;
+  animation: overlayBlurOut 0.32s cubic-bezier(.4,0,1,1) forwards;
+}
 /* Menus sit near the TOP on phones — the on-screen keyboard can never cover
    them (a bottom sheet got blocked whenever the keyboard opened). Desktop
    centers them. */
@@ -1691,6 +1695,10 @@ textarea:focus-visible {
 }
 .modal[data-state="closed"] {
   animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
+}
+.modal.is-closing {
+  pointer-events: none;
+  animation: blurFadeOut 0.32s cubic-bezier(.4,0,1,1) forwards;
 }
 .modal.modal--gate {
   max-width: 430px;
@@ -1734,7 +1742,7 @@ textarea:focus-visible {
   margin: -16px -18px 14px;
   padding: 14px 16px;
   border-bottom: 1px solid var(--edge);
-  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  background: var(--surface);
   position: sticky;
   top: -16px;
   z-index: 2;
@@ -1864,9 +1872,7 @@ textarea:focus-visible {
   inset: 0;
   /* Full-screen cover (no bleed-through). */
   z-index: 130;
-  background:
-    radial-gradient(circle at top right, var(--accent-soft), transparent 34rem),
-    var(--app-bg);
+  background: var(--app-bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
@@ -1877,6 +1883,10 @@ textarea:focus-visible {
 }
 .manager[data-state="closed"] {
   animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
+}
+.manager.is-closing {
+  pointer-events: none;
+  animation: blurFadeOut 0.32s cubic-bezier(.4,0,1,1) forwards;
 }
 .manager--rowfill .manager__inner {
   max-width: min(1180px, 100%);
@@ -1889,6 +1899,7 @@ textarea:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  background: var(--surface);
 }
 .manager__bar {
   position: sticky;
@@ -1900,8 +1911,7 @@ textarea:focus-visible {
   min-height: 60px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--edge);
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--surface);
 }
 .manager__title {
   font-weight: 700;
@@ -2290,7 +2300,7 @@ textarea:focus-visible {
 .rf__colhead {
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--app-bg) 72%, var(--surface));
+  background: var(--surface);
   text-align: center;
   font-weight: 700;
   font-size: 13px;
@@ -2685,7 +2695,7 @@ textarea:focus-visible {
   border: 1px solid var(--edge);
   border-radius: 14px;
   padding: 14px 16px 16px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 .shopcard--btn {
   cursor: pointer;
@@ -2839,6 +2849,7 @@ textarea:focus-visible {
 /* ---------- The SHOP menu on the lot sheet (screen-only dialog) ---------- */
 .modal--shop {
   max-width: 560px;
+  background: var(--surface);
 }
 .shopmenu {
   display: flex;

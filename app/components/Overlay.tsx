@@ -2,7 +2,15 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+
+const OVERLAY_CLOSE_EVENT = "pace-overlay-close";
+
+export function closeOverlayFromEvent(e: ReactMouseEvent<HTMLElement>) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.dispatchEvent(new CustomEvent(OVERLAY_CLOSE_EVENT, { bubbles: true }));
+}
 
 interface OverlayProps {
   onClose: () => void;
@@ -30,13 +38,34 @@ interface OverlayProps {
 // that opened the dialog and the browser scrolls it into view — the "page jumps
 // after editing a box" bug.
 export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", onOpenFocus, children }: OverlayProps) {
-  const [open, setOpen] = useState(true);
+  const [closing, setClosing] = useState(false);
   const closeTimer = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   function requestClose() {
-    setOpen(false);
+    if (closing) return;
+    setClosing(true);
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
-    closeTimer.current = window.setTimeout(onClose, 180);
+    closeTimer.current = window.setTimeout(onClose, 340);
+  }
+
+  function isCloseButton(button: HTMLElement) {
+    const text = (button.textContent || "").trim();
+    return (
+      button.classList.contains("modal__close") ||
+      button.getAttribute("aria-label") === "Close" ||
+      text === "Done"
+    );
+  }
+
+  function interceptReactCloseClick(e: ReactMouseEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement;
+    const button = target.closest("button");
+    if (!button || !e.currentTarget.contains(button) || !isCloseButton(button)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    requestClose();
   }
 
   // Pin the page's scroll position across the dialog's lifetime. Focus
@@ -55,18 +84,49 @@ export default function Overlay({ onClose, contentClassName, overlayClassName, l
       setTimeout(restore, 300); // after the mobile keyboard finishes closing
     };
   }, []);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const contentEl = el;
+    function interceptNativeClick(e: globalThis.MouseEvent) {
+      const target = e.target as HTMLElement;
+      const button = target.closest("button");
+      if (!button || !contentEl.contains(button) || !isCloseButton(button)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      requestClose();
+    }
+    function closeFromChildEvent(e: Event) {
+      e.preventDefault();
+      e.stopPropagation();
+      requestClose();
+    }
+    contentEl.addEventListener("click", interceptNativeClick, true);
+    contentEl.addEventListener(OVERLAY_CLOSE_EVENT, closeFromChildEvent);
+    return () => {
+      contentEl.removeEventListener("click", interceptNativeClick, true);
+      contentEl.removeEventListener(OVERLAY_CLOSE_EVENT, closeFromChildEvent);
+    };
+  });
+
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => { if (!o) requestClose(); }}>
-      <Dialog.Portal>
-        {overlayClassName && <Dialog.Overlay className={overlayClassName} />}
+    <Dialog.Root open onOpenChange={(o) => { if (!o) requestClose(); }}>
+      <Dialog.Portal forceMount>
+        {overlayClassName && <Dialog.Overlay forceMount className={`${overlayClassName}${closing ? " is-closing" : ""}`} />}
         <Dialog.Content
-          className={contentClassName}
+          forceMount
+          ref={contentRef}
+          className={`${contentClassName}${closing ? " is-closing" : ""}`}
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
             e.preventDefault(); // never let Radix's default focus scroll the page
             onOpenFocus?.();
           }}
           onCloseAutoFocus={(e) => e.preventDefault()}
+          onPointerDownCapture={interceptReactCloseClick}
+          onClickCapture={interceptReactCloseClick}
         >
           <Dialog.Title className="sr-only">{label}</Dialog.Title>
           {children}

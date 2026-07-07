@@ -19,7 +19,7 @@ import {
 } from "../lib/grid";
 import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
-import Overlay from "./Overlay";
+import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
@@ -455,7 +455,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
             <div className="manager__title">Edit flags</div>
           )}
           <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={closeOverlayFromEvent}>
             Done
           </button>
         </div>

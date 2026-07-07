@@ -9,7 +9,7 @@ import {
   row11CellId,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import Overlay from "./Overlay";
+import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
 
 // Garage rows are normally walked two at a time. (0-indexed; ROW 11 stands alone.)
@@ -211,7 +211,7 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
             Berto
           </label>
           <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={closeOverlayFromEvent}>
             Done
           </button>
         </div>
