@@ -10,6 +10,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
 import ManagerPanel from "./ManagerPanel";
 import SheetHistory from "./SheetHistory";
+import { chicagoDateShort } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
 const FONT_DEFAULT = 14;
@@ -62,10 +63,7 @@ function emptyData(): FuelData {
 }
 // The date the sheet is printed, as MM/DD/YY (e.g. 06/25/26).
 function printDate(): string {
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${mm}/${dd}/${String(d.getFullYear()).slice(-2)}`;
+  return chicagoDateShort();
 }
 function sanitizeGals(raw: string): string {
   let s = String(raw).replace(/[^0-9.]/g, "");
@@ -286,6 +284,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   // respects it too, not just the PDF render.
   const sections = fuelFlagSections(busFlags);
   const showSummary = sections.length > 0;
+  const displayDate = data.date && data.date.trim() ? data.date : printDate();
 
   return (
     <div className="app">
@@ -332,7 +331,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
                     <div className="fuelt__hdrrow">
                       <span className="fuelt__name">{title}</span>
                       <span className="fuelt__field">
-                        DATE: <span className="fuelt__date"><span className="fuelt__dateval">{printDate()}</span></span>
+                        DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
                       </span>
                       <span className="fuelt__field fuelt__ns">N / S</span>
                       <span className="fuelt__field">
@@ -351,7 +350,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
                       <span className="fuelt__name">{title}</span>
                     </td>
                     <td colSpan={6}>
-                      DATE: <span className="fuelt__date"><span className="fuelt__dateval">{printDate()}</span></span>
+                      DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
                     </td>
                   </>
                 )}
@@ -376,7 +375,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
           <div className={`sheet fuel-sheet fuelsum ${showFlags ? "fuel-sheet--flags" : ""}`}>
             <div className="fuelsum__head">
               <div className="fuelsum__title">SERVICE LANE</div>
-              <div className="fuelsum__date">{printDate()}</div>
+              <div className="fuelsum__date">{displayDate}</div>
             </div>
             <div className="fuelsum__sections">
               {sections.map((sec) => (

@@ -42,6 +42,7 @@ import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
 import Overlay from "./Overlay";
+import { chicagoLotStamp } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -96,17 +97,7 @@ function blankPrintSheet(): LotSheetData {
 }
 
 function printStamp(now = new Date()) {
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const h24 = now.getHours();
-  const min = String(now.getMinutes()).padStart(2, "0");
-  const h12 = h24 % 12 || 12;
-  const ampm = h24 >= 12 ? "PM" : "AM";
-  return {
-    date: `${mm}/${dd}/${yyyy}`,
-    time: `${h12}:${min} ${ampm} / ${String(h24).padStart(2, "0")}${min}`,
-  };
+  return chicagoLotStamp(now);
 }
 
 // Read a query param on the very first render (used by the server-side PDF,
@@ -306,7 +297,8 @@ export default function LotSheet() {
   const [printedAt, setPrintedAt] = useState(() => printStamp());
   const [nativePrinting, setNativePrinting] = useState(false);
   const [blankPrintMode, setBlankPrintMode] = useState(false);
-  const [timeDateOverridden, setTimeDateOverridden] = useState(false);
+  const [timeOverridden, setTimeOverridden] = useState(false);
+  const [dateOverridden, setDateOverridden] = useState(false);
 
   // Read the print query params on the client (not during SSR/prerender, where
   // window doesn't exist — a lazy initializer would bake in the wrong value).
@@ -318,6 +310,20 @@ export default function LotSheet() {
     if (param("blank") === "1") setBlankPrintMode(true);
     if (param("maint") === "1") setShowMaint(true);
   }, []);
+
+  useEffect(() => {
+    if (!loaded || !printMode) return;
+    const timeOverride = param("timeOverride");
+    const dateOverride = param("dateOverride");
+    if (timeOverride == null && dateOverride == null) return;
+    setSheet((s) => ({
+      ...s,
+      ...(timeOverride != null ? { time: timeOverride } : {}),
+      ...(dateOverride != null ? { date: dateOverride } : {}),
+    }));
+    if (timeOverride != null) setTimeOverridden(!!timeOverride.trim());
+    if (dateOverride != null) setDateOverridden(!!dateOverride.trim());
+  }, [loaded, printMode]);
 
   useEffect(() => {
     const before = () => {
@@ -334,18 +340,20 @@ export default function LotSheet() {
   }, []);
 
   useEffect(() => {
-    if (!loaded || printMode || timeDateOverridden) return;
+    if (!loaded || printMode || (timeOverridden && dateOverridden)) return;
     const syncClock = () => {
       const stamp = printStamp();
       setSheet((s) => {
-        if (s.time === stamp.time && s.date === stamp.date) return s;
-        return { ...s, time: stamp.time, date: stamp.date };
+        const nextTime = timeOverridden && s.time ? s.time : stamp.time;
+        const nextDate = dateOverridden && s.date ? s.date : stamp.date;
+        if (s.time === nextTime && s.date === nextDate) return s;
+        return { ...s, time: nextTime, date: nextDate };
       });
     };
     syncClock();
     const timer = window.setInterval(syncClock, 15000);
     return () => window.clearInterval(timer);
-  }, [loaded, printMode, timeDateOverridden]);
+  }, [loaded, printMode, timeOverridden, dateOverridden]);
   const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
@@ -473,7 +481,8 @@ export default function LotSheet() {
   }, [loaded]);
 
   function setField(field: LotStringField, value: string) {
-    if (field === "time" || field === "date") setTimeDateOverridden(true);
+    if (field === "time") setTimeOverridden(!!value.trim());
+    if (field === "date") setDateOverridden(!!value.trim());
     setSheet((s) => ({ ...s, [field]: value }));
   }
 
@@ -595,7 +604,8 @@ export default function LotSheet() {
     }
     await archiveSheet(sheet);
     offerUndo("Grid cleared");
-    setTimeDateOverridden(false);
+    setTimeOverridden(false);
+    setDateOverridden(false);
     // Locked buses stay put through the clear (and blocked X spots stay blocked).
     setSheet((s) => {
       const kept: Record<string, string> = {};
@@ -934,7 +944,10 @@ export default function LotSheet() {
   function openPdf() {
     // Absolute URL: the print tab opens as about:blank, where a relative
     // "/api/pdf" wouldn't resolve to the site.
-    const target = `${window.location.origin}/api/pdf?maint=${showMaint ? 1 : 0}`;
+    const qs = new URLSearchParams({ maint: showMaint ? "1" : "0" });
+    if (timeOverridden && sheet.time?.trim()) qs.set("timeOverride", sheet.time);
+    if (dateOverridden && sheet.date?.trim()) qs.set("dateOverride", sheet.date);
+    const target = `${window.location.origin}/api/pdf?${qs.toString()}`;
     openPdfTarget(target, () =>
       fetch("/api/sheet", {
         method: "PUT",
@@ -1139,8 +1152,20 @@ export default function LotSheet() {
   const foundBus = findVal.length >= 4 ? findVal : "";
   const foundWhere = foundBus ? locateBus(foundBus, null) : "";
   const printHeaderActive = printMode || nativePrinting;
-  const headerTime = blankPrintMode ? "" : printHeaderActive ? printedAt.time : sheet.time;
-  const headerDate = blankPrintMode ? "" : printHeaderActive ? printedAt.date : sheet.date;
+  const headerTime = blankPrintMode
+    ? ""
+    : timeOverridden && sheet.time
+      ? sheet.time
+      : printHeaderActive
+        ? printedAt.time
+        : sheet.time || printedAt.time;
+  const headerDate = blankPrintMode
+    ? ""
+    : dateOverridden && sheet.date
+      ? sheet.date
+      : printHeaderActive
+        ? printedAt.date
+        : sheet.date || printedAt.date;
 
   // Quick stats for the toolbar chip ("X" = a blocked spot, not a bus).
   const onGridCount = Object.values(sheet.cells || {}).filter((v) => {

@@ -12,6 +12,7 @@ import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanel";
 import LotEditor from "./LotEditor";
+import { chicagoParts } from "../lib/chicagoTime";
 import type { Employee, FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
 
 const STORAGE_KEY = "turnover";
@@ -92,21 +93,21 @@ export default function TurnoverSheet() {
 
   // Auto-fill today's date (MM / DD / YY) when the sheet has no date yet.
   useEffect(() => {
-    if (!loaded || printMode) return;
+    if (!loaded) return;
     setData((d) => {
       if (d.cells["date-m"] || d.cells["date-d"] || d.cells["date-y"]) return d;
-      const now = new Date();
+      const now = chicagoParts();
       return {
         ...d,
         cells: {
           ...d.cells,
-          "date-m": String(now.getMonth() + 1).padStart(2, "0"),
-          "date-d": String(now.getDate()).padStart(2, "0"),
-          "date-y": String(now.getFullYear()).slice(-2),
+          "date-m": now.month,
+          "date-d": now.day,
+          "date-y": now.year.slice(-2),
         },
       };
     });
-  }, [loaded, printMode]);
+  }, [loaded, data.cells["date-m"], data.cells["date-d"], data.cells["date-y"]]);
 
   useEffect(() => {
     let alive = true;

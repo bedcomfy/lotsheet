@@ -198,7 +198,12 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
   }
 
   return (
-    <Overlay onClose={onClose} contentClassName="manager no-print" label="Fill Rows">
+    <Overlay
+      onClose={onClose}
+      overlayClassName="modal-backdrop no-print"
+      contentClassName="modal modal--rowfill no-print"
+      label="Fill Rows"
+    >
       <div className="manager__inner">
         <div className="manager__bar">
           <div className="manager__title">Fill Rows</div>

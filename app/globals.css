@@ -1235,6 +1235,16 @@ button {
 .modal.modal--gate {
   max-width: 430px;
 }
+.modal--rowfill {
+  width: min(760px, calc(100% - 20px));
+  max-width: 760px;
+  padding: 0;
+  overflow: hidden;
+}
+.modal--rowfill .manager__inner {
+  max-width: none;
+  max-height: 88dvh;
+}
 @media (min-width: 540px) {
   .modal {
     top: 50%;

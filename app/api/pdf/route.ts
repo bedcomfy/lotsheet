@@ -8,6 +8,7 @@
 
 import { createHash } from "crypto";
 import { getSheet, getFlags, getState, getPdfCache, setPdfCache } from "../../lib/store";
+import { chicagoMinuteKey } from "../../lib/chicagoTime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "23"; // Blank Lot Sheet one-page PDF
+const PDF_VERSION = "24"; // Chicago print timestamps
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -37,11 +38,6 @@ function signature(data: unknown, maint: boolean): string {
   return createHash("sha1")
     .update(JSON.stringify({ v: PDF_VERSION, maint: !!maint, data: stable(data ?? null) }))
     .digest("hex");
-}
-
-function printMinuteKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 // The data a sheet's PDF is built from — used for the cache signature so a
@@ -101,13 +97,24 @@ async function launchBrowser(): Promise<any> {
 // `<path>?print=1` and expose a #print-ready marker when loaded.
 const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover", "/workorder"]);
 
-async function renderPdf(req: Request, maint: boolean, path: string, fz: number | null, blank: boolean): Promise<Buffer> {
+async function renderPdf(
+  req: Request,
+  maint: boolean,
+  path: string,
+  fz: number | null,
+  blank: boolean,
+  overrides: { timeOverride?: string; dateOverride?: string }
+): Promise<Buffer> {
   const host = req.headers.get("host");
   const proto =
     req.headers.get("x-forwarded-proto") ||
     (host && host.startsWith("localhost") ? "http" : "https");
   const pageUrl =
-    `${proto}://${host}${path}?print=1&maint=${maint ? "1" : "0"}` + (fz ? `&fz=${fz}` : "") + (blank ? "&blank=1" : "");
+    `${proto}://${host}${path}?print=1&maint=${maint ? "1" : "0"}` +
+    (fz ? `&fz=${fz}` : "") +
+    (blank ? "&blank=1" : "") +
+    (overrides.timeOverride ? `&timeOverride=${encodeURIComponent(overrides.timeOverride)}` : "") +
+    (overrides.dateOverride ? `&dateOverride=${encodeURIComponent(overrides.dateOverride)}` : "");
 
   // On a cold start the chromium binary is still being extracted to /tmp when we
   // try to spawn it, which fails with "spawn ETXTBSY" (text file busy). Retry a
@@ -140,6 +147,10 @@ export async function GET(req: Request) {
   const maint = url.searchParams.get("maint") === "1";
   const blank = url.searchParams.get("blank") === "1";
   const prewarm = url.searchParams.get("prewarm") === "1";
+  const overrides = {
+    timeOverride: url.searchParams.get("timeOverride") || undefined,
+    dateOverride: url.searchParams.get("dateOverride") || undefined,
+  };
   let path = url.searchParams.get("path") || "/";
   if (!ALLOWED_PATHS.has(path)) path = "/";
   // Optional font size (fuel/def) so the printout matches the chosen on-screen size.
@@ -152,7 +163,7 @@ export async function GET(req: Request) {
   try {
     // Every sheet is cached by a signature of its data (+ font), so a later
     // "Print PDF" (or a background prewarm after edits) returns instantly.
-    const sig = signature({ d: await sheetData(path, blank), fz, blank, printMinute: path === "/" && !blank ? printMinuteKey() : null }, maint);
+    const sig = signature({ d: await sheetData(path, blank), fz, blank, overrides, printMinute: blank ? null : chicagoMinuteKey() }, maint);
     const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
       if (prewarm) return Response.json({ ok: true, cached: true });
@@ -160,7 +171,7 @@ export async function GET(req: Request) {
     }
 
     // Cache miss — generate (the slow path) and store for next time.
-    const pdf = await renderPdf(req, maint, path, fz, blank);
+    const pdf = await renderPdf(req, maint, path, fz, blank, overrides);
     await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
     return new Response(pdf as unknown as BodyInit, { status: 200, headers });

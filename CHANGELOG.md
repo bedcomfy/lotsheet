@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 - 2026-07-07
+
+- Fixed printed sheet dates/times to use Chicago, IL time.
+- Updated PDF cache keys so printouts refresh when Chicago print time changes.
+- Kept user-entered time/date values while autofilling blank fields.
+- Changed Fill Rows to open as a normal modal instead of a full-screen manager panel.
+
 ## 0.1.1 - 2026-07-07
 
 - Added the new sidebar navigation layout with clearer sheet and tool sections.

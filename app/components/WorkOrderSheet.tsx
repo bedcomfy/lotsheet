@@ -5,6 +5,7 @@ import { openSheetPdf } from "../lib/pdf";
 import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen } from "lucide-react";
 import ToolMenu from "./ToolMenu";
 import WorkOrderHistory from "./WorkOrderHistory";
+import { chicagoDateShort } from "../lib/chicagoTime";
 
 const STORAGE_KEY = "workorder";
 const PRINT_PART_ROWS = 5;
@@ -121,14 +122,12 @@ export default function WorkOrderSheet() {
 
   // Auto-fill Today's Date once, when empty.
   useEffect(() => {
-    if (!loaded || printMode) return;
+    if (!loaded) return;
     setData((d) => {
       if (d.todaysDate) return d;
-      const now = new Date();
-      const t = `${String(now.getMonth() + 1).padStart(2, "0")}/${String(now.getDate()).padStart(2, "0")}/${String(now.getFullYear()).slice(-2)}`;
-      return { ...d, todaysDate: t };
+      return { ...d, todaysDate: chicagoDateShort() };
     });
-  }, [loaded, printMode]);
+  }, [loaded, data.todaysDate]);
 
   function schedulePrewarm() {
     if (printMode) return;
