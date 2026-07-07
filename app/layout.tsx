@@ -42,7 +42,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <BusMasterProvider>
           <SheetNav />
-          {children}
+          {/* The wide sheet is contained here (overflow-x: clip) instead of on
+              <body>, so the sticky mobile nav can pin to the viewport — a clip
+              on <body> makes body children stick to the scrolling body instead. */}
+          <div className="appmain">{children}</div>
         </BusMasterProvider>
       </body>
     </html>

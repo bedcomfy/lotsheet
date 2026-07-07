@@ -109,9 +109,13 @@ body {
   color: var(--text);
   font-family: var(--font-sheet);
   -webkit-text-size-adjust: 100%;
-  /* The PAGE never scrolls sideways — wide content (the sheet) pans inside its
-     own scroll area instead, so the nav/toolbar stay on screen. `clip` doesn't
-     create a scroll container, so the sticky toolbar keeps working. */
+}
+/* The PAGE never scrolls sideways — wide content (the sheet) pans inside its own
+   scroll area instead. This clip lives on the content wrapper, NOT on <body>: a
+   clip on <body> makes body's own children (the sticky nav) stick to the
+   scrolling body rather than the viewport. `clip` doesn't create a scroll
+   container, so the sticky toolbar inside still works. */
+.appmain {
   overflow-x: clip;
 }
 
@@ -379,8 +383,9 @@ textarea:focus-visible {
      black gap under the bar; an in-flow sticky bar can't. */
   .appnav {
     position: sticky;
-    top: 0;
-    inset: auto;
+    /* top:0 only — NOT `top:0; inset:auto`, since the inset shorthand would
+       reset top back to auto and the bar would never stick. */
+    inset: 0 auto auto auto;
     width: auto;
     height: 56px;
     min-height: 0;
@@ -2206,17 +2211,14 @@ textarea:focus-visible {
 
 /* ---------- Small screens (phones) — screen only, never print ---------- */
 @media screen and (max-width: 480px) {
-  /* Toolbar: ONE row you can swipe sideways — no tall stack of wrapped buttons */
+  /* Toolbar wraps onto as many rows as it needs. (It used to be one sideways-
+     swipe row, but a horizontal drag that started on the More button also opened
+     the dropdown — wrapping removes the swipe gesture and that conflict, and
+     keeps every button visible instead of hidden off-screen.) */
   .toolbar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    flex-wrap: wrap;
     gap: 6px;
     padding: 8px 10px;
-  }
-  .toolbar::-webkit-scrollbar {
-    display: none;
   }
   .toolbar > * {
     flex: none;
