@@ -225,7 +225,7 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
           </div>
         )}
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <DndContext id="lot-editor-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
           <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
             <div className="lotlist">
               {list.length === 0 && (

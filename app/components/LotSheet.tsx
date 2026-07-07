@@ -1345,7 +1345,7 @@ export default function LotSheet() {
       </div>
 
       {/* The printable sheet */}
-      <DndContext sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
+      <DndContext id="lot-sheet-dnd" sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
       <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
         <div className={`sheet ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}

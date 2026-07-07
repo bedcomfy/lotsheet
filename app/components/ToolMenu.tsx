@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { MoreHorizontal, ChevronDown } from "lucide-react";
@@ -23,6 +23,23 @@ export default function ToolMenu({ label = "More", children }: ToolMenuProps) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const placePanel = useCallback(() => {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const panelWidth = 252;
+    const gutter = 10;
+    const navWidth =
+      window.matchMedia("(min-width: 900px)").matches
+        ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nav-w")) || 272
+        : 0;
+    const minLeft = navWidth + gutter;
+    const maxLeft = window.innerWidth - panelWidth - gutter;
+    const preferredLeft = r.right - panelWidth;
+    const left = Math.max(minLeft, Math.min(maxLeft, preferredLeft));
+    const maxTop = window.innerHeight - 12;
+    setPos({ top: Math.min(maxTop, r.bottom + 8), left });
+  }, []);
+
   useEffect(() => {
     function onDoc(e: MouseEvent | TouchEvent) {
       const t = e.target as Node;
@@ -38,17 +55,19 @@ export default function ToolMenu({ label = "More", children }: ToolMenuProps) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    placePanel();
+    window.addEventListener("resize", placePanel);
+    window.addEventListener("scroll", placePanel, true);
+    return () => {
+      window.removeEventListener("resize", placePanel);
+      window.removeEventListener("scroll", placePanel, true);
+    };
+  }, [open, placePanel]);
+
   function toggle() {
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      const panelWidth = 224;
-      const sidebarEdge = window.matchMedia("(min-width: 900px)").matches ? 248 : 8;
-      const left = Math.min(
-        window.innerWidth - panelWidth - 8,
-        Math.max(sidebarEdge + 8, r.left)
-      );
-      setPos({ top: r.bottom + 6, left });
-    }
+    if (!open) placePanel();
     setOpen((o) => !o);
   }
 
