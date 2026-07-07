@@ -121,6 +121,34 @@ button {
   color: inherit; /* iOS Safari otherwise renders button text in system blue */
   -webkit-text-fill-color: currentColor;
 }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+::view-transition-new(root) {
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* ---------- App shell navigation (screen only) ---------- */
 .appnav {
@@ -131,7 +159,9 @@ button {
   flex-direction: column;
   width: var(--nav-w);
   padding: 18px 14px;
-  background: var(--chrome);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 220px),
+    var(--chrome);
   border-right: 1px solid var(--edge);
   color: var(--text);
 }
@@ -153,7 +183,7 @@ button {
   border-radius: 12px;
   background: var(--surface-2);
   border: 1px solid var(--edge);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-soft);
   flex: none;
 }
 .appnav__logo {
@@ -213,6 +243,7 @@ button {
 }
 .appnav__link,
 .appnav__btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -226,7 +257,8 @@ button {
   font-size: 14px;
   font-weight: 700;
   text-align: left;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  overflow: hidden;
+  transition: background 0.16s, border-color 0.16s, color 0.16s, transform 0.12s;
 }
 .appnav__link svg,
 .appnav__btn svg {
@@ -236,6 +268,7 @@ button {
 .appnav__btn:hover {
   background: var(--surface-2);
   color: var(--text);
+  transform: translateX(2px);
 }
 .appnav__link--active {
   background: var(--accent-soft);
@@ -243,8 +276,100 @@ button {
   color: var(--accent);
   box-shadow: inset 3px 0 0 var(--accent), 0 8px 18px rgba(37, 99, 235, 0.1);
 }
+.appnav__link--active::after {
+  content: "";
+  position: absolute;
+  inset: 8px 8px 8px auto;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.8;
+}
 .appnav__icon {
   aspect-ratio: auto;
+}
+.theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  transition: border-color 0.16s, background 0.16s, transform 0.12s;
+}
+.theme-toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: translateX(-120%);
+  transition: transform 0.55s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.theme-toggle:hover {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+.theme-toggle:hover::before {
+  transform: translateX(120%);
+}
+.theme-toggle__track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 48px;
+  height: 28px;
+  padding: 3px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #60a5fa);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+  flex: none;
+}
+.theme-toggle__thumb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.28);
+  transform: translateX(20px);
+  transition: transform 0.26s cubic-bezier(.2,.8,.2,1), color 0.2s;
+}
+.theme-toggle--light .theme-toggle__thumb {
+  transform: translateX(0);
+}
+.theme-toggle__sun,
+.theme-toggle__moon {
+  position: absolute;
+  transition: transform 0.22s, opacity 0.22s;
+}
+.theme-toggle--dark .theme-toggle__sun,
+.theme-toggle--light .theme-toggle__moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.theme-toggle--dark .theme-toggle__moon,
+.theme-toggle--light .theme-toggle__sun {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.65);
+}
+.theme-toggle__label {
+  min-width: 0;
 }
 
 @media screen and (min-width: 900px) {
@@ -342,6 +467,30 @@ button {
   .appnav__themeText {
     display: none;
   }
+  .theme-toggle {
+    width: 42px;
+    min-height: 38px;
+    justify-content: center;
+    padding: 0;
+    box-shadow: none;
+    flex: none;
+  }
+  .theme-toggle__track {
+    width: 32px;
+    height: 20px;
+    padding: 2px;
+  }
+  .theme-toggle__thumb {
+    width: 16px;
+    height: 16px;
+    transform: translateX(12px);
+  }
+  .theme-toggle--light .theme-toggle__thumb {
+    transform: translateX(0);
+  }
+  .theme-toggle__label {
+    display: none;
+  }
 }
 
 @media screen and (max-width: 520px) {
@@ -408,6 +557,12 @@ button {
   border-radius: 14px;
   background: var(--surface);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.12);
+  transition: border-color 0.16s, box-shadow 0.16s, transform 0.16s;
+}
+.homefind:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.16);
+  transform: translateY(-1px);
 }
 .homefind svg {
   color: var(--text-dim);
@@ -445,11 +600,20 @@ button {
   margin-bottom: 26px;
 }
 .homecard {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--edge);
   background: var(--surface);
   color: var(--text);
   border-radius: 8px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.1);
+}
+.homecard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
 }
 .statcard {
   display: grid;
@@ -514,6 +678,8 @@ button {
   gap: 10px;
 }
 .actionrow {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr);
   gap: 13px;
@@ -531,6 +697,7 @@ button {
 .tooltile:hover,
 .statcard:hover {
   border-color: var(--accent);
+  transform: translateY(-1px);
 }
 .actionrow__icon {
   display: inline-flex;
@@ -1067,6 +1234,8 @@ button {
   text-align: center;
 }
 .btn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1078,11 +1247,13 @@ button {
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  transition: background 0.12s, border-color 0.12s, transform 0.04s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 0.16s, border-color 0.16s, transform 0.08s, box-shadow 0.16s;
 }
 .btn:hover {
   background: var(--surface-2);
   border-color: var(--edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 18px rgba(0, 0, 0, 0.1);
 }
 .btn:active {
   transform: translateY(1px);
@@ -1095,6 +1266,23 @@ button {
   border-color: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.16);
+}
+.btn--primary::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.34) 45%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.55s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.btn--primary:hover::before {
+  transform: translateX(120%);
+}
+.btn > svg,
+.btn > span {
+  position: relative;
+  z-index: 1;
 }
 .btn--primary:hover {
   background: var(--accent-dark);
@@ -1527,6 +1715,7 @@ button {
   box-shadow: var(--shadow-pop);
   max-height: 88dvh; /* scroll within the dialog if it's tall */
   overflow-y: auto;
+  animation: surfaceFade 0.16s cubic-bezier(.2,.8,.2,1);
 }
 .modal.modal--gate {
   max-width: 430px;
@@ -1707,6 +1896,7 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
+  animation: panelIn 0.18s cubic-bezier(.2,.8,.2,1);
 }
 .manager--rowfill .manager__inner {
   max-width: min(1180px, 100%);
@@ -3356,6 +3546,8 @@ button {
   padding: 7px;
   max-height: min(420px, calc(100dvh - 24px));
   overflow-y: auto;
+  transform-origin: top left;
+  animation: menuIn 0.14s cubic-bezier(.2,.8,.2,1);
 }
 .toolmenu__item {
   display: flex;
@@ -3396,6 +3588,35 @@ button {
   height: 1px;
   background: var(--edge);
   margin: 5px 6px;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes surfaceFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ---------- Print ---------- */

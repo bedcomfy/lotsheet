@@ -35,7 +35,7 @@ const THEME_INIT = `(function(){try{var t=localStorage.getItem('pace:theme');doc
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
