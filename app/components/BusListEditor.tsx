@@ -36,7 +36,7 @@ export default function BusListEditor({ onClose }: BusListEditorProps) {
 
   if (!unlocked) {
     return (
-      <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal" label="Bus Lists">
+      <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--gate" label="Bus Lists">
           <div className="modal__head">
             <div>
               <div className="modal__title">Bus Lists</div>

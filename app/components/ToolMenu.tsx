@@ -18,7 +18,7 @@ interface ToolMenuProps {
 // stopPropagation to stay open.
 export default function ToolMenu({ label = "More", children }: ToolMenuProps) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,13 @@ export default function ToolMenu({ label = "More", children }: ToolMenuProps) {
   function toggle() {
     if (!open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+      const panelWidth = 224;
+      const sidebarEdge = window.matchMedia("(min-width: 900px)").matches ? 248 : 8;
+      const left = Math.min(
+        window.innerWidth - panelWidth - 8,
+        Math.max(sidebarEdge + 8, r.left)
+      );
+      setPos({ top: r.bottom + 6, left });
     }
     setOpen((o) => !o);
   }
@@ -57,7 +63,7 @@ export default function ToolMenu({ label = "More", children }: ToolMenuProps) {
           <div
             ref={panelRef}
             className="toolmenu__panel"
-            style={{ top: pos.top, right: pos.right }}
+            style={{ top: pos.top, left: pos.left }}
             role="menu"
             onClick={() => setOpen(false)}
           >

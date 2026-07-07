@@ -32,6 +32,7 @@ export default function ThemeToggle() {
       title="Toggle light / dark"
     >
       {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      <span className="appnav__themeText">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
     </button>
   );
 }

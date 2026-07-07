@@ -71,20 +71,41 @@ function cellToNum(v: unknown): string {
 }
 
 function emptySheet(): LotSheetData {
-  const now = new Date();
-  const yyyy = now.getFullYear();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const min = String(now.getMinutes()).padStart(2, "0");
+  const stamp = printStamp();
   return {
-    time: `${hh}:${min}`,
-    date: `${mm}/${dd}/${yyyy}`,
+    time: stamp.time,
+    date: stamp.date,
     offProperty: "",
     inShop: "",
     cells: {}, // id -> bus number string
     lots: { north: [], east: [], fence: [] }, // back-of-sheet ordered lists
     locks: [], // cell ids whose bus survives "Clear Grid"
+  };
+}
+
+function blankPrintSheet(): LotSheetData {
+  return {
+    time: "",
+    date: "",
+    offProperty: "",
+    inShop: "",
+    cells: {},
+    lots: { north: [], east: [], fence: [] },
+    locks: [],
+  };
+}
+
+function printStamp(now = new Date()) {
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const h24 = now.getHours();
+  const min = String(now.getMinutes()).padStart(2, "0");
+  const h12 = h24 % 12 || 12;
+  const ampm = h24 >= 12 ? "PM" : "AM";
+  return {
+    date: `${mm}/${dd}/${yyyy}`,
+    time: `${h12}:${min} ${ampm} / ${String(h24).padStart(2, "0")}${min}`,
   };
 }
 
@@ -282,13 +303,49 @@ export default function LotSheet() {
   // the server and expose a readiness marker the PDF generator waits for.
   const [printMode, setPrintMode] = useState(false);
   const [showMaint, setShowMaint] = useState(false); // print maintenance info?
+  const [printedAt, setPrintedAt] = useState(() => printStamp());
+  const [nativePrinting, setNativePrinting] = useState(false);
+  const [blankPrintMode, setBlankPrintMode] = useState(false);
+  const [timeDateOverridden, setTimeDateOverridden] = useState(false);
 
   // Read the print query params on the client (not during SSR/prerender, where
   // window doesn't exist — a lazy initializer would bake in the wrong value).
   useEffect(() => {
-    if (param("print") === "1") setPrintMode(true);
+    if (param("print") === "1") {
+      setPrintMode(true);
+      setPrintedAt(printStamp());
+    }
+    if (param("blank") === "1") setBlankPrintMode(true);
     if (param("maint") === "1") setShowMaint(true);
   }, []);
+
+  useEffect(() => {
+    const before = () => {
+      setPrintedAt(printStamp());
+      setNativePrinting(true);
+    };
+    const after = () => setNativePrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || printMode || timeDateOverridden) return;
+    const syncClock = () => {
+      const stamp = printStamp();
+      setSheet((s) => {
+        if (s.time === stamp.time && s.date === stamp.date) return s;
+        return { ...s, time: stamp.time, date: stamp.date };
+      });
+    };
+    syncClock();
+    const timer = window.setInterval(syncClock, 15000);
+    return () => window.clearInterval(timer);
+  }, [loaded, printMode, timeDateOverridden]);
   const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
@@ -303,11 +360,20 @@ export default function LotSheet() {
   // The sheet text runs +2px over the base sizes (the old adjustable "Sheet
   // Settings" stepper is gone — everyone gets the standard size).
   const FONT_BASE = 2;
+  const displaySheet = blankPrintMode ? blankPrintSheet() : sheet;
+  const displayFlags: FlagMap = blankPrintMode ? {} : flags;
 
   // Load the shared current sheet from the server. Show the device cache first
   // so the page isn't blank on a slow connection, then sync with the server.
   useEffect(() => {
     let cancelled = false;
+    if (param("blank") === "1") {
+      setSheet(blankPrintSheet());
+      setLoaded(true);
+      return () => {
+        cancelled = true;
+      };
+    }
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
       if (cached) setSheet(JSON.parse(cached));
@@ -334,6 +400,11 @@ export default function LotSheet() {
 
   // Load shared bus flags.
   useEffect(() => {
+    if (param("blank") === "1") {
+      setFlags({});
+      setFlagsLoaded(true);
+      return;
+    }
     fetch("/api/flags")
       .then((r) => r.json())
       .then((d) => setFlags(d.flags || {}))
@@ -402,12 +473,13 @@ export default function LotSheet() {
   }, [loaded]);
 
   function setField(field: LotStringField, value: string) {
+    if (field === "time" || field === "date") setTimeDateOverridden(true);
     setSheet((s) => ({ ...s, [field]: value }));
   }
 
   function getNum(id: string | null): string {
     if (!id) return "";
-    return cellToNum(sheet.cells[id]);
+    return cellToNum(displaySheet.cells[id]);
   }
 
   // ---- undo (one step, for the bigger actions) ----
@@ -455,7 +527,7 @@ export default function LotSheet() {
   }
 
   // ---- locked spots (survive "Clear Grid") ----
-  const isLocked = (id: string) => (sheet.locks || []).includes(id);
+  const isLocked = (id: string) => (displaySheet.locks || []).includes(id);
   function toggleLock(id: string) {
     setSheet((s) => {
       const cur = s.locks || [];
@@ -464,7 +536,7 @@ export default function LotSheet() {
   }
 
   function flagFor(num: string): FlagEntry {
-    return (num && flags[num]) || EMPTY_FLAG;
+    return (num && displayFlags[num]) || EMPTY_FLAG;
   }
 
   function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
@@ -523,6 +595,7 @@ export default function LotSheet() {
     }
     await archiveSheet(sheet);
     offerUndo("Grid cleared");
+    setTimeDateOverridden(false);
     // Locked buses stay put through the clear (and blocked X spots stay blocked).
     setSheet((s) => {
       const kept: Record<string, string> = {};
@@ -825,10 +898,9 @@ export default function LotSheet() {
   // Server-side PDF: opens a new tab, flushes the latest sheet to the server,
   // then loads the rendered PDF. On desktop it wraps the PDF so the browser's
   // print dialog opens automatically; mobile uses its native PDF viewer.
-  function openPdf() {
+  function openPdfTarget(target: string, flush?: () => Promise<unknown> | unknown) {
     // Absolute URL — the print tab opens as about:blank, where a relative
     // "/api/pdf" wouldn't resolve to the site.
-    const target = `${window.location.origin}/api/pdf?maint=${showMaint ? 1 : 0}`;
     const isMobile =
       typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const w = window.open("", "_blank"); // open synchronously so it isn't blocked
@@ -854,23 +926,35 @@ export default function LotSheet() {
       );
       w.document.close();
     };
-    fetch("/api/sheet", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sheet }),
-    })
-      .then(() => {
-        lastSyncRef.current = JSON.stringify(sheet);
-      })
+    Promise.resolve(flush ? flush() : null)
       .catch(() => {})
       .finally(go);
+  }
+
+  function openPdf() {
+    // Absolute URL: the print tab opens as about:blank, where a relative
+    // "/api/pdf" wouldn't resolve to the site.
+    const target = `${window.location.origin}/api/pdf?maint=${showMaint ? 1 : 0}`;
+    openPdfTarget(target, () =>
+      fetch("/api/sheet", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet }),
+      }).then(() => {
+        lastSyncRef.current = JSON.stringify(sheet);
+      })
+    );
+  }
+
+  function openBlankPdf() {
+    openPdfTarget(`${window.location.origin}/api/pdf?blank=1&maint=0`);
   }
 
   // ---- shared lot lists (North/East/Fence + Apron/Cards from the Shop menu) ----
   // Lists are kept blank-free (Bay is the only positional lot and has its own
   // setter below).
   function lotList(key: string): string[] {
-    return ((sheet.lots && sheet.lots[key as LotKey]) || []).filter((b) => b);
+    return ((displaySheet.lots && displaySheet.lots[key as LotKey]) || []).filter((b) => b);
   }
   function addToLot(key: string, bus: string) {
     setSheet((s) => {
@@ -1013,11 +1097,11 @@ export default function LotSheet() {
   }
 
   // Buses with flags, grouped by most-severe flag, for the back-of-sheet summary.
-  const flagSummary = groupFlaggedBuses(flags);
+  const flagSummary = groupFlaggedBuses(displayFlags);
 
   // Where each bus currently sits on the grid (bus number -> "Row 5 · #85").
   const busLocations: Record<string, string[]> = {};
-  for (const [id, v] of Object.entries(sheet.cells || {})) {
+  for (const [id, v] of Object.entries(displaySheet.cells || {})) {
     const n = cellToNum(v);
     if (!n || n === "X") continue;
     const loc = cellLocationLabel(id);
@@ -1025,7 +1109,7 @@ export default function LotSheet() {
   }
   // Lots too (Apron, Bay 3, Cards 5, North Lot, …) so the flag summary can say
   // where EVERY flagged bus sits, not just the ones on the grid.
-  for (const [key, arr] of Object.entries(sheet.lots || {})) {
+  for (const [key, arr] of Object.entries(displaySheet.lots || {})) {
     if (!Array.isArray(arr)) continue;
     const label = LOT_LOCATION_LABELS[key] || key;
     arr.forEach((b, idx) => {
@@ -1036,7 +1120,7 @@ export default function LotSheet() {
   }
 
   // "# OF VEHICLES OFF PROPERTY" is auto-counted from the OFF PROPERTY flag.
-  const offPropertyCount = Object.values(flags).filter((e) =>
+  const offPropertyCount = blankPrintMode ? "" : Object.values(displayFlags).filter((e) =>
     (e.flags || []).includes("offprop")
   ).length;
 
@@ -1044,16 +1128,19 @@ export default function LotSheet() {
   // (Apron + Bays + Cards) plus any bus flagged IN SHOP.
   const inShopSet = new Set<string>();
   for (const k of ["apron", "bay", "cards"] as const) {
-    for (const b of sheet.lots?.[k] || []) if (b && b !== "X") inShopSet.add(b);
+    for (const b of displaySheet.lots?.[k] || []) if (b && b !== "X") inShopSet.add(b);
   }
-  for (const [bus, e] of Object.entries(flags)) {
+  for (const [bus, e] of Object.entries(displayFlags)) {
     if ((e.flags || []).includes("shop")) inShopSet.add(bus);
   }
-  const inShopCount = inShopSet.size;
+  const inShopCount = blankPrintMode ? "" : inShopSet.size;
 
   // The live search: message + steady highlight persist until the box clears.
   const foundBus = findVal.length >= 4 ? findVal : "";
   const foundWhere = foundBus ? locateBus(foundBus, null) : "";
+  const printHeaderActive = printMode || nativePrinting;
+  const headerTime = blankPrintMode ? "" : printHeaderActive ? printedAt.time : sheet.time;
+  const headerDate = blankPrintMode ? "" : printHeaderActive ? printedAt.date : sheet.date;
 
   // Quick stats for the toolbar chip ("X" = a blocked spot, not a bus).
   const onGridCount = Object.values(sheet.cells || {}).filter((v) => {
@@ -1200,6 +1287,9 @@ export default function LotSheet() {
           <button className="toolmenu__item" onClick={shareSheet} title="Share the sheet as text (for a group chat)">
             <Share2 size={16} /> Share as text
           </button>
+          <button className="toolmenu__item" onClick={openBlankPdf} title="Open an empty Lot Sheet PDF">
+            <FileDown size={16} /> Print Blank
+          </button>
           <div className="toolmenu__sep" />
           <button className="toolmenu__item toolmenu__item--danger" onClick={newSheet}>
             <Eraser size={16} /> Clear Grid
@@ -1240,7 +1330,7 @@ export default function LotSheet() {
               <div className="head__field head__time">
                 <label>TIME:</label>
                 <input
-                  value={sheet.time}
+                  value={headerTime}
                   onChange={(e) => setField("time", e.target.value)}
                   inputMode="numeric"
                 />
@@ -1249,7 +1339,7 @@ export default function LotSheet() {
               <div className="head__field head__date">
                 <label>DATE:</label>
                 <input
-                  value={sheet.date}
+                  value={headerDate}
                   onChange={(e) => setField("date", e.target.value)}
                 />
               </div>
@@ -1332,62 +1422,66 @@ export default function LotSheet() {
           </div>
         </div>
 
-        {/* Back of the sheet — ordered lot lists, printed on page 2 */}
-        <div className="back-sheet">
-          <div className="back__cols">
-            {LOTS.map((lot) => (
-              <BackLotBox
-                key={lot.key}
-                lotKey={lot.key}
-                found={!!foundBus && lotList(lot.key).includes(foundBus)}
-                onOpen={() => setEditingLot(lot.key)}
-              >
-                <div className="backlot__head">
-                  {lot.title}
-                  <span className="backlot__count"> ({lotList(lot.key).length})</span>
-                  <span className="backlot__edit no-print"> ✎ edit</span>
-                </div>
-                <ol className="backlot__list">
-                  {lotList(lot.key).map((bus, i) => {
-                    const fdisp = flagsFullDisplay(flagFor(bus));
-                    return (
-                      <li key={i}>
-                        <span className="backlot__bus">{busLabel(bus)}</span>
-                        <TypeCodes num={bus} className="backlot__type" />
-                        {fdisp && <span className="backlot__flag">{fdisp}</span>}
-                      </li>
-                    );
-                  })}
-                </ol>
-              </BackLotBox>
-            ))}
-          </div>
+        {!blankPrintMode && (
+          <>
+            {/* Back of the sheet — ordered lot lists, printed on page 2 */}
+            <div className="back-sheet">
+              <div className="back__cols">
+                {LOTS.map((lot) => (
+                  <BackLotBox
+                    key={lot.key}
+                    lotKey={lot.key}
+                    found={!!foundBus && lotList(lot.key).includes(foundBus)}
+                    onOpen={() => setEditingLot(lot.key)}
+                  >
+                    <div className="backlot__head">
+                      {lot.title}
+                      <span className="backlot__count"> ({lotList(lot.key).length})</span>
+                      <span className="backlot__edit no-print"> ✎ edit</span>
+                    </div>
+                    <ol className="backlot__list">
+                      {lotList(lot.key).map((bus, i) => {
+                        const fdisp = flagsFullDisplay(flagFor(bus));
+                        return (
+                          <li key={i}>
+                            <span className="backlot__bus">{busLabel(bus)}</span>
+                            <TypeCodes num={bus} className="backlot__type" />
+                            {fdisp && <span className="backlot__flag">{fdisp}</span>}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </BackLotBox>
+                ))}
+              </div>
 
-          {/* Flag summary — every flagged bus, grouped by most-severe flag,
-              numerically sorted, with all of its flags spelled out. */}
-          {flagSummary.length > 0 && (
-            <div className="flagsum">
-              <div className="flagsum__title">BUSES WITH FLAGS</div>
-              {flagSummary.map((g) => (
-                <div className="flagsum__group" key={g.cat}>
-                  <div className="flagsum__cat">{g.label}</div>
-                  <ul className="flagsum__list">
-                    {g.buses.map((bus) => (
-                      <li key={bus}>
-                        <span className="flagsum__bus">{busLabel(bus)}</span>
-                        <TypeCodes num={bus} className="flagsum__type" />
-                        {busLocations[bus] && (
-                          <span className="flagsum__loc">{busLocations[bus].join(", ")}</span>
-                        )}
-                        <span className="flagsum__flags">{flagsFullDisplay(flagFor(bus))}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {/* Flag summary — every flagged bus, grouped by most-severe flag,
+                  numerically sorted, with all of its flags spelled out. */}
+              {flagSummary.length > 0 && (
+                <div className="flagsum">
+                  <div className="flagsum__title">BUSES WITH FLAGS</div>
+                  {flagSummary.map((g) => (
+                    <div className="flagsum__group" key={g.cat}>
+                      <div className="flagsum__cat">{g.label}</div>
+                      <ul className="flagsum__list">
+                        {g.buses.map((bus) => (
+                          <li key={bus}>
+                            <span className="flagsum__bus">{busLabel(bus)}</span>
+                            <TypeCodes num={bus} className="flagsum__type" />
+                            {busLocations[bus] && (
+                              <span className="flagsum__loc">{busLocations[bus].join(", ")}</span>
+                            )}
+                            <span className="flagsum__flags">{flagsFullDisplay(flagFor(bus))}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* The bus chip that follows the pointer while dragging */}

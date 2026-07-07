@@ -7,6 +7,7 @@ import ToolMenu from "./ToolMenu";
 import WorkOrderHistory from "./WorkOrderHistory";
 
 const STORAGE_KEY = "workorder";
+const PRINT_PART_ROWS = 5;
 
 // ---- data model ----
 // One Work Order shared header, a list of employees (one printed sheet each), a
@@ -275,6 +276,9 @@ export default function WorkOrderSheet() {
   function EmployeeSheet({ emp, index }: { emp: WOEmployee; index: number }) {
     const ops = data.operations.filter((o) => o.assignedTo.includes(emp.id));
     const parts = data.parts[emp.id] || [];
+    const partRows = printMode
+      ? Array.from({ length: Math.max(PRINT_PART_ROWS, parts.length) }, (_, i) => parts[i] || blankPart(`print-${i}`))
+      : parts;
     const others = data.employees.filter((e) => e.id !== emp.id);
     return (
       <div className="wo-sheet">
@@ -345,13 +349,13 @@ export default function WorkOrderSheet() {
           </thead>
           <tbody>
             {ops.map((o) => (
-              <tr key={o.id}>
+              <tr className="wo-oprow" key={o.id}>
                 <td><input className="wo-in" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
-                <td><input className="wo-in wo-in--c" value={o.date} onChange={(e) => setOperation(o.id, { date: e.target.value })} placeholder="__/__/__" /></td>
-                <td><input className="wo-in wo-in--c" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} /></td>
-                <td><input className="wo-in" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} /></td>
+                <td><input className="wo-in wo-in--c" value={o.date} onChange={(e) => setOperation(o.id, { date: e.target.value })} placeholder="___/___/____" /></td>
+                <td><input className="wo-in wo-in--c" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} placeholder="____.__" /></td>
+                <td><input className="wo-in wo-in--c" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} placeholder="__________" /></td>
                 {!printMode && (
                   <td className="wo-opact no-print">
                     <button className="wo-iconbtn wo-iconbtn--danger" onClick={() => removeOperationFrom(o.id, emp.id)} title="Remove operation from this sheet">
@@ -430,16 +434,16 @@ export default function WorkOrderSheet() {
             </tr>
           </thead>
           <tbody>
-            {parts.map((p) => (
+            {partRows.map((p, i) => (
               <tr key={p.id}>
-                <td><input className="wo-in" value={p.partNo} onChange={(e) => setPart(emp.id, p.id, { partNo: e.target.value })} /></td>
-                <td><input className="wo-in" value={p.description} onChange={(e) => setPart(emp.id, p.id, { description: e.target.value })} /></td>
-                <td><input className="wo-in wo-in--c" value={p.qty} onChange={(e) => setPart(emp.id, p.id, { qty: e.target.value })} /></td>
-                <td><input className="wo-in" value={p.serial} onChange={(e) => setPart(emp.id, p.id, { serial: e.target.value })} /></td>
-                <td><input className="wo-in" value={p.locator} onChange={(e) => setPart(emp.id, p.id, { locator: e.target.value })} /></td>
-                <td><input className="wo-in wo-in--c" value={p.operationNum} onChange={(e) => setPart(emp.id, p.id, { operationNum: e.target.value })} /></td>
-                <td><input className="wo-in" value={p.issuedBy} onChange={(e) => setPart(emp.id, p.id, { issuedBy: e.target.value })} /></td>
-                {!printMode && (
+                <td><input className="wo-in" value={p.partNo} onChange={(e) => setPart(emp.id, p.id, { partNo: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in" value={p.description} onChange={(e) => setPart(emp.id, p.id, { description: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in wo-in--c" value={p.qty} onChange={(e) => setPart(emp.id, p.id, { qty: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in" value={p.serial} onChange={(e) => setPart(emp.id, p.id, { serial: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in" value={p.locator} onChange={(e) => setPart(emp.id, p.id, { locator: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in wo-in--c" value={p.operationNum} onChange={(e) => setPart(emp.id, p.id, { operationNum: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in" value={p.issuedBy} onChange={(e) => setPart(emp.id, p.id, { issuedBy: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                {!printMode && i < parts.length && (
                   <td className="wo-opact no-print">
                     <button className="wo-iconbtn wo-iconbtn--danger" onClick={() => removePart(emp.id, p.id)} title="Remove part" disabled={parts.length <= 1}>
                       <Trash2 size={14} />
@@ -459,13 +463,15 @@ export default function WorkOrderSheet() {
             )}
           </tbody>
         </table>
+
+        <div className="wo-pagefoot">Page {index + 1} of {data.employees.length}</div>
       </div>
     );
   }
 
   return (
     <div className="app">
-      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.45in; }" }} />
+      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.5in 0.55in 0.42in; }" }} />
 
       <div className="toolbar no-print">
         <div className="toolbar__title">Work Order</div>
