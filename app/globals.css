@@ -292,18 +292,18 @@ textarea:focus-visible {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  min-height: 44px;
+  min-height: 40px;
   padding: 7px 10px;
   border: 1px solid var(--edge);
   border-radius: 8px;
-  background: var(--surface);
+  background: transparent;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-align: left;
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
   overflow: hidden;
   transition: border-color 0.16s, background 0.16s, transform 0.12s;
 }
@@ -319,54 +319,27 @@ textarea:focus-visible {
 .theme-toggle:hover {
   border-color: var(--accent);
   background: var(--surface-2);
-  transform: translateY(-1px);
+  transform: translateX(2px);
 }
 .theme-toggle:hover::before {
   transform: translateX(120%);
 }
-.theme-toggle__track {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 48px;
-  height: 28px;
-  padding: 3px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #fbbf24, #60a5fa);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24);
-  flex: none;
-}
-.theme-toggle__thumb {
-  position: relative;
+.theme-toggle__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.28);
-  transform: translateX(20px);
-  transition: transform 0.26s cubic-bezier(.2,.8,.2,1), color 0.2s;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent);
+  flex: none;
+  transition: background 0.16s, border-color 0.16s, transform 0.16s;
 }
-.theme-toggle--light .theme-toggle__thumb {
-  transform: translateX(0);
-}
-.theme-toggle__sun,
-.theme-toggle__moon {
-  position: absolute;
-  transition: transform 0.22s, opacity 0.22s;
-}
-.theme-toggle--dark .theme-toggle__sun,
-.theme-toggle--light .theme-toggle__moon {
-  opacity: 1;
-  transform: rotate(0deg) scale(1);
-}
-.theme-toggle--dark .theme-toggle__moon,
-.theme-toggle--light .theme-toggle__sun {
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.65);
+.theme-toggle:hover .theme-toggle__icon {
+  border-color: var(--accent);
+  transform: rotate(-8deg);
 }
 .theme-toggle__label {
   min-width: 0;
@@ -475,18 +448,9 @@ textarea:focus-visible {
     box-shadow: none;
     flex: none;
   }
-  .theme-toggle__track {
+  .theme-toggle__icon {
     width: 32px;
-    height: 20px;
-    padding: 2px;
-  }
-  .theme-toggle__thumb {
-    width: 16px;
-    height: 16px;
-    transform: translateX(12px);
-  }
-  .theme-toggle--light .theme-toggle__thumb {
-    transform: translateX(0);
+    height: 32px;
   }
   .theme-toggle__label {
     display: none;
@@ -1696,6 +1660,12 @@ textarea:focus-visible {
   backdrop-filter: blur(2px);
   z-index: 50;
 }
+.modal-backdrop[data-state="open"] {
+  animation: overlayBlurIn 0.18s cubic-bezier(.2,.8,.2,1);
+}
+.modal-backdrop[data-state="closed"] {
+  animation: overlayBlurOut 0.16s cubic-bezier(.4,0,1,1);
+}
 /* Menus sit near the TOP on phones — the on-screen keyboard can never cover
    them (a bottom sheet got blocked whenever the keyboard opened). Desktop
    centers them. */
@@ -1715,7 +1685,12 @@ textarea:focus-visible {
   box-shadow: var(--shadow-pop);
   max-height: 88dvh; /* scroll within the dialog if it's tall */
   overflow-y: auto;
-  animation: surfaceFade 0.16s cubic-bezier(.2,.8,.2,1);
+}
+.modal[data-state="open"] {
+  animation: blurFadeIn 0.2s cubic-bezier(.2,.8,.2,1);
+}
+.modal[data-state="closed"] {
+  animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
 }
 .modal.modal--gate {
   max-width: 430px;
@@ -1896,7 +1871,12 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: panelIn 0.18s cubic-bezier(.2,.8,.2,1);
+}
+.manager[data-state="open"] {
+  animation: blurFadeIn 0.22s cubic-bezier(.2,.8,.2,1);
+}
+.manager[data-state="closed"] {
+  animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
 }
 .manager--rowfill .manager__inner {
   max-width: min(1180px, 100%);
@@ -3535,7 +3515,6 @@ textarea:focus-visible {
 /* Fixed-position panel (measured from the button) so the phone's horizontally
    scrolling toolbar can't clip it. */
 .toolmenu__panel {
-  position: fixed;
   z-index: 120; /* above the sticky toolbar and the fixed sidebar */
   min-width: 252px;
   max-width: calc(100vw - 20px);
@@ -3546,8 +3525,14 @@ textarea:focus-visible {
   padding: 7px;
   max-height: min(420px, calc(100dvh - 24px));
   overflow-y: auto;
-  transform-origin: top left;
-  animation: menuIn 0.14s cubic-bezier(.2,.8,.2,1);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  will-change: opacity, filter, transform;
+}
+.toolmenu__panel[data-state="open"] {
+  animation: dropdownIn 0.16s cubic-bezier(.2,.8,.2,1);
+}
+.toolmenu__panel[data-state="closed"] {
+  animation: dropdownOut 0.14s cubic-bezier(.4,0,1,1);
 }
 .toolmenu__item {
   display: flex;
@@ -3590,32 +3575,68 @@ textarea:focus-visible {
   margin: 5px 6px;
 }
 
-@keyframes menuIn {
+@keyframes dropdownIn {
   from {
     opacity: 0;
-    transform: translateY(-4px) scale(0.98);
+    filter: blur(8px);
+    transform: scale(0.96) translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    filter: blur(0);
+    transform: scale(1) translateY(0);
   }
 }
-@keyframes surfaceFade {
+@keyframes dropdownOut {
   from {
-    opacity: 0;
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
   }
   to {
-    opacity: 1;
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.97) translateY(-3px);
   }
 }
-@keyframes panelIn {
+@keyframes blurFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    filter: blur(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+@keyframes blurFadeOut {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+@keyframes overlayBlurIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(2px);
+  }
+}
+@keyframes overlayBlurOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(2px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0);
   }
 }
 

@@ -35,9 +35,8 @@ export default function ThemeToggle() {
       return;
     }
 
-    const rect = buttonRef.current?.getBoundingClientRect();
-    const x = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-    const y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+    const x = window.innerWidth / 2;
+    const y = window.innerHeight / 2;
     const endRadius = Math.hypot(
       Math.max(x, window.innerWidth - x),
       Math.max(y, window.innerHeight - y)
@@ -69,11 +68,8 @@ export default function ThemeToggle() {
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
       title="Toggle light / dark"
     >
-      <span className="theme-toggle__track" aria-hidden="true">
-        <span className="theme-toggle__thumb">
-          <Sun className="theme-toggle__sun" size={15} />
-          <Moon className="theme-toggle__moon" size={15} />
-        </span>
+      <span className="theme-toggle__icon" aria-hidden="true">
+        {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
       </span>
       <span className="theme-toggle__label">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
     </button>

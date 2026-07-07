@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 interface OverlayProps {
@@ -30,6 +30,15 @@ interface OverlayProps {
 // that opened the dialog and the browser scrolls it into view — the "page jumps
 // after editing a box" bug.
 export default function Overlay({ onClose, contentClassName, overlayClassName, label = "Dialog", onOpenFocus, children }: OverlayProps) {
+  const [open, setOpen] = useState(true);
+  const closeTimer = useRef<number | null>(null);
+
+  function requestClose() {
+    setOpen(false);
+    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(onClose, 180);
+  }
+
   // Pin the page's scroll position across the dialog's lifetime. Focus
   // prevention alone doesn't stop every jump — iOS in particular shifts the
   // underlying document when the on-screen keyboard opens/closes — so we
@@ -39,6 +48,7 @@ export default function Overlay({ onClose, contentClassName, overlayClassName, l
     const x = window.scrollX;
     const y = window.scrollY;
     return () => {
+      if (closeTimer.current) window.clearTimeout(closeTimer.current);
       const restore = () => window.scrollTo(x, y);
       requestAnimationFrame(restore);
       setTimeout(restore, 60); // after the scroll-lock is released
@@ -46,7 +56,7 @@ export default function Overlay({ onClose, contentClassName, overlayClassName, l
     };
   }, []);
   return (
-    <Dialog.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog.Root open={open} onOpenChange={(o) => { if (!o) requestClose(); }}>
       <Dialog.Portal>
         {overlayClassName && <Dialog.Overlay className={overlayClassName} />}
         <Dialog.Content
