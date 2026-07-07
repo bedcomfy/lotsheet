@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, Droplets, FileText, Fuel, List, RefreshCw, Users, Wrench } from "lucide-react";
+import { ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshCw, Users, Wrench } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 import ThemeToggle from "./ThemeToggle";
@@ -14,15 +14,25 @@ export interface SheetLink {
   icon: LucideIcon;
 }
 
-// The sheets available in the hub. Add new ones here.
-export const SHEETS: SheetLink[] = [
+const HOME_LINK: SheetLink = { path: "/home", label: "Home", icon: Home };
+
+export const DAILY_SHEETS: SheetLink[] = [
   { path: "/", label: "Lot Sheet", icon: ClipboardList },
-  { path: "/shop", label: "Shop", icon: Wrench },
   { path: "/turnover", label: "Turnover Sheet", icon: RefreshCw },
   { path: "/fuel", label: "Fuel Sheet", icon: Fuel },
   { path: "/def", label: "DEF Sheet", icon: Droplets },
+];
+
+export const SHOP_SHEETS: SheetLink[] = [
+  { path: "/shop", label: "Shop", icon: Wrench },
+];
+
+export const FORM_SHEETS: SheetLink[] = [
   { path: "/workorder", label: "Work Order", icon: FileText },
 ];
+
+// The sheets available in the mobile picker. Add new ones here.
+export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS];
 
 export default function SheetNav() {
   const router = useRouter();
@@ -30,6 +40,19 @@ export default function SheetNav() {
   const current = pathname && SHEETS.some((s) => s.path === pathname) ? pathname : "/";
   const [busListOpen, setBusListOpen] = useState(false);
   const [employeesOpen, setEmployeesOpen] = useState(false);
+  const renderLink = (sheet: SheetLink) => {
+    const Icon = sheet.icon;
+    return (
+      <button
+        key={sheet.path}
+        className={`appnav__link ${current === sheet.path ? "appnav__link--active" : ""}`}
+        onClick={() => router.push(sheet.path)}
+      >
+        <Icon size={18} />
+        <span>{sheet.label}</span>
+      </button>
+    );
+  };
 
   return (
     <nav className="appnav no-print" aria-label="Main navigation">
@@ -40,6 +63,7 @@ export default function SheetNav() {
         </span>
         <span>
           <span className="appnav__name">Pace Northwest</span>
+          <span className="appnav__sub">Operations</span>
         </span>
       </div>
 
@@ -58,31 +82,33 @@ export default function SheetNav() {
         </select>
       </label>
 
+      <div className="appnav__section appnav__section--primary">
+        {renderLink(HOME_LINK)}
+      </div>
+
       <div className="appnav__section appnav__section--sheets">
-        <div className="appnav__sectionlabel">Sheets</div>
-        {SHEETS.map((sheet) => {
-          const Icon = sheet.icon;
-          return (
-            <button
-              key={sheet.path}
-              className={`appnav__link ${current === sheet.path ? "appnav__link--active" : ""}`}
-              onClick={() => router.push(sheet.path)}
-            >
-              <Icon size={18} />
-              <span>{sheet.label}</span>
-            </button>
-          );
-        })}
+        <div className="appnav__sectionlabel">Daily Sheets</div>
+        {DAILY_SHEETS.map(renderLink)}
       </div>
 
       <div className="appnav__section">
-        <div className="appnav__sectionlabel">Tools</div>
+        <div className="appnav__sectionlabel">Shop</div>
+        {SHOP_SHEETS.map(renderLink)}
         <button className="appnav__link" onClick={() => setBusListOpen(true)}>
           <List size={18} /> <span>Bus Lists</span>
         </button>
         <button className="appnav__link" onClick={() => setEmployeesOpen(true)}>
           <Users size={18} /> <span>Employees</span>
         </button>
+      </div>
+
+      <div className="appnav__section">
+        <div className="appnav__sectionlabel">Forms</div>
+        {FORM_SHEETS.map(renderLink)}
+      </div>
+
+      <div className="appnav__section appnav__section--bottom">
+        <div className="appnav__sectionlabel">System</div>
         <ThemeToggle />
       </div>
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}

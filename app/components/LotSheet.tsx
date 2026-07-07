@@ -309,6 +309,9 @@ export default function LotSheet() {
     }
     if (param("blank") === "1") setBlankPrintMode(true);
     if (param("maint") === "1") setShowMaint(true);
+    if (param("fill") === "1") setFillOpen(true);
+    const find = sanitizeBus(param("find") || "");
+    if (find) setFindVal(find);
   }, []);
 
   useEffect(() => {
