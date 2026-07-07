@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { Eraser, FileDown, Plus, Trash2, UserPlus } from "lucide-react";
+import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen } from "lucide-react";
 import ToolMenu from "./ToolMenu";
+import WorkOrderHistory from "./WorkOrderHistory";
 
 const STORAGE_KEY = "workorder";
 
@@ -93,6 +94,8 @@ export default function WorkOrderSheet() {
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -236,8 +239,25 @@ export default function WorkOrderSheet() {
     );
 
   async function clearAll() {
-    if (!window.confirm("Clear this Work Order? This can't be undone.")) return;
+    if (!window.confirm("Clear this Work Order? Save it first if you want to keep it in the lookup.")) return;
     setData(emptyWorkOrder());
+  }
+  // Save a snapshot into the searchable archive (looked up later by number /
+  // employee / operation).
+  async function saveToArchive() {
+    if (!hasContent(data)) return;
+    await fetch(`/api/state/${STORAGE_KEY}/history`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheet: data }),
+    }).catch(() => {});
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 1800);
+  }
+  function loadArchived(sheet: unknown, _id: string) {
+    if (!window.confirm("Open this saved work order? It replaces the one you're editing (save that first to keep it).")) return;
+    setData({ ...emptyWorkOrder(), ...(sheet as WorkOrder) });
+    setHistOpen(false);
   }
   function printPdf() {
     openSheetPdf({
@@ -268,13 +288,19 @@ export default function WorkOrderSheet() {
           </div>
         )}
 
-        <div className="wo-head-brand">
+        <div className="wo-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="wo-logo" src="/logo.png" alt="pace" />
+          <img className="wo-logo" src="/pace-logo.png" alt="pace" />
+          <div className="wo-brand-rule" />
           <h1 className="wo-title">Oracle eAM Work Order</h1>
         </div>
 
         <table className="wo-head">
+          <colgroup>
+            <col style={{ width: "30%" }} />
+            <col style={{ width: "30%" }} />
+            <col style={{ width: "40%" }} />
+          </colgroup>
           <tbody>
             <tr>
               <td className="wo-lbl">Work Order Number:</td>
@@ -298,6 +324,14 @@ export default function WorkOrderSheet() {
         </table>
 
         <table className="wo-ops">
+          <colgroup>
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "28%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "15%" }} />
+          </colgroup>
           <thead>
             <tr>
               <th>Operation#</th>
@@ -374,6 +408,15 @@ export default function WorkOrderSheet() {
         <div className="wo-completion">Completion information:</div>
 
         <table className="wo-parts">
+          <colgroup>
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "27%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "14%" }} />
+          </colgroup>
           <thead>
             <tr>
               <th>Part No.</th>
@@ -430,6 +473,12 @@ export default function WorkOrderSheet() {
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
         </span>
+        <button className="btn" onClick={() => setHistOpen(true)} title="Look up saved work orders">
+          <FolderOpen size={16} /> Saved
+        </button>
+        <button className="btn" onClick={saveToArchive} title="Save a copy you can look up later">
+          <Save size={16} /> {savedFlash ? "Saved ✓" : "Save"}
+        </button>
         <ToolMenu>
           <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
             <Eraser size={16} /> Clear work order
@@ -453,6 +502,8 @@ export default function WorkOrderSheet() {
           </div>
         )}
       </div>
+
+      {histOpen && <WorkOrderHistory onLoad={loadArchived} onClose={() => setHistOpen(false)} />}
 
       {loaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </div>

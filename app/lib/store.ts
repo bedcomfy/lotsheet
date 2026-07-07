@@ -286,6 +286,12 @@ export async function setState(key: string, value: unknown): Promise<string> {
 
 // ---------- Prev Sheets (archive of past/erased sheets) ----------
 const HISTORY_LIMIT = 20;
+// Work orders are a persistent, searchable archive (looked up later by number /
+// employee / operation), so keep far more of them. Each is small JSON (~few KB).
+const WORKORDER_LIMIT = 500;
+function historyLimit(key: string): number {
+  return key === "workorder" ? WORKORDER_LIMIT : HISTORY_LIMIT;
+}
 
 export interface HistoryEntry {
   id: string;
@@ -318,7 +324,7 @@ export async function listHistory(key = "lot"): Promise<HistoryEntry[]> {
       `SELECT id, data, saved_at FROM ${T_HISTORY}
        WHERE COALESCE(sheet_key, 'lot') = $1
        ORDER BY saved_at DESC, id DESC LIMIT $2`,
-      [key, HISTORY_LIMIT]
+      [key, historyLimit(key)]
     );
     return rows.map((r) => ({
       id: String(r.id),
@@ -327,7 +333,7 @@ export async function listHistory(key = "lot"): Promise<HistoryEntry[]> {
     }));
   }
   const map = await historyFileRead();
-  return (map[key] || []).slice(0, HISTORY_LIMIT);
+  return (map[key] || []).slice(0, historyLimit(key));
 }
 
 // Archive a sheet under its key, then trim that key to the newest HISTORY_LIMIT.
@@ -344,13 +350,13 @@ export async function archiveSheet(key: string, sheet: unknown): Promise<string>
         SELECT id FROM ${T_HISTORY} WHERE COALESCE(sheet_key, 'lot') = $1
         ORDER BY saved_at DESC, id DESC LIMIT $2
       )`,
-      [key, HISTORY_LIMIT]
+      [key, historyLimit(key)]
     );
     return String(rows[0].id);
   }
   const id = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
   const map = await historyFileRead();
-  map[key] = [{ id, sheet, savedAt }, ...(map[key] || [])].slice(0, HISTORY_LIMIT);
+  map[key] = [{ id, sheet, savedAt }, ...(map[key] || [])].slice(0, historyLimit(key));
   await historyFileWrite(map);
   return id;
 }
