@@ -252,7 +252,7 @@ export async function mergeSetSheet(
         [SHEET_KEY]
       );
       const current = (rows[0]?.value || null) as LotSheet | null;
-      const next = force || !baseSheet ? incoming : mergeLotSheet(baseSheet, incoming, current);
+      const next = force ? incoming : mergeLotSheet(baseSheet, incoming, current);
       const written = await db.query(
         `INSERT INTO ${T_STATE} (key, value, updated_at)
          VALUES ($1, $2, now())
@@ -274,7 +274,7 @@ export async function mergeSetSheet(
   }
 
   const { sheet: current } = await getSheet();
-  const next = force || !baseSheet ? incoming : mergeLotSheet(baseSheet, incoming, current);
+  const next = force ? incoming : mergeLotSheet(baseSheet, incoming, current);
   const updatedAt = await setSheet(next);
   return { sheet: next, updatedAt };
 }

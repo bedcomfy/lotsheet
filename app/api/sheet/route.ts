@@ -19,7 +19,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
   }
   const incoming = body.sheet as LotSheet;
-  const replace = body.force === true || !body.baseSheet;
+  const replace = body.force === true;
   const { sheet, updatedAt } = await mergeSetSheet(body.baseSheet as LotSheet | null, incoming, replace);
   return NextResponse.json({ ok: true, updatedAt, sheet });
 }

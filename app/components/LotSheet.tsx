@@ -265,6 +265,7 @@ export default function LotSheet() {
   const { label: busLabel, isKnown, buses: masterBuses } = useBusMaster();
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
+  const [syncReady, setSyncReady] = useState(false);
   const [flagsLoaded, setFlagsLoaded] = useState(false);
   const [editing, setEditing] = useState<{ id: string; subLabel: string; seed?: string } | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -420,6 +421,7 @@ export default function LotSheet() {
     if (param("blank") === "1") {
       setSheet(blankPrintSheet());
       setLoaded(true);
+      setSyncReady(true);
       return () => {
         cancelled = true;
       };
@@ -433,9 +435,14 @@ export default function LotSheet() {
         loadBaseJson = cached;
       }
     } catch {}
-    fetch("/api/sheet", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const loadServer = () => {
+      fetch("/api/sheet", { cache: "no-store" })
+        .then((r) => {
+          if (!r.ok) throw new Error("Sheet load failed");
+          return r.json();
+        })
+        .then((d) => {
         if (cancelled) return;
         if (d && d.sheet) {
           const serverJson = JSON.stringify(d.sheet);
@@ -451,15 +458,31 @@ export default function LotSheet() {
         }
         // If the server has no sheet yet, leave lastSyncRef null so the device's
         // current sheet gets pushed up on the first autosave.
-      })
-      .catch(() => {})
-      .finally(() => {
+          setSyncReady(true);
+        })
+        .catch(() => {
+          if (!cancelled) retryTimer = setTimeout(loadServer, 2500);
+        })
+        .finally(() => {
         if (!cancelled) setLoaded(true);
-      });
+        });
+    };
+    loadServer();
     return () => {
       cancelled = true;
+      clearTimeout(retryTimer);
     };
   }, []);
+
+  // Always keep a local backup of what is on screen. This is separate from the
+  // server save gate above: if the first server load is failing, we still keep
+  // the user's in-browser work, but we do not push stale cached data over the
+  // shared sheet until a server baseline has been loaded.
+  useEffect(() => {
+    if (!loaded || printMode) return;
+    writeLocalSheet(JSON.stringify(sheet));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet, loaded, printMode]);
 
   // Load shared bus flags.
   useEffect(() => {
@@ -490,12 +513,13 @@ export default function LotSheet() {
   // that old grid. Now each save waits for the previous, always sends the latest
   // sheet, and re-runs if edits arrived while it was in flight.
   function runSave(): Promise<void> {
+    if (!syncReady) return Promise.resolve();
     if (savingRef.current) return saveInFlightRef.current || Promise.resolve(); // a save is already in flight
     const snapshot = sheetRef.current;
     const json = JSON.stringify(snapshot);
     if (json === lastSyncRef.current) return Promise.resolve(); // nothing new to push
     const baseSheet = lastSyncedSheetRef.current;
-    const force = forceNextSaveRef.current || !baseSheet;
+    const force = forceNextSaveRef.current;
     forceNextSaveRef.current = false;
     savingRef.current = true;
     const task = (async () => {
@@ -540,23 +564,23 @@ export default function LotSheet() {
 
   // Autosave (debounced) to the server, so every device sees the same sheet.
   useEffect(() => {
-    if (!loaded || printMode) return;
+    if (!loaded || !syncReady || printMode) return;
     if (JSON.stringify(sheet) === lastSyncRef.current) return; // nothing new
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(runSave, 600);
     return () => clearTimeout(saveTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheet, loaded, printMode]);
+  }, [sheet, loaded, syncReady, printMode]);
 
   // Safety net: nonstop editing keeps resetting the debounce above, so also flush
   // pending edits at least every couple of seconds (runSave is a no-op when
   // there's nothing new or a save is already running).
   useEffect(() => {
-    if (!loaded || printMode) return;
+    if (!loaded || !syncReady || printMode) return;
     const iv = setInterval(runSave, 2000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, printMode]);
+  }, [loaded, syncReady, printMode]);
 
   // Flush the latest edits when the tab is backgrounded / closed / navigated away
   // (screen lock, app switch) — with keepalive so the request survives — so work
@@ -569,6 +593,7 @@ export default function LotSheet() {
       try {
         writeLocalSheet(json);
       } catch {}
+      if (!syncReady) return;
       try {
         fetch("/api/sheet", {
           method: "PUT",
@@ -577,7 +602,7 @@ export default function LotSheet() {
           body: JSON.stringify({
             sheet: sheetRef.current,
             baseSheet: lastSyncedSheetRef.current,
-            force: forceNextSaveRef.current || !lastSyncedSheetRef.current,
+            force: forceNextSaveRef.current,
           }),
           keepalive: true,
         });
@@ -592,12 +617,12 @@ export default function LotSheet() {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flush);
     };
-  }, [printMode]);
+  }, [printMode, syncReady]);
 
   // Poll for changes made on other devices. Adopt the server's sheet only when
   // there are no unsaved local edits, so we never clobber in-progress typing.
   useEffect(() => {
-    if (!loaded || printMode) return;
+    if (!loaded || !syncReady || printMode) return;
     const iv = setInterval(() => {
       if (savingRef.current) return; // don't adopt server state mid-save
       fetch("/api/sheet", { cache: "no-store" })
@@ -628,7 +653,7 @@ export default function LotSheet() {
         .catch(() => {});
     }, 4000);
     return () => clearInterval(iv);
-  }, [loaded]);
+  }, [loaded, syncReady]);
 
   function setField(field: LotStringField, value: string) {
     if (field === "time") setTimeOverridden(!!value.trim());
