@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 // Public: anyone can read the shared current sheet so it loads on every device.
 export async function GET() {
-  const { sheet, updatedAt } = await getSheet();
-  return NextResponse.json({ sheet, updatedAt });
+  const { sheet, updatedAt, revision } = await getSheet();
+  return NextResponse.json({ sheet, updatedAt, revision });
 }
 
 // Public: save the shared current sheet. Modern clients send the last sheet

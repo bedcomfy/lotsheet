@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4 - 2026-07-08
+
+- Fixed Lot Sheet time/date so automatic Chicago time is display-only and cannot overwrite shared sheet data.
+- Preserved cell and lot edits made while a save is in flight by merging them with the saved server response.
+- Preserved manually typed time/date values with explicit override markers.
+- Added the app version under System in the sidebar for quick production verification.
+- Returned sheet revision numbers from the sheet API so live edit polling starts from the correct revision.
+
 ## 0.1.3 - 2026-07-07
 
 - Restored Fill Rows as a full-screen workflow that covers the app sidebar.

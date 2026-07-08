@@ -29,6 +29,8 @@ export type Lots = { [K in LotKey]?: string[] };
 export interface LotSheet {
   time?: string;
   date?: string;
+  timeOverride?: boolean;
+  dateOverride?: boolean;
   offProperty?: string;
   inShop?: string;
   cells: Record<string, string>; // grid cell id -> bus number ("X" = blocked spot)

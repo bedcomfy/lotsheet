@@ -65,6 +65,10 @@ function sheetSummary(op: LotSheetOp): { title: string; detail: string; badge: s
   if (op.type === "remove_bus") return { title: `Removed ${op.bus}`, detail: "Bus removed from cells/lots before being moved", badge: "Move" };
   if (op.type === "set_locks") return { title: "Updated locked spots", detail: `${op.value.length} locked spot${op.value.length === 1 ? "" : "s"}`, badge: "Lock" };
   if (op.type === "set_field") return { title: `Updated ${op.field}`, detail: op.value || "blank", badge: "Header" };
+  if (op.type === "set_bool") {
+    const label = op.field === "timeOverride" ? "time override" : "date override";
+    return { title: `${op.value ? "Enabled" : "Cleared"} ${label}`, detail: "Header auto-fill setting changed", badge: "Header" };
+  }
   return { title: "Replaced Lot Sheet", detail: "Full sheet replacement", badge: "Sheet" };
 }
 

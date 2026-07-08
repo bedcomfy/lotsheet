@@ -1,9 +1,11 @@
 import type { LotKey, LotSheet, Lots } from "./types";
 
 export type LotStringField = "time" | "date" | "offProperty" | "inShop";
+type LotBooleanField = "timeOverride" | "dateOverride";
 
 export type LotSheetOp =
   | { type: "set_field"; field: LotStringField; value: string }
+  | { type: "set_bool"; field: LotBooleanField; value: boolean }
   | { type: "set_cell"; id: string; value: string }
   | { type: "set_lot"; key: LotKey; value: string[] }
   | { type: "set_locks"; value: string[] }
@@ -37,6 +39,8 @@ export function cloneLotSheet(sheet: LotSheet | null | undefined): LotSheet {
     date: sheet?.date || "",
     offProperty: sheet?.offProperty || "",
     inShop: sheet?.inShop || "",
+    timeOverride: !!sheet?.timeOverride,
+    dateOverride: !!sheet?.dateOverride,
     cells: { ...(sheet?.cells || {}) },
     lots: cloneLots(sheet?.lots),
     locks: [...(sheet?.locks || [])],
@@ -51,6 +55,9 @@ function normalizeOp(op: unknown): LotSheetOp | null {
   }
   if (o.type === "set_cell" && typeof o.id === "string") {
     return { type: "set_cell", id: o.id, value: String(o.value || "") };
+  }
+  if (o.type === "set_bool" && (o.field === "timeOverride" || o.field === "dateOverride")) {
+    return { type: "set_bool", field: o.field, value: o.value === true };
   }
   if (o.type === "set_lot" && typeof o.key === "string" && Array.isArray(o.value)) {
     return { type: "set_lot", key: o.key as LotKey, value: o.value.map((v) => String(v || "")) };
@@ -76,6 +83,8 @@ export function applyLotSheetOp(sheet: LotSheet | null | undefined, op: LotSheet
   if (op.type === "replace_sheet") return cloneLotSheet(op.sheet);
   const next = cloneLotSheet(sheet);
   if (op.type === "set_field") {
+    next[op.field] = op.value;
+  } else if (op.type === "set_bool") {
     next[op.field] = op.value;
   } else if (op.type === "set_cell") {
     if (op.value) next.cells[op.id] = op.value;
@@ -108,6 +117,9 @@ export function diffLotSheetOps(baseSheet: LotSheet | null | undefined, localShe
 
   for (const field of FIELDS) {
     if (!same(local[field], base[field])) ops.push({ type: "set_field", field, value: local[field] || "" });
+  }
+  for (const field of ["timeOverride", "dateOverride"] as const) {
+    if (!same(!!local[field], !!base[field])) ops.push({ type: "set_bool", field, value: !!local[field] });
   }
 
   const cellKeys = new Set([...Object.keys(base.cells || {}), ...Object.keys(local.cells || {})]);

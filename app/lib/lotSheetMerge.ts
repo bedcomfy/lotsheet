@@ -7,6 +7,10 @@ const STRING_FIELDS: Array<keyof Pick<LotSheet, "time" | "date" | "offProperty" 
   "offProperty",
   "inShop",
 ];
+const BOOLEAN_FIELDS: Array<keyof Pick<LotSheet, "timeOverride" | "dateOverride">> = [
+  "timeOverride",
+  "dateOverride",
+];
 
 function same(a: unknown, b: unknown) {
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
@@ -19,6 +23,9 @@ export function mergeLotSheet(baseSheet: LotSheet | null | undefined, localSheet
 
   for (const field of STRING_FIELDS) {
     if (!same(local[field], base[field])) merged[field] = local[field] || "";
+  }
+  for (const field of BOOLEAN_FIELDS) {
+    if (!same(!!local[field], !!base[field])) merged[field] = !!local[field];
   }
 
   const cellKeys = new Set([...Object.keys(base.cells || {}), ...Object.keys(local.cells || {})]);

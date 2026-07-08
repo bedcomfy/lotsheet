@@ -7,6 +7,7 @@ import { Activity, ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshC
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 import ThemeToggle from "./ThemeToggle";
+import { APP_VERSION } from "../lib/appVersion";
 
 export interface SheetLink {
   path: string;
@@ -115,6 +116,7 @@ export default function SheetNav() {
         <div className="appnav__sectionlabel">System</div>
         {SYSTEM_LINKS.map(renderLink)}
         <ThemeToggle />
+        <div className="appnav__version">v{APP_VERSION}</div>
       </div>
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}
       {employeesOpen && <EmployeesEditor onClose={() => setEmployeesOpen(false)} />}
