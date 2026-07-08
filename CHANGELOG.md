@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5 - 2026-07-08
+
+- Added GitHub Codespaces devcontainer setup for portable repo access.
+- Added `AGENTS.md` with branch, handoff, data-safety, and verification rules.
+- Added `npm run verify` for a single TypeScript/build pre-push check.
+
 ## 0.1.4 - 2026-07-08
 
 - Fixed Lot Sheet time/date so automatic Chicago time is display-only and cannot overwrite shared sheet data.
