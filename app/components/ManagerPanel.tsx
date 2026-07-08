@@ -16,6 +16,7 @@ import {
   ASSIGNABLE_FLAGS,
   BUS_TYPES,
   flagTier,
+  flagObjectCodes,
 } from "../lib/grid";
 import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
@@ -141,10 +142,26 @@ function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; on
 }
 
 // Optional inspection type — pick one of A-3 … C-24 (or none).
-function InspOptionPicker({ option, onChange }: { option: string | undefined; onChange: (o: string) => void }) {
+function FlagCodeHint({ id }: { id: string }) {
+  const codes = flagObjectCodes(id);
+  if (!codes.length) return null;
+  return <small className="flagcode">Code {codes.slice(0, 2).join(", ")}</small>;
+}
+
+function InspOptionPicker({
+  option,
+  onChange,
+  followUpActive = false,
+  onFollowUpToggle,
+}: {
+  option: string | undefined;
+  onChange: (o: string) => void;
+  followUpActive?: boolean;
+  onFollowUpToggle?: () => void;
+}) {
   return (
     <div className="detailbox detailbox--col">
-      <div className="detailbox__label">Inspection type (optional)</div>
+      <div className="detailbox__label">Inspection type / follow up</div>
       <div className="reasonpick">
         {INSPECTION_OPTIONS.map((o) => (
           <button
@@ -156,6 +173,15 @@ function InspOptionPicker({ option, onChange }: { option: string | undefined; on
             {o}
           </button>
         ))}
+        {onFollowUpToggle && (
+          <button
+            type="button"
+            className={`deptchip ${followUpActive ? "deptchip--on--service" : ""}`}
+            onClick={onFollowUpToggle}
+          >
+            Follow up
+          </button>
+        )}
       </div>
     </div>
   );
@@ -255,7 +281,17 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
               <HoldReasonPicker reason={entry.holdReason || ""} onChange={(r) => onChange({ ...entry, holdReason: r })} />
             )}
             {id === "inspection" && (
-              <InspOptionPicker option={entry.inspOption || ""} onChange={(o) => onChange({ ...entry, inspOption: o })} />
+              <InspOptionPicker
+                option={entry.inspOption || ""}
+                onChange={(o) => onChange({ ...entry, inspOption: o })}
+                followUpActive={entry.flags.includes("followup")}
+                onFollowUpToggle={() => {
+                  const flags = entry.flags.includes("followup")
+                    ? entry.flags.filter((f) => f !== "followup")
+                    : [...entry.flags, "followup"];
+                  onChange({ ...entry, flags });
+                }}
+              />
             )}
           </div>
         ))}
@@ -264,7 +300,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
         <Search size={17} className="flagpick__searchic" />
         <input
           className="flagpick__search"
-          placeholder="Search or type a flag…"
+          placeholder="Search flags or object codes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -290,7 +326,10 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
                 }}
               >
                 <span className="flagresult__ic">{on ? <Check size={16} /> : <Plus size={16} />}</span>
-                <span>{flagName(f.id)}</span>
+                <span>
+                  {flagName(f.id)}
+                  <FlagCodeHint id={f.id} />
+                </span>
               </button>
             );
           })}
@@ -304,6 +343,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
                 {common.map((id) => (
                   <button key={id} className="flagchip" onClick={() => add(id)}>
                     {flagName(id)}
+                    <FlagCodeHint id={id} />
                   </button>
                 ))}
               </div>
@@ -311,7 +351,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
           )}
           <div className="flagpick__hint">
             <Search size={16} />
-            <span>Type to reach any of {ASSIGNABLE_FLAGS.length} flags — hold, engine, brakes, A/C…</span>
+            <span>Search {ASSIGNABLE_FLAGS.length} flags by name or object code.</span>
           </div>
         </>
       )}
@@ -550,6 +590,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                   }}
                 >
                   {flagName(id)}
+                  <FlagCodeHint id={id} />
                 </button>
               ))}
               <button
@@ -566,7 +607,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
             <div className="byflag__add">
               <input
                 className="manager__search byflag__input"
-                placeholder="Type a bus number to add…"
+                placeholder="Add bus number..."
                 value={busInput}
                 inputMode="numeric"
                 onChange={(e) => {
@@ -616,7 +657,19 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                       <HoldReasonPicker key={bus} reason={entry.holdReason || ""} onChange={(r) => setReasonFor(bus, r)} />
                     )}
                     {pickedFlag === "inspection" && (
-                      <InspOptionPicker key={bus} option={entry.inspOption || ""} onChange={(o) => save(bus, { ...getEntry(bus), inspOption: o })} />
+                      <InspOptionPicker
+                        key={bus}
+                        option={entry.inspOption || ""}
+                        onChange={(o) => save(bus, { ...getEntry(bus), inspOption: o })}
+                        followUpActive={(entry.flags || []).includes("followup")}
+                        onFollowUpToggle={() => {
+                          const cur = getEntry(bus);
+                          const flags2 = cur.flags.includes("followup")
+                            ? cur.flags.filter((f) => f !== "followup")
+                            : [...cur.flags, "followup"];
+                          save(bus, { ...cur, flags: flags2 });
+                        }}
+                      />
                     )}
                     {pickedFlag === NOTE_FLAG && (
                       <NoteInput

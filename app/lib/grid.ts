@@ -94,30 +94,31 @@ export function typeInfo(id: string): BusType | null {
 export interface FlagDef {
   id: string;
   label: string;
+  objectCodes?: string[];
 }
 
 // Manager-set operational FLAGS. Each is separate; the full name is shown so
 // there's no confusion.
 export const FLAGS: FlagDef[] = [
   { id: "none", label: "—" },
-  { id: "legal", label: "LEGAL" },
-  { id: "safety", label: "SAFETY" },
-  { id: "accident", label: "ACCIDENT" },
+  { id: "legal", label: "LEGAL", objectCodes: ["6500"] },
+  { id: "safety", label: "SAFETY", objectCodes: ["9200"] },
+  { id: "accident", label: "ACCIDENT", objectCodes: ["5000"] },
   { id: "offprop", label: "OFF PROPERTY" },
   { id: "shop", label: "SHOP" },
-  { id: "eng", label: "ENG" },
-  { id: "trans", label: "TRANS" },
+  { id: "eng", label: "ENG", objectCodes: ["0800", "5008"] },
+  { id: "trans", label: "TRANS", objectCodes: ["1300", "5013"] },
   { id: "oos", label: "OUT OF SERVICE" },
-  { id: "inspection", label: "INSPECTION" },
-  { id: "retorque", label: "RETORQUE" },
+  { id: "inspection", label: "INSPECTION", objectCodes: ["6500", "6603", "6706", "6800"] },
+  { id: "retorque", label: "RETORQUE", objectCodes: ["2402"] },
   { id: "hold", label: "HOLD" },
   { id: "split", label: "SPLIT" },
-  { id: "service", label: "NEEDS SERVICE" },
+  { id: "service", label: "NEEDS SERVICE", objectCodes: ["8000"] },
   { id: "followup", label: "F/Up" },
   { id: "cards", label: "CARDS" },
-  { id: "braketest", label: "BRAKE TEST" },
-  { id: "ac", label: "A/C" },
-  { id: "cleaning", label: "NEEDS CLEANING" },
+  { id: "braketest", label: "BRAKE TEST", objectCodes: ["0415"] },
+  { id: "ac", label: "A/C", objectCodes: ["2100", "5021"] },
+  { id: "cleaning", label: "NEEDS CLEANING", objectCodes: ["1611", "7400"] },
   { id: "rfs", label: "READY FOR SERVICE" },
 ];
 
@@ -140,6 +141,10 @@ const FLAG_NAMES: Record<string, string> = {
 };
 export function flagName(id: string): string {
   return FLAG_NAMES[id] || flagLabel(id);
+}
+
+export function flagObjectCodes(id: string): string[] {
+  return FLAGS.find((f) => f.id === id)?.objectCodes || [];
 }
 
 export interface Department {
@@ -226,7 +231,7 @@ export function searchFlags(query: string): FlagDef[] {
   if (!q) return [];
   const scored: { f: FlagDef; rank: number }[] = [];
   for (const f of ASSIGNABLE_FLAGS) {
-    const hay = [flagName(f.id).toLowerCase(), f.label.toLowerCase(), ...(FLAG_ALIASES[f.id] || [])];
+    const hay = [flagName(f.id).toLowerCase(), f.label.toLowerCase(), ...(f.objectCodes || []), ...(FLAG_ALIASES[f.id] || [])];
     let rank = Infinity;
     for (const h of hay) {
       const i = h.indexOf(q);

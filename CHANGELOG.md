@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 - 2026-07-08
+
+- Added a collapsible Utilities sidebar section with an Object Codes page.
+- Added a searchable object-code reference from the provided Pace object-code photos.
+- Linked existing high-level flags to starter object-code metadata and made flag search match those codes.
+- Added Follow Up as a quick chip inside the inspection type picker while keeping it as its own flag.
+- Clarified the flag editor search/add fields so the lower input no longer reads like a dead search box.
+
 ## 0.1.5 - 2026-07-08
 
 - Added GitHub Codespaces devcontainer setup for portable repo access.

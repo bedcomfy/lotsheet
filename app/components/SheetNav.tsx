@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshCw, Users, Wrench } from "lucide-react";
+import { Activity, ChevronDown, ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshCw, SearchCode, Users, Wrench } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 import ThemeToggle from "./ThemeToggle";
@@ -36,8 +36,12 @@ export const SYSTEM_LINKS: SheetLink[] = [
   { path: "/audit", label: "Audit Log", icon: Activity },
 ];
 
+export const UTILITY_LINKS: SheetLink[] = [
+  { path: "/object-codes", label: "Object Codes", icon: SearchCode },
+];
+
 // The sheets available in the mobile picker. Add new ones here.
-export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS, ...SYSTEM_LINKS];
+export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS, ...UTILITY_LINKS, ...SYSTEM_LINKS];
 
 export default function SheetNav() {
   const router = useRouter();
@@ -45,6 +49,7 @@ export default function SheetNav() {
   const current = pathname && SHEETS.some((s) => s.path === pathname) ? pathname : "/";
   const [busListOpen, setBusListOpen] = useState(false);
   const [employeesOpen, setEmployeesOpen] = useState(false);
+  const [utilitiesOpen, setUtilitiesOpen] = useState(() => UTILITY_LINKS.some((s) => s.path === current));
   const renderLink = (sheet: SheetLink) => {
     const Icon = sheet.icon;
     return (
@@ -110,6 +115,18 @@ export default function SheetNav() {
       <div className="appnav__section">
         <div className="appnav__sectionlabel">Forms</div>
         {FORM_SHEETS.map(renderLink)}
+      </div>
+
+      <div className="appnav__section">
+        <button
+          className="appnav__sectiontoggle"
+          onClick={() => setUtilitiesOpen((open) => !open)}
+          aria-expanded={utilitiesOpen}
+        >
+          <span>Utilities</span>
+          <ChevronDown size={15} className={utilitiesOpen ? "appnav__chev appnav__chev--open" : "appnav__chev"} />
+        </button>
+        {utilitiesOpen && <div className="appnav__subsection">{UTILITY_LINKS.map(renderLink)}</div>}
       </div>
 
       <div className="appnav__section appnav__section--bottom">
