@@ -23,6 +23,7 @@ import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
+import { getDeviceActor } from "../lib/deviceActor";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
@@ -368,6 +369,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         holdReason: entry.holdReason ?? "",
         retorqueTires: entry.retorqueTires || [],
         inspOption: entry.inspOption ?? "",
+        actor: getDeviceActor(),
       }),
     }).catch(() => {});
     onBusFlagsUpdated(bus, entry);

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshCw, Users, Wrench } from "lucide-react";
+import { Activity, ClipboardList, Droplets, FileText, Fuel, Home, List, RefreshCw, Users, Wrench } from "lucide-react";
 import BusListEditor from "./BusListEditor";
 import EmployeesEditor from "./EmployeesEditor";
 import ThemeToggle from "./ThemeToggle";
@@ -31,8 +31,12 @@ export const FORM_SHEETS: SheetLink[] = [
   { path: "/workorder", label: "Work Order", icon: FileText },
 ];
 
+export const SYSTEM_LINKS: SheetLink[] = [
+  { path: "/audit", label: "Audit Log", icon: Activity },
+];
+
 // The sheets available in the mobile picker. Add new ones here.
-export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS];
+export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS, ...SYSTEM_LINKS];
 
 export default function SheetNav() {
   const router = useRouter();
@@ -109,6 +113,7 @@ export default function SheetNav() {
 
       <div className="appnav__section appnav__section--bottom">
         <div className="appnav__sectionlabel">System</div>
+        {SYSTEM_LINKS.map(renderLink)}
         <ThemeToggle />
       </div>
       {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}

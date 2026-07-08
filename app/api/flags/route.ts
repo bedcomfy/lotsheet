@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getFlags, setBusFlags } from "../../lib/store";
+import { getFlags, recordAuditEvent, setBusFlags } from "../../lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +26,10 @@ export async function POST(req: Request) {
   const holdReason = typeof body.holdReason === "string" ? body.holdReason : "";
   const retorqueTires = Array.isArray(body.retorqueTires) ? body.retorqueTires : [];
   const inspOption = typeof body.inspOption === "string" ? body.inspOption : "";
-  await setBusFlags(bus, { flags, note, inspMiles, holdReason, retorqueTires, inspOption });
+  const beforeMap = await getFlags();
+  const before = beforeMap[bus] || null;
+  const after = { flags, note, inspMiles, holdReason, retorqueTires, inspOption };
+  await setBusFlags(bus, after);
+  await recordAuditEvent("flag_update", { bus, before, after }, typeof body.actor === "string" ? body.actor : "");
   return NextResponse.json({ ok: true });
 }

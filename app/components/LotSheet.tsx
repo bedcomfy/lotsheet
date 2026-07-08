@@ -43,6 +43,7 @@ import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { chicagoLotStamp } from "../lib/chicagoTime";
+import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
 import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
@@ -524,7 +525,7 @@ export default function LotSheet() {
           method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ops }),
+          body: JSON.stringify({ ops, actor: getDeviceActor() }),
         });
         const d = await r.json();
         if (d && d.ok) {
@@ -596,7 +597,7 @@ export default function LotSheet() {
           method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ops }),
+          body: JSON.stringify({ ops, actor: getDeviceActor() }),
           keepalive: true,
         });
       } catch {}
@@ -933,6 +934,7 @@ export default function LotSheet() {
         holdReason: entry.holdReason ?? "",
         retorqueTires: entry.retorqueTires || [],
         inspOption: entry.inspOption ?? "",
+        actor: getDeviceActor(),
       }),
     }).catch(() => {});
     onBusFlagsUpdated(bus, entry);

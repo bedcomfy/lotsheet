@@ -9,6 +9,7 @@ import TypeCodes from "./TypeCodes";
 import CellEditor from "./CellEditor";
 import LotEditor from "./LotEditor";
 import ManagerPanel from "./ManagerPanel";
+import { getDeviceActor } from "../lib/deviceActor";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 
 // Everything "inside the shop" in one place: the Apron (buses parked anywhere on
@@ -122,7 +123,7 @@ export default function ShopSheet() {
         method: "PATCH",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lots: lotsRef.current, clearBuses }),
+        body: JSON.stringify({ lots: lotsRef.current, clearBuses, actor: getDeviceActor() }),
       })
         .then((r) => r.json())
         .then((d) => {

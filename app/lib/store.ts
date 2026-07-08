@@ -42,11 +42,13 @@ const T_FLAGS = `bus_flags${TBL_SUFFIX}`;
 const T_STATE = `app_state${TBL_SUFFIX}`;
 const T_HISTORY = `sheet_history${TBL_SUFFIX}`;
 const T_SHEET_OPS = `lot_sheet_ops${TBL_SUFFIX}`;
+const T_AUDIT = `audit_events${TBL_SUFFIX}`;
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FLAGS_FILE = path.join(DATA_DIR, "flags.json");
 const SHEET_FILE = path.join(DATA_DIR, "sheet.json");
 const SHEET_OPS_FILE = path.join(DATA_DIR, "sheet_ops.json");
+const AUDIT_FILE = path.join(DATA_DIR, "audit.json");
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 const STATES_FILE = path.join(DATA_DIR, "states.json"); // generic keyed sheets (fuel, def, turnover…)
 
@@ -139,6 +141,15 @@ async function pool(): Promise<PgPool> {
         revision BIGSERIAL PRIMARY KEY,
         op JSONB NOT NULL,
         actor TEXT,
+        created_at TIMESTAMPTZ DEFAULT now()
+      )`
+    );
+    await _pool.query(
+      `CREATE TABLE IF NOT EXISTS ${T_AUDIT} (
+        id BIGSERIAL PRIMARY KEY,
+        kind TEXT NOT NULL,
+        actor TEXT,
+        details JSONB,
         created_at TIMESTAMPTZ DEFAULT now()
       )`
     );
@@ -401,6 +412,24 @@ export async function listSheetOpsSince(since: number): Promise<LotSheetOpRecord
   return (await readLocalSheetOps()).filter((op) => op.revision > n).slice(0, 500);
 }
 
+export async function listLatestSheetOps(limit = 200): Promise<LotSheetOpRecord[]> {
+  const n = Math.max(1, Math.min(500, Math.floor(limit)));
+  if (usePg) {
+    const { rows } = await (await pool()).query(
+      `SELECT revision, op, actor, created_at FROM ${T_SHEET_OPS}
+       ORDER BY revision DESC LIMIT $1`,
+      [n]
+    );
+    return rows.map((row) => ({
+      revision: Number(row.revision),
+      op: row.op as LotSheetOp,
+      actor: row.actor || undefined,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    }));
+  }
+  return (await readLocalSheetOps()).slice(-n).reverse();
+}
+
 // ---------- generic keyed sheet state (fuel, def, turnover…) ----------
 // Same app_state table as the lot sheet, just under different keys, so any new
 // sheet gets shared cross-device storage for free. Returns { value, updatedAt }.
@@ -465,6 +494,66 @@ export interface HistoryEntry {
   savedAt: string | null;
 }
 type HistoryMap = Record<string, HistoryEntry[]>;
+
+export interface AuditEvent {
+  id: string;
+  kind: string;
+  actor?: string;
+  details: unknown;
+  createdAt: string | null;
+}
+
+async function readAuditFile(): Promise<AuditEvent[]> {
+  try {
+    const data = JSON.parse(await fs.readFile(AUDIT_FILE, "utf8"));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeAuditFile(events: AuditEvent[]): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(AUDIT_FILE, JSON.stringify(events.slice(0, 1000), null, 2));
+}
+
+export async function recordAuditEvent(kind: string, details: unknown, actor = ""): Promise<void> {
+  if (usePg) {
+    await (await pool()).query(
+      `INSERT INTO ${T_AUDIT} (kind, actor, details) VALUES ($1, $2, $3)`,
+      [kind, actor || null, details ?? null]
+    );
+    return;
+  }
+  const events = await readAuditFile();
+  events.unshift({
+    id: `${Date.now()}-${Math.round(Math.random() * 1e6)}`,
+    kind,
+    actor: actor || undefined,
+    details: details ?? null,
+    createdAt: new Date().toISOString(),
+  });
+  await writeAuditFile(events);
+}
+
+export async function listAuditEvents(limit = 100): Promise<AuditEvent[]> {
+  const n = Math.max(1, Math.min(500, Math.floor(limit)));
+  if (usePg) {
+    const { rows } = await (await pool()).query(
+      `SELECT id, kind, actor, details, created_at FROM ${T_AUDIT}
+       ORDER BY created_at DESC, id DESC LIMIT $1`,
+      [n]
+    );
+    return rows.map((row) => ({
+      id: String(row.id),
+      kind: row.kind,
+      actor: row.actor || undefined,
+      details: row.details ?? null,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    }));
+  }
+  return (await readAuditFile()).slice(0, n);
+}
 
 // The dev JSON file holds a map { sheetKey: [ {id, sheet, savedAt}, ... ] }.
 // Old installs stored a bare array (lot sheet only) — migrate that to { lot: [] }.

@@ -13,6 +13,7 @@ import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanel";
 import LotEditor from "./LotEditor";
 import { chicagoParts } from "../lib/chicagoTime";
+import { getDeviceActor } from "../lib/deviceActor";
 import type { Employee, FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
 
 const STORAGE_KEY = "turnover";
@@ -189,7 +190,7 @@ export default function TurnoverSheet() {
         method: "PATCH",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lots: nextLots }),
+        body: JSON.stringify({ lots: nextLots, actor: getDeviceActor() }),
       })
         .then((r) => r.json())
         .then(() => {
