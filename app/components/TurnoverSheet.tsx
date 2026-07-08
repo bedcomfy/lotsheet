@@ -153,7 +153,7 @@ export default function TurnoverSheet() {
   useEffect(() => {
     let alive = true;
     const load = () =>
-      fetch("/api/sheet")
+      fetch("/api/sheet", { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
           if (!alive || !d || !d.sheet || lotDirty.current) return;
@@ -173,7 +173,7 @@ export default function TurnoverSheet() {
         .catch(() => {})
         .finally(() => alive && setLotsLoaded(true));
     load();
-    const iv = setInterval(load, 4000);
+    const iv = setInterval(load, 1500);
     return () => {
       alive = false;
       clearInterval(iv);
@@ -187,6 +187,7 @@ export default function TurnoverSheet() {
     lotTimer.current = setTimeout(() => {
       fetch("/api/sheet", {
         method: "PATCH",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lots: nextLots }),
       })

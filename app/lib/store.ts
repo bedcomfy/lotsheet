@@ -20,6 +20,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { Pool as PgPool } from "pg";
 import { mergeLotSheet } from "./lotSheetMerge";
+import { applyLotSheetOpsToSheet, normalizeOps, type LotSheetOp, type LotSheetOpRecord } from "./lotSheetOps";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
 
 const IS_PROD = process.env.VERCEL_ENV === "production";
@@ -40,10 +41,12 @@ const TBL_SUFFIX = ENV && ENV !== "production" ? "_" + ENV.replace(/[^a-z]/gi, "
 const T_FLAGS = `bus_flags${TBL_SUFFIX}`;
 const T_STATE = `app_state${TBL_SUFFIX}`;
 const T_HISTORY = `sheet_history${TBL_SUFFIX}`;
+const T_SHEET_OPS = `lot_sheet_ops${TBL_SUFFIX}`;
 
 const DATA_DIR = path.join(process.cwd(), ".data");
 const FLAGS_FILE = path.join(DATA_DIR, "flags.json");
 const SHEET_FILE = path.join(DATA_DIR, "sheet.json");
+const SHEET_OPS_FILE = path.join(DATA_DIR, "sheet_ops.json");
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 const STATES_FILE = path.join(DATA_DIR, "states.json"); // generic keyed sheets (fuel, def, turnover…)
 
@@ -131,6 +134,14 @@ async function pool(): Promise<PgPool> {
         saved_at TIMESTAMPTZ DEFAULT now()
       )`
     );
+    await _pool.query(
+      `CREATE TABLE IF NOT EXISTS ${T_SHEET_OPS} (
+        revision BIGSERIAL PRIMARY KEY,
+        op JSONB NOT NULL,
+        actor TEXT,
+        created_at TIMESTAMPTZ DEFAULT now()
+      )`
+    );
     // Which sheet each archive row belongs to (lot / fuel / def / …). Existing
     // rows predate this and are the lot sheet.
     await _pool.query(`ALTER TABLE ${T_HISTORY} ADD COLUMN IF NOT EXISTS sheet_key TEXT`);
@@ -194,23 +205,46 @@ export async function setBusFlags(bus: string, entry: unknown): Promise<void> {
 // the saved JSON (or null if none saved yet) and updatedAt is an ISO string.
 const SHEET_KEY = "current";
 
-export async function getSheet(): Promise<{ sheet: LotSheet | null; updatedAt: string | null }> {
+async function readLocalSheetOps(): Promise<LotSheetOpRecord[]> {
+  try {
+    const data = JSON.parse(await fs.readFile(SHEET_OPS_FILE, "utf8"));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeLocalSheetOps(ops: LotSheetOpRecord[]): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.writeFile(SHEET_OPS_FILE, JSON.stringify(ops.slice(-1000), null, 2));
+}
+
+export async function getSheet(): Promise<{ sheet: LotSheet | null; updatedAt: string | null; revision: number }> {
   if (usePg) {
-    const { rows } = await (await pool()).query(
+    const db = await pool();
+    const [{ rows }, rev] = await Promise.all([
+      db.query(
       `SELECT value, updated_at FROM ${T_STATE} WHERE key = $1`,
       [SHEET_KEY]
-    );
-    if (!rows.length) return { sheet: null, updatedAt: null };
+      ),
+      db.query(`SELECT COALESCE(MAX(revision), 0)::bigint AS revision FROM ${T_SHEET_OPS}`),
+    ]);
+    const revision = Number(rev.rows[0]?.revision || 0);
+    if (!rows.length) return { sheet: null, updatedAt: null, revision };
     return {
       sheet: rows[0].value || null,
       updatedAt: rows[0].updated_at ? new Date(rows[0].updated_at).toISOString() : null,
+      revision,
     };
   }
   try {
-    const raw = JSON.parse(await fs.readFile(SHEET_FILE, "utf8"));
-    return { sheet: raw.sheet || null, updatedAt: raw.updatedAt || null };
+    const [raw, ops] = await Promise.all([
+      fs.readFile(SHEET_FILE, "utf8").then((text) => JSON.parse(text)),
+      readLocalSheetOps(),
+    ]);
+    return { sheet: raw.sheet || null, updatedAt: raw.updatedAt || null, revision: ops[ops.length - 1]?.revision || 0 };
   } catch {
-    return { sheet: null, updatedAt: null };
+    return { sheet: null, updatedAt: null, revision: 0 };
   }
 }
 
@@ -277,6 +311,94 @@ export async function mergeSetSheet(
   const next = force ? incoming : mergeLotSheet(baseSheet, incoming, current);
   const updatedAt = await setSheet(next);
   return { sheet: next, updatedAt };
+}
+
+export async function applySheetOps(
+  rawOps: unknown,
+  actor = ""
+): Promise<{ sheet: LotSheet; updatedAt: string; revision: number; ops: LotSheetOpRecord[] }> {
+  const ops = normalizeOps(rawOps);
+  const fallbackUpdatedAt = new Date().toISOString();
+
+  if (usePg) {
+    const db = await pool();
+    await db.query("BEGIN");
+    try {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${T_STATE}:${SHEET_KEY}`]);
+      const { rows } = await db.query(
+        `SELECT value FROM ${T_STATE} WHERE key = $1`,
+        [SHEET_KEY]
+      );
+      const current = (rows[0]?.value || null) as LotSheet | null;
+      const next = applyLotSheetOpsToSheet(current, ops);
+      const written = await db.query(
+        `INSERT INTO ${T_STATE} (key, value, updated_at)
+         VALUES ($1, $2, now())
+         ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()
+         RETURNING updated_at`,
+        [SHEET_KEY, next]
+      );
+      const records: LotSheetOpRecord[] = [];
+      for (const op of ops) {
+        const inserted = await db.query(
+          `INSERT INTO ${T_SHEET_OPS} (op, actor) VALUES ($1, $2)
+           RETURNING revision, op, actor, created_at`,
+          [op, actor || null]
+        );
+        const row = inserted.rows[0];
+        records.push({
+          revision: Number(row.revision),
+          op: row.op as LotSheetOp,
+          actor: row.actor || undefined,
+          createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+        });
+      }
+      await db.query("COMMIT");
+      return {
+        sheet: next,
+        updatedAt: written.rows[0]?.updated_at
+          ? new Date(written.rows[0].updated_at).toISOString()
+          : fallbackUpdatedAt,
+        revision: records[records.length - 1]?.revision || (await getSheet()).revision,
+        ops: records,
+      };
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      throw err;
+    }
+  }
+
+  const [{ sheet: current }, existing] = await Promise.all([getSheet(), readLocalSheetOps()]);
+  const next = applyLotSheetOpsToSheet(current, ops);
+  const updatedAt = await setSheet(next);
+  let revision = existing[existing.length - 1]?.revision || 0;
+  const now = new Date().toISOString();
+  const records = ops.map((op) => ({
+    revision: ++revision,
+    op,
+    actor: actor || undefined,
+    createdAt: now,
+  }));
+  await writeLocalSheetOps([...existing, ...records]);
+  return { sheet: next, updatedAt, revision, ops: records };
+}
+
+export async function listSheetOpsSince(since: number): Promise<LotSheetOpRecord[]> {
+  const n = Number.isFinite(since) ? Math.max(0, Math.floor(since)) : 0;
+  if (usePg) {
+    const { rows } = await (await pool()).query(
+      `SELECT revision, op, actor, created_at FROM ${T_SHEET_OPS}
+       WHERE revision > $1 ORDER BY revision ASC LIMIT 500`,
+      [n]
+    );
+    return rows.map((row) => ({
+      revision: Number(row.revision),
+      op: row.op as LotSheetOp,
+      actor: row.actor || undefined,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    }));
+  }
+  return (await readLocalSheetOps()).filter((op) => op.revision > n).slice(0, 500);
 }
 
 // ---------- generic keyed sheet state (fuel, def, turnover…) ----------

@@ -1,4 +1,5 @@
-import type { LotKey, LotSheet, Lots } from "./types";
+import type { LotKey, LotSheet } from "./types";
+import { cloneLotSheet } from "./lotSheetOps";
 
 const STRING_FIELDS: Array<keyof Pick<LotSheet, "time" | "date" | "offProperty" | "inShop">> = [
   "time",
@@ -11,30 +12,10 @@ function same(a: unknown, b: unknown) {
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 }
 
-function cloneLots(lots: Lots | undefined): Lots {
-  const out: Lots = {};
-  for (const [key, value] of Object.entries(lots || {})) {
-    if (Array.isArray(value)) out[key as LotKey] = [...value];
-  }
-  return out;
-}
-
-function cloneSheet(sheet: LotSheet | null | undefined): LotSheet {
-  return {
-    time: sheet?.time || "",
-    date: sheet?.date || "",
-    offProperty: sheet?.offProperty || "",
-    inShop: sheet?.inShop || "",
-    cells: { ...(sheet?.cells || {}) },
-    lots: cloneLots(sheet?.lots),
-    locks: [...(sheet?.locks || [])],
-  };
-}
-
 export function mergeLotSheet(baseSheet: LotSheet | null | undefined, localSheet: LotSheet, serverSheet: LotSheet | null | undefined): LotSheet {
-  const base = cloneSheet(baseSheet);
-  const local = cloneSheet(localSheet);
-  const merged = cloneSheet(serverSheet || baseSheet || localSheet);
+  const base = cloneLotSheet(baseSheet);
+  const local = cloneLotSheet(localSheet);
+  const merged = cloneLotSheet(serverSheet || baseSheet || localSheet);
 
   for (const field of STRING_FIELDS) {
     if (!same(local[field], base[field])) merged[field] = local[field] || "";

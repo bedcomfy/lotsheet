@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSheet, mergeSetSheet } from "../../lib/store";
-import type { LotSheet, Lots } from "../../lib/types";
+import { applySheetOps, getSheet } from "../../lib/store";
+import { diffLotSheetOps, type LotSheetOp } from "../../lib/lotSheetOps";
+import type { LotKey, LotSheet, Lots } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +20,11 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
   }
   const incoming = body.sheet as LotSheet;
-  const replace = body.force === true;
-  const { sheet, updatedAt } = await mergeSetSheet(body.baseSheet as LotSheet | null, incoming, replace);
-  return NextResponse.json({ ok: true, updatedAt, sheet });
+  const ops: LotSheetOp[] = body.force === true
+    ? [{ type: "replace_sheet", sheet: incoming }]
+    : diffLotSheetOps(body.baseSheet as LotSheet | null, incoming);
+  const result = await applySheetOps(ops, typeof body.actor === "string" ? body.actor : "");
+  return NextResponse.json({ ok: true, ...result });
 }
 
 // Merge ONLY the back-of-sheet lots into the stored sheet, server-side, leaving
@@ -35,26 +38,17 @@ export async function PUT(req: Request) {
 // lots merge. Powers "Move it here" from pages that don't own the grid cells.
 export async function PATCH(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const { sheet } = await getSheet();
-  const base: LotSheet = (sheet && typeof sheet === "object" ? sheet : {}) as LotSheet;
-  const next: LotSheet = { ...base, cells: { ...(base.cells || {}) }, lots: { ...(base.lots || {}) } };
+  const ops: LotSheetOp[] = [];
   if (Array.isArray(body.clearBuses) && body.clearBuses.length) {
-    const clear = new Set(body.clearBuses.filter((b: unknown) => typeof b === "string"));
-    for (const [id, v] of Object.entries(next.cells)) {
-      const num = typeof v === "string" ? v : (v as { num?: string })?.num || "";
-      if (clear.has(num)) delete next.cells[id];
-    }
-    const POSITIONAL = new Set(["bay"]); // fixed spots keep their slot, blanked
-    for (const [key, arr] of Object.entries(next.lots as Lots)) {
-      if (!Array.isArray(arr)) continue;
-      (next.lots as Record<string, string[]>)[key] = POSITIONAL.has(key)
-        ? arr.map((b) => (clear.has(b) ? "" : b))
-        : arr.filter((b) => !clear.has(b));
+    for (const bus of body.clearBuses) {
+      if (typeof bus === "string" && bus) ops.push({ type: "remove_bus", bus });
     }
   }
   if (body.lots && typeof body.lots === "object") {
-    next.lots = { ...next.lots, ...(body.lots as Lots) };
+    for (const [key, value] of Object.entries(body.lots as Lots)) {
+      if (Array.isArray(value)) ops.push({ type: "set_lot", key: key as LotKey, value: value.map((v) => String(v || "")) });
+    }
   }
-  const { sheet: saved, updatedAt } = await mergeSetSheet(base, next, false);
-  return NextResponse.json({ ok: true, updatedAt, lots: saved.lots || {} });
+  const result = await applySheetOps(ops, typeof body.actor === "string" ? body.actor : "");
+  return NextResponse.json({ ok: true, updatedAt: result.updatedAt, revision: result.revision, lots: result.sheet.lots || {} });
 }

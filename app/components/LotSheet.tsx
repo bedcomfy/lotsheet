@@ -44,6 +44,7 @@ import ToolMenu from "./ToolMenu";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
+import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -366,7 +367,7 @@ export default function LotSheet() {
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
   const lastSyncedSheetRef = useRef<LotSheetData | null>(null);
-  const lastServerAtRef = useRef<string | null>(null);
+  const lastRevisionRef = useRef(0);
   const suppressNextSheetMarkRef = useRef(false);
   const forceNextSaveRef = useRef(false);
   const savingRef = useRef(false); // true while a save PUT is in flight (saves are serialized)
@@ -387,29 +388,19 @@ export default function LotSheet() {
   const displaySheet = blankPrintMode ? blankPrintSheet() : sheet;
   const displayFlags: FlagMap = blankPrintMode ? {} : flags;
 
-  function serverStampMs(stamp: string | null | undefined) {
-    if (!stamp) return 0;
-    const ms = Date.parse(stamp);
-    return Number.isFinite(ms) ? ms : 0;
-  }
-
-  function isNewerServerStamp(stamp: string | null | undefined) {
-    return serverStampMs(stamp) > serverStampMs(lastServerAtRef.current);
-  }
-
   function writeLocalSheet(json: string) {
     try {
       localStorage.setItem(STORAGE_KEY, json);
     } catch {}
   }
 
-  function adoptServerSheet(nextSheet: LotSheetData, json: string, updatedAt: string | null | undefined) {
+  function adoptServerSheet(nextSheet: LotSheetData, json: string, updatedAt: string | null | undefined, revision?: number) {
     suppressNextSheetMarkRef.current = true;
     sheetRef.current = nextSheet;
     setSheet(nextSheet);
     lastSyncRef.current = json;
     lastSyncedSheetRef.current = nextSheet;
-    lastServerAtRef.current = updatedAt || lastServerAtRef.current;
+    if (typeof revision === "number") lastRevisionRef.current = revision;
     writeLocalSheet(json);
   }
 
@@ -446,14 +437,14 @@ export default function LotSheet() {
         if (cancelled) return;
         if (d && d.sheet) {
           const serverJson = JSON.stringify(d.sheet);
-          lastServerAtRef.current = d.updatedAt || null;
           if (JSON.stringify(sheetRef.current) === loadBaseJson) {
-            adoptServerSheet(d.sheet, serverJson, d.updatedAt);
+            adoptServerSheet(d.sheet, serverJson, d.updatedAt, d.revision);
           } else {
             // The user edited before the initial fetch returned. Do not replace
             // their work; mark the server baseline so their local edits save.
             lastSyncRef.current = serverJson;
             lastSyncedSheetRef.current = d.sheet;
+            lastRevisionRef.current = Number(d.revision || 0);
           }
         }
         // If the server has no sheet yet, leave lastSyncRef null so the device's
@@ -521,17 +512,19 @@ export default function LotSheet() {
     const baseSheet = lastSyncedSheetRef.current;
     const force = forceNextSaveRef.current;
     forceNextSaveRef.current = false;
+    const ops = force ? [{ type: "replace_sheet" as const, sheet: snapshot }] : diffLotSheetOps(baseSheet, snapshot);
+    if (!ops.length) return Promise.resolve();
     savingRef.current = true;
     const task = (async () => {
       try {
         writeLocalSheet(json);
       } catch {}
       try {
-        const r = await fetch("/api/sheet", {
-          method: "PUT",
+        const r = await fetch("/api/sheet/ops", {
+          method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sheet: snapshot, baseSheet, force }),
+          body: JSON.stringify({ ops }),
         });
         const d = await r.json();
         if (d && d.ok) {
@@ -544,7 +537,7 @@ export default function LotSheet() {
           }
           lastSyncRef.current = savedJson;
           lastSyncedSheetRef.current = savedSheet;
-          lastServerAtRef.current = d.updatedAt || lastServerAtRef.current;
+          lastRevisionRef.current = Number(d.revision || lastRevisionRef.current);
           setSavedAt(new Date());
           writeLocalSheet(savedJson);
           schedulePrewarm(); // pre-build the PDF for the saved sheet
@@ -567,7 +560,7 @@ export default function LotSheet() {
     if (!loaded || !syncReady || printMode) return;
     if (JSON.stringify(sheet) === lastSyncRef.current) return; // nothing new
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(runSave, 600);
+    saveTimer.current = setTimeout(runSave, 250);
     return () => clearTimeout(saveTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet, loaded, syncReady, printMode]);
@@ -577,7 +570,7 @@ export default function LotSheet() {
   // there's nothing new or a save is already running).
   useEffect(() => {
     if (!loaded || !syncReady || printMode) return;
-    const iv = setInterval(runSave, 2000);
+    const iv = setInterval(runSave, 1000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, syncReady, printMode]);
@@ -595,15 +588,15 @@ export default function LotSheet() {
       } catch {}
       if (!syncReady) return;
       try {
-        fetch("/api/sheet", {
-          method: "PUT",
+        const ops = forceNextSaveRef.current
+          ? [{ type: "replace_sheet" as const, sheet: sheetRef.current }]
+          : diffLotSheetOps(lastSyncedSheetRef.current, sheetRef.current);
+        if (!ops.length) return;
+        fetch("/api/sheet/ops", {
+          method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sheet: sheetRef.current,
-            baseSheet: lastSyncedSheetRef.current,
-            force: forceNextSaveRef.current,
-          }),
+          body: JSON.stringify({ ops }),
           keepalive: true,
         });
       } catch {}
@@ -625,24 +618,31 @@ export default function LotSheet() {
     if (!loaded || !syncReady || printMode) return;
     const iv = setInterval(() => {
       if (savingRef.current) return; // don't adopt server state mid-save
-      fetch("/api/sheet", { cache: "no-store" })
+      fetch(`/api/sheet/ops?since=${lastRevisionRef.current}`, { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
           if (!d || !d.sheet) return;
           if (savingRef.current) return; // a save started while we were fetching
-          if (!isNewerServerStamp(d.updatedAt)) return; // stale read
-          const serverJson = JSON.stringify(d.sheet);
+          const records = (Array.isArray(d.ops) ? d.ops : []) as LotSheetOpRecord[];
+          if (!records.length && Number(d.revision || 0) <= lastRevisionRef.current) return;
+          const previousBase = lastSyncedSheetRef.current;
+          const nextServerSheet = records.length
+            ? previousBase
+              ? applyLotSheetOpsToSheet(previousBase, records.map((record) => record.op))
+              : d.sheet
+            : d.sheet;
+          const serverJson = JSON.stringify(nextServerSheet);
           if (serverJson === lastSyncRef.current) return; // no change
           const localJson = JSON.stringify(sheetRef.current);
           if (localJson === lastSyncRef.current) {
-            adoptServerSheet(d.sheet, serverJson, d.updatedAt);
+            adoptServerSheet(nextServerSheet, serverJson, d.updatedAt, d.revision);
             return;
           }
-          const merged = mergeLotSheet(lastSyncedSheetRef.current, sheetRef.current, d.sheet);
+          const merged = mergeLotSheet(previousBase, sheetRef.current, nextServerSheet);
           const mergedJson = JSON.stringify(merged);
           lastSyncRef.current = serverJson;
-          lastSyncedSheetRef.current = d.sheet;
-          lastServerAtRef.current = d.updatedAt || lastServerAtRef.current;
+          lastSyncedSheetRef.current = nextServerSheet;
+          lastRevisionRef.current = Number(d.revision || lastRevisionRef.current);
           if (mergedJson !== localJson) {
             suppressNextSheetMarkRef.current = true;
             sheetRef.current = merged;
@@ -651,7 +651,7 @@ export default function LotSheet() {
           }
         })
         .catch(() => {});
-    }, 4000);
+    }, 1200);
     return () => clearInterval(iv);
   }, [loaded, syncReady]);
 
