@@ -363,6 +363,8 @@ export default function LotSheet() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
+  const savingRef = useRef(false); // true while a save PUT is in flight (saves are serialized)
+  const saveInFlightRef = useRef<Promise<void> | null>(null);
   const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
     sheetRef.current = sheet;
@@ -431,44 +433,109 @@ export default function LotSheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flags, showMaint, loaded, flagsLoaded]);
 
-  // Autosave (debounced) to the server, so every device sees the same sheet.
-  // A local copy is also kept as an offline backup.
-  useEffect(() => {
-    if (!loaded || printMode) return;
-    const json = JSON.stringify(sheet);
-    if (json === lastSyncRef.current) return; // nothing new to push
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
+  // Save the current sheet to the server — SERIALIZED (one PUT at a time). This
+  // is the fix for "the cleared grid reappears": without serialization a slow,
+  // stale PUT (e.g. the full grid you had before pressing Clear) could land AFTER
+  // a newer one, reverting the server, and the poll below would then re-adopt
+  // that old grid. Now each save waits for the previous, always sends the latest
+  // sheet, and re-runs if edits arrived while it was in flight.
+  function runSave(): Promise<void> {
+    if (savingRef.current) return saveInFlightRef.current || Promise.resolve(); // a save is already in flight
+    const snapshot = sheetRef.current;
+    const json = JSON.stringify(snapshot);
+    if (json === lastSyncRef.current) return Promise.resolve(); // nothing new to push
+    savingRef.current = true;
+    const task = (async () => {
       try {
         localStorage.setItem(STORAGE_KEY, json);
       } catch {}
-      fetch("/api/sheet", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sheet }),
-      })
-        .then((r) => r.json())
-        .then((d) => {
-          if (d && d.ok) {
-            lastSyncRef.current = json;
-            setSavedAt(new Date());
-            schedulePrewarm(); // pre-build the PDF for the saved sheet
-          }
-        })
-        .catch(() => {});
-    }, 600);
+      try {
+        const r = await fetch("/api/sheet", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sheet: snapshot }),
+        });
+        const d = await r.json();
+        if (d && d.ok) {
+          lastSyncRef.current = json;
+          setSavedAt(new Date());
+          schedulePrewarm(); // pre-build the PDF for the saved sheet
+        }
+      } catch {}
+      savingRef.current = false;
+      saveInFlightRef.current = null;
+      // Edits landed while we were saving - flush them right away.
+      if (JSON.stringify(sheetRef.current) !== lastSyncRef.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(runSave, 250);
+      }
+    })();
+    saveInFlightRef.current = task;
+    return task;
+  }
+
+  // Autosave (debounced) to the server, so every device sees the same sheet.
+  useEffect(() => {
+    if (!loaded || printMode) return;
+    if (JSON.stringify(sheet) === lastSyncRef.current) return; // nothing new
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(runSave, 600);
     return () => clearTimeout(saveTimer.current);
-  }, [sheet, loaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet, loaded, printMode]);
+
+  // Safety net: nonstop editing keeps resetting the debounce above, so also flush
+  // pending edits at least every couple of seconds (runSave is a no-op when
+  // there's nothing new or a save is already running).
+  useEffect(() => {
+    if (!loaded || printMode) return;
+    const iv = setInterval(runSave, 2000);
+    return () => clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, printMode]);
+
+  // Flush the latest edits when the tab is backgrounded / closed / navigated away
+  // (screen lock, app switch) — with keepalive so the request survives — so work
+  // is never lost between the last debounced save and leaving the page.
+  useEffect(() => {
+    if (printMode) return;
+    const flush = () => {
+      const json = JSON.stringify(sheetRef.current);
+      if (json === lastSyncRef.current) return;
+      try {
+        localStorage.setItem(STORAGE_KEY, json);
+      } catch {}
+      try {
+        fetch("/api/sheet", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sheet: sheetRef.current }),
+          keepalive: true,
+        });
+      } catch {}
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [printMode]);
 
   // Poll for changes made on other devices. Adopt the server's sheet only when
   // there are no unsaved local edits, so we never clobber in-progress typing.
   useEffect(() => {
     if (!loaded || printMode) return;
     const iv = setInterval(() => {
+      if (savingRef.current) return; // don't adopt server state mid-save
       fetch("/api/sheet")
         .then((r) => r.json())
         .then((d) => {
           if (!d || !d.sheet) return;
+          if (savingRef.current) return; // a save started while we were fetching
           const serverJson = JSON.stringify(d.sheet);
           if (serverJson === lastSyncRef.current) return; // no change
           if (JSON.stringify(sheetRef.current) !== lastSyncRef.current) return; // local edits pending
@@ -951,15 +1018,7 @@ export default function LotSheet() {
     if (timeOverridden && sheet.time?.trim()) qs.set("timeOverride", sheet.time);
     if (dateOverridden && sheet.date?.trim()) qs.set("dateOverride", sheet.date);
     const target = `${window.location.origin}/api/pdf?${qs.toString()}`;
-    openPdfTarget(target, () =>
-      fetch("/api/sheet", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sheet }),
-      }).then(() => {
-        lastSyncRef.current = JSON.stringify(sheet);
-      })
-    );
+    openPdfTarget(target, () => runSave());
   }
 
   function openBlankPdf() {
