@@ -46,6 +46,7 @@ import { chicagoLotStamp } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
+const POLL_ADOPT_IDLE_MS = 2 * 60 * 1000;
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
 // Back-of-sheet ordered lists.
@@ -363,12 +364,21 @@ export default function LotSheet() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
+  const lastServerAtRef = useRef<string | null>(null);
+  const localEditAtRef = useRef(0);
+  const suppressNextSheetMarkRef = useRef(false);
   const savingRef = useRef(false); // true while a save PUT is in flight (saves are serialized)
   const saveInFlightRef = useRef<Promise<void> | null>(null);
   const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
     sheetRef.current = sheet;
-  }, [sheet]);
+    if (!loaded || printMode) return;
+    if (suppressNextSheetMarkRef.current) {
+      suppressNextSheetMarkRef.current = false;
+      return;
+    }
+    localEditAtRef.current = Date.now();
+  }, [sheet, loaded, printMode]);
 
   // The sheet text runs +2px over the base sizes (the old adjustable "Sheet
   // Settings" stepper is gone — everyone gets the standard size).
@@ -376,10 +386,36 @@ export default function LotSheet() {
   const displaySheet = blankPrintMode ? blankPrintSheet() : sheet;
   const displayFlags: FlagMap = blankPrintMode ? {} : flags;
 
+  function serverStampMs(stamp: string | null | undefined) {
+    if (!stamp) return 0;
+    const ms = Date.parse(stamp);
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function isNewerServerStamp(stamp: string | null | undefined) {
+    return serverStampMs(stamp) > serverStampMs(lastServerAtRef.current);
+  }
+
+  function writeLocalSheet(json: string) {
+    try {
+      localStorage.setItem(STORAGE_KEY, json);
+    } catch {}
+  }
+
+  function adoptServerSheet(nextSheet: LotSheetData, json: string, updatedAt: string | null | undefined) {
+    suppressNextSheetMarkRef.current = true;
+    sheetRef.current = nextSheet;
+    setSheet(nextSheet);
+    lastSyncRef.current = json;
+    lastServerAtRef.current = updatedAt || lastServerAtRef.current;
+    writeLocalSheet(json);
+  }
+
   // Load the shared current sheet from the server. Show the device cache first
   // so the page isn't blank on a slow connection, then sync with the server.
   useEffect(() => {
     let cancelled = false;
+    let loadBaseJson = JSON.stringify(sheetRef.current);
     if (param("blank") === "1") {
       setSheet(blankPrintSheet());
       setLoaded(true);
@@ -389,15 +425,27 @@ export default function LotSheet() {
     }
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached) setSheet(JSON.parse(cached));
+      if (cached) {
+        const cachedSheet = JSON.parse(cached);
+        sheetRef.current = cachedSheet;
+        setSheet(cachedSheet);
+        loadBaseJson = cached;
+      }
     } catch {}
-    fetch("/api/sheet")
+    fetch("/api/sheet", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
         if (d && d.sheet) {
-          setSheet(d.sheet);
-          lastSyncRef.current = JSON.stringify(d.sheet);
+          const serverJson = JSON.stringify(d.sheet);
+          lastServerAtRef.current = d.updatedAt || null;
+          if (JSON.stringify(sheetRef.current) === loadBaseJson) {
+            adoptServerSheet(d.sheet, serverJson, d.updatedAt);
+          } else {
+            // The user edited before the initial fetch returned. Do not replace
+            // their work; mark the server baseline so their local edits save.
+            lastSyncRef.current = serverJson;
+          }
         }
         // If the server has no sheet yet, leave lastSyncRef null so the device's
         // current sheet gets pushed up on the first autosave.
@@ -447,18 +495,21 @@ export default function LotSheet() {
     savingRef.current = true;
     const task = (async () => {
       try {
-        localStorage.setItem(STORAGE_KEY, json);
+        writeLocalSheet(json);
       } catch {}
       try {
         const r = await fetch("/api/sheet", {
           method: "PUT",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sheet: snapshot }),
         });
         const d = await r.json();
         if (d && d.ok) {
           lastSyncRef.current = json;
+          lastServerAtRef.current = d.updatedAt || lastServerAtRef.current;
           setSavedAt(new Date());
+          writeLocalSheet(json);
           schedulePrewarm(); // pre-build the PDF for the saved sheet
         }
       } catch {}
@@ -503,11 +554,12 @@ export default function LotSheet() {
       const json = JSON.stringify(sheetRef.current);
       if (json === lastSyncRef.current) return;
       try {
-        localStorage.setItem(STORAGE_KEY, json);
+        writeLocalSheet(json);
       } catch {}
       try {
         fetch("/api/sheet", {
           method: "PUT",
+          cache: "no-store",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sheet: sheetRef.current }),
           keepalive: true,
@@ -531,19 +583,17 @@ export default function LotSheet() {
     if (!loaded || printMode) return;
     const iv = setInterval(() => {
       if (savingRef.current) return; // don't adopt server state mid-save
-      fetch("/api/sheet")
+      fetch("/api/sheet", { cache: "no-store" })
         .then((r) => r.json())
         .then((d) => {
           if (!d || !d.sheet) return;
           if (savingRef.current) return; // a save started while we were fetching
+          if (!isNewerServerStamp(d.updatedAt)) return; // stale read
           const serverJson = JSON.stringify(d.sheet);
           if (serverJson === lastSyncRef.current) return; // no change
           if (JSON.stringify(sheetRef.current) !== lastSyncRef.current) return; // local edits pending
-          setSheet(d.sheet);
-          lastSyncRef.current = serverJson;
-          try {
-            localStorage.setItem(STORAGE_KEY, serverJson);
-          } catch {}
+          if (Date.now() - localEditAtRef.current < POLL_ADOPT_IDLE_MS) return; // never interrupt active work
+          adoptServerSheet(d.sheet, serverJson, d.updatedAt);
         })
         .catch(() => {});
     }, 4000);
