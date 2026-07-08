@@ -19,6 +19,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import type { Pool as PgPool } from "pg";
+import { mergeLotSheet } from "./lotSheetMerge";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
 
 const IS_PROD = process.env.VERCEL_ENV === "production";
@@ -233,6 +234,49 @@ export async function setSheet(sheet: LotSheet): Promise<string> {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(SHEET_FILE, JSON.stringify({ sheet, updatedAt }, null, 2));
   return updatedAt;
+}
+
+export async function mergeSetSheet(
+  baseSheet: LotSheet | null | undefined,
+  incoming: LotSheet,
+  force = false
+): Promise<{ sheet: LotSheet; updatedAt: string }> {
+  const fallbackUpdatedAt = new Date().toISOString();
+  if (usePg) {
+    const db = await pool();
+    await db.query("BEGIN");
+    try {
+      await db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`${T_STATE}:${SHEET_KEY}`]);
+      const { rows } = await db.query(
+        `SELECT value FROM ${T_STATE} WHERE key = $1`,
+        [SHEET_KEY]
+      );
+      const current = (rows[0]?.value || null) as LotSheet | null;
+      const next = force || !baseSheet ? incoming : mergeLotSheet(baseSheet, incoming, current);
+      const written = await db.query(
+        `INSERT INTO ${T_STATE} (key, value, updated_at)
+         VALUES ($1, $2, now())
+         ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = now()
+         RETURNING updated_at`,
+        [SHEET_KEY, next]
+      );
+      await db.query("COMMIT");
+      return {
+        sheet: next,
+        updatedAt: written.rows[0]?.updated_at
+          ? new Date(written.rows[0].updated_at).toISOString()
+          : fallbackUpdatedAt,
+      };
+    } catch (err) {
+      await db.query("ROLLBACK").catch(() => {});
+      throw err;
+    }
+  }
+
+  const { sheet: current } = await getSheet();
+  const next = force || !baseSheet ? incoming : mergeLotSheet(baseSheet, incoming, current);
+  const updatedAt = await setSheet(next);
+  return { sheet: next, updatedAt };
 }
 
 // ---------- generic keyed sheet state (fuel, def, turnover…) ----------

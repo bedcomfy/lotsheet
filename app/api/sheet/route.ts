@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSheet, setSheet } from "../../lib/store";
+import { getSheet, mergeSetSheet } from "../../lib/store";
 import type { LotSheet, Lots } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -10,14 +10,18 @@ export async function GET() {
   return NextResponse.json({ sheet, updatedAt });
 }
 
-// Public: save the shared current sheet. Last write wins.
+// Public: save the shared current sheet. Modern clients send the last sheet
+// they saw as `baseSheet`; the server merges only what they changed into the
+// current server sheet so simultaneous users do not overwrite each other.
 export async function PUT(req: Request) {
   const body = await req.json().catch(() => ({}));
   if (!body || typeof body.sheet !== "object" || body.sheet === null) {
     return NextResponse.json({ error: "Missing sheet" }, { status: 400 });
   }
-  const updatedAt = await setSheet(body.sheet);
-  return NextResponse.json({ ok: true, updatedAt });
+  const incoming = body.sheet as LotSheet;
+  const replace = body.force === true || !body.baseSheet;
+  const { sheet, updatedAt } = await mergeSetSheet(body.baseSheet as LotSheet | null, incoming, replace);
+  return NextResponse.json({ ok: true, updatedAt, sheet });
 }
 
 // Merge ONLY the back-of-sheet lots into the stored sheet, server-side, leaving
@@ -51,6 +55,6 @@ export async function PATCH(req: Request) {
   if (body.lots && typeof body.lots === "object") {
     next.lots = { ...next.lots, ...(body.lots as Lots) };
   }
-  const updatedAt = await setSheet(next);
-  return NextResponse.json({ ok: true, updatedAt, lots: next.lots || {} });
+  const { sheet: saved, updatedAt } = await mergeSetSheet(base, next, false);
+  return NextResponse.json({ ok: true, updatedAt, lots: saved.lots || {} });
 }

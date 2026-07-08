@@ -43,10 +43,10 @@ import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { chicagoLotStamp } from "../lib/chicagoTime";
+import { mergeLotSheet } from "../lib/lotSheetMerge";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
-const POLL_ADOPT_IDLE_MS = 2 * 60 * 1000;
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
 // Back-of-sheet ordered lists.
@@ -364,9 +364,10 @@ export default function LotSheet() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
+  const lastSyncedSheetRef = useRef<LotSheetData | null>(null);
   const lastServerAtRef = useRef<string | null>(null);
-  const localEditAtRef = useRef(0);
   const suppressNextSheetMarkRef = useRef(false);
+  const forceNextSaveRef = useRef(false);
   const savingRef = useRef(false); // true while a save PUT is in flight (saves are serialized)
   const saveInFlightRef = useRef<Promise<void> | null>(null);
   const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
@@ -377,7 +378,6 @@ export default function LotSheet() {
       suppressNextSheetMarkRef.current = false;
       return;
     }
-    localEditAtRef.current = Date.now();
   }, [sheet, loaded, printMode]);
 
   // The sheet text runs +2px over the base sizes (the old adjustable "Sheet
@@ -407,6 +407,7 @@ export default function LotSheet() {
     sheetRef.current = nextSheet;
     setSheet(nextSheet);
     lastSyncRef.current = json;
+    lastSyncedSheetRef.current = nextSheet;
     lastServerAtRef.current = updatedAt || lastServerAtRef.current;
     writeLocalSheet(json);
   }
@@ -445,6 +446,7 @@ export default function LotSheet() {
             // The user edited before the initial fetch returned. Do not replace
             // their work; mark the server baseline so their local edits save.
             lastSyncRef.current = serverJson;
+            lastSyncedSheetRef.current = d.sheet;
           }
         }
         // If the server has no sheet yet, leave lastSyncRef null so the device's
@@ -492,6 +494,9 @@ export default function LotSheet() {
     const snapshot = sheetRef.current;
     const json = JSON.stringify(snapshot);
     if (json === lastSyncRef.current) return Promise.resolve(); // nothing new to push
+    const baseSheet = lastSyncedSheetRef.current;
+    const force = forceNextSaveRef.current || !baseSheet;
+    forceNextSaveRef.current = false;
     savingRef.current = true;
     const task = (async () => {
       try {
@@ -502,14 +507,22 @@ export default function LotSheet() {
           method: "PUT",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sheet: snapshot }),
+          body: JSON.stringify({ sheet: snapshot, baseSheet, force }),
         });
         const d = await r.json();
         if (d && d.ok) {
-          lastSyncRef.current = json;
+          const savedSheet = (d.sheet || snapshot) as LotSheetData;
+          const savedJson = JSON.stringify(savedSheet);
+          if (savedJson !== json) {
+            suppressNextSheetMarkRef.current = true;
+            sheetRef.current = savedSheet;
+            setSheet(savedSheet);
+          }
+          lastSyncRef.current = savedJson;
+          lastSyncedSheetRef.current = savedSheet;
           lastServerAtRef.current = d.updatedAt || lastServerAtRef.current;
           setSavedAt(new Date());
-          writeLocalSheet(json);
+          writeLocalSheet(savedJson);
           schedulePrewarm(); // pre-build the PDF for the saved sheet
         }
       } catch {}
@@ -561,7 +574,11 @@ export default function LotSheet() {
           method: "PUT",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sheet: sheetRef.current }),
+          body: JSON.stringify({
+            sheet: sheetRef.current,
+            baseSheet: lastSyncedSheetRef.current,
+            force: forceNextSaveRef.current || !lastSyncedSheetRef.current,
+          }),
           keepalive: true,
         });
       } catch {}
@@ -591,9 +608,22 @@ export default function LotSheet() {
           if (!isNewerServerStamp(d.updatedAt)) return; // stale read
           const serverJson = JSON.stringify(d.sheet);
           if (serverJson === lastSyncRef.current) return; // no change
-          if (JSON.stringify(sheetRef.current) !== lastSyncRef.current) return; // local edits pending
-          if (Date.now() - localEditAtRef.current < POLL_ADOPT_IDLE_MS) return; // never interrupt active work
-          adoptServerSheet(d.sheet, serverJson, d.updatedAt);
+          const localJson = JSON.stringify(sheetRef.current);
+          if (localJson === lastSyncRef.current) {
+            adoptServerSheet(d.sheet, serverJson, d.updatedAt);
+            return;
+          }
+          const merged = mergeLotSheet(lastSyncedSheetRef.current, sheetRef.current, d.sheet);
+          const mergedJson = JSON.stringify(merged);
+          lastSyncRef.current = serverJson;
+          lastSyncedSheetRef.current = d.sheet;
+          lastServerAtRef.current = d.updatedAt || lastServerAtRef.current;
+          if (mergedJson !== localJson) {
+            suppressNextSheetMarkRef.current = true;
+            sheetRef.current = merged;
+            setSheet(merged);
+            writeLocalSheet(mergedJson);
+          }
         })
         .catch(() => {});
     }, 4000);
@@ -726,6 +756,7 @@ export default function LotSheet() {
     offerUndo("Grid cleared");
     setTimeOverridden(false);
     setDateOverridden(false);
+    forceNextSaveRef.current = true;
     // Locked buses stay put through the clear (and blocked X spots stay blocked).
     setSheet((s) => {
       const kept: Record<string, string> = {};
@@ -769,6 +800,7 @@ export default function LotSheet() {
       } catch {}
     }
     setSheet(imported);
+    forceNextSaveRef.current = true;
     setPrevOpen(false);
   }
 
