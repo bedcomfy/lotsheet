@@ -1151,6 +1151,16 @@ export default function LotSheet() {
   }
   const inShopCount = blankPrintMode ? "" : inShopSet.size;
 
+  // Both counters are editable. OFF PROPERTY auto-fills the flag count when left
+  // blank (like the TIME field) but a typed number wins; clearing it returns to
+  // the auto count. IN SHOP is manual only for now (no auto count).
+  const offPropertyDisplay = blankPrintMode
+    ? ""
+    : (sheet.offProperty || "").trim()
+      ? sheet.offProperty
+      : String(offPropertyCount);
+  const inShopDisplay = blankPrintMode ? "" : sheet.inShop || "";
+
   // The live search: message + steady highlight persist until the box clears.
   const foundBus = findVal.length >= 4 ? findVal : "";
   const foundWhere = foundBus ? locateBus(foundBus, null) : "";
@@ -1379,19 +1389,19 @@ export default function LotSheet() {
             <div className="counter">
               <label># OF VEHICLES OFF PROPERTY:</label>
               <input
-                className="counter__auto"
-                value={offPropertyCount}
-                readOnly
-                title="Auto-counted from buses flagged OFF PROPERTY in the Manager panel"
+                value={offPropertyDisplay}
+                onChange={(e) => setField("offProperty", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                inputMode="numeric"
+                title="Auto-fills from the OFF PROPERTY flag count when blank — type a number to override"
               />
             </div>
             <div className="counter">
               <label># OF VEHICLES IN SHOP:</label>
               <input
-                className="counter__auto"
-                value={inShopCount}
-                readOnly
-                title="Auto-counted from the Shop page (Apron, Bays, Cards) plus buses flagged IN SHOP"
+                value={inShopDisplay}
+                onChange={(e) => setField("inShop", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                inputMode="numeric"
+                title="Number of vehicles in the shop"
               />
             </div>
           </div>
