@@ -4,6 +4,9 @@
 
 - Fixed the mobile header so Audit Log no longer appears twice.
 - Gave the mobile sheet picker more room and kept the compact top bar focused on navigation, theme, and version.
+- Added a mobile Lot Sheet bottom action bar with Fill Rows, Flags, Shop, and Print.
+- Added a Pan/Fit view toggle for phone users reviewing the wide Lot Sheet.
+- Simplified the phone Lot Sheet toolbar so search, status, Select, and More stay usable without crowding daily actions.
 
 ## 0.1.7 - 2026-07-08
 

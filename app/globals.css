@@ -1533,6 +1533,38 @@ textarea:focus-visible {
   min-width: 56px;
   text-align: center;
 }
+.sheetview,
+.mobile-actions {
+  display: none;
+}
+.sheetview {
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.sheetview__label {
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.sheetview__btn {
+  min-width: 42px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 800;
+}
+.sheetview__btn--on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
 .btn {
   position: relative;
   overflow: hidden;
@@ -1626,6 +1658,11 @@ textarea:focus-visible {
   .back-sheet,
   .wo-sheet {
     min-width: 720px;
+  }
+  .sheet-scroll--fit .sheet,
+  .sheet-scroll--fit .back-sheet {
+    width: calc(100vw - 16px);
+    min-width: 0;
   }
 }
 /* The paper form has no bold anywhere — keep every word on the sheet regular. */
@@ -2524,14 +2561,18 @@ textarea:focus-visible {
 
 /* ---------- Small screens (phones) — screen only, never print ---------- */
 @media screen and (max-width: 480px) {
+  .app {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+
   /* Toolbar wraps onto as many rows as it needs. (It used to be one sideways-
      swipe row, but a horizontal drag that started on the More button also opened
      the dropdown — wrapping removes the swipe gesture and that conflict, and
      keeps every button visible instead of hidden off-screen.) */
   .toolbar {
     flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 8px;
+    padding: 9px 10px 10px;
   }
   .toolbar > * {
     flex: none;
@@ -2543,7 +2584,46 @@ textarea:focus-visible {
     display: none;
   }
   .toolbar__title {
+    order: 1;
     font-size: 14px;
+    min-width: 76px;
+  }
+  .toolbar .findbox {
+    order: 2;
+    flex: 1 1 154px;
+    min-width: 0;
+    max-width: none;
+  }
+  .toolbar .statchip {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: center;
+    min-height: 34px;
+    font-size: 12px;
+  }
+  .sheetview {
+    order: 4;
+    display: inline-flex;
+    flex: 1 1 126px;
+    min-width: 126px;
+  }
+  .sheetview__label {
+    padding-left: 8px;
+  }
+  .sheetview__btn {
+    flex: 1;
+  }
+  .toolbar__select,
+  .toolbar__more {
+    order: 5;
+    flex: 1 1 92px;
+    min-width: 0;
+  }
+  .toolbar__more {
+    order: 6;
+  }
+  .toolbar__action {
+    display: none;
   }
   .toolbar .btn {
     padding: 9px 12px;
@@ -2554,6 +2634,51 @@ textarea:focus-visible {
   }
   .toolbar__font {
     margin-left: auto;
+  }
+
+  .mobile-actions {
+    position: fixed;
+    z-index: 130;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px;
+    border: 1px solid var(--edge);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--chrome) 94%, transparent);
+    box-shadow: var(--shadow-pop);
+    backdrop-filter: blur(16px);
+  }
+  .mobile-action {
+    min-width: 0;
+    min-height: 54px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .mobile-action svg {
+    flex: none;
+  }
+  .mobile-action--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+  }
+  .mobile-action:not(.mobile-action--primary) {
+    background: var(--surface);
+    border-color: var(--edge);
   }
 
   .sheet-scroll {

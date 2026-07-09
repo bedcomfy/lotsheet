@@ -356,6 +356,7 @@ export default function LotSheet() {
   const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
+  const [mobileSheetView, setMobileSheetView] = useState<"pan" | "fit">("pan");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
@@ -1464,27 +1465,44 @@ export default function LotSheet() {
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
-        <button className="btn btn--primary" onClick={() => setFillOpen(true)}>
+        <div className="sheetview no-print" aria-label="Sheet view mode">
+          <span className="sheetview__label">View</span>
+          <button
+            className={`sheetview__btn ${mobileSheetView === "pan" ? "sheetview__btn--on" : ""}`}
+            onClick={() => setMobileSheetView("pan")}
+            type="button"
+          >
+            Pan
+          </button>
+          <button
+            className={`sheetview__btn ${mobileSheetView === "fit" ? "sheetview__btn--on" : ""}`}
+            onClick={() => setMobileSheetView("fit")}
+            type="button"
+          >
+            Fit
+          </button>
+        </div>
+        <button className="btn btn--primary toolbar__action toolbar__action--primary" onClick={() => setFillOpen(true)}>
           <LayoutGrid size={16} /> Fill Rows
         </button>
-        <button className="btn" onClick={() => setManagerOpen(true)}>
+        <button className="btn toolbar__action" onClick={() => setManagerOpen(true)}>
           <Flag size={16} /> Edit Flags
         </button>
         <button
-          className={`btn ${selectMode ? "btn--primary" : ""}`}
+          className={`btn toolbar__select ${selectMode ? "btn--primary" : ""}`}
           onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
           title="Select several buses, then send or clear them all at once"
         >
           <ListChecks size={16} /> Select
         </button>
         <button
-          className="btn"
+          className="btn toolbar__action"
           onClick={() => setShopOpen(true)}
           title="Everything inside the shop — Apron, Bays, Cards (screen-only, never printed)"
         >
           <Wrench size={16} /> Shop
         </button>
-        <ToolMenu>
+        <ToolMenu triggerClassName="toolbar__more">
           <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
             <History size={16} /> Prev Sheets
           </button>
@@ -1515,14 +1533,33 @@ export default function LotSheet() {
             Maintenance info
           </label>
         </ToolMenu>
-        <button className="btn btn--primary" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
+        <button className="btn btn--primary toolbar__action toolbar__action--print" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
           <FileDown size={16} /> Print PDF
+        </button>
+      </div>
+
+      <div className="mobile-actions no-print" aria-label="Quick actions">
+        <button className="mobile-action mobile-action--primary" onClick={() => setFillOpen(true)} type="button">
+          <LayoutGrid size={18} />
+          <span>Fill</span>
+        </button>
+        <button className="mobile-action" onClick={() => setManagerOpen(true)} type="button">
+          <Flag size={18} />
+          <span>Flags</span>
+        </button>
+        <button className="mobile-action" onClick={() => setShopOpen(true)} type="button">
+          <Wrench size={18} />
+          <span>Shop</span>
+        </button>
+        <button className="mobile-action" onClick={openPdf} type="button">
+          <FileDown size={18} />
+          <span>Print</span>
         </button>
       </div>
 
       {/* The printable sheet */}
       <DndContext id="lot-sheet-dnd" sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
-      <div className="sheet-scroll" style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
+      <div className={`sheet-scroll sheet-scroll--${mobileSheetView}`} style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
         <div className={`sheet ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}
           <div className="head">
