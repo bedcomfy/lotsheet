@@ -28,6 +28,9 @@ import {
   groupFlaggedBuses,
   cellLocationLabel,
   pinnedFlagText,
+  alwaysPrintFlagIds,
+  mostSevereFlag,
+  flagColorStyle,
   departmentGroups,
   flagName,
 } from "../lib/grid";
@@ -147,6 +150,8 @@ function GridCell({ id, slotLabel, num, entry, selected, foundBus, locked, onOpe
   const disp = entry ? flagDisplay(entry) : "";
   const miles = entry ? inspMilesDisplay(entry) : "";
   const pin = entry ? pinnedFlagText(entry) : "";
+  const dispFlag = entry ? mostSevereFlag(entry.flags) : null;
+  const pinFlag = entry ? alwaysPrintFlagIds().find((flag) => entry.flags.includes(flag)) || null : null;
   return (
     <button
       type="button"
@@ -176,9 +181,9 @@ function GridCell({ id, slotLabel, num, entry, selected, foundBus, locked, onOpe
           <span className="cell__num">{busLabel(num)}</span>
           {(disp || miles || pin) && (
             <span className="cell__meta">
-              {disp && <span className="cell__flag">{disp}</span>}
+              {disp && <span className="cell__flag" style={flagColorStyle(dispFlag) as CSSProperties}>{disp}</span>}
               {miles && <span className="cell__insp">{miles}</span>}
-              {pin && <span className="cell__pin">{pin}</span>}
+              {pin && <span className="cell__pin" style={flagColorStyle(pinFlag) as CSSProperties}>{pin}</span>}
             </span>
           )}
         </>
@@ -207,6 +212,8 @@ function FrontCell({ c, num, entry, selected, foundBus, locked, onOpen }: FrontC
   const disp = entry ? flagDisplay(entry) : "";
   const miles = entry ? inspMilesDisplay(entry) : "";
   const pin = entry ? pinnedFlagText(entry) : "";
+  const dispFlag = entry ? mostSevereFlag(entry.flags) : null;
+  const pinFlag = entry ? alwaysPrintFlagIds().find((flag) => entry.flags.includes(flag)) || null : null;
   return (
     <button
       type="button"
@@ -233,9 +240,9 @@ function FrontCell({ c, num, entry, selected, foundBus, locked, onOpen }: FrontC
         <>
           {num && <TypeCodes num={num} className="front__types" />}
           <span className="cell__num">{busLabel(num)}</span>
-          {disp && <span className="front__flag">{disp}</span>}
+          {disp && <span className="front__flag" style={flagColorStyle(dispFlag) as CSSProperties}>{disp}</span>}
           {miles && <span className="front__flag front__insp">{miles}</span>}
-          {pin && <span className="front__flag front__pin">{pin}</span>}
+          {pin && <span className="front__flag front__pin" style={flagColorStyle(pinFlag) as CSSProperties}>{pin}</span>}
         </>
       )}
     </button>

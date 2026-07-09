@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   departmentGroups,
   flagName,
@@ -16,6 +17,7 @@ import {
   ASSIGNABLE_FLAGS,
   BUS_TYPES,
   flagTier,
+  flagColorStyle,
   flagObjectCodes,
   flagHasDetail,
   flagRequiresDetail,
@@ -262,7 +264,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
       {active.length > 0 && (
         <div className="flagpick__active">
           {active.map((id) => (
-            <span className={`fpill fpill--${TIER_CLASS[flagTier(id)]}`} key={id}>
+            <span className={`fpill fpill--${TIER_CLASS[flagTier(id)]} fpill--custom`} style={flagColorStyle(id) as CSSProperties} key={id}>
               {pillLabel(id)}
               <button className="fpill__x" onClick={() => remove(id)} aria-label={`Remove ${flagName(id)}`}>
                 <X size={14} />

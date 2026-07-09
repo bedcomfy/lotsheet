@@ -1,6 +1,7 @@
 "use client";
 
-import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay } from "../lib/grid";
+import type { CSSProperties } from "react";
+import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay, flagColorStyle } from "../lib/grid";
 import type { FlagEntry } from "../lib/types";
 
 // Pill color by severity — one shared visual language across every menu.
@@ -31,7 +32,7 @@ export default function FlagPills({ entry, showNote = true }: { entry?: FlagEntr
   return (
     <>
       {flags.map((id) => (
-        <span key={id} className={`fpill fpill--${TIER_CLASS[flagTier(id)]}`}>
+        <span key={id} className={`fpill fpill--${TIER_CLASS[flagTier(id)]} fpill--custom`} style={flagColorStyle(id) as CSSProperties}>
           {pillText(id, entry)}
         </span>
       ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { Check, RotateCcw, Save, Search } from "lucide-react";
 import {
   applyFlagConfig,
@@ -12,10 +13,12 @@ import {
 import { getDeviceActor } from "../lib/deviceActor";
 
 const TIERS: { id: FlagTier; label: string }[] = [
-  { id: "low", label: "Blue" },
-  { id: "med", label: "Amber" },
-  { id: "high", label: "Red" },
+  { id: "low", label: "Low" },
+  { id: "med", label: "Medium" },
+  { id: "high", label: "High" },
 ];
+
+const COLOR_PRESETS = ["#2563EB", "#0F766E", "#15803D", "#7C3AED", "#D97706", "#DC2626", "#DB2777", "#475569"];
 
 const DEPTS = [
   { id: "service", label: "Service" },
@@ -23,13 +26,15 @@ const DEPTS = [
   { id: "safety", label: "Safety" },
 ];
 
-const TIER_CLASS: Record<FlagTier, string> = { high: "safety", med: "maintenance", low: "service" };
-
 function splitWords(value: string): string[] {
   return value
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function isHexColor(value: string): boolean {
+  return /^#[0-9A-F]{6}$/i.test(value.trim());
 }
 
 function rowsToConfig(rows: FlagAdminRow[]): FlagConfig {
@@ -40,6 +45,7 @@ function rowsToConfig(rows: FlagAdminRow[]): FlagConfig {
       name: row.name.trim(),
       label: row.label.trim(),
       tier: row.tier,
+      color: row.color,
       aliases: row.aliases,
       objectCodes: row.objectCodes,
       quick: row.quick,
@@ -164,7 +170,9 @@ export default function AdminFlagEditor() {
           {shown.map((row) => (
             <div className="adminflag__row" key={row.id}>
               <div className="adminflag__main">
-                <span className={`fpill fpill--${TIER_CLASS[row.tier]}`}>{row.label || row.id}</span>
+                <span className="fpill fpill--custom" style={{ "--flag-color": isHexColor(row.color) ? row.color : "#2563EB" } as CSSProperties}>
+                  {row.label || row.id}
+                </span>
                 <small>{row.id}</small>
               </div>
               <label className="adminfield">
@@ -175,8 +183,42 @@ export default function AdminFlagEditor() {
                 <span>Alias</span>
                 <input value={row.label} onChange={(e) => update(row.id, { label: e.target.value })} />
               </label>
-              <label className="adminfield">
+              <label className="adminfield adminfield--color">
                 <span>Color</span>
+                <div className="colorfield">
+                  <input
+                    className="colorfield__picker"
+                    type="color"
+                    value={isHexColor(row.color) ? row.color : "#2563EB"}
+                    onChange={(e) => update(row.id, { color: e.target.value.toUpperCase() })}
+                    aria-label={`${row.name} color`}
+                  />
+                  <input
+                    className="colorfield__hex"
+                    value={row.color}
+                    onChange={(e) => update(row.id, { color: e.target.value.toUpperCase() })}
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (!isHexColor(v)) update(row.id, { color: "#2563EB" });
+                    }}
+                    spellCheck={false}
+                  />
+                </div>
+                <div className="colorswatches" aria-label={`${row.name} color presets`}>
+                  {COLOR_PRESETS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`colorswatch ${row.color.toUpperCase() === color ? "colorswatch--on" : ""}`}
+                      style={{ "--swatch": color } as CSSProperties}
+                      onClick={() => update(row.id, { color })}
+                      aria-label={color}
+                    />
+                  ))}
+                </div>
+              </label>
+              <label className="adminfield">
+                <span>Priority</span>
                 <select value={row.tier} onChange={(e) => update(row.id, { tier: e.target.value as FlagTier })}>
                   {TIERS.map((tier) => (
                     <option key={tier.id} value={tier.id}>{tier.label}</option>

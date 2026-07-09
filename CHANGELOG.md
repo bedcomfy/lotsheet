@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 - 2026-07-09
+
+- Added true custom hex colors for admin-managed flags.
+- Split flag color from priority so priority controls ordering while color controls presentation.
+- Applied configured flag colors to flag pills and Lot Sheet cell/front flag text.
+- Added color picker, hex input, and preset swatches to the Admin Tools Flag Editor.
+- Bumped the PDF cache version so printed sheets regenerate with the new flag color model.
+
 ## 0.1.9 - 2026-07-09
 
 - Added a protected Admin Tools sidebar section with Flag Editor, Bus Lists, and Employees.

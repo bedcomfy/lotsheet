@@ -106,6 +106,7 @@ export interface FlagConfigEntry {
   name?: string;
   label?: string;
   tier?: FlagTier;
+  color?: string;
   aliases?: string[];
   objectCodes?: string[];
   quick?: boolean;
@@ -125,13 +126,25 @@ function normalizeWords(list: unknown): string[] {
   return Array.from(new Set(list.map((x) => String(x || "").trim()).filter(Boolean)));
 }
 
+function normalizeColor(value: unknown): string {
+  const color = typeof value === "string" ? value.trim() : "";
+  if (/^#[0-9a-f]{6}$/i.test(color)) return color.toUpperCase();
+  if (/^#[0-9a-f]{3}$/i.test(color)) {
+    const [, r, g, b] = color;
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+  }
+  return "";
+}
+
 function sanitizeFlagConfigEntry(id: string, entry: Partial<FlagConfigEntry> | null | undefined): FlagConfigEntry {
   const tier = entry?.tier === "high" || entry?.tier === "med" || entry?.tier === "low" ? entry.tier : undefined;
+  const color = normalizeColor(entry?.color);
   return {
     id,
     ...(typeof entry?.name === "string" ? { name: entry.name.trim() } : {}),
     ...(typeof entry?.label === "string" ? { label: entry.label.trim() } : {}),
     ...(tier ? { tier } : {}),
+    ...(color ? { color } : {}),
     ...(entry?.aliases ? { aliases: normalizeWords(entry.aliases) } : {}),
     ...(entry?.objectCodes ? { objectCodes: normalizeWords(entry.objectCodes) } : {}),
     ...(typeof entry?.quick === "boolean" ? { quick: entry.quick } : {}),
@@ -230,6 +243,7 @@ export interface FlagAdminRow {
   name: string;
   label: string;
   tier: FlagTier;
+  color: string;
   aliases: string[];
   objectCodes: string[];
   quick: boolean;
@@ -248,6 +262,7 @@ export function editableFlagRows(configInput?: unknown): FlagAdminRow[] {
       name: flagName(flag.id),
       label: flagLabel(flag.id),
       tier: flagTier(flag.id),
+      color: flagColor(flag.id),
       aliases: override?.aliases || FLAG_ALIASES[flag.id] || [],
       objectCodes: flagObjectCodes(flag.id),
       quick: commonFlagIds().includes(flag.id),
@@ -354,6 +369,22 @@ export function flagTier(id: string): FlagTier {
   if (["hold", "inspection", "retorque", "split", "braketest", "ac", "shop", "offprop", "followup"].includes(id))
     return "med";
   return "low"; // service, cleaning, cards, rfs
+}
+
+export function defaultFlagColor(id: string): string {
+  const tier = flagTier(id);
+  if (tier === "high") return "#DC2626";
+  if (tier === "med") return "#D97706";
+  return "#2563EB";
+}
+
+export function flagColor(id: string | null | undefined): string {
+  const override = flagConfigEntry(id);
+  return override?.color || (id ? defaultFlagColor(id) : "#6B7280");
+}
+
+export function flagColorStyle(id: string | null | undefined): Record<string, string> {
+  return { "--flag-color": flagColor(id) };
 }
 
 // The flags surfaced as one-tap "most used" chips (in order) when the flag
