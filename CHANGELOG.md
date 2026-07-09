@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 - 2026-07-09
+
+- Fixed the mobile header so Audit Log no longer appears twice.
+- Gave the mobile sheet picker more room and kept the compact top bar focused on navigation, theme, and version.
+
 ## 0.1.7 - 2026-07-08
 
 - Made every object code assignable as a flag through the flag editor search.

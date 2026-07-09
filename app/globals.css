@@ -475,6 +475,9 @@ textarea:focus-visible {
   .appnav__section--bottom .appnav__sectionlabel {
     display: none;
   }
+  .appnav__section--bottom .appnav__link {
+    display: none;
+  }
   .appnav__picker {
     display: inline-flex;
     align-items: center;
@@ -487,7 +490,7 @@ textarea:focus-visible {
     font-weight: 700;
   }
   .appnav__select {
-    max-width: 156px;
+    max-width: 176px;
     padding: 8px 28px 8px 10px;
     border-radius: 9px;
     border: 1px solid var(--edge-strong);
@@ -523,6 +526,10 @@ textarea:focus-visible {
   .theme-toggle__label {
     display: none;
   }
+  .appnav__version {
+    padding: 0;
+    white-space: nowrap;
+  }
 }
 
 @media screen and (max-width: 520px) {
@@ -539,7 +546,7 @@ textarea:focus-visible {
     display: none;
   }
   .appnav__select {
-    max-width: 148px;
+    max-width: 168px;
   }
 }
 
