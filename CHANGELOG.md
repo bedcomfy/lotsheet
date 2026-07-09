@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.7 - 2026-07-08
+
+- Made every object code assignable as a flag through the flag editor search.
+- Kept object-code flags out of the quick-pick chips so daily flagging stays usable.
+- Reworked the flag editor helper text so it no longer looks like a second search field.
+- Added a reusable flag-detail definition layer for future sub-flag/detail expansion.
+
 ## 0.1.6 - 2026-07-08
 
 - Added a collapsible Utilities sidebar section with an Object Codes page.

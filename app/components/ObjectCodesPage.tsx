@@ -28,7 +28,7 @@ export default function ObjectCodesPage() {
         <div>
           <div className="homehero__eyebrow">Utilities</div>
           <h1>Object Codes</h1>
-          <p>Search the maintenance object-code reference by number or description.</p>
+          <p>Search the maintenance object-code reference by number or description. Every code is available as a flag in the flag editor.</p>
         </div>
         <div className="objectcodes__search">
           <Search size={17} />
@@ -50,7 +50,7 @@ export default function ObjectCodesPage() {
         <div className="objectcodes__row objectcodes__row--head">
           <span>Object Code</span>
           <span>Description</span>
-          <span>Flag Link</span>
+          <span>Daily Flag Link</span>
         </div>
         {rows.map((item) => {
           const linkedFlags = FLAG_BY_CODE[item.code] || [];
@@ -61,7 +61,7 @@ export default function ObjectCodesPage() {
               <span className="objectcodes__flags">
                 {linkedFlags.length
                   ? linkedFlags.map((id) => <em key={id}>{flagName(id)}</em>)
-                  : <small>Not linked yet</small>}
+                  : <small>Object flag only</small>}
               </span>
             </article>
           );

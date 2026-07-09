@@ -1409,14 +1409,11 @@ textarea:focus-visible {
 .flagpick__none { font-size: 14px; color: var(--text-dim); padding: 10px 2px; }
 /* Hint that the search reaches the long tail of flags. */
 .flagpick__hint {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  display: block;
   font-size: 12px;
   color: var(--text-dim);
-  background: var(--surface-2);
-  border-radius: var(--ctl-radius);
-  padding: 10px 12px;
+  line-height: 1.35;
+  padding: 2px 1px;
 }
 .flagpick__noteblock { display: flex; flex-direction: column; gap: 6px; }
 .flagpick__addnote {

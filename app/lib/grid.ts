@@ -9,6 +9,7 @@
 // blocked "X" sits where slot 40 would have been in ROW 10.
 
 import type { FlagEntry, FlagMap } from "./types";
+import { OBJECT_CODE_FLAGS, objectCodeFromFlagId } from "./objectCodes";
 
 export const SLOTS: (number | string | null)[][] = [
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null],
@@ -95,6 +96,7 @@ export interface FlagDef {
   id: string;
   label: string;
   objectCodes?: string[];
+  objectCode?: boolean;
 }
 
 // Manager-set operational FLAGS. Each is separate; the full name is shown so
@@ -121,13 +123,16 @@ export const FLAGS: FlagDef[] = [
   { id: "cleaning", label: "NEEDS CLEANING", objectCodes: ["1611", "7400"] },
   { id: "rfs", label: "READY FOR SERVICE" },
 ];
+export const ALL_FLAGS: FlagDef[] = [...FLAGS, ...OBJECT_CODE_FLAGS];
 
 // A Hold bus has a reason. These are the quick-picks; a free-text box also
 // allows anything else. (Movement used to be its own flag — a movement bus is
 // always a hold, so it's now a hold reason.)
 export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
 export function flagLabel(id: string | null | undefined): string {
-  const f = FLAGS.find((x) => x.id === id);
+  const objectCode = objectCodeFromFlagId(id);
+  if (objectCode) return objectCode.code;
+  const f = ALL_FLAGS.find((x) => x.id === id);
   return f ? f.label : "";
 }
 
@@ -140,11 +145,13 @@ const FLAG_NAMES: Record<string, string> = {
   cleaning: "Needs cleaning", rfs: "Ready for service",
 };
 export function flagName(id: string): string {
+  const objectCode = objectCodeFromFlagId(id);
+  if (objectCode) return `${objectCode.code} - ${objectCode.description}`;
   return FLAG_NAMES[id] || flagLabel(id);
 }
 
 export function flagObjectCodes(id: string): string[] {
-  return FLAGS.find((f) => f.id === id)?.objectCodes || [];
+  return ALL_FLAGS.find((f) => f.id === id)?.objectCodes || [];
 }
 
 export interface Department {
@@ -172,6 +179,32 @@ export const RETORQUE_TIRES = [
 // Optional inspection type (the A/B/C inspection at its mileage). Inspection can
 // still be selected on its own.
 export const INSPECTION_OPTIONS = ["A-3", "B-6", "A-9", "B-12", "A-15", "B-18", "A-21", "C-24"];
+
+export type FlagDetailKind = "retorque_tires" | "hold_reason" | "inspection_type";
+export interface FlagDetailDefinition {
+  flagId: string;
+  kind: FlagDetailKind;
+  label: string;
+  required?: boolean;
+}
+
+export const FLAG_DETAIL_DEFINITIONS: FlagDetailDefinition[] = [
+  { flagId: "retorque", kind: "retorque_tires", label: "Which tires?", required: true },
+  { flagId: "hold", kind: "hold_reason", label: "Hold reason" },
+  { flagId: "inspection", kind: "inspection_type", label: "Inspection type / follow up" },
+];
+
+export function flagDetailDefinition(id: string): FlagDetailDefinition | null {
+  return FLAG_DETAIL_DEFINITIONS.find((def) => def.flagId === id) || null;
+}
+
+export function flagHasDetail(id: string): boolean {
+  return !!flagDetailDefinition(id);
+}
+
+export function flagRequiresDetail(id: string): boolean {
+  return !!flagDetailDefinition(id)?.required;
+}
 // Collapse the tire selection to a short label: All / Fronts / Rears, else list.
 export function retorqueTiresDisplay(tires: string[] | null | undefined): string {
   const set = new Set((tires || []).filter(Boolean));
@@ -185,13 +218,14 @@ export function retorqueTiresDisplay(tires: string[] | null | undefined): string
 }
 
 // The assignable flags (everything except "none").
-export const ASSIGNABLE_FLAGS = FLAGS.filter((f) => f.id !== "none");
+export const ASSIGNABLE_FLAGS = ALL_FLAGS.filter((f) => f.id !== "none");
 
 // Colour a flag by how serious it is, so a bus reads at a glance:
 //   high (red)  — out of service / serious mechanical / safety
 //   med (amber) — needs attention or in progress
 //   low (blue)  — routine service
 export function flagTier(id: string): "high" | "med" | "low" {
+  if (objectCodeFromFlagId(id)) return "low";
   if (["legal", "safety", "accident", "oos", "eng", "trans"].includes(id)) return "high";
   if (["hold", "inspection", "retorque", "split", "braketest", "ac", "shop", "offprop", "followup"].includes(id))
     return "med";
@@ -268,6 +302,11 @@ export const FLAG_SEVERITY = [
   "rfs",
 ];
 
+function flagSeverityRank(id: string): number {
+  const rank = FLAG_SEVERITY.indexOf(id);
+  return rank === -1 ? FLAG_SEVERITY.length + 1 : rank;
+}
+
 // Flags that print on the grid even when "Maintenance info" is off, because
 // they affect how the lot is read at a glance.
 export const ALWAYS_PRINT_FLAGS = ["hold", "split"];
@@ -284,8 +323,8 @@ export function mostSevereFlag(ids: string[] | null | undefined): string | null 
   let best: string | null = null;
   let rank = Infinity;
   for (const f of ids || []) {
-    const r = FLAG_SEVERITY.indexOf(f);
-    if (r !== -1 && r < rank) {
+    const r = flagSeverityRank(f);
+    if (r < rank) {
       rank = r;
       best = f;
     }
@@ -333,7 +372,7 @@ export function inspMilesDisplay(entry: FlagEntry | null | undefined): string {
 export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
   const flags = (entry?.flags || [])
     .slice()
-    .sort((a, b) => FLAG_SEVERITY.indexOf(a) - FLAG_SEVERITY.indexOf(b));
+    .sort((a, b) => flagSeverityRank(a) - flagSeverityRank(b));
   return flags
     .map((id) => {
       const label = flagLabel(id);
@@ -383,11 +422,19 @@ export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGro
   }
   const order = [...FLAG_SEVERITY, "other"];
   const result: FlagGroup[] = [];
+  const emitted = new Set<string>();
   for (const cat of order) {
     const buses = groups[cat];
     if (!buses || !buses.length) continue;
     buses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     result.push({ cat, label: cat === "other" ? "OTHER" : flagLabel(cat), buses });
+    emitted.add(cat);
+  }
+  for (const cat of Object.keys(groups).sort((a, b) => flagName(a).localeCompare(flagName(b), undefined, { numeric: true }))) {
+    if (emitted.has(cat)) continue;
+    const buses = groups[cat];
+    buses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    result.push({ cat, label: flagLabel(cat) || flagName(cat), buses });
   }
   return result;
 }

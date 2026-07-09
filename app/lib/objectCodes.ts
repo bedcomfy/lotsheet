@@ -3,6 +3,25 @@ export interface ObjectCode {
   description: string;
 }
 
+export interface ObjectCodeFlag {
+  id: string;
+  label: string;
+  objectCodes: string[];
+  objectCode: true;
+}
+
+export const OBJECT_CODE_FLAG_PREFIX = "object:";
+
+export function objectCodeFlagId(code: string): string {
+  return `${OBJECT_CODE_FLAG_PREFIX}${code}`;
+}
+
+export function objectCodeFromFlagId(id: string | null | undefined): ObjectCode | null {
+  if (!id || !id.startsWith(OBJECT_CODE_FLAG_PREFIX)) return null;
+  const code = id.slice(OBJECT_CODE_FLAG_PREFIX.length);
+  return OBJECT_CODES.find((item) => item.code === code) || null;
+}
+
 export const OBJECT_CODES: ObjectCode[] = [
   { code: "0100", description: "REPAIR FRONT AXLE AND SUSPENSION AS NEEDED" },
   { code: "0101", description: "REPAIR FRONT AIR BAGS AS NEEDED" },
@@ -381,3 +400,10 @@ export function objectCodeLabel(code: string): string {
   const item = OBJECT_CODES.find((c) => c.code === code);
   return item ? `${item.code} ${item.description}` : code;
 }
+
+export const OBJECT_CODE_FLAGS: ObjectCodeFlag[] = OBJECT_CODES.map((item) => ({
+  id: objectCodeFlagId(item.code),
+  label: item.code,
+  objectCodes: [item.code],
+  objectCode: true,
+}));

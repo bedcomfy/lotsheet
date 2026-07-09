@@ -17,6 +17,8 @@ import {
   BUS_TYPES,
   flagTier,
   flagObjectCodes,
+  flagHasDetail,
+  flagRequiresDetail,
 } from "../lib/grid";
 import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
@@ -28,10 +30,9 @@ import { getDeviceActor } from "../lib/deviceActor";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
-const DETAIL_FLAGS = new Set(["retorque", "hold", "inspection"]);
 // Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
 const NOTE_FLAG = "__note";
-const REQUIRE_DETAIL = new Set(["retorque", NOTE_FLAG]); // can't add without picking a detail (hold's reason is optional)
+const requiresDetail = (id: string) => id === NOTE_FLAG || flagRequiresDetail(id);
 // Pill color follows severity, reusing the department pill palettes:
 // high = red (safety palette), med = amber (maintenance), low = blue (service).
 const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
@@ -216,7 +217,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
       return;
     }
     if (!entry.flags.includes(id)) onChange({ ...entry, flags: [...entry.flags, id] });
-    if (DETAIL_FLAGS.has(id)) openDetail(id);
+    if (flagHasDetail(id)) openDetail(id);
   }
   function remove(id: string) {
     const patch: FlagEntry = { ...entry, flags: entry.flags.filter((f) => f !== id) };
@@ -350,8 +351,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
             </div>
           )}
           <div className="flagpick__hint">
-            <Search size={16} />
-            <span>Search {ASSIGNABLE_FLAGS.length} flags by name or object code.</span>
+            <span>{ASSIGNABLE_FLAGS.length} total flags available. Use the field above for object-code flags.</span>
           </div>
         </>
       )}
@@ -435,7 +435,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     const bus = sanitizeBus(busArg != null ? busArg : busInput);
     if (bus.length < 4) return;
     setBusInput("");
-    if (REQUIRE_DETAIL.has(pickedFlag)) {
+    if (requiresDetail(pickedFlag)) {
       if (!flagBuses.includes(bus) && !pending.includes(bus)) setPending((p) => [...p, bus]);
       return;
     }
@@ -470,7 +470,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     save(bus, { ...getEntry(bus), holdReason: reason });
   }
   const isPending = (bus: string) => pending.includes(bus) && !flagBuses.includes(bus);
-  const flagRows = REQUIRE_DETAIL.has(pickedFlag)
+  const flagRows = requiresDetail(pickedFlag)
     ? [...pending.filter((b) => !flagBuses.includes(b)), ...flagBuses]
     : flagBuses;
 
@@ -621,7 +621,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                 Add
               </button>
             </div>
-            {REQUIRE_DETAIL.has(pickedFlag) && (
+            {requiresDetail(pickedFlag) && (
               <div className="byflag__hint">
                 Add a bus, then {pickedFlag === NOTE_FLAG ? "type its note" : `pick its ${pickedFlag === "retorque" ? "tire(s)" : "reason"}`} below —
                 it won&apos;t save until you do.
