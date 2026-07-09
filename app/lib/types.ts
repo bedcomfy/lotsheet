@@ -53,10 +53,22 @@ export interface FlagEntry {
 export type FlagMap = Record<string, FlagEntry>; // busNumber -> entry
 
 // ---------- Employees ----------
-// Used to autofill the Turnover sheet (free text is always allowed too).
+// Used to autofill the Turnover sheet (free text is always allowed too) and, going
+// forward, a staffing sheet — hence first/last split + start date + classification.
 export interface Employee {
-  name: string;
+  firstName: string;
+  lastName: string;
   badge: string;
+  startDate: string; // ISO "YYYY-MM-DD", or "" if unset
+  classification: string; // job title / role
+  name?: string; // legacy combined name (old data); derive from first+last otherwise
+}
+
+// Full display name for an employee, tolerating legacy {name}-only records.
+export function employeeFullName(e: Employee | null | undefined): string {
+  if (!e) return "";
+  const combined = `${e.firstName || ""} ${e.lastName || ""}`.trim();
+  return combined || e.name || "";
 }
 
 // ---------- Bus master list ----------
@@ -65,7 +77,12 @@ export interface MasterBus {
   num: string;
   length?: string;
   model?: string;
-  type: string; // category id: standard/short/coach/pulse/pulsehybrid/tow
+  // A bus can have MORE THAN ONE type (e.g. Pulse + Hybrid). `types` is the list
+  // of atomic type ids (pulse/hybrid/short/coach/tow/standard/custom…). `type` is
+  // the legacy single-category field kept for reading old saved data — new writes
+  // populate `types`; helpers migrate `type` -> `types` on read.
+  types?: string[];
+  type?: string; // legacy category id: standard/short/coach/pulse/pulsehybrid/tow
   status: string; // "active" | "retired"
   lane?: boolean; // included on the Fuel/DEF lane (set after seed construction)
   name?: string; // named vehicles (e.g. JUDI)

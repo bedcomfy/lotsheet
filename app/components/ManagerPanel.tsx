@@ -15,7 +15,7 @@ import {
   searchFlags,
   commonFlagIds,
   ASSIGNABLE_FLAGS,
-  BUS_TYPES,
+  typeInfo,
   flagTier,
   flagColorStyle,
   flagObjectCodes,
@@ -41,7 +41,12 @@ const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance",
 // Full type name(s) for a bus (e.g. "Pulse", "Pulse · Hybrid"). The master's
 // types() gives category ids or lot codes, so match on either.
 function typeNames(codes: string[]): string {
-  return codes.map((c) => BUS_TYPES.find((t) => t.id === c || t.code === c)?.label || c).join(" · ");
+  // Only name types that actually show a badge (Standard/empty-code types are silent).
+  return codes
+    .map((c) => typeInfo(c))
+    .filter((t) => t && t.code)
+    .map((t) => t!.label)
+    .join(" · ");
 }
 
 // ---- detail pickers (shown inline under an active detail flag) ----

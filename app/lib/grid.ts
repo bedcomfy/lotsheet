@@ -81,15 +81,112 @@ export interface BusType {
 // (e.g. 25545 is both Pulse and Hybrid). Shown as letter code(s) in the cell
 // corner. Regular buses have no type. Pulse is purple (the buses are purple).
 export const BUS_TYPES: BusType[] = [
+  { id: "standard", label: "Standard", code: "", color: "#475569" },
   { id: "pulse", label: "Pulse", code: "P", color: "#7c3aed" },
   { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d" },
   { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309" },
   { id: "coach", label: "Coach / Single Door", code: "COACH", color: "#0f766e" },
   { id: "tow", label: "Tow Truck", code: "TOW", color: "#b91c1c" },
 ];
+const BUILTIN_TYPE_IDS = new Set(BUS_TYPES.map((t) => t.id));
+
+// ---------- Bus type appearance + list config ----------
+// Admins manage the list of bus types on the Bus Lists page: rename a type's
+// corner code, recolour it, ADD new types, or REMOVE ones they don't use. The
+// config is saved to app_state and applied on load, like flag config. With an
+// empty config, this returns the built-in BUS_TYPES, so the Lot Sheet is
+// unchanged until someone edits it. A built-in can be hidden with `removed`;
+// a brand-new type is stored with `custom: true`.
+export interface BusTypeConfigEntry {
+  id: string;
+  label?: string;
+  code?: string;
+  color?: string;
+  custom?: boolean;
+  removed?: boolean;
+}
+export interface BusTypeConfig {
+  types: Record<string, BusTypeConfigEntry>;
+}
+
+let activeBusTypeConfig: BusTypeConfig = { types: {} };
+
+function sanitizeBusTypeEntry(id: string, entry: Partial<BusTypeConfigEntry> | null | undefined): BusTypeConfigEntry {
+  const color = normalizeColor(entry?.color);
+  return {
+    id,
+    ...(typeof entry?.label === "string" && entry.label.trim() ? { label: entry.label.trim() } : {}),
+    // code may be blank on purpose (e.g. Standard shows no badge), so keep "".
+    ...(typeof entry?.code === "string" ? { code: entry.code.trim() } : {}),
+    ...(color ? { color } : {}),
+    ...(entry?.custom === true ? { custom: true } : {}),
+    ...(entry?.removed === true ? { removed: true } : {}),
+  };
+}
+
+export function normalizeBusTypeConfig(input: unknown): BusTypeConfig {
+  const raw = input && typeof input === "object" ? (input as { types?: unknown }).types : null;
+  const out: BusTypeConfig = { types: {} };
+  if (raw && typeof raw === "object") {
+    for (const [id, value] of Object.entries(raw as Record<string, Partial<BusTypeConfigEntry>>)) {
+      const cleanId = String(id || "").trim();
+      if (!cleanId) continue;
+      const entry = sanitizeBusTypeEntry(cleanId, value);
+      // Keep built-in overrides, removal markers, and custom types; drop junk.
+      if (BUILTIN_TYPE_IDS.has(cleanId) || entry.custom || entry.removed) out.types[cleanId] = entry;
+    }
+  }
+  return out;
+}
+
+export function applyBusTypeConfig(input: unknown): BusTypeConfig {
+  activeBusTypeConfig = normalizeBusTypeConfig(input);
+  return activeBusTypeConfig;
+}
+
+// The effective bus-type list = built-ins (with overrides, minus removed) then
+// custom additions. This is the single source of truth for both rendering and
+// the editor.
+export function effectiveBusTypes(): BusType[] {
+  const cfg = activeBusTypeConfig.types;
+  const out: BusType[] = [];
+  for (const b of BUS_TYPES) {
+    const c = cfg[b.id];
+    if (c?.removed) continue;
+    out.push({
+      id: b.id,
+      label: c?.label || b.label,
+      code: c && "code" in c ? c.code || "" : b.code,
+      color: c?.color || b.color,
+    });
+  }
+  for (const c of Object.values(cfg)) {
+    if (!c.custom || c.removed || BUILTIN_TYPE_IDS.has(c.id)) continue;
+    out.push({ id: c.id, label: c.label || c.id, code: c.code || "", color: c.color || "#475569" });
+  }
+  return out;
+}
 
 export function typeInfo(id: string): BusType | null {
-  return BUS_TYPES.find((t) => t.id === id) || null;
+  return effectiveBusTypes().find((t) => t.id === id) || null;
+}
+
+export interface BusTypeAdminRow {
+  id: string;
+  label: string;
+  code: string;
+  color: string;
+  builtin: boolean;
+}
+
+// The editable rows for the Bus Lists page. Pass a config to preview without
+// mutating global state.
+export function editableBusTypeRows(configInput?: unknown): BusTypeAdminRow[] {
+  const previous = activeBusTypeConfig;
+  if (configInput !== undefined) activeBusTypeConfig = normalizeBusTypeConfig(configInput);
+  const rows = effectiveBusTypes().map((t) => ({ ...t, builtin: BUILTIN_TYPE_IDS.has(t.id) }));
+  if (configInput !== undefined) activeBusTypeConfig = previous;
+  return rows;
 }
 
 export interface FlagDef {

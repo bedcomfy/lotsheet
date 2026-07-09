@@ -1,5 +1,10 @@
-import AdminToolsPage from "../../components/AdminToolsPage";
+import AdminShell from "../../components/AdminShell";
+import AdminBusEditor from "../../components/AdminBusEditor";
 
 export default function AdminBusesPage() {
-  return <AdminToolsPage initialTool="buses" />;
+  return (
+    <AdminShell>
+      <AdminBusEditor />
+    </AdminShell>
+  );
 }

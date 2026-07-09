@@ -12,22 +12,22 @@ interface TypeCodesProps {
 // e.g. P  /  HEV  or  COACH / 30'. Standard buses (no types) render nothing.
 export default function TypeCodes({ num, className = "" }: TypeCodesProps) {
   const { types: busTypes } = useBusMaster();
-  const types: string[] = busTypes(num);
-  if (!types.length) return null;
+  // Resolve to visible badges only (empty-code types like Standard render nothing),
+  // so the "/" separators sit only between codes that actually show.
+  const visible = busTypes(num)
+    .map((t) => typeInfo(t))
+    .filter((ti): ti is NonNullable<typeof ti> => !!ti && !!ti.code);
+  if (!visible.length) return null;
   return (
     <span className={`typecodes ${className}`}>
-      {types.map((t, i) => {
-        const ti = typeInfo(t);
-        if (!ti) return null;
-        return (
-          <span key={t} className="typecodes__seg">
-            {i > 0 && <span className="typecodes__sep">/</span>}
-            <span className="badge" style={{ color: ti.color }}>
-              {ti.code}
-            </span>
+      {visible.map((ti, i) => (
+        <span key={ti.id} className="typecodes__seg">
+          {i > 0 && <span className="typecodes__sep">/</span>}
+          <span className="badge" style={{ color: ti.color }}>
+            {ti.code}
           </span>
-        );
-      })}
+        </span>
+      ))}
     </span>
   );
 }

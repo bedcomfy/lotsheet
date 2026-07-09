@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { HTMLAttributes, KeyboardEvent } from "react";
 import type { Employee } from "../lib/types";
+import { employeeFullName } from "../lib/types";
 
 interface Rect {
   left: number;
@@ -44,7 +45,9 @@ export default function EmployeeInput({
     ? employees
         .filter(
           (e) =>
-            (e.name && e.name.toLowerCase().includes(q)) ||
+            employeeFullName(e).toLowerCase().includes(q) ||
+            (e.firstName && e.firstName.toLowerCase().includes(q)) ||
+            (e.lastName && e.lastName.toLowerCase().includes(q)) ||
             (e.badge && e.badge.toLowerCase().includes(q))
         )
         .slice(0, 6)
@@ -56,7 +59,7 @@ export default function EmployeeInput({
     setRect({ left: r.left, top: r.bottom, width: r.width });
   }
   function pick(emp: Employee) {
-    onChange(emp.name || emp.badge);
+    onChange(employeeFullName(emp) || emp.badge);
     setOpen(false);
   }
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
@@ -108,7 +111,7 @@ export default function EmployeeInput({
           >
             {matches.map((e, i) => (
               <li
-                key={`${e.name}|${e.badge}|${i}`}
+                key={`${e.firstName}|${e.lastName}|${e.badge}|${i}`}
                 className={`empac__item ${i === hi ? "is-hi" : ""}`}
                 onMouseDown={(ev) => {
                   ev.preventDefault();
@@ -116,7 +119,7 @@ export default function EmployeeInput({
                 }}
                 onMouseEnter={() => setHi(i)}
               >
-                <span className="empac__name">{e.name || "(no name)"}</span>
+                <span className="empac__name">{employeeFullName(e) || "(no name)"}</span>
                 {e.badge && <span className="empac__badge">#{e.badge}</span>}
               </li>
             ))}

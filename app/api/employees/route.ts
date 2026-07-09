@@ -4,20 +4,31 @@ import type { Employee } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
 
-// The shared employee list (name + badge) used to autofill the Turnover sheet.
-// Free text is still allowed everywhere — this is only for suggestions.
+// The shared employee list used to autofill the Turnover sheet (and upcoming
+// staffing sheets). Free text is still allowed everywhere — this is only for
+// suggestions. Records are {firstName, lastName, badge, startDate, classification};
+// legacy {name, badge} records are migrated by splitting name on the first space.
 function sanitize(list: unknown): Employee[] {
   if (!Array.isArray(list)) return [];
   const seen = new Set<string>();
   const out: Employee[] = [];
   for (const e of list) {
-    const name = String(e?.name ?? "").trim();
+    let firstName = String(e?.firstName ?? "").trim();
+    let lastName = String(e?.lastName ?? "").trim();
+    const legacyName = String(e?.name ?? "").trim();
+    if (!firstName && !lastName && legacyName) {
+      const parts = legacyName.split(/\s+/);
+      firstName = parts.shift() || "";
+      lastName = parts.join(" ");
+    }
     const badge = String(e?.badge ?? "").trim();
-    if (!name && !badge) continue;
-    const key = `${name.toLowerCase()}|${badge.toLowerCase()}`;
+    const startDate = String(e?.startDate ?? "").trim();
+    const classification = String(e?.classification ?? "").trim();
+    if (!firstName && !lastName && !badge) continue;
+    const key = `${firstName.toLowerCase()}|${lastName.toLowerCase()}|${badge.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ name, badge });
+    out.push({ firstName, lastName, badge, startDate, classification });
   }
   return out;
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getState, setState } from "../../lib/store";
-import { DEFAULT_MASTER } from "../../lib/buses";
+import { DEFAULT_MASTER, LEGACY_CATEGORY_TYPES } from "../../lib/buses";
 import type { MasterBus } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -22,18 +22,27 @@ export async function PUT(req: Request) {
   if (!master || !Array.isArray(master.buses)) {
     return NextResponse.json({ error: "Bad master list" }, { status: 400 });
   }
-  // Normalise: keep only valid entries, dedupe by number.
+  // Normalise: keep only valid entries, dedupe by number. Store the multi-type
+  // `types` array, migrating any legacy single `type` category.
   const seen = new Set<string>();
   const buses: MasterBus[] = [];
   for (const b of master.buses) {
     const num = String(b?.num || "").trim();
     if (!num || seen.has(num)) continue;
     seen.add(num);
+    let types: string[];
+    if (Array.isArray(b.types)) {
+      types = Array.from(new Set((b.types as unknown[]).map((t) => String(t)).filter(Boolean)));
+    } else if (typeof b.type === "string" && b.type) {
+      types = LEGACY_CATEGORY_TYPES[b.type] || [b.type];
+    } else {
+      types = ["standard"];
+    }
     buses.push({
       num,
       length: typeof b.length === "string" ? b.length : "",
       model: typeof b.model === "string" ? b.model : "",
-      type: typeof b.type === "string" ? b.type : "standard",
+      types,
       status: b.status === "retired" ? "retired" : "active",
       lane: !!b.lane,
       ...(b.name ? { name: String(b.name) } : {}),

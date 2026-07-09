@@ -1,5 +1,10 @@
-import AdminToolsPage from "../../components/AdminToolsPage";
+import AdminShell from "../../components/AdminShell";
+import AdminEmployeesPage from "../../components/AdminEmployeesPage";
 
-export default function AdminEmployeesPage() {
-  return <AdminToolsPage initialTool="employees" />;
+export default function AdminEmployeesRoute() {
+  return (
+    <AdminShell>
+      <AdminEmployeesPage />
+    </AdminShell>
+  );
 }

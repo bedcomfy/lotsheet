@@ -1,5 +1,10 @@
-import AdminToolsPage from "../../components/AdminToolsPage";
+import AdminShell from "../../components/AdminShell";
+import AdminFlagEditor from "../../components/AdminFlagEditor";
 
 export default function AdminFlagsPage() {
-  return <AdminToolsPage initialTool="flags" />;
+  return (
+    <AdminShell>
+      <AdminFlagEditor />
+    </AdminShell>
+  );
 }

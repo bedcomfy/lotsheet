@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.11 - 2026-07-09
+
+- Split Admin Tools into dedicated pages (Flag Editor, Bus Lists, Employees) with a shared tab bar instead of pop-up dialogs.
+- Redesigned the Flag Editor as a searchable list you tap to edit one flag at a time, keeping every existing option.
+- Made a flag's object codes a searchable dropdown that supports attaching several codes per flag.
+- Reworked Bus Lists so you can add and remove bus types, edit each type's code and color, and give a bus more than one type.
+- Added Standard to the bus type list and showed each bus's model (now editable) in the fleet list.
+- Expanded employees to first name, last name, badge, start date, and classification; existing names migrate automatically.
+
 ## 0.1.10 - 2026-07-09
 
 - Added true custom hex colors for admin-managed flags.

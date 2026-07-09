@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { Check, RotateCcw, Save, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, RotateCcw, Save, Search } from "lucide-react";
 import {
   applyFlagConfig,
   type FlagAdminRow,
@@ -11,12 +11,15 @@ import {
   type FlagTier,
 } from "../lib/grid";
 import { getDeviceActor } from "../lib/deviceActor";
+import ObjectCodePicker from "./ObjectCodePicker";
 
 const TIERS: { id: FlagTier; label: string }[] = [
-  { id: "low", label: "Low" },
-  { id: "med", label: "Medium" },
-  { id: "high", label: "High" },
+  { id: "high", label: "High (red)" },
+  { id: "med", label: "Medium (amber)" },
+  { id: "low", label: "Low (blue)" },
 ];
+
+const TIER_SHORT: Record<FlagTier, string> = { high: "High", med: "Medium", low: "Low" };
 
 const COLOR_PRESETS = ["#2563EB", "#0F766E", "#15803D", "#7C3AED", "#D97706", "#DC2626", "#DB2777", "#475569"];
 
@@ -25,6 +28,7 @@ const DEPTS = [
   { id: "maintenance", label: "Maintenance" },
   { id: "safety", label: "Safety" },
 ];
+const DEPT_LABEL: Record<string, string> = Object.fromEntries(DEPTS.map((d) => [d.id, d.label]));
 
 function splitWords(value: string): string[] {
   return value
@@ -35,6 +39,10 @@ function splitWords(value: string): string[] {
 
 function isHexColor(value: string): boolean {
   return /^#[0-9A-F]{6}$/i.test(value.trim());
+}
+
+function safeColor(value: string): string {
+  return isHexColor(value) ? value : "#2563EB";
 }
 
 function rowsToConfig(rows: FlagAdminRow[]): FlagConfig {
@@ -63,6 +71,7 @@ export default function AdminFlagEditor() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/flag-config")
@@ -87,6 +96,8 @@ export default function AdminFlagEditor() {
         row.aliases.join(" ").toLowerCase().includes(q)
     );
   }, [query, rows]);
+
+  const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 
   function update(id: string, patch: Partial<FlagAdminRow>) {
     setSaved(false);
@@ -132,128 +143,163 @@ export default function AdminFlagEditor() {
       <div className="adminpanel__head">
         <div>
           <h2>Flag Editor</h2>
-          <p>Change how operational flags appear and behave across the sheets. Existing flag IDs stay locked so current buses do not break.</p>
+          <p>Change how operational flags appear and behave across the sheets. Pick a flag to edit it — flag IDs stay locked so current buses never break.</p>
         </div>
         <div className="adminpanel__actions">
+          {saved && <span className="adminflag__saved"><Check size={15} /> Saved</span>}
           <button className="btn" onClick={reloadDefaults} disabled={saving}>
             <RotateCcw size={16} /> Reset
           </button>
           <button className="btn btn--primary" onClick={save} disabled={saving || !loaded}>
-            {saving ? "Saving..." : <><Save size={16} /> Save</>}
+            {saving ? "Saving…" : <><Save size={16} /> Save</>}
           </button>
         </div>
       </div>
 
-      <div className="adminflag__toolbar">
-        <div className="findbox adminflag__search">
-          <Search size={15} />
-          <input
-            className="findbox__in"
-            placeholder="Search flags, aliases, or object codes"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <span className="adminflag__count">{shown.length} flags</span>
-        {saved && <span className="adminflag__saved"><Check size={15} /> Saved</span>}
-      </div>
+      {!loaded && <div className="lotlist__empty">Loading flags…</div>}
 
-      {!loaded && <div className="lotlist__empty">Loading flags...</div>}
       {loaded && (
-        <div className="adminflag">
-          <div className="adminflag__header">
-            <span>Flag</span>
-            <span>Sheet Alias</span>
-            <span>Color</span>
-            <span>Options</span>
-          </div>
-          {shown.map((row) => (
-            <div className="adminflag__row" key={row.id}>
-              <div className="adminflag__main">
-                <span className="fpill fpill--custom" style={{ "--flag-color": isHexColor(row.color) ? row.color : "#2563EB" } as CSSProperties}>
-                  {row.label || row.id}
-                </span>
-                <small>{row.id}</small>
-              </div>
-              <label className="adminfield">
-                <span>Name</span>
-                <input value={row.name} onChange={(e) => update(row.id, { name: e.target.value })} />
-              </label>
-              <label className="adminfield">
-                <span>Alias</span>
-                <input value={row.label} onChange={(e) => update(row.id, { label: e.target.value })} />
-              </label>
-              <label className="adminfield adminfield--color">
-                <span>Color</span>
-                <div className="colorfield">
-                  <input
-                    className="colorfield__picker"
-                    type="color"
-                    value={isHexColor(row.color) ? row.color : "#2563EB"}
-                    onChange={(e) => update(row.id, { color: e.target.value.toUpperCase() })}
-                    aria-label={`${row.name} color`}
-                  />
-                  <input
-                    className="colorfield__hex"
-                    value={row.color}
-                    onChange={(e) => update(row.id, { color: e.target.value.toUpperCase() })}
-                    onBlur={(e) => {
-                      const v = e.target.value.trim();
-                      if (!isHexColor(v)) update(row.id, { color: "#2563EB" });
-                    }}
-                    spellCheck={false}
-                  />
-                </div>
-                <div className="colorswatches" aria-label={`${row.name} color presets`}>
-                  {COLOR_PRESETS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`colorswatch ${row.color.toUpperCase() === color ? "colorswatch--on" : ""}`}
-                      style={{ "--swatch": color } as CSSProperties}
-                      onClick={() => update(row.id, { color })}
-                      aria-label={color}
-                    />
-                  ))}
-                </div>
-              </label>
-              <label className="adminfield">
-                <span>Priority</span>
-                <select value={row.tier} onChange={(e) => update(row.id, { tier: e.target.value as FlagTier })}>
-                  {TIERS.map((tier) => (
-                    <option key={tier.id} value={tier.id}>{tier.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="adminfield">
-                <span>Department</span>
-                <select value={row.department} onChange={(e) => update(row.id, { department: e.target.value })}>
-                  {DEPTS.map((dept) => (
-                    <option key={dept.id} value={dept.id}>{dept.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="adminfield adminfield--wide">
-                <span>Object codes</span>
-                <input
-                  value={row.objectCodes.join(", ")}
-                  onChange={(e) => update(row.id, { objectCodes: splitWords(e.target.value) })}
-                />
-              </label>
-              <label className="adminfield adminfield--wide">
-                <span>Search aliases</span>
-                <input
-                  value={row.aliases.join(", ")}
-                  onChange={(e) => update(row.id, { aliases: splitWords(e.target.value) })}
-                />
-              </label>
-              <div className="adminchecks">
-                <label><input type="checkbox" checked={row.quick} onChange={(e) => update(row.id, { quick: e.target.checked })} /> Quick chip</label>
-                <label><input type="checkbox" checked={row.alwaysPrint} onChange={(e) => update(row.id, { alwaysPrint: e.target.checked })} /> Always print</label>
-                <label><input type="checkbox" checked={row.active} onChange={(e) => update(row.id, { active: e.target.checked })} /> Active</label>
-              </div>
+        <div className={`flagedit ${selectedId ? "flagedit--detail" : ""}`}>
+          <div className="flagedit__list">
+            <div className="findbox flagedit__search">
+              <Search size={15} />
+              <input
+                className="findbox__in"
+                placeholder="Search flags, aliases, or object codes"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
             </div>
-          ))}
+            <div className="flagedit__count">{shown.length} flag{shown.length === 1 ? "" : "s"}</div>
+            <div className="flagedit__rows">
+              {shown.length === 0 && <div className="lotlist__empty">No flags match.</div>}
+              {shown.map((row) => (
+                <button
+                  key={row.id}
+                  className={`flagrow2 ${row.id === selectedId ? "flagrow2--active" : ""} ${row.active ? "" : "flagrow2--off"}`}
+                  onClick={() => setSelectedId(row.id)}
+                >
+                  <span className="flagrow2__dot" style={{ background: safeColor(row.color) }} />
+                  <span className="flagrow2__body">
+                    <span className="flagrow2__name">
+                      {row.name || row.id}
+                      {!row.active && <em className="flagrow2__tag">hidden</em>}
+                      {row.quick && <em className="flagrow2__tag flagrow2__tag--quick">quick</em>}
+                    </span>
+                    <span className="flagrow2__meta">
+                      <span className="flagrow2__code" style={{ color: safeColor(row.color) }}>{row.label || row.id}</span>
+                      {" · "}{DEPT_LABEL[row.department] || row.department}
+                      {" · "}{TIER_SHORT[row.tier]}
+                      {row.objectCodes.length > 0 && <> · {row.objectCodes.length} code{row.objectCodes.length === 1 ? "" : "s"}</>}
+                    </span>
+                  </span>
+                  <ChevronRight size={16} className="flagrow2__chev" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flagedit__detail">
+            {!selected && <div className="flagedit__placeholder">Select a flag from the list to edit how it looks and behaves.</div>}
+            {selected && (
+              <div className="flagdetail" key={selected.id}>
+                <div className="flagdetail__head">
+                  <button className="flagdetail__back" onClick={() => setSelectedId(null)} aria-label="Back to list">
+                    <ChevronLeft size={18} /> Flags
+                  </button>
+                  <span className="fpill fpill--custom" style={{ "--flag-color": safeColor(selected.color) } as CSSProperties}>
+                    {selected.label || selected.id}
+                  </span>
+                  <small className="flagdetail__id">{selected.id}</small>
+                </div>
+
+                <div className="flagdetail__grid">
+                  <label className="adminfield">
+                    <span>Name (menus)</span>
+                    <input value={selected.name} onChange={(e) => update(selected.id, { name: e.target.value })} />
+                  </label>
+                  <label className="adminfield">
+                    <span>Sheet code (printed)</span>
+                    <input value={selected.label} onChange={(e) => update(selected.id, { label: e.target.value })} />
+                  </label>
+
+                  <label className="adminfield adminfield--color adminfield--wide">
+                    <span>Color</span>
+                    <div className="colorfield">
+                      <input
+                        className="colorfield__picker"
+                        type="color"
+                        value={safeColor(selected.color)}
+                        onChange={(e) => update(selected.id, { color: e.target.value.toUpperCase() })}
+                        aria-label={`${selected.name} color`}
+                      />
+                      <input
+                        className="colorfield__hex"
+                        value={selected.color}
+                        onChange={(e) => update(selected.id, { color: e.target.value.toUpperCase() })}
+                        onBlur={(e) => {
+                          if (!isHexColor(e.target.value.trim())) update(selected.id, { color: "#2563EB" });
+                        }}
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div className="colorswatches" aria-label="Color presets">
+                      {COLOR_PRESETS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className={`colorswatch ${selected.color.toUpperCase() === color ? "colorswatch--on" : ""}`}
+                          style={{ "--swatch": color } as CSSProperties}
+                          onClick={() => update(selected.id, { color })}
+                          aria-label={color}
+                        />
+                      ))}
+                    </div>
+                  </label>
+
+                  <label className="adminfield">
+                    <span>Priority</span>
+                    <select value={selected.tier} onChange={(e) => update(selected.id, { tier: e.target.value as FlagTier })}>
+                      {TIERS.map((tier) => (
+                        <option key={tier.id} value={tier.id}>{tier.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="adminfield">
+                    <span>Department</span>
+                    <select value={selected.department} onChange={(e) => update(selected.id, { department: e.target.value })}>
+                      {DEPTS.map((dept) => (
+                        <option key={dept.id} value={dept.id}>{dept.label}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="adminfield adminfield--wide">
+                    <span>Object codes</span>
+                    <ObjectCodePicker
+                      value={selected.objectCodes}
+                      onChange={(codes) => update(selected.id, { objectCodes: codes })}
+                    />
+                  </label>
+
+                  <label className="adminfield adminfield--wide">
+                    <span>Search aliases (comma separated)</span>
+                    <input
+                      value={selected.aliases.join(", ")}
+                      onChange={(e) => update(selected.id, { aliases: splitWords(e.target.value) })}
+                      placeholder="e.g. air conditioning, climate, cold"
+                    />
+                  </label>
+
+                  <div className="adminchecks adminfield--wide">
+                    <label><input type="checkbox" checked={selected.quick} onChange={(e) => update(selected.id, { quick: e.target.checked })} /> Quick chip</label>
+                    <label><input type="checkbox" checked={selected.alwaysPrint} onChange={(e) => update(selected.id, { alwaysPrint: e.target.checked })} /> Always print</label>
+                    <label><input type="checkbox" checked={selected.active} onChange={(e) => update(selected.id, { active: e.target.checked })} /> Active (shown in menus)</label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </section>
