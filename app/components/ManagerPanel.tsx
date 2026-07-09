@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  DEPARTMENTS,
+  departmentGroups,
   flagName,
   flagLabel,
   RETORQUE_TIRES,
@@ -12,7 +12,7 @@ import {
   INSPECTION_OPTIONS,
   entryHasContent,
   searchFlags,
-  COMMON_FLAGS,
+  commonFlagIds,
   ASSIGNABLE_FLAGS,
   BUS_TYPES,
   flagTier,
@@ -254,7 +254,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
   // Active flags as pills, most-severe first (severity == FLAGS order here).
   const active = entry.flags.slice().sort((a, b) => flagLabel(a).localeCompare(flagLabel(b)));
   const results = searchFlags(query);
-  const common = COMMON_FLAGS.filter((id) => !entry.flags.includes(id) && !isActive(id));
+  const common = commonFlagIds().filter((id) => !entry.flags.includes(id) && !isActive(id));
   const hasNote = !!(entry.note || "").trim();
 
   return (
@@ -381,11 +381,12 @@ interface ManagerPanelProps {
 
 export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initialBus = "" }: ManagerPanelProps) {
   const { numbers, isKnown, label, types } = useBusMaster();
+  const departments = departmentGroups();
   const [tab, setTab] = useState<"bus" | "flag">("bus");
   const [query, setQuery] = useState(initialBus || "");
   const [openBus, setOpenBus] = useState<string | null>(initialBus || null);
-  const [dept, setDept] = useState(DEPARTMENTS[0].id);
-  const [pickedFlag, setPickedFlag] = useState(DEPARTMENTS[0].flags[0]);
+  const [dept, setDept] = useState(departments[0].id);
+  const [pickedFlag, setPickedFlag] = useState(departments[0].flags[0]);
   const [busInput, setBusInput] = useState("");
   const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
 
@@ -424,7 +425,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   // By flag: buses carrying the picked flag ("Other" = buses with a note).
-  const deptObj = DEPARTMENTS.find((d) => d.id === dept) || DEPARTMENTS[0];
+  const deptObj = departments.find((d) => d.id === dept) || departments[0];
   const flagBuses = Object.keys(flags)
     .filter((b) =>
       pickedFlag === NOTE_FLAG ? !!(flags[b].note || "").trim() : (flags[b].flags || []).includes(pickedFlag)
@@ -564,7 +565,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         {tab === "flag" && (
           <div className="byflag">
             <div className="depttabs">
-              {DEPARTMENTS.map((d) => (
+              {departments.map((d) => (
                 <button
                   key={d.id}
                   className={`depttab depttab--${d.id} ${dept === d.id ? "depttab--on" : ""}`}

@@ -99,6 +99,22 @@ function flagDetails(details: unknown): { title: string; detail: string; badge: 
   };
 }
 
+function adminFlagConfigDetails(details: unknown): { title: string; detail: string; badge: string } {
+  const d = (details || {}) as { before?: { flags?: Record<string, unknown> }; after?: { flags?: Record<string, unknown> } };
+  const before = d.before?.flags || {};
+  const after = d.after?.flags || {};
+  const changed = new Set([...Object.keys(before), ...Object.keys(after)]);
+  let count = 0;
+  for (const id of changed) {
+    if (JSON.stringify(before[id] || null) !== JSON.stringify(after[id] || null)) count += 1;
+  }
+  return {
+    title: "Updated flag settings",
+    detail: count ? `${count} flag setting${count === 1 ? "" : "s"} changed` : "Flag settings saved",
+    badge: "Admin",
+  };
+}
+
 export default function AuditLog() {
   const [ops, setOps] = useState<LotSheetOpRecord[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
@@ -135,7 +151,9 @@ export default function AuditLog() {
     const auditItems: FeedItem[] = events.map((event) => {
       const summary = event.kind === "flag_update"
         ? flagDetails(event.details)
-        : { title: event.kind, detail: "", badge: "Audit" };
+        : event.kind === "admin_flag_config_update"
+          ? adminFlagConfigDetails(event.details)
+          : { title: event.kind, detail: "", badge: "Audit" };
       return {
         id: `audit-${event.id}`,
         at: event.createdAt,

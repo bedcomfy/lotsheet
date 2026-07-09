@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.9 - 2026-07-09
+
+- Added a protected Admin Tools sidebar section with Flag Editor, Bus Lists, and Employees.
+- Kept the public Object Codes utility separate from administrative configuration.
+- Added shared flag display configuration for names, sheet aliases, severity color, departments, quick chips, always-print behavior, aliases, and linked object codes.
+- Moved Bus Lists and Employees out of the Shop section and behind the shared admin password session.
+- Added audit logging for flag configuration changes.
+
 ## 0.1.8 - 2026-07-09
 
 - Fixed the mobile header so Audit Log no longer appears twice.

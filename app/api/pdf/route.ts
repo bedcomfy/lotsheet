@@ -45,17 +45,18 @@ function signature(data: unknown, maint: boolean): string {
 async function sheetData(path: string, blank: boolean) {
   if (blank) return { blank: true };
   if (path === "/") {
-    const [{ sheet }, flags] = await Promise.all([getSheet(), getFlags()]);
-    return { sheet, flags };
+    const [{ sheet }, flags, flagConfig] = await Promise.all([getSheet(), getFlags(), getState("flag_config")]);
+    return { sheet, flags, flagConfig: flagConfig.value || null };
   }
   // Include the universal flags (R/H/I indicators) AND the bus master (the lane
   // list / types) so either change invalidates the cached PDF.
-  const [{ value }, flags, busMaster] = await Promise.all([
+  const [{ value }, flags, busMaster, flagConfig] = await Promise.all([
     getState(path.slice(1)),
     getFlags(),
     getState("bus_master"),
+    getState("flag_config"),
   ]);
-  return { value, flags, busMaster: busMaster.value || null };
+  return { value, flags, busMaster: busMaster.value || null, flagConfig: flagConfig.value || null };
 }
 
 const PDF_HEADERS = {

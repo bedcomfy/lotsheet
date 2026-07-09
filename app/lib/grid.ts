@@ -99,6 +99,71 @@ export interface FlagDef {
   objectCode?: boolean;
 }
 
+export type FlagTier = "high" | "med" | "low";
+
+export interface FlagConfigEntry {
+  id: string;
+  name?: string;
+  label?: string;
+  tier?: FlagTier;
+  aliases?: string[];
+  objectCodes?: string[];
+  quick?: boolean;
+  alwaysPrint?: boolean;
+  department?: string;
+  active?: boolean;
+}
+
+export interface FlagConfig {
+  flags: Record<string, FlagConfigEntry>;
+}
+
+let activeFlagConfig: FlagConfig = { flags: {} };
+
+function normalizeWords(list: unknown): string[] {
+  if (!Array.isArray(list)) return [];
+  return Array.from(new Set(list.map((x) => String(x || "").trim()).filter(Boolean)));
+}
+
+function sanitizeFlagConfigEntry(id: string, entry: Partial<FlagConfigEntry> | null | undefined): FlagConfigEntry {
+  const tier = entry?.tier === "high" || entry?.tier === "med" || entry?.tier === "low" ? entry.tier : undefined;
+  return {
+    id,
+    ...(typeof entry?.name === "string" ? { name: entry.name.trim() } : {}),
+    ...(typeof entry?.label === "string" ? { label: entry.label.trim() } : {}),
+    ...(tier ? { tier } : {}),
+    ...(entry?.aliases ? { aliases: normalizeWords(entry.aliases) } : {}),
+    ...(entry?.objectCodes ? { objectCodes: normalizeWords(entry.objectCodes) } : {}),
+    ...(typeof entry?.quick === "boolean" ? { quick: entry.quick } : {}),
+    ...(typeof entry?.alwaysPrint === "boolean" ? { alwaysPrint: entry.alwaysPrint } : {}),
+    ...(typeof entry?.department === "string" ? { department: entry.department.trim() } : {}),
+    ...(typeof entry?.active === "boolean" ? { active: entry.active } : {}),
+  };
+}
+
+export function normalizeFlagConfig(input: unknown): FlagConfig {
+  const raw = input && typeof input === "object" ? (input as { flags?: unknown }).flags : null;
+  const out: FlagConfig = { flags: {} };
+  if (raw && typeof raw === "object") {
+    for (const [id, value] of Object.entries(raw as Record<string, Partial<FlagConfigEntry>>)) {
+      const cleanId = String(id || "").trim();
+      if (!cleanId) continue;
+      out.flags[cleanId] = sanitizeFlagConfigEntry(cleanId, value);
+    }
+  }
+  return out;
+}
+
+export function applyFlagConfig(input: unknown): FlagConfig {
+  activeFlagConfig = normalizeFlagConfig(input);
+  return activeFlagConfig;
+}
+
+function flagConfigEntry(id: string | null | undefined): FlagConfigEntry | null {
+  if (!id) return null;
+  return activeFlagConfig.flags[id] || null;
+}
+
 // Manager-set operational FLAGS. Each is separate; the full name is shown so
 // there's no confusion.
 export const FLAGS: FlagDef[] = [
@@ -130,6 +195,8 @@ export const ALL_FLAGS: FlagDef[] = [...FLAGS, ...OBJECT_CODE_FLAGS];
 // always a hold, so it's now a hold reason.)
 export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
 export function flagLabel(id: string | null | undefined): string {
+  const override = flagConfigEntry(id);
+  if (override?.label) return override.label;
   const objectCode = objectCodeFromFlagId(id);
   if (objectCode) return objectCode.code;
   const f = ALL_FLAGS.find((x) => x.id === id);
@@ -145,13 +212,52 @@ const FLAG_NAMES: Record<string, string> = {
   cleaning: "Needs cleaning", rfs: "Ready for service",
 };
 export function flagName(id: string): string {
+  const override = flagConfigEntry(id);
+  if (override?.name) return override.name;
   const objectCode = objectCodeFromFlagId(id);
   if (objectCode) return `${objectCode.code} - ${objectCode.description}`;
   return FLAG_NAMES[id] || flagLabel(id);
 }
 
 export function flagObjectCodes(id: string): string[] {
+  const override = flagConfigEntry(id);
+  if (override?.objectCodes) return override.objectCodes;
   return ALL_FLAGS.find((f) => f.id === id)?.objectCodes || [];
+}
+
+export interface FlagAdminRow {
+  id: string;
+  name: string;
+  label: string;
+  tier: FlagTier;
+  aliases: string[];
+  objectCodes: string[];
+  quick: boolean;
+  alwaysPrint: boolean;
+  department: string;
+  active: boolean;
+}
+
+export function editableFlagRows(configInput?: unknown): FlagAdminRow[] {
+  const previous = activeFlagConfig;
+  if (configInput !== undefined) activeFlagConfig = normalizeFlagConfig(configInput);
+  const rows = FLAGS.filter((flag) => flag.id !== "none").map((flag) => {
+    const override = flagConfigEntry(flag.id);
+    return {
+      id: flag.id,
+      name: flagName(flag.id),
+      label: flagLabel(flag.id),
+      tier: flagTier(flag.id),
+      aliases: override?.aliases || FLAG_ALIASES[flag.id] || [],
+      objectCodes: flagObjectCodes(flag.id),
+      quick: commonFlagIds().includes(flag.id),
+      alwaysPrint: alwaysPrintFlagIds().includes(flag.id),
+      department: override?.department || defaultDepartment(flag.id),
+      active: override?.active !== false,
+    };
+  });
+  if (configInput !== undefined) activeFlagConfig = previous;
+  return rows;
 }
 
 export interface Department {
@@ -167,6 +273,22 @@ export const DEPARTMENTS: Department[] = [
   { id: "maintenance", label: "Maintenance", flags: ["eng", "trans", "ac", "inspection", "hold", "retorque", "braketest", "cards", "oos", "offprop", "shop", "split", "followup", "rfs"] },
   { id: "safety", label: "Safety", flags: ["safety", "legal", "accident"] },
 ];
+
+function defaultDepartment(id: string): string {
+  return DEPARTMENTS.find((dept) => dept.flags.includes(id))?.id || "maintenance";
+}
+
+export function departmentGroups(): Department[] {
+  const groups = DEPARTMENTS.map((dept) => ({ ...dept, flags: dept.flags.filter((id) => flagConfigEntry(id)?.active !== false) }));
+  for (const entry of Object.values(activeFlagConfig.flags)) {
+    if (!entry.department || entry.active === false) continue;
+    const target = groups.find((dept) => dept.id === entry.department);
+    if (!target) continue;
+    for (const dept of groups) dept.flags = dept.flags.filter((id) => id !== entry.id);
+    target.flags.push(entry.id);
+  }
+  return groups;
+}
 
 // Retorque must specify which tire(s). Roadside = traffic side, curbside = door
 // side; fronts on top, rears on the bottom.
@@ -224,7 +346,9 @@ export const ASSIGNABLE_FLAGS = ALL_FLAGS.filter((f) => f.id !== "none");
 //   high (red)  — out of service / serious mechanical / safety
 //   med (amber) — needs attention or in progress
 //   low (blue)  — routine service
-export function flagTier(id: string): "high" | "med" | "low" {
+export function flagTier(id: string): FlagTier {
+  const override = flagConfigEntry(id);
+  if (override?.tier) return override.tier;
   if (objectCodeFromFlagId(id)) return "low";
   if (["legal", "safety", "accident", "oos", "eng", "trans"].includes(id)) return "high";
   if (["hold", "inspection", "retorque", "split", "braketest", "ac", "shop", "offprop", "followup"].includes(id))
@@ -236,6 +360,19 @@ export function flagTier(id: string): "high" | "med" | "low" {
 // search box is empty — the handful this garage reaches for every day. The long
 // tail is always one search away, so this list stays short on purpose.
 export const COMMON_FLAGS = ["service", "cleaning", "hold", "inspection", "retorque", "oos", "offprop", "braketest"];
+
+export function commonFlagIds(): string[] {
+  const defaults = COMMON_FLAGS.filter((id) => flagConfigEntry(id)?.active !== false);
+  const removed = new Set(
+    Object.values(activeFlagConfig.flags)
+      .filter((entry) => entry.quick === false)
+      .map((entry) => entry.id)
+  );
+  const extra = Object.values(activeFlagConfig.flags)
+    .filter((entry) => entry.quick && entry.active !== false && !defaults.includes(entry.id))
+    .map((entry) => entry.id);
+  return [...defaults, ...extra].filter((id) => !removed.has(id));
+}
 
 // Extra search words so a flag can be found by terms that aren't in its name
 // (e.g. searching "air" or "climate" finds A/C). Keep these lowercase.
@@ -265,7 +402,16 @@ export function searchFlags(query: string): FlagDef[] {
   if (!q) return [];
   const scored: { f: FlagDef; rank: number }[] = [];
   for (const f of ASSIGNABLE_FLAGS) {
-    const hay = [flagName(f.id).toLowerCase(), f.label.toLowerCase(), ...(f.objectCodes || []), ...(FLAG_ALIASES[f.id] || [])];
+    if (flagConfigEntry(f.id)?.active === false) continue;
+    const override = flagConfigEntry(f.id);
+    const hay = [
+      flagName(f.id).toLowerCase(),
+      flagLabel(f.id).toLowerCase(),
+      f.label.toLowerCase(),
+      ...flagObjectCodes(f.id),
+      ...(override?.aliases || []),
+      ...(FLAG_ALIASES[f.id] || []),
+    ];
     let rank = Infinity;
     for (const h of hay) {
       const i = h.indexOf(q);
@@ -311,10 +457,19 @@ function flagSeverityRank(id: string): number {
 // they affect how the lot is read at a glance.
 export const ALWAYS_PRINT_FLAGS = ["hold", "split"];
 
+export function alwaysPrintFlagIds(): string[] {
+  const ids = new Set(ALWAYS_PRINT_FLAGS);
+  for (const entry of Object.values(activeFlagConfig.flags)) {
+    if (entry.alwaysPrint === true && entry.active !== false) ids.add(entry.id);
+    if (entry.alwaysPrint === false) ids.delete(entry.id);
+  }
+  return Array.from(ids);
+}
+
 // The always-print flags a bus carries, spelled out (e.g. "HOLD · SPLIT").
 export function pinnedFlagText(entry: FlagEntry | null | undefined): string {
   if (!entry || !entry.flags) return "";
-  return ALWAYS_PRINT_FLAGS.filter((id) => entry.flags.includes(id))
+  return alwaysPrintFlagIds().filter((id) => entry.flags.includes(id))
     .map(flagLabel)
     .join(" · ");
 }

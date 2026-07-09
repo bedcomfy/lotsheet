@@ -28,7 +28,7 @@ import {
   groupFlaggedBuses,
   cellLocationLabel,
   pinnedFlagText,
-  DEPARTMENTS,
+  departmentGroups,
   flagName,
 } from "../lib/grid";
 import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, Plus } from "lucide-react";
@@ -2090,7 +2090,7 @@ export default function LotSheet() {
           <div className="lotlist">
             {(() => {
               const seen = new Set<string>();
-              return DEPARTMENTS.map((dept) => {
+              return departmentGroups().map((dept) => {
                 const ids = dept.flags.filter((id) => {
                   if (seen.has(id)) return false;
                   if (flagPick === "add" && id === "retorque") return false;

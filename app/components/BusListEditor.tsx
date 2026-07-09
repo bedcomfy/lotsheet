@@ -7,8 +7,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import CsvEditor from "./CsvEditor";
 import TypeCodes from "./TypeCodes";
 import type { MasterBus } from "../lib/types";
-
-const PASSWORD = "ride";
+import { ADMIN_PASSWORD, ADMIN_SESSION_KEY } from "../lib/admin";
 
 interface BusListEditorProps {
   onClose: () => void;
@@ -18,16 +17,16 @@ interface BusListEditorProps {
 // deterrent so everyday staff don't change the fleet by accident).
 export default function BusListEditor({ onClose }: BusListEditorProps) {
   const [unlocked, setUnlocked] = useState(
-    () => typeof sessionStorage !== "undefined" && sessionStorage.getItem("pace:buslist") === "1"
+    () => typeof sessionStorage !== "undefined" && sessionStorage.getItem(ADMIN_SESSION_KEY) === "1"
   );
   const [pw, setPw] = useState("");
   const [pwErr, setPwErr] = useState(false);
 
   function tryUnlock() {
-    if (pw.trim().toLowerCase() === PASSWORD) {
+    if (pw.trim().toLowerCase() === ADMIN_PASSWORD) {
       setUnlocked(true);
       try {
-        sessionStorage.setItem("pace:buslist", "1");
+        sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
       } catch {}
     } else {
       setPwErr(true);

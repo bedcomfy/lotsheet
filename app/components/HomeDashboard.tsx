@@ -12,11 +12,9 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  Users,
   Wrench,
 } from "lucide-react";
 import type { FlagMap, LotSheet, MasterBus } from "../lib/types";
-import BusListEditor from "./BusListEditor";
 
 interface BusMasterResponse {
   master?: { buses?: MasterBus[] };
@@ -52,7 +50,6 @@ export default function HomeDashboard() {
   const [flags, setFlags] = useState<FlagMap>({});
   const [activeBusCount, setActiveBusCount] = useState(0);
   const [findBus, setFindBus] = useState("");
-  const [busListOpen, setBusListOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -112,7 +109,7 @@ export default function HomeDashboard() {
     { label: "Fuel Sheet", path: "/fuel", icon: Fuel },
     { label: "DEF Sheet", path: "/def", icon: Droplets },
     { label: "Shop", path: "/shop", icon: Wrench },
-    { label: "Bus Lists", path: null, icon: Users },
+    { label: "Admin Tools", path: "/admin/flags", icon: ShieldAlert },
   ];
 
   return (
@@ -197,7 +194,7 @@ export default function HomeDashboard() {
                 <button
                   className="tooltile"
                   key={link.label}
-                  onClick={() => (link.path ? router.push(link.path) : setBusListOpen(true))}
+                  onClick={() => router.push(link.path)}
                 >
                   <Icon size={20} />
                   <span>{link.label}</span>
@@ -207,7 +204,6 @@ export default function HomeDashboard() {
           </div>
         </div>
       </section>
-      {busListOpen && <BusListEditor onClose={() => setBusListOpen(false)} />}
     </main>
   );
 }
