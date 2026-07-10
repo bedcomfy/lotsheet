@@ -59,7 +59,8 @@ export interface Employee {
   firstName: string;
   lastName: string;
   badge: string;
-  startDate: string; // ISO "YYYY-MM-DD", or "" if unset
+  startDate: string; // Shop seniority, ISO "YYYY-MM-DD", or "" if unset
+  hireDate: string; // Pace hire date, ISO "YYYY-MM-DD", or "" if unset
   classification: string; // job title / role
   name?: string; // legacy combined name (old data); derive from first+last otherwise
 }

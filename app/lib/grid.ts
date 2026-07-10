@@ -325,7 +325,9 @@ export function flagName(id: string): string {
   const override = flagConfigEntry(id);
   if (override?.name) return override.name;
   const objectCode = objectCodeFromFlagId(id);
-  if (objectCode) return `${objectCode.code} - ${objectCode.description}`;
+  // Object-code chips should read like the actual problem, not an unexplained
+  // number. The code remains searchable and is shown as secondary metadata.
+  if (objectCode) return objectCode.description;
   return FLAG_NAMES[id] || flagLabel(id);
 }
 
@@ -552,6 +554,42 @@ export function searchFlags(query: string): FlagDef[] {
   return scored.map((s) => s.f);
 }
 
+// Turnover's fast-entry field accepts ordinary language. Prefer a direct
+// phrase match; if that fails, use meaningful words only when they point to one
+// clear best flag. Ambiguous text remains an Other note instead of guessing.
+export function closestFlagMatch(input: string): FlagDef | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const direct = searchFlags(raw);
+  const exact = direct.find((flag) =>
+    flagName(flag.id).trim().toLowerCase() === raw.toLowerCase() ||
+    flagObjectCodes(flag.id).some((code) => code.toLowerCase() === raw.toLowerCase())
+  );
+  if (exact) return exact;
+  const directBuiltins = direct.filter((flag) => !flag.objectCode);
+  if (directBuiltins.length === 1) return directBuiltins[0];
+  if (direct.length === 1) return direct[0];
+
+  const ignored = new Set(["and", "the", "for", "bus", "issue", "problem", "needs", "needed", "repair"]);
+  const words = raw.toLowerCase().match(/[a-z0-9]+/g)?.filter((word) => word.length >= 3 && !ignored.has(word)) || [];
+  const firstMatches = words.map((word) => {
+    const matches = searchFlags(word);
+    const builtins = matches.filter((flag) => !flag.objectCode);
+    if (builtins.length === 1) return builtins[0];
+    return matches.length === 1 ? matches[0] : null;
+  }).filter((flag): flag is FlagDef => !!flag);
+  if (!firstMatches.length) return null;
+
+  const scores = new Map<string, { flag: FlagDef; count: number }>();
+  for (const flag of firstMatches) {
+    const prior = scores.get(flag.id);
+    scores.set(flag.id, { flag, count: (prior?.count || 0) + 1 });
+  }
+  const ranked = Array.from(scores.values()).sort((a, b) => b.count - a.count);
+  if (ranked.length > 1 && ranked[0].count === ranked[1].count) return null;
+  return ranked[0].flag;
+}
+
 // Flag severity, most → least severe — used to pick which flag to show when a
 // bus has several. A custom note ("Other") is the least severe of all.
 export const FLAG_SEVERITY = [
@@ -658,7 +696,10 @@ export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
     .sort((a, b) => flagSeverityRank(a) - flagSeverityRank(b));
   return flags
     .map((id) => {
-      const label = flagLabel(id);
+      // Full-detail surfaces (Turnover and Buses with Flags) spell out an
+      // object-code description. Compact grid cells still use flagLabel(id),
+      // which intentionally remains the short numeric code.
+      const label = objectCodeFromFlagId(id) ? flagName(id) : flagLabel(id);
       if (!label) return "";
       const reason = (entry?.holdReason || "").trim();
       if (id === "hold" && reason) return `${label} (${reason})`;
@@ -717,7 +758,7 @@ export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGro
     if (emitted.has(cat)) continue;
     const buses = groups[cat];
     buses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    result.push({ cat, label: flagLabel(cat) || flagName(cat), buses });
+    result.push({ cat, label: flagName(cat) || flagLabel(cat), buses });
   }
   return result;
 }

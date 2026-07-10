@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { flagsFullDisplay } from "../lib/grid";
+import { closestFlagMatch, flagsFullDisplay } from "../lib/grid";
 import { History, Eraser, FileDown, Search, X } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -149,6 +149,39 @@ export default function TurnoverSheet() {
       else next[bus] = entry;
       return next;
     });
+  }
+
+  async function commitBayFirstHalf(bus: string, key: string) {
+    const typed = (data.cells[key] || "").trim();
+    if (!typed || !bus || bus === "X") return;
+
+    // Merge into the newest shared flags so this shortcut cannot erase a flag
+    // that another device added while the Turnover sheet was open.
+    const latest = await fetch("/api/flags", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((body) => (body.flags || {}) as FlagMap)
+      .catch(() => flags);
+    const current = latest[bus] || {
+      flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "",
+    };
+    const matched = closestFlagMatch(typed);
+    const next: FlagEntry = matched
+      ? { ...current, flags: Array.from(new Set([...(current.flags || []), matched.id])) }
+      : {
+          ...current,
+          note: current.note.trim() && current.note.trim() !== typed
+            ? `${current.note.trim()}; ${typed}`
+            : typed,
+        };
+
+    const saved = await fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bus, ...next, actor: getDeviceActor() }),
+    }).then((response) => response.ok).catch(() => false);
+    if (!saved) return;
+    onBusFlagsUpdated(bus, next);
+    setCell(key, "");
   }
 
   useEffect(() => {
@@ -619,7 +652,19 @@ export default function TurnoverSheet() {
                             {bayFlags}
                           </button>
                         )}
-                        {E(`bay1h-${n}`, { className: "turnt__in turnt__in--fill" })}
+                        <input
+                          className="turnt__in turnt__in--fill turnt__flagentry"
+                          value={bayBus && bayBus !== "X" ? data.cells[`bay1h-${n}`] || "" : ""}
+                          disabled={!bayBus || bayBus === "X"}
+                          placeholder={bayBus && bayBus !== "X" ? "Flag or note" : ""}
+                          onChange={(event) => setCell(`bay1h-${n}`, event.target.value)}
+                          onBlur={() => commitBayFirstHalf(bayBus, `bay1h-${n}`)}
+                          onKeyDown={(event) => {
+                            if (event.key !== "Enter") return;
+                            event.preventDefault();
+                            event.currentTarget.blur();
+                          }}
+                        />
                       </div>
                     </td>
                     <td colSpan={4}>{E(`bay2h-${n}`)}</td>

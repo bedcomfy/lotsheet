@@ -19,11 +19,12 @@ function normalize(e: Partial<Employee> & { name?: string }): Employee {
     lastName,
     badge: (e.badge || "").trim(),
     startDate: (e.startDate || "").trim(),
+    hireDate: (e.hireDate || "").trim(),
     classification: (e.classification || "").trim(),
   };
 }
 
-const EMPTY: Employee = { firstName: "", lastName: "", badge: "", startDate: "", classification: "" };
+const EMPTY: Employee = { firstName: "", lastName: "", badge: "", startDate: "", hireDate: "", classification: "" };
 
 export default function AdminEmployeesPage() {
   const [rows, setRows] = useState<Employee[]>([]);
@@ -87,7 +88,7 @@ export default function AdminEmployeesPage() {
       <div className="adminpanel__head">
         <div>
           <h2>Employees</h2>
-          <p>Name, badge, start date, and classification. Used to autofill the Turnover sheet (free text is always allowed) and upcoming staffing sheets.</p>
+          <p>Name, employee ID, seniority, hire date, and classification. Used to autofill the Turnover sheet and upcoming staffing sheets.</p>
         </div>
         <div className="adminpanel__actions">
           {saved && <span className="adminflag__saved"><Check size={15} /> Saved</span>}
@@ -112,7 +113,8 @@ export default function AdminEmployeesPage() {
           <span>First name</span>
           <span>Last name</span>
           <span>Badge #</span>
-          <span>Start date</span>
+          <span>Shop seniority</span>
+          <span>Pace hire date</span>
           <span>Classification</span>
           <span />
         </div>
@@ -135,8 +137,12 @@ export default function AdminEmployeesPage() {
               <input value={r.badge} placeholder="Badge #" inputMode="numeric" onChange={(e) => setRow(i, "badge", e.target.value)} />
             </label>
             <label className="emptable__cell">
-              <span className="emptable__label">Start date</span>
+              <span className="emptable__label">Shop seniority</span>
               <input type="date" value={r.startDate} onChange={(e) => setRow(i, "startDate", e.target.value)} />
+            </label>
+            <label className="emptable__cell">
+              <span className="emptable__label">Pace hire date</span>
+              <input type="date" value={r.hireDate} onChange={(e) => setRow(i, "hireDate", e.target.value)} />
             </label>
             <label className="emptable__cell">
               <span className="emptable__label">Classification</span>

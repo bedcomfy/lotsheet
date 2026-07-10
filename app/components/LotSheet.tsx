@@ -49,6 +49,7 @@ import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
 import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
+import { fleetStats } from "../lib/fleetStats";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -1354,36 +1355,14 @@ export default function LotSheet() {
       ? sheet.date
       : activeStamp.date;
 
-  // Quick stats for the toolbar chip ("X" = a blocked spot, not a bus).
-  const onGridCount = Object.values(sheet.cells || {}).filter((v) => {
-    const n = cellToNum(v);
-    return n && n !== "X";
-  }).length;
-  const inLotsCount = Object.values(sheet.lots || {}).reduce(
-    (n: number, arr) => n + (Array.isArray(arr) ? arr.filter((b) => b && b !== "X").length : 0),
-    0
-  );
-  // Missing = ACTIVE buses on the roster that aren't anywhere on the sheet
-  // (no grid cell and no lot). A bus flagged OFF PROPERTY or IN SHOP is
-  // accounted for — listed for reference, but it doesn't count as missing.
-  const placedBuses = new Set<string>();
-  for (const v of Object.values(sheet.cells || {})) {
-    const n = cellToNum(v);
-    if (n) placedBuses.add(n);
-  }
-  for (const arr of Object.values(sheet.lots || {})) {
-    if (Array.isArray(arr)) for (const b of arr) if (b) placedBuses.add(b);
-  }
-  const notPlaced = masterBuses
-    .filter((b) => b.status !== "retired" && !placedBuses.has(b.num))
-    .map((b) => b.num)
-    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  const isAccountedFor = (bus: string) => {
-    const f = flags[bus]?.flags || [];
-    return f.includes("offprop") || f.includes("shop");
-  };
-  const missingBuses = notPlaced.filter((b) => !isAccountedFor(b));
-  const accountedBuses = notPlaced.filter(isAccountedFor);
+  // Shared with Home: lots are North/East/Fence; shop is Apron/Bays/Cards.
+  const fleet = fleetStats(sheet, flags, masterBuses);
+  const onGridCount = fleet.onGrid.size;
+  const inLotsCount = fleet.inLots.size;
+  // Off-property and in-shop flags keep unplaced active buses out of Missing;
+  // they remain listed for reference in the status dialog.
+  const missingBuses = fleet.missing;
+  const accountedBuses = fleet.accountedByFlagOnly;
 
   // The whole sheet as clean text — for pasting into a group chat at handoff.
   function buildShareText(): string {

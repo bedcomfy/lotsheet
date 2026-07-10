@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.13 - 2026-07-10
+
+- Spelled out object-code descriptions on-screen and in PDFs for the Turnover sheet and Buses with Flags summary while keeping compact Lot Sheet cells short.
+- Imported the provided 43-person employee roster by employee ID without replacing existing employee records.
+- Added separate Shop Seniority and Pace Hire Date fields to the employee editor.
+
+## 0.1.12 - 2026-07-10
+
+- Changed selected object-code flag chips to lead with the object-code description while keeping the number visible as supporting metadata.
+- Fixed touch scrolling in mobile lot editors and other long menus.
+- Standardized live fleet totals: lots are North, East, and Fence; shop is Apron, Bays, and Cards; every other known location and off-property bus stays out of Missing.
+- Turned the Turnover sheet's 1st Half bay field into fast flag-or-note entry that updates the bus's universal flags.
+
 ## 0.1.11 - 2026-07-09
 
 - Split Admin Tools into dedicated pages (Flag Editor, Bus Lists, Employees) with a shared tab bar instead of pop-up dialogs.

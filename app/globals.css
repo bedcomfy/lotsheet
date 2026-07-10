@@ -1270,7 +1270,7 @@ textarea:focus-visible {
 }
 .emptable__head {
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr 1fr 1.2fr 40px;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr 40px;
   gap: 10px;
   padding: 10px 18px;
   background: var(--surface-2);
@@ -1282,7 +1282,7 @@ textarea:focus-visible {
 }
 .emptable__row {
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr 1fr 1.2fr 40px;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr 40px;
   gap: 10px;
   align-items: center;
   padding: 10px 18px;
@@ -2972,6 +2972,9 @@ textarea:focus-visible {
   box-shadow: var(--shadow-pop);
   max-height: 88dvh; /* scroll within the dialog if it's tall */
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .modal[data-state="open"] {
   animation: blurFadeIn 0.2s cubic-bezier(.2,.8,.2,1);
@@ -3223,7 +3226,11 @@ textarea:focus-visible {
 }
 .manager__list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 0 16px 24px;
 }
 /* Tabs */
@@ -3660,6 +3667,9 @@ textarea:focus-visible {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   display: grid;
   gap: 10px;
   padding: 0 20px 28px;
@@ -4455,6 +4465,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   max-height: 85dvh;
+  min-height: 0;
 }
 .lotadd {
   display: flex;
@@ -4469,6 +4480,22 @@ textarea:focus-visible {
   margin-top: 12px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+@media screen and (max-width: 699px) {
+  .modal--tall {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: none;
+  }
+  .modal--tall .modal__head,
+  .modal--tall .modal__actions,
+  .modal--tall > .modal__save {
+    flex: 0 0 auto;
+  }
 }
 .lotlist__empty {
   color: var(--text-dim);
@@ -5362,6 +5389,13 @@ td.turnt__head {
   width: auto;
   flex: 1 1 auto;
   min-width: 0;
+}
+.turnt__flagentry::placeholder {
+  color: #6b7280;
+  font-size: 0.82em;
+}
+.turnt__flagentry:disabled {
+  cursor: default;
 }
 .turnt__in:focus {
   outline: 2px solid var(--accent);

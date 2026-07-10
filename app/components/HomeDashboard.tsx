@@ -15,6 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { FlagMap, LotSheet, MasterBus } from "../lib/types";
+import { fleetStats } from "../lib/fleetStats";
 
 interface BusMasterResponse {
   master?: { buses?: MasterBus[] };
@@ -27,10 +28,6 @@ interface SheetResponse {
 
 interface FlagsResponse {
   flags?: FlagMap;
-}
-
-function countFilled(values: Record<string, string> | undefined): number {
-  return Object.values(values || {}).filter((v) => v && v !== "X").length;
 }
 
 function formatSaved(iso: string | null | undefined): string {
@@ -48,19 +45,19 @@ export default function HomeDashboard() {
   const [sheet, setSheet] = useState<LotSheet | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [flags, setFlags] = useState<FlagMap>({});
-  const [activeBusCount, setActiveBusCount] = useState(0);
+  const [masterBuses, setMasterBuses] = useState<MasterBus[]>([]);
   const [findBus, setFindBus] = useState("");
 
   useEffect(() => {
     let alive = true;
-    Promise.all([
-      fetch("/api/sheet")
+    const load = () => Promise.all([
+      fetch("/api/sheet", { cache: "no-store" })
         .then((r) => r.json() as Promise<SheetResponse>)
         .catch((): SheetResponse => ({})),
-      fetch("/api/flags")
+      fetch("/api/flags", { cache: "no-store" })
         .then((r) => r.json() as Promise<FlagsResponse>)
         .catch((): FlagsResponse => ({})),
-      fetch("/api/buses")
+      fetch("/api/buses", { cache: "no-store" })
         .then((r) => r.json() as Promise<BusMasterResponse>)
         .catch((): BusMasterResponse => ({})),
     ]).then(([sheetData, flagData, busData]) => {
@@ -68,35 +65,27 @@ export default function HomeDashboard() {
       setSheet(sheetData.sheet || null);
       setUpdatedAt(sheetData.updatedAt || null);
       setFlags(flagData.flags || {});
-      setActiveBusCount((busData.master?.buses || []).filter((b: MasterBus) => b.status !== "retired").length);
+      setMasterBuses(busData.master?.buses || []);
     });
+    load();
+    const timer = window.setInterval(load, 3000);
     return () => {
       alive = false;
+      window.clearInterval(timer);
     };
   }, []);
 
   const stats = useMemo(() => {
-    const grid = countFilled(sheet?.cells);
-    const lots = Object.values(sheet?.lots || {}).reduce(
-      (n, arr) => n + (Array.isArray(arr) ? arr.filter((b) => b && b !== "X").length : 0),
-      0
-    );
-    const shop = new Set<string>();
-    for (const key of ["apron", "bay", "cards"] as const) {
-      for (const bus of sheet?.lots?.[key] || []) if (bus && bus !== "X") shop.add(bus);
-    }
-    for (const [bus, entry] of Object.entries(flags)) {
-      if ((entry.flags || []).includes("shop")) shop.add(bus);
-    }
+    const fleet = fleetStats(sheet, flags, masterBuses);
     const flagged = Object.values(flags).filter((e) => (e.flags || []).length || e.note).length;
     return {
-      grid,
-      lots,
-      shop: shop.size,
+      grid: fleet.onGrid.size,
+      lots: fleet.inLots.size,
+      shop: fleet.inShop.size,
       flagged,
-      missing: Math.max(0, activeBusCount - grid - lots),
+      missing: fleet.missing.length,
     };
-  }, [activeBusCount, flags, sheet]);
+  }, [flags, masterBuses, sheet]);
 
   const quickActions = [
     { label: "Open Lot Sheet", meta: "Daily grid and printout", path: "/", icon: ClipboardList },

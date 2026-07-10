@@ -51,8 +51,8 @@ export default function ObjectCodePicker({ value, onChange }: ObjectCodePickerPr
         <div className="ocpick__chips">
           {value.map((code) => (
             <span className="ocpick__chip" key={code}>
-              <strong>{code}</strong>
-              {descFor(code) && <small>{descFor(code)}</small>}
+              <strong>{descFor(code) || code}</strong>
+              {descFor(code) && <small>Object code {code}</small>}
               <button type="button" onClick={() => toggle(code)} aria-label={`Remove ${code}`}>
                 <X size={13} />
               </button>
