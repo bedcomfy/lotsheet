@@ -1,4 +1,5 @@
 import type { FlagMap, LotKey, LotSheet, MasterBus } from "./types";
+import { cellLocationLabel } from "./grid";
 
 export const LOT_COUNT_KEYS: LotKey[] = ["north", "east", "fence"];
 export const SHOP_COUNT_KEYS: LotKey[] = ["apron", "bay", "cards"];
@@ -31,6 +32,47 @@ export interface FleetStats {
   accounted: Set<string>;
   missing: string[];
   accountedByFlagOnly: string[];
+}
+
+const LOT_LOCATION_LABELS: Record<LotKey, string> = {
+  north: "North Lot",
+  east: "East Lot",
+  fence: "Fence",
+  rc: "R/C",
+  apron: "Apron",
+  northlane: "North Lane",
+  southlane: "South Lane",
+  bay: "Bay",
+  cards: "Cards",
+};
+
+export function fleetBusLocations(
+  sheet: LotSheet | null | undefined,
+  flags: FlagMap | null | undefined
+): Record<string, string[]> {
+  const locations: Record<string, string[]> = {};
+  const add = (bus: string, label: string) => {
+    if (!bus || bus === "X" || !label) return;
+    const current = locations[bus] || (locations[bus] = []);
+    if (!current.includes(label)) current.push(label);
+  };
+
+  for (const [id, value] of Object.entries(sheet?.cells || {})) {
+    add(cellBus(value), cellLocationLabel(id) || "Grid");
+  }
+  for (const key of ALL_LOCATION_KEYS) {
+    (sheet?.lots?.[key] || []).forEach((bus, index) => {
+      const numbered = key === "bay" || key === "cards";
+      add(bus, numbered ? `${LOT_LOCATION_LABELS[key]} ${index + 1}` : LOT_LOCATION_LABELS[key]);
+    });
+  }
+  for (const [bus, entry] of Object.entries(flags || {})) {
+    if ((entry.flags || []).includes("offprop")) add(bus, "Off property");
+    if ((entry.flags || []).includes("shop") && !locations[bus]?.some((label) =>
+      label.startsWith("Apron") || label.startsWith("Bay") || label.startsWith("Cards")
+    )) add(bus, "In shop");
+  }
+  return locations;
 }
 
 // One definition of the fleet totals used everywhere:

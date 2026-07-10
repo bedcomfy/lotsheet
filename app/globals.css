@@ -1706,6 +1706,56 @@ textarea:focus-visible {
 .statcard--notready .statcard__value {
   color: var(--pill-maintenance-tx);
 }
+.modal.home-status-modal {
+  width: min(560px, calc(100vw - 28px));
+  z-index: 141;
+}
+.modal-backdrop.home-status-backdrop {
+  z-index: 140;
+}
+.home-status-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 1px 2px 10px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.home-status-summary strong {
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 650;
+}
+.home-status-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--edge);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.home-status-row {
+  display: grid;
+  grid-template-columns: minmax(64px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 49px;
+  padding: 10px 3px;
+  border-bottom: 1px solid var(--edge);
+}
+.home-status-row strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.home-status-row span {
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: right;
+}
 .homecols {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
@@ -3431,12 +3481,36 @@ textarea:focus-visible {
 .byflag__bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 2px 14px 8px;
 }
 .byflag__count {
   font-size: 12px;
   color: var(--muted);
+}
+.byflag__bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--edge));
+  border-radius: 7px;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.byflag__bulk:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.byflag__bulk:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 .busitem {
   display: flex;

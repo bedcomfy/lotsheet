@@ -16,9 +16,11 @@ import {
   MapPinOff,
   ShieldAlert,
   Wrench,
+  X,
 } from "lucide-react";
 import type { FlagMap, LotSheet, MasterBus } from "../lib/types";
-import { fleetStats } from "../lib/fleetStats";
+import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
+import Overlay, { closeOverlayFromEvent } from "./Overlay";
 
 interface BusMasterResponse {
   master?: { buses?: MasterBus[] };
@@ -32,6 +34,8 @@ interface SheetResponse {
 interface FlagsResponse {
   flags?: FlagMap;
 }
+
+type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
 
 function formatSaved(iso: string | null | undefined): string {
   if (!iso) return "Not saved yet";
@@ -50,6 +54,7 @@ export default function HomeDashboard() {
   const [flags, setFlags] = useState<FlagMap>({});
   const [masterBuses, setMasterBuses] = useState<MasterBus[]>([]);
   const [findBus, setFindBus] = useState("");
+  const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -78,8 +83,9 @@ export default function HomeDashboard() {
     };
   }, []);
 
+  const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [flags, masterBuses, sheet]);
+  const locations = useMemo(() => fleetBusLocations(sheet, flags), [flags, sheet]);
   const stats = useMemo(() => {
-    const fleet = fleetStats(sheet, flags, masterBuses);
     const flagged = Object.values(flags).filter((e) => (e.flags || []).length || e.note).length;
     return {
       grid: fleet.onGrid.size,
@@ -91,7 +97,50 @@ export default function HomeDashboard() {
       flagged,
       missing: fleet.missing.length,
     };
-  }, [flags, masterBuses, sheet]);
+  }, [flags, fleet]);
+
+  const detail = useMemo(() => {
+    if (!statusDetail) return null;
+    const sort = (buses: string[]) => buses.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const configs: Record<StatusDetail, { title: string; description: string; buses: string[] }> = {
+      usable: {
+        title: "Usable buses",
+        description: "Active buses currently placed on the service grid.",
+        buses: sort([...fleet.readyForService]),
+      },
+      outOfService: {
+        title: "Out of Service buses",
+        description: "Active buses in a lot, shop area, or off property.",
+        buses: sort([...fleet.notReadyForService]),
+      },
+      grid: {
+        title: "Buses on grid",
+        description: "Every bus currently placed on the Lot Sheet grid.",
+        buses: sort([...fleet.onGrid]),
+      },
+      lots: {
+        title: "Buses in lots",
+        description: "Buses in North Lot, East Lot, or Fence.",
+        buses: sort([...fleet.inLots]),
+      },
+      shop: {
+        title: "Buses in shop",
+        description: "Buses physically placed in Apron, Bays, or Cards.",
+        buses: sort([...fleet.inShop]),
+      },
+      missing: {
+        title: "Missing buses",
+        description: "Active buses with no current grid, lot, shop, or off-property location.",
+        buses: [...fleet.missing],
+      },
+      offProperty: {
+        title: "Buses off property",
+        description: "Active buses currently marked Off property.",
+        buses: sort([...fleet.offProperty]),
+      },
+    };
+    return configs[statusDetail];
+  }, [fleet, statusDetail]);
 
   const quickActions = [
     { label: "Open Lot Sheet", meta: "Daily grid and printout", path: "/", icon: ClipboardList },
@@ -133,40 +182,40 @@ export default function HomeDashboard() {
       </section>
 
       <section className="homegrid homegrid--service" aria-label="Service readiness">
-        <button className="homecard statcard statcard--ready" onClick={() => router.push("/")}>
+        <button className="homecard statcard statcard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
           <CheckCircle2 size={18} />
           <span className="statcard__value">{stats.ready}</span>
-          <span className="statcard__label">Ready for service</span>
+          <span className="statcard__label">Usable</span>
         </button>
-        <button className="homecard statcard statcard--notready" onClick={() => router.push("/")}>
+        <button className="homecard statcard statcard--notready" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
           <CircleAlert size={18} />
           <span className="statcard__value">{stats.notReady}</span>
-          <span className="statcard__label">Not ready for service</span>
+          <span className="statcard__label">Out of Service</span>
         </button>
       </section>
 
       <section className="homegrid homegrid--stats" aria-label="Daily locations">
-        <button className="homecard statcard" onClick={() => router.push("/")}>
+        <button className="homecard statcard" onClick={() => setStatusDetail("grid")} aria-haspopup="dialog">
           <Gauge size={18} />
           <span className="statcard__value">{stats.grid}</span>
           <span className="statcard__label">On grid</span>
         </button>
-        <button className="homecard statcard" onClick={() => router.push("/")}>
+        <button className="homecard statcard" onClick={() => setStatusDetail("lots")} aria-haspopup="dialog">
           <ClipboardList size={18} />
           <span className="statcard__value">{stats.lots}</span>
           <span className="statcard__label">In lots</span>
         </button>
-        <button className="homecard statcard" onClick={() => router.push("/shop")}>
+        <button className="homecard statcard" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">
           <Wrench size={18} />
           <span className="statcard__value">{stats.shop}</span>
           <span className="statcard__label">In shop</span>
         </button>
-        <button className="homecard statcard statcard--warn" onClick={() => router.push("/")}>
+        <button className="homecard statcard statcard--warn" onClick={() => setStatusDetail("missing")} aria-haspopup="dialog">
           <ShieldAlert size={18} />
           <span className="statcard__value">{stats.missing}</span>
           <span className="statcard__label">Missing</span>
         </button>
-        <button className="homecard statcard" onClick={() => router.push("/")}>
+        <button className="homecard statcard" onClick={() => setStatusDetail("offProperty")} aria-haspopup="dialog">
           <MapPinOff size={18} />
           <span className="statcard__value">{stats.offProperty}</span>
           <span className="statcard__label">Off property</span>
@@ -217,6 +266,35 @@ export default function HomeDashboard() {
           </div>
         </div>
       </section>
+
+      {detail && (
+        <Overlay
+          onClose={() => setStatusDetail(null)}
+          overlayClassName="modal-backdrop home-status-backdrop no-print"
+          contentClassName="modal modal--tall home-status-modal"
+          label={detail.title}
+        >
+          <div className="modal__head">
+            <div>
+              <div className="modal__title">{detail.title}</div>
+              <div className="modal__sub">{detail.description}</div>
+            </div>
+            <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close"><X size={20} /></button>
+          </div>
+          <div className="home-status-summary">
+            <strong>{detail.buses.length}</strong> bus{detail.buses.length === 1 ? "" : "es"}
+          </div>
+          <div className="home-status-list">
+            {detail.buses.length === 0 && <div className="lotlist__empty">No buses in this group.</div>}
+            {detail.buses.map((bus) => (
+              <div className="home-status-row" key={bus}>
+                <strong>{bus}</strong>
+                <span>{statusDetail === "missing" ? "No current location" : (locations[bus] || ["No current location"]).join(" / ")}</span>
+              </div>
+            ))}
+          </div>
+        </Overlay>
+      )}
     </main>
   );
 }

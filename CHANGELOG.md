@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.17 - 2026-07-10
+
+- Renamed service readiness to Usable and Out of Service on Home and the Lot Sheet status bar.
+- Added live drill-down menus to every Home fleet tile, including each bus's current grid, lot, shop, or off-property location.
+- Kept fleet setup text fields focused while editing instead of remounting them after every keystroke.
+- Focused flag search automatically when a bus flag editor opens.
+- Added a confirmed Remove from all action to every By Flag result, with one saved and audited update per bus.
+
 ## 0.1.16 - 2026-07-10
 
 - Reworked search and admin text fields so the full visible control is clickable, with a neutral outlined focus treatment instead of nested blue focus boxes.

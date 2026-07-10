@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
 import {
   departmentGroups,
   flagName,
@@ -25,7 +25,7 @@ import {
   removeInspection,
   setInspectionOption,
 } from "../lib/grid";
-import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { X, Plus, Check, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import FlagPills from "./FlagPills";
@@ -202,12 +202,22 @@ function InspOptionPicker({
 // Current flags sit at the top as removable pills; a search box finds any of the
 // (many) flags; the handful used daily are one-tap chips when the search is
 // empty. Detail flags (hold / inspection / retorque) reveal their picker inline.
-function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagEntry) => void }) {
+function FlagPicker({ entry, onChange, searchRef }: {
+  entry: FlagEntry;
+  onChange: (e: FlagEntry) => void;
+  searchRef?: RefObject<HTMLInputElement>;
+}) {
   const [query, setQuery] = useState("");
+  const localSearchRef = useRef<HTMLInputElement>(null);
+  const activeSearchRef = searchRef || localSearchRef;
   // Detail flags whose picker is open but not yet satisfied — really only
   // retorque, which isn't "on" until a tire is picked.
   const [openDetails, setOpenDetails] = useState<Set<string>>(new Set());
   const [noteOpen, setNoteOpen] = useState(false);
+
+  useEffect(() => {
+    activeSearchRef.current?.focus({ preventScroll: true });
+  }, [activeSearchRef]);
 
   const isActive = (id: string) =>
     id === "retorque" ? (entry.retorqueTires || []).length > 0 : entry.flags.includes(id);
@@ -319,6 +329,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
       <div className="flagpick__searchwrap">
         <Search size={17} className="flagpick__searchic" />
         <input
+          ref={activeSearchRef}
           className="flagpick__search"
           placeholder="Search flags or object codes..."
           value={query}
@@ -408,6 +419,8 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   const [pickedFlag, setPickedFlag] = useState(departments[0].flags[0]);
   const [busInput, setBusInput] = useState("");
   const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
+  const [bulkRemoving, setBulkRemoving] = useState(false);
+  const flagSearchRef = useRef<HTMLInputElement>(null);
 
   // Typing a full bus number on the By bus tab opens its flag editor.
   useEffect(() => {
@@ -418,7 +431,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
 
   const getEntry = (bus: string): FlagEntry => flags[bus] || { ...EMPTY };
   function save(bus: string, entry: FlagEntry) {
-    fetch("/api/flags", {
+    const request = fetch("/api/flags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -431,8 +444,9 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         inspOption: entry.inspOption ?? "",
         actor: getDeviceActor(),
       }),
-    }).catch(() => {});
+    }).catch(() => null);
     onBusFlagsUpdated(bus, entry);
+    return request;
   }
 
   // By bus: the list to show — matches when searching, else flagged buses.
@@ -462,20 +476,38 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     const cur = getEntry(bus);
     if (!cur.flags.includes(pickedFlag)) save(bus, { ...cur, flags: [...cur.flags, pickedFlag] });
   }
-  function removeFromFlag(bus: string) {
+  function entryWithoutPickedFlag(bus: string): FlagEntry {
     const cur = getEntry(bus);
     if (pickedFlag === NOTE_FLAG) {
-      save(bus, { ...cur, note: "" });
-      setPending((p) => p.filter((b) => b !== bus));
-      return;
+      return { ...cur, note: "" };
     }
     const patch: FlagEntry = pickedFlag === "inspection"
       ? removeInspection(cur)
       : { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
     if (pickedFlag === "retorque") patch.retorqueTires = [];
     if (pickedFlag === "hold") patch.holdReason = "";
-    save(bus, patch);
+    return patch;
+  }
+  function removeFromFlag(bus: string) {
+    save(bus, entryWithoutPickedFlag(bus));
     setPending((p) => p.filter((b) => b !== bus));
+  }
+  async function removeFlagFromAll() {
+    if (!flagBuses.length || bulkRemoving) return;
+    const name = pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag);
+    if (!window.confirm(`Remove ${name} from all ${flagBuses.length} matching buses?`)) return;
+    setBulkRemoving(true);
+    let failed = 0;
+    try {
+      for (const bus of flagBuses) {
+        const response = await save(bus, entryWithoutPickedFlag(bus));
+        if (!response?.ok) failed += 1;
+      }
+      setPending([]);
+    } finally {
+      setBulkRemoving(false);
+    }
+    if (failed) window.alert(`${failed} bus update${failed === 1 ? "" : "s"} could not be saved. Please try again.`);
   }
   function setTiresFor(bus: string, tires: string[]) {
     const cur = getEntry(bus);
@@ -501,6 +533,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
       overlayClassName="modal-backdrop no-print"
       contentClassName="modal modal--tall modal--flags"
       label="Edit flags"
+      onOpenFocus={() => flagSearchRef.current?.focus({ preventScroll: true })}
     >
       <div className={`manager__inner${tab === "bus" && openBus ? " manager__inner--fit" : ""}`}>
         <div className="manager__bar">
@@ -539,7 +572,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         {tab === "bus" &&
           (openBus ? (
             <div className="manager__list">
-              <FlagPicker key={openBus} entry={getEntry(openBus)} onChange={(e) => save(openBus, e)} />
+              <FlagPicker key={openBus} entry={getEntry(openBus)} onChange={(e) => save(openBus, e)} searchRef={flagSearchRef} />
             </div>
           ) : (
             <>
@@ -654,6 +687,12 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                 {flagBuses.length} bus{flagBuses.length === 1 ? "" : "es"}{" "}
                 {pickedFlag === NOTE_FLAG ? "with a note" : `flagged ${flagName(pickedFlag)}`}
               </span>
+              {flagBuses.length > 0 && (
+                <button className="byflag__bulk" onClick={removeFlagFromAll} disabled={bulkRemoving}>
+                  <Trash2 size={14} />
+                  {bulkRemoving ? "Removing..." : "Remove from all"}
+                </button>
+              )}
             </div>
 
             <div className="manager__list">

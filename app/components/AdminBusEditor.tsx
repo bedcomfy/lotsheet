@@ -245,7 +245,7 @@ export default function AdminBusEditor() {
     );
   }
 
-  function TagRows({ rows, removable }: { rows: BusTypeAdminRow[]; removable: boolean }) {
+  function renderTagRows(rows: BusTypeAdminRow[], removable: boolean) {
     return (
       <div className="bustypes">
         {rows.map((row) => (
@@ -325,12 +325,12 @@ export default function AdminBusEditor() {
             <section className="fleetsetup__section">
               <div className="fleetsetup__head"><div><h3>Model tags</h3><p>Inherited from a bus model, such as HEV, 30', or COACH.</p></div>
                 <button className="btn" onClick={addModelTag}><Plus size={16} /> Add tag</button></div>
-              <TagRows rows={modelTagRows} removable />
+              {renderTagRows(modelTagRows, true)}
             </section>
 
             <section className="fleetsetup__section">
               <div className="fleetsetup__head"><div><h3>Wraps</h3><p>Applied on top of the model. Standard stays blank; Pulse continues to show P.</p></div></div>
-              <TagRows rows={wrapRows} removable={false} />
+              {renderTagRows(wrapRows, false)}
             </section>
 
             <section className="fleetsetup__section">

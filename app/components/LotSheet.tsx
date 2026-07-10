@@ -1446,10 +1446,10 @@ export default function LotSheet() {
         <button
           className="servicechips"
           onClick={() => setMissingOpen(true)}
-          title="Ready buses are on the grid. Not-ready buses are in lots, shop, or off property."
+          title="Usable buses are on the grid. Out of Service buses are in lots, shop, or off property."
         >
-          <span className="servicechip servicechip--ready">{readyForServiceCount} ready</span>
-          <span className="servicechip servicechip--notready">{notReadyForServiceCount} not ready</span>
+          <span className="servicechip servicechip--ready">{readyForServiceCount} Usable</span>
+          <span className="servicechip servicechip--notready">{notReadyForServiceCount} Out of Service</span>
         </button>
         <button
           className={`statchip ${missingBuses.length ? "statchip--warn" : ""}`}
