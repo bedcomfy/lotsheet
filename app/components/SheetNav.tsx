@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, Bus, ChevronDown, ClipboardList, Droplets, FileText, Flag, Fuel, Home, RefreshCw, SearchCode, Users, Wrench } from "lucide-react";
+import { Activity, Bus, ClipboardList, Droplets, FileText, Flag, Fuel, Home, RefreshCw, SearchCode, Users, Wrench } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { APP_VERSION } from "../lib/appVersion";
 
@@ -51,8 +50,6 @@ export default function SheetNav() {
   const router = useRouter();
   const pathname = usePathname();
   const current = pathname && SHEETS.some((s) => s.path === pathname) ? pathname : "/";
-  const [utilitiesOpen, setUtilitiesOpen] = useState(() => UTILITY_LINKS.some((s) => s.path === current));
-  const [adminOpen, setAdminOpen] = useState(() => ADMIN_LINKS.some((s) => s.path === current));
   const renderLink = (sheet: SheetLink) => {
     const Icon = sheet.icon;
     return (
@@ -115,27 +112,13 @@ export default function SheetNav() {
       </div>
 
       <div className="appnav__section">
-        <button
-          className="appnav__sectiontoggle"
-          onClick={() => setUtilitiesOpen((open) => !open)}
-          aria-expanded={utilitiesOpen}
-        >
-          <span>Utilities</span>
-          <ChevronDown size={15} className={utilitiesOpen ? "appnav__chev appnav__chev--open" : "appnav__chev"} />
-        </button>
-        {utilitiesOpen && <div className="appnav__subsection">{UTILITY_LINKS.map(renderLink)}</div>}
+        <div className="appnav__sectionlabel">Utilities</div>
+        <div className="appnav__subsection">{UTILITY_LINKS.map(renderLink)}</div>
       </div>
 
       <div className="appnav__section">
-        <button
-          className="appnav__sectiontoggle"
-          onClick={() => setAdminOpen((open) => !open)}
-          aria-expanded={adminOpen}
-        >
-          <span>Admin Tools</span>
-          <ChevronDown size={15} className={adminOpen ? "appnav__chev appnav__chev--open" : "appnav__chev"} />
-        </button>
-        {adminOpen && <div className="appnav__subsection">{ADMIN_LINKS.map(renderLink)}</div>}
+        <div className="appnav__sectionlabel">Admin Tools</div>
+        <div className="appnav__subsection">{ADMIN_LINKS.map(renderLink)}</div>
       </div>
 
       <div className="appnav__section appnav__section--bottom">

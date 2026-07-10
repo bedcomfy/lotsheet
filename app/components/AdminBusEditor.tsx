@@ -381,10 +381,10 @@ export default function AdminBusEditor() {
           {shown.map((bus) => {
             const selectedModelId = busModelId(bus);
             return (
-              <div className={`busrow ${bus.status === "retired" ? "busrow--retired" : ""}`} key={bus.num}>
-                <div className="busrow__head">
-                  <span className="busrow__num">{bus.name ? `${bus.name} (${bus.num})` : bus.num}</span>
-                  <span className="busrow__preview"><CodePreview bus={bus} /></span>
+              <div className={`fleetrow ${bus.status === "retired" ? "fleetrow--retired" : ""}`} key={bus.num}>
+                <div className="fleetrow__head">
+                  <span className="fleetrow__num">{bus.name ? `${bus.name} (${bus.num})` : bus.num}</span>
+                  <span className="fleetrow__preview"><CodePreview bus={bus} /></span>
                   <div className="toolbar__spacer" />
                   <label className="buslist__field"><span className="buslist__fieldlabel">Status</span>
                     <select className="buslist__sel" value={bus.status || "active"} onChange={(event) => updateBus(bus.num, { status: event.target.value })}>
@@ -395,7 +395,7 @@ export default function AdminBusEditor() {
                       onChange={(event) => updateBus(bus.num, { lane: event.target.checked })} /> Fuel/DEF
                   </label>
                 </div>
-                <div className="busrow__assignments">
+                <div className="fleetrow__assignments">
                   <label className="buslist__field"><span className="buslist__fieldlabel">Model</span>
                     <select className="buslist__typesel" value={selectedModelId} onChange={(event) => assignModel(bus, event.target.value)}>
                       {!selectedModelId && <option value="">Choose model</option>}

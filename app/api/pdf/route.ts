@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "29"; // inspection cleanup plus model/wrap tag configuration
+const PDF_VERSION = "30"; // shared date pickers and updated sheet controls
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).

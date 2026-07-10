@@ -12,6 +12,7 @@ import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanel";
 import LotEditor from "./LotEditor";
+import DatePickerField from "./DatePickerField";
 import { chicagoParts } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import type { Employee, FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
@@ -283,6 +284,14 @@ export default function TurnoverSheet() {
   // as the lots change) until the box is cleared.
   const foundBus = findVal.length >= 4 ? findVal : "";
   const foundWhere = foundBus ? locateLot(foundBus) : "";
+  const turnoverDate = [data.cells["date-m"], data.cells["date-d"], data.cells["date-y"]].filter(Boolean).join("/");
+  function setTurnoverDate(value: string) {
+    const [month = "", day = "", year = ""] = value.split("/");
+    setData((current) => ({
+      ...current,
+      cells: { ...current.cells, "date-m": month, "date-d": day, "date-y": year },
+    }));
+  }
 
   // Pull a bus out of whichever lot it currently sits in so it can be added
   // elsewhere — powers the lot editor's "Move it here". BAY is positional
@@ -510,6 +519,13 @@ export default function TurnoverSheet() {
 
       <div className="toolbar no-print">
         <div className="toolbar__title">Turnover Sheet</div>
+        <DatePickerField
+          className="toolbar__date"
+          value={turnoverDate}
+          onValueChange={setTurnoverDate}
+          shortYear
+          ariaLabel="Turnover Sheet date"
+        />
         <div className="findbox" title="Type a bus number to see which lot it's in">
           <Search size={15} />
           <input
@@ -517,7 +533,6 @@ export default function TurnoverSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onFocus={(e) => e.target.select()}
             onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
           />
           {foundBus && <span className="findbox__msg">{foundWhere || "Not on this sheet"}</span>}

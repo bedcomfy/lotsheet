@@ -45,6 +45,7 @@ import RowFill from "./RowFill";
 import PrevSheets from "./PrevSheets";
 import ToolMenu from "./ToolMenu";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
+import DatePickerField from "./DatePickerField";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
@@ -1359,6 +1360,8 @@ export default function LotSheet() {
   const fleet = fleetStats(sheet, flags, masterBuses);
   const onGridCount = fleet.onGrid.size;
   const inLotsCount = fleet.inLots.size;
+  const readyForServiceCount = fleet.readyForService.size;
+  const notReadyForServiceCount = fleet.notReadyForService.size;
   // Off-property and in-shop flags keep unplaced active buses out of Missing;
   // they remain listed for reference in the status dialog.
   const missingBuses = fleet.missing;
@@ -1425,7 +1428,6 @@ export default function LotSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onFocus={(e) => e.target.select()}
             onChange={(e) => {
               const v = sanitizeBus(e.target.value);
               setFindVal(v);
@@ -1441,6 +1443,14 @@ export default function LotSheet() {
           )}
         </div>
         <div className="toolbar__spacer" />
+        <button
+          className="servicechips"
+          onClick={() => setMissingOpen(true)}
+          title="Ready buses are on the grid. Not-ready buses are in lots, shop, or off property."
+        >
+          <span className="servicechip servicechip--ready">{readyForServiceCount} ready</span>
+          <span className="servicechip servicechip--notready">{notReadyForServiceCount} not ready</span>
+        </button>
         <button
           className={`statchip ${missingBuses.length ? "statchip--warn" : ""}`}
           onClick={() => setMissingOpen(true)}
@@ -1565,9 +1575,10 @@ export default function LotSheet() {
               <div className="head__title">LOT SHEET</div>
               <div className="head__field head__date">
                 <label>DATE:</label>
-                <input
+                <DatePickerField
                   value={headerDate}
-                  onChange={(e) => setField("date", e.target.value)}
+                  onValueChange={(value) => setField("date", value)}
+                  ariaLabel="Lot Sheet date"
                 />
               </div>
             </div>

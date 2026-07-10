@@ -265,7 +265,6 @@ export default function ShopSheet() {
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onFocus={(e) => e.target.select()}
             onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
           />
           {foundBus && <span className="findbox__msg">{foundWhere || "Not placed anywhere"}</span>}

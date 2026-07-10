@@ -26,6 +26,8 @@ export interface FleetStats {
   inLots: Set<string>;
   inShop: Set<string>;
   offProperty: Set<string>;
+  readyForService: Set<string>;
+  notReadyForService: Set<string>;
   accounted: Set<string>;
   missing: string[];
   accountedByFlagOnly: string[];
@@ -59,15 +61,25 @@ export function fleetStats(
   // R/C and lane buses belong to neither displayed category, but they are still
   // at a known location and therefore cannot be Missing.
   const physicallyPlaced = new Set([...onGrid, ...allLocated]);
-  const accounted = new Set([...physicallyPlaced, ...offProperty, ...inShopByFlag]);
   const active = masterBuses.filter((bus) => bus.status !== "retired").map((bus) => bus.num);
+  const activeSet = new Set(active);
+  const activeOffProperty = new Set([...offProperty].filter((bus) => activeSet.has(bus)));
+  const readyForService = new Set([...onGrid].filter((bus) => activeSet.has(bus)));
+  const notReadyForService = new Set(
+    [...inLots, ...inShop, ...inShopByFlag, ...activeOffProperty].filter(
+      (bus) => activeSet.has(bus) && !readyForService.has(bus)
+    )
+  );
+  const accounted = new Set([...physicallyPlaced, ...offProperty, ...inShopByFlag]);
   const sortBuses = (list: string[]) => list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   return {
     onGrid,
     inLots,
     inShop,
-    offProperty,
+    offProperty: activeOffProperty,
+    readyForService,
+    notReadyForService,
     accounted,
     missing: sortBuses(active.filter((bus) => !accounted.has(bus))),
     accountedByFlagOnly: sortBuses(active.filter((bus) => !physicallyPlaced.has(bus) && accounted.has(bus))),

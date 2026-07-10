@@ -11,6 +11,9 @@ import {
   ListChecks,
   RefreshCw,
   Search,
+  CheckCircle2,
+  CircleAlert,
+  MapPinOff,
   ShieldAlert,
   Wrench,
 } from "lucide-react";
@@ -82,6 +85,9 @@ export default function HomeDashboard() {
       grid: fleet.onGrid.size,
       lots: fleet.inLots.size,
       shop: fleet.inShop.size,
+      offProperty: fleet.offProperty.size,
+      ready: fleet.readyForService.size,
+      notReady: fleet.notReadyForService.size,
       flagged,
       missing: fleet.missing.length,
     };
@@ -126,7 +132,20 @@ export default function HomeDashboard() {
         </div>
       </section>
 
-      <section className="homegrid homegrid--stats" aria-label="Daily status">
+      <section className="homegrid homegrid--service" aria-label="Service readiness">
+        <button className="homecard statcard statcard--ready" onClick={() => router.push("/")}>
+          <CheckCircle2 size={18} />
+          <span className="statcard__value">{stats.ready}</span>
+          <span className="statcard__label">Ready for service</span>
+        </button>
+        <button className="homecard statcard statcard--notready" onClick={() => router.push("/")}>
+          <CircleAlert size={18} />
+          <span className="statcard__value">{stats.notReady}</span>
+          <span className="statcard__label">Not ready for service</span>
+        </button>
+      </section>
+
+      <section className="homegrid homegrid--stats" aria-label="Daily locations">
         <button className="homecard statcard" onClick={() => router.push("/")}>
           <Gauge size={18} />
           <span className="statcard__value">{stats.grid}</span>
@@ -146,6 +165,11 @@ export default function HomeDashboard() {
           <ShieldAlert size={18} />
           <span className="statcard__value">{stats.missing}</span>
           <span className="statcard__label">Missing</span>
+        </button>
+        <button className="homecard statcard" onClick={() => router.push("/")}>
+          <MapPinOff size={18} />
+          <span className="statcard__value">{stats.offProperty}</span>
+          <span className="statcard__label">Off property</span>
         </button>
       </section>
 

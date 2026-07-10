@@ -5,6 +5,7 @@ import { openSheetPdf } from "../lib/pdf";
 import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen } from "lucide-react";
 import ToolMenu from "./ToolMenu";
 import WorkOrderHistory from "./WorkOrderHistory";
+import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 
 const STORAGE_KEY = "workorder";
@@ -313,13 +314,17 @@ export default function WorkOrderSheet() {
             <tr>
               <td><input className="wo-in" value={data.workOrderNumber} onChange={(e) => setField("workOrderNumber", e.target.value)} /></td>
               <td><input className="wo-in" value={data.vehicleNumber} onChange={(e) => setField("vehicleNumber", e.target.value)} /></td>
-              <td><input className="wo-in" value={data.todaysDate} onChange={(e) => setField("todaysDate", e.target.value)} /></td>
+              <td><DatePickerField className="wo-in" value={data.todaysDate} onValueChange={(value) => setField("todaysDate", value)} shortYear ariaLabel="Today's date" /></td>
             </tr>
             {HEADER_ROWS.map(([field, label]) => (
               <tr key={field}>
                 <td className="wo-lbl">{label}</td>
                 <td colSpan={2}>
-                  <input className="wo-in" value={String(data[field] || "")} onChange={(e) => setField(field, e.target.value)} />
+                  {field === "workOrderCreationDate" ? (
+                    <DatePickerField className="wo-in" value={String(data[field] || "")} onValueChange={(value) => setField(field, value)} ariaLabel="Work order creation date" />
+                  ) : (
+                    <input className="wo-in" value={String(data[field] || "")} onChange={(e) => setField(field, e.target.value)} />
+                  )}
                 </td>
               </tr>
             ))}
@@ -352,7 +357,7 @@ export default function WorkOrderSheet() {
                 <td><input className="wo-in" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
-                <td><input className="wo-in wo-in--c" value={o.date} onChange={(e) => setOperation(o.id, { date: e.target.value })} placeholder="___/___/____" /></td>
+                <td><DatePickerField className="wo-in wo-in--c" value={o.date} onValueChange={(value) => setOperation(o.id, { date: value })} ariaLabel={`Operation ${o.num || "date"}`} /></td>
                 <td><input className="wo-in wo-in--c" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} placeholder="____.__" /></td>
                 <td><input className="wo-in wo-in--c" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} placeholder="__________" /></td>
                 {!printMode && (

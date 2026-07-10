@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.16 - 2026-07-10
+
+- Reworked search and admin text fields so the full visible control is clickable, with a neutral outlined focus treatment instead of nested blue focus boxes.
+- Added consistent native date pickers to the Lot, Turnover, Fuel, DEF, and Work Order sheets while preserving their stored and printed date formats.
+- Kept Utilities and Admin Tools permanently visible in the desktop sidebar.
+- Reduced heavy typography across navigation and admin pages, and removed the unintended card styling from Fleet rows.
+- Added Ready for Service and Not Ready for Service indicators using live sheet locations, plus an Off Property status card on Home.
+
 ## 0.1.15 - 2026-07-10
 
 - Removed repeated inspection shortcuts such as C-24 from flag displays when the linked object-code description already identifies the inspection type.

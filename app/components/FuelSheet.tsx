@@ -10,6 +10,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
 import ManagerPanel from "./ManagerPanel";
 import SheetHistory from "./SheetHistory";
+import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
@@ -290,6 +291,13 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     <div className="app">
       <div className="toolbar no-print">
         <div className="toolbar__title">{title}</div>
+        <DatePickerField
+          className="toolbar__date"
+          value={data.date || displayDate}
+          onValueChange={(value) => setField("date", value)}
+          shortYear
+          ariaLabel={`${title} date`}
+        />
         <div className="toolbar__spacer" />
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
