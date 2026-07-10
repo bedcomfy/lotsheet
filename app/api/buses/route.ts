@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getState, setState } from "../../lib/store";
-import { DEFAULT_MASTER, LEGACY_CATEGORY_TYPES } from "../../lib/buses";
+import { busModelId, busWrapId, DEFAULT_MASTER, LEGACY_CATEGORY_TYPES } from "../../lib/buses";
 import type { MasterBus } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +42,8 @@ export async function PUT(req: Request) {
       num,
       length: typeof b.length === "string" ? b.length : "",
       model: typeof b.model === "string" ? b.model : "",
+      modelId: busModelId(b),
+      wrapId: busWrapId(b),
       types,
       status: b.status === "retired" ? "retired" : "active",
       lane: !!b.lane,

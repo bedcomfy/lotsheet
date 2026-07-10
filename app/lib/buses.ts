@@ -6,7 +6,7 @@
 //   lane  = included on the Fuel / DEF (service lane) sheets
 
 import { FUEL_COLUMNS } from "./fuelBuses";
-import { BUS_TYPES } from "./grid";
+import { BUS_TYPES, modelIdFromName, modelInfo } from "./grid";
 import type { MasterBus, BusMaster } from "./types";
 
 export interface BusCategory {
@@ -39,13 +39,32 @@ export const LEGACY_CATEGORY_TYPES: Record<string, string[]> = {
   tow: ["tow"],
 };
 
-// The atomic type ids for a bus, tolerating both the new `types` array and the
-// legacy single `type` category. This is the one place that reconciles the two.
-export function busTypeIds(b: MasterBus | null | undefined): string[] {
+function legacyTypeIds(b: MasterBus | null | undefined): string[] {
   if (!b) return [];
   if (Array.isArray(b.types)) return b.types.map((t) => String(t)).filter(Boolean);
   if (typeof b.type === "string" && b.type) return LEGACY_CATEGORY_TYPES[b.type] || [b.type];
   return [];
+}
+
+export function busModelId(b: MasterBus | null | undefined): string {
+  if (!b) return "";
+  return String(b.modelId || "").trim() || modelIdFromName(b.model);
+}
+
+export function busWrapId(b: MasterBus | null | undefined): string {
+  if (!b) return "standard";
+  const explicit = String(b.wrapId || "").trim();
+  if (explicit) return explicit;
+  return legacyTypeIds(b).includes("pulse") ? "pulse" : "standard";
+}
+
+// The atomic type ids for a bus, tolerating both the new `types` array and the
+// legacy single `type` category. This is the one place that reconciles the two.
+export function busTypeIds(b: MasterBus | null | undefined): string[] {
+  if (!b) return [];
+  const profile = modelInfo(busModelId(b));
+  if (profile) return Array.from(new Set([busWrapId(b), profile.typeId].filter(Boolean)));
+  return legacyTypeIds(b);
 }
 
 export const BUS_LENGTHS = ["30 feet", "40 feet"];
@@ -192,11 +211,12 @@ function typeLabel(id: string): string {
   return BUS_TYPES.find((t) => t.id === id)?.label || id;
 }
 export function masterToCsv(buses: MasterBus[]): string {
-  const head = ["Bus Number", "Bus Length", "Bus Model", "Bus Type", "Status", "Fuel/DEF"];
+  const head = ["Bus Number", "Bus Length", "Bus Model", "Model Tag", "Wrap", "Status", "Fuel/DEF"];
   const rows = (buses || []).map((b) => {
-    const ids = busTypeIds(b);
-    const typeCell = ids.length ? ids.map(typeLabel).join(" + ") : "Standard";
-    return [b.num, b.length || "", b.model || "", typeCell, b.status === "retired" ? "Retired" : "Active", b.lane ? "Yes" : "No"]
+    const profile = modelInfo(busModelId(b));
+    const modelTag = profile?.typeId ? typeLabel(profile.typeId) : "";
+    return [b.num, profile?.length || b.length || "", profile?.label || b.model || "", modelTag, typeLabel(busWrapId(b)),
+      b.status === "retired" ? "Retired" : "Active", b.lane ? "Yes" : "No"]
       .map(csvCell)
       .join(",");
   });
@@ -213,7 +233,8 @@ export function csvToMaster(text: string): BusMaster {
   const iNum = col("number") >= 0 ? col("number") : 0;
   const iLen = col("length");
   const iModel = col("model");
-  const iType = col("type");
+  const iType = header.findIndex((h) => h.includes("model tag") || h === "bus type" || h === "type");
+  const iWrap = col("wrap");
   const iStatus = col("status");
   const iLane = col("fuel", "lane", "def");
   // Legacy category labels/ids (old CSVs stored one "Bus Type" like "Pulse & Hybrid").
@@ -232,6 +253,11 @@ export function csvToMaster(text: string): BusMaster {
     const ids = cell.split("+").map(matchTypeId).filter(Boolean);
     return ids.length ? Array.from(new Set(ids)) : ["standard"];
   };
+  const parseWrap = (raw: string, legacyTypes: string[]): string => {
+    const clean = String(raw || "").trim().toLowerCase();
+    const match = BUS_TYPES.find((type) => type.kind === "wrap" && (type.id.toLowerCase() === clean || type.label.toLowerCase() === clean));
+    return match?.id || (legacyTypes.includes("pulse") ? "pulse" : "standard");
+  };
   const seen = new Set<string>();
   const buses: MasterBus[] = [];
   for (let i = 1; i < lines.length; i++) {
@@ -239,11 +265,16 @@ export function csvToMaster(text: string): BusMaster {
     const num = sanitizeBus(cells[iNum] || "");
     if (num.length < 4 || seen.has(num)) continue;
     seen.add(num);
+    const model = iModel >= 0 ? (cells[iModel] || "").trim() : "";
+    const legacyTypes = parseTypes(iType >= 0 ? cells[iType] || "" : "");
+    const wrapId = parseWrap(iWrap >= 0 ? cells[iWrap] || "" : "", legacyTypes);
     buses.push({
       num,
       length: iLen >= 0 ? (cells[iLen] || "").trim() : "",
-      model: iModel >= 0 ? (cells[iModel] || "").trim() : "",
-      types: parseTypes(iType >= 0 ? cells[iType] || "" : ""),
+      model,
+      modelId: modelIdFromName(model),
+      wrapId,
+      types: Array.from(new Set([...legacyTypes, wrapId])),
       status: /retire/i.test((iStatus >= 0 ? cells[iStatus] : "") || "") ? "retired" : "active",
       lane: iLane >= 0 ? /^(y|t|1)/i.test((cells[iLane] || "").trim()) : false,
     });

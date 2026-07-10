@@ -64,7 +64,7 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
           <div>
             <div className="modal__title">Edit full list (CSV)</div>
             <div className="modal__sub">
-              Columns: Bus Number, Bus Length, Bus Model, Bus Type, Status, Fuel/DEF. Edit or paste, then Save.
+              Columns: Bus Number, Bus Length, Bus Model, Model Tag, Wrap, Status, Fuel/DEF. Edit or paste, then Save.
             </div>
           </div>
           <button className="modal__close" onClick={onClose} aria-label="Close">

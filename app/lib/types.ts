@@ -78,6 +78,8 @@ export interface MasterBus {
   num: string;
   length?: string;
   model?: string;
+  modelId?: string; // stable link to the admin-managed bus model
+  wrapId?: string; // independent wrap id (standard/pulse)
   // A bus can have MORE THAN ONE type (e.g. Pulse + Hybrid). `types` is the list
   // of atomic type ids (pulse/hybrid/short/coach/tow/standard/custom…). `type` is
   // the legacy single-category field kept for reading old saved data — new writes

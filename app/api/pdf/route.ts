@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "27"; // inspection options attach their object-code flags
+const PDF_VERSION = "29"; // inspection cleanup plus model/wrap tag configuration
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -45,18 +45,37 @@ function signature(data: unknown, maint: boolean): string {
 async function sheetData(path: string, blank: boolean) {
   if (blank) return { blank: true };
   if (path === "/") {
-    const [{ sheet }, flags, flagConfig] = await Promise.all([getSheet(), getFlags(), getState("flag_config")]);
-    return { sheet, flags, flagConfig: flagConfig.value || null };
+    const [{ sheet }, flags, flagConfig, busMaster, busTypeConfig] = await Promise.all([
+      getSheet(),
+      getFlags(),
+      getState("flag_config"),
+      getState("bus_master"),
+      getState("bus_type_config"),
+    ]);
+    return {
+      sheet,
+      flags,
+      flagConfig: flagConfig.value || null,
+      busMaster: busMaster.value || null,
+      busTypeConfig: busTypeConfig.value || null,
+    };
   }
   // Include the universal flags (R/H/I indicators) AND the bus master (the lane
   // list / types) so either change invalidates the cached PDF.
-  const [{ value }, flags, busMaster, flagConfig] = await Promise.all([
+  const [{ value }, flags, busMaster, flagConfig, busTypeConfig] = await Promise.all([
     getState(path.slice(1)),
     getFlags(),
     getState("bus_master"),
     getState("flag_config"),
+    getState("bus_type_config"),
   ]);
-  return { value, flags, busMaster: busMaster.value || null, flagConfig: flagConfig.value || null };
+  return {
+    value,
+    flags,
+    busMaster: busMaster.value || null,
+    flagConfig: flagConfig.value || null,
+    busTypeConfig: busTypeConfig.value || null,
+  };
 }
 
 const PDF_HEADERS = {

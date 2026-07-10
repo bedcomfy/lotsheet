@@ -22,7 +22,6 @@ import {
   flagHasDetail,
   flagRequiresDetail,
   inspectionOptionFromText,
-  inspectionOptionLabel,
   removeInspection,
   setInspectionOption,
 } from "../lib/grid";
@@ -265,8 +264,8 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
     if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
     if (id === "hold" && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
     if (id === "inspection") {
-      const o = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
-      return o ? `Inspection · ${o}` : "Inspection";
+      const miles = inspMilesDisplay(entry);
+      return miles ? `Inspection · ${miles}` : "Inspection";
     }
     return flagName(id);
   }

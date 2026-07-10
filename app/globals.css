@@ -1185,6 +1185,59 @@ textarea:focus-visible {
   padding: 14px 18px 18px;
   border-top: 1px solid var(--edge);
 }
+.fleetsetup {
+  display: flex;
+  flex-direction: column;
+}
+.fleetsetup__section {
+  border-top: 1px solid var(--edge);
+}
+.fleetsetup__section:first-child {
+  border-top: none;
+}
+.fleetsetup__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  background: var(--surface-2);
+}
+.fleetsetup__head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.fleetsetup__head p {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.busmodels {
+  display: flex;
+  flex-direction: column;
+}
+.busmodel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(180px, 1fr) minmax(110px, 0.55fr) 40px;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border-top: 1px solid var(--edge);
+}
+.busmodel:first-child {
+  border-top: none;
+}
+.busmodel select,
+.busmodel input {
+  min-height: 38px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+}
 
 /* per-bus fleet card */
 .busrow {
@@ -1235,6 +1288,12 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.busrow__assignments {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(140px, 0.45fr);
+  gap: 12px;
+  max-width: 660px;
 }
 .typetoggles {
   display: flex;
@@ -1412,6 +1471,14 @@ textarea:focus-visible {
   .bustype {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+  .busmodel,
+  .busrow__assignments {
+    grid-template-columns: 1fr;
+  }
+  .fleetsetup__head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -4485,6 +4552,28 @@ textarea:focus-visible {
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+}
+.flagedit__filters {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.flagedit__filter {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--edge);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.flagedit__filter--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 .emptable__sort {
   display: inline-flex;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.15 - 2026-07-10
+
+- Removed repeated inspection shortcuts such as C-24 from flag displays when the linked object-code description already identifies the inspection type.
+- Kept inspection details descriptive in compact fuel and DEF summaries that do not list object-code flags separately.
+- Expanded the Flag Editor to all 371 object-code flags with Daily Flags and Object Codes filters.
+- Separated bus models, inherited model tags, and Standard/Pulse wraps while preserving the existing slash-separated sheet badges.
+- Added editable model definitions so changing a model tag updates every linked bus without editing buses one at a time.
+- Included fleet appearance configuration in PDF cache signatures so tag text and color changes invalidate old printouts.
+
 ## 0.1.14 - 2026-07-10
 
 - Added sortable employee columns and a mobile-friendly sort control for names, employee IDs, seniority, hire dates, and classifications.

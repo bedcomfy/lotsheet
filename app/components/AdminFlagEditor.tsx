@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Check, RotateCcw, Save, Search } from "lucide-react";
 import {
   applyFlagConfig,
+  editableFlagRows,
   type FlagAdminRow,
   type FlagConfig,
   type FlagConfigEntry,
@@ -29,6 +30,7 @@ const DEPTS = [
   { id: "safety", label: "Safety" },
 ];
 const DEPT_LABEL: Record<string, string> = Object.fromEntries(DEPTS.map((d) => [d.id, d.label]));
+const DEFAULT_FLAG_ROWS = new Map(editableFlagRows({ flags: {} }).map((row) => [row.id, row]));
 
 function splitWords(value: string): string[] {
   return value
@@ -48,6 +50,13 @@ function safeColor(value: string): string {
 function rowsToConfig(rows: FlagAdminRow[]): FlagConfig {
   const flags: Record<string, FlagConfigEntry> = {};
   for (const row of rows) {
+    const base = DEFAULT_FLAG_ROWS.get(row.id);
+    const unchanged = !!base &&
+      row.name === base.name && row.label === base.label && row.tier === base.tier && row.color === base.color &&
+      row.quick === base.quick && row.alwaysPrint === base.alwaysPrint && row.department === base.department &&
+      row.active === base.active && row.aliases.join("\u0000") === base.aliases.join("\u0000") &&
+      row.objectCodes.join("\u0000") === base.objectCodes.join("\u0000");
+    if (unchanged) continue;
     flags[row.id] = {
       id: row.id,
       name: row.name.trim(),
@@ -71,6 +80,7 @@ export default function AdminFlagEditor() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [query, setQuery] = useState("");
+  const [scope, setScope] = useState<"all" | "daily" | "object">("daily");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,16 +96,19 @@ export default function AdminFlagEditor() {
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (row) =>
+    return rows.filter((row) => {
+      if (scope === "daily" && row.objectCode) return false;
+      if (scope === "object" && !row.objectCode) return false;
+      if (!q) return true;
+      return (
         row.id.toLowerCase().includes(q) ||
         row.name.toLowerCase().includes(q) ||
         row.label.toLowerCase().includes(q) ||
         row.objectCodes.join(" ").toLowerCase().includes(q) ||
         row.aliases.join(" ").toLowerCase().includes(q)
-    );
-  }, [query, rows]);
+      );
+    });
+  }, [query, rows, scope]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 
@@ -170,6 +183,18 @@ export default function AdminFlagEditor() {
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
+            <div className="flagedit__filters" aria-label="Flag groups">
+              {(["all", "daily", "object"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={scope === value ? "flagedit__filter flagedit__filter--on" : "flagedit__filter"}
+                  onClick={() => setScope(value)}
+                >
+                  {value === "all" ? "All" : value === "daily" ? "Daily flags" : "Object codes"}
+                </button>
+              ))}
+            </div>
             <div className="flagedit__count">{shown.length} flag{shown.length === 1 ? "" : "s"}</div>
             <div className="flagedit__rows">
               {shown.length === 0 && <div className="lotlist__empty">No flags match.</div>}
@@ -185,6 +210,7 @@ export default function AdminFlagEditor() {
                       {row.name || row.id}
                       {!row.active && <em className="flagrow2__tag">hidden</em>}
                       {row.quick && <em className="flagrow2__tag flagrow2__tag--quick">quick</em>}
+                      {row.objectCode && <em className="flagrow2__tag">object code</em>}
                     </span>
                     <span className="flagrow2__meta">
                       <span className="flagrow2__code" style={{ color: safeColor(row.color) }}>{row.label || row.id}</span>
@@ -274,13 +300,20 @@ export default function AdminFlagEditor() {
                     </select>
                   </label>
 
-                  <label className="adminfield adminfield--wide">
-                    <span>Object codes</span>
-                    <ObjectCodePicker
-                      value={selected.objectCodes}
-                      onChange={(codes) => update(selected.id, { objectCodes: codes })}
-                    />
-                  </label>
+                  {selected.objectCode ? (
+                    <label className="adminfield adminfield--wide">
+                      <span>Object code</span>
+                      <input value={selected.objectCodes[0] || selected.label} readOnly aria-readonly="true" />
+                    </label>
+                  ) : (
+                    <label className="adminfield adminfield--wide">
+                      <span>Object codes</span>
+                      <ObjectCodePicker
+                        value={selected.objectCodes}
+                        onChange={(codes) => update(selected.id, { objectCodes: codes })}
+                      />
+                    </label>
+                  )}
 
                   <label className="adminfield adminfield--wide">
                     <span>Search aliases (comma separated)</span>

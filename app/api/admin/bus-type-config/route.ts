@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { editableBusTypeRows, normalizeBusTypeConfig } from "../../../lib/grid";
+import { editableBusModelRows, editableBusTypeRows, normalizeBusTypeConfig } from "../../../lib/grid";
 import { getState, recordAuditEvent, setState } from "../../../lib/store";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export async function GET() {
   return NextResponse.json({
     config,
     types: editableBusTypeRows(config),
+    models: editableBusModelRows(config),
     updatedAt,
   });
 }
@@ -30,6 +31,7 @@ export async function PUT(req: Request) {
     ok: true,
     config,
     types: editableBusTypeRows(config),
+    models: editableBusModelRows(config),
     updatedAt,
   });
 }

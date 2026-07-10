@@ -75,20 +75,43 @@ export interface BusType {
   label: string;
   code: string;
   color: string;
+  kind: "model" | "wrap";
 }
 
 // Bus TYPES — permanent roster properties. A bus can have MORE THAN ONE type
 // (e.g. 25545 is both Pulse and Hybrid). Shown as letter code(s) in the cell
 // corner. Regular buses have no type. Pulse is purple (the buses are purple).
 export const BUS_TYPES: BusType[] = [
-  { id: "standard", label: "Standard", code: "", color: "#475569" },
-  { id: "pulse", label: "Pulse", code: "P", color: "#7c3aed" },
-  { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d" },
-  { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309" },
-  { id: "coach", label: "Coach / Single Door", code: "COACH", color: "#0f766e" },
-  { id: "tow", label: "Tow Truck", code: "TOW", color: "#b91c1c" },
+  { id: "standard", label: "Standard", code: "", color: "#475569", kind: "wrap" },
+  { id: "pulse", label: "Pulse", code: "P", color: "#7c3aed", kind: "wrap" },
+  { id: "hybrid", label: "Hybrid", code: "HEV", color: "#15803d", kind: "model" },
+  { id: "short", label: "Short Bus (30')", code: "30'", color: "#b45309", kind: "model" },
+  { id: "coach", label: "Coach / Single Door", code: "COACH", color: "#0f766e", kind: "model" },
+  { id: "tow", label: "Tow Truck", code: "TOW", color: "#b91c1c", kind: "model" },
 ];
 const BUILTIN_TYPE_IDS = new Set(BUS_TYPES.map((t) => t.id));
+
+export interface BusModel {
+  id: string;
+  label: string;
+  typeId: string;
+  length: string;
+}
+
+export const BUS_MODELS: BusModel[] = [
+  { id: "enc-ez-rider-ii-2010", label: "2010 ENC EZ-Rider II", typeId: "short", length: "30 feet" },
+  { id: "enc-commuter-2013", label: "2013 ENC Commuter", typeId: "coach", length: "40 feet" },
+  { id: "enc-axess-2013", label: "2013 ENC Axess", typeId: "", length: "40 feet" },
+  { id: "enc-axess-2014", label: "2014 ENC Axess", typeId: "", length: "40 feet" },
+  { id: "enc-axess-2015", label: "2015 ENC Axess", typeId: "", length: "40 feet" },
+  { id: "enc-commuter-2016", label: "2016 ENC Commuter", typeId: "coach", length: "40 feet" },
+  { id: "enc-pulse-ss-2016", label: "2016 ENC Pulse SS", typeId: "", length: "40 feet" },
+  { id: "enc-axess-ss-2016", label: "2016 ENC Axess SS", typeId: "", length: "40 feet" },
+  { id: "enc-pulse-axess-ss-2016", label: "2016 ENC Pulse/Axess SS", typeId: "", length: "40 feet" },
+  { id: "gillig-low-floor-hev", label: "Gillig Low Floor Diesel Electric Hybrid", typeId: "hybrid", length: "40 feet" },
+  { id: "tow-truck", label: "Tow Truck", typeId: "tow", length: "" },
+];
+const BUILTIN_MODEL_IDS = new Set(BUS_MODELS.map((model) => model.id));
 
 // ---------- Bus type appearance + list config ----------
 // Admins manage the list of bus types on the Bus Lists page: rename a type's
@@ -102,14 +125,24 @@ export interface BusTypeConfigEntry {
   label?: string;
   code?: string;
   color?: string;
+  kind?: "model" | "wrap";
+  custom?: boolean;
+  removed?: boolean;
+}
+export interface BusModelConfigEntry {
+  id: string;
+  label?: string;
+  typeId?: string;
+  length?: string;
   custom?: boolean;
   removed?: boolean;
 }
 export interface BusTypeConfig {
   types: Record<string, BusTypeConfigEntry>;
+  models: Record<string, BusModelConfigEntry>;
 }
 
-let activeBusTypeConfig: BusTypeConfig = { types: {} };
+let activeBusTypeConfig: BusTypeConfig = { types: {}, models: {} };
 
 function sanitizeBusTypeEntry(id: string, entry: Partial<BusTypeConfigEntry> | null | undefined): BusTypeConfigEntry {
   const color = normalizeColor(entry?.color);
@@ -119,14 +152,27 @@ function sanitizeBusTypeEntry(id: string, entry: Partial<BusTypeConfigEntry> | n
     // code may be blank on purpose (e.g. Standard shows no badge), so keep "".
     ...(typeof entry?.code === "string" ? { code: entry.code.trim() } : {}),
     ...(color ? { color } : {}),
+    ...(entry?.kind === "model" || entry?.kind === "wrap" ? { kind: entry.kind } : {}),
+    ...(entry?.custom === true ? { custom: true } : {}),
+    ...(entry?.removed === true ? { removed: true } : {}),
+  };
+}
+
+function sanitizeBusModelEntry(id: string, entry: Partial<BusModelConfigEntry> | null | undefined): BusModelConfigEntry {
+  return {
+    id,
+    ...(typeof entry?.label === "string" && entry.label.trim() ? { label: entry.label.trim() } : {}),
+    ...(typeof entry?.typeId === "string" ? { typeId: entry.typeId.trim() } : {}),
+    ...(typeof entry?.length === "string" ? { length: entry.length.trim() } : {}),
     ...(entry?.custom === true ? { custom: true } : {}),
     ...(entry?.removed === true ? { removed: true } : {}),
   };
 }
 
 export function normalizeBusTypeConfig(input: unknown): BusTypeConfig {
-  const raw = input && typeof input === "object" ? (input as { types?: unknown }).types : null;
-  const out: BusTypeConfig = { types: {} };
+  const source = input && typeof input === "object" ? (input as { types?: unknown; models?: unknown }) : {};
+  const raw = source.types;
+  const out: BusTypeConfig = { types: {}, models: {} };
   if (raw && typeof raw === "object") {
     for (const [id, value] of Object.entries(raw as Record<string, Partial<BusTypeConfigEntry>>)) {
       const cleanId = String(id || "").trim();
@@ -134,6 +180,14 @@ export function normalizeBusTypeConfig(input: unknown): BusTypeConfig {
       const entry = sanitizeBusTypeEntry(cleanId, value);
       // Keep built-in overrides, removal markers, and custom types; drop junk.
       if (BUILTIN_TYPE_IDS.has(cleanId) || entry.custom || entry.removed) out.types[cleanId] = entry;
+    }
+  }
+  if (source.models && typeof source.models === "object") {
+    for (const [id, value] of Object.entries(source.models as Record<string, Partial<BusModelConfigEntry>>)) {
+      const cleanId = String(id || "").trim();
+      if (!cleanId) continue;
+      const entry = sanitizeBusModelEntry(cleanId, value);
+      if (BUILTIN_MODEL_IDS.has(cleanId) || entry.custom || entry.removed) out.models[cleanId] = entry;
     }
   }
   return out;
@@ -158,11 +212,12 @@ export function effectiveBusTypes(): BusType[] {
       label: c?.label || b.label,
       code: c && "code" in c ? c.code || "" : b.code,
       color: c?.color || b.color,
+      kind: c?.kind || b.kind,
     });
   }
   for (const c of Object.values(cfg)) {
     if (!c.custom || c.removed || BUILTIN_TYPE_IDS.has(c.id)) continue;
-    out.push({ id: c.id, label: c.label || c.id, code: c.code || "", color: c.color || "#475569" });
+    out.push({ id: c.id, label: c.label || c.id, code: c.code || "", color: c.color || "#475569", kind: c.kind || "model" });
   }
   return out;
 }
@@ -176,6 +231,7 @@ export interface BusTypeAdminRow {
   label: string;
   code: string;
   color: string;
+  kind: "model" | "wrap";
   builtin: boolean;
 }
 
@@ -185,6 +241,49 @@ export function editableBusTypeRows(configInput?: unknown): BusTypeAdminRow[] {
   const previous = activeBusTypeConfig;
   if (configInput !== undefined) activeBusTypeConfig = normalizeBusTypeConfig(configInput);
   const rows = effectiveBusTypes().map((t) => ({ ...t, builtin: BUILTIN_TYPE_IDS.has(t.id) }));
+  if (configInput !== undefined) activeBusTypeConfig = previous;
+  return rows;
+}
+
+export interface BusModelAdminRow extends BusModel {
+  builtin: boolean;
+}
+
+export function effectiveBusModels(): BusModel[] {
+  const cfg = activeBusTypeConfig.models;
+  const out: BusModel[] = [];
+  for (const model of BUS_MODELS) {
+    const override = cfg[model.id];
+    if (override?.removed) continue;
+    out.push({
+      id: model.id,
+      label: override?.label || model.label,
+      typeId: override && "typeId" in override ? override.typeId || "" : model.typeId,
+      length: override && "length" in override ? override.length || "" : model.length,
+    });
+  }
+  for (const model of Object.values(cfg)) {
+    if (!model.custom || model.removed || BUILTIN_MODEL_IDS.has(model.id)) continue;
+    out.push({ id: model.id, label: model.label || model.id, typeId: model.typeId || "", length: model.length || "" });
+  }
+  return out;
+}
+
+export function modelInfo(id: string | null | undefined): BusModel | null {
+  if (!id) return null;
+  return effectiveBusModels().find((model) => model.id === id) || null;
+}
+
+export function modelIdFromName(name: string | null | undefined): string {
+  const clean = String(name || "").trim().toLowerCase();
+  return effectiveBusModels().find((model) => model.label.toLowerCase() === clean)?.id ||
+    BUS_MODELS.find((model) => model.label.toLowerCase() === clean)?.id || "";
+}
+
+export function editableBusModelRows(configInput?: unknown): BusModelAdminRow[] {
+  const previous = activeBusTypeConfig;
+  if (configInput !== undefined) activeBusTypeConfig = normalizeBusTypeConfig(configInput);
+  const rows = effectiveBusModels().map((model) => ({ ...model, builtin: BUILTIN_MODEL_IDS.has(model.id) }));
   if (configInput !== undefined) activeBusTypeConfig = previous;
   return rows;
 }
@@ -340,6 +439,7 @@ export function flagObjectCodes(id: string): string[] {
 
 export interface FlagAdminRow {
   id: string;
+  objectCode: boolean;
   name: string;
   label: string;
   tier: FlagTier;
@@ -355,10 +455,11 @@ export interface FlagAdminRow {
 export function editableFlagRows(configInput?: unknown): FlagAdminRow[] {
   const previous = activeFlagConfig;
   if (configInput !== undefined) activeFlagConfig = normalizeFlagConfig(configInput);
-  const rows = FLAGS.filter((flag) => flag.id !== "none").map((flag) => {
+  const rows = ALL_FLAGS.filter((flag) => flag.id !== "none").map((flag) => {
     const override = flagConfigEntry(flag.id);
     return {
       id: flag.id,
+      objectCode: flag.objectCode === true,
       name: flagName(flag.id),
       label: flagLabel(flag.id),
       tier: flagTier(flag.id),
@@ -448,6 +549,11 @@ export function inspectionOptionFromText(value: string | null | undefined): Insp
 
 export function inspectionOptionLabel(value: string | null | undefined): string {
   return inspectionOptionFromText(value)?.label || String(value || "").trim();
+}
+
+function inspectionObjectCodeDescription(entry: FlagEntry | null | undefined): string {
+  const option = inspectionOptionFromText(entry?.inspOption);
+  return option ? flagName(objectCodeFlagId(option.objectCode)) : "";
 }
 
 const INSPECTION_OBJECT_FLAGS = new Set(INSPECTION_OPTIONS.map((option) => objectCodeFlagId(option.objectCode)));
@@ -776,10 +882,11 @@ export function flagsAndNote(entry: FlagEntry | null | undefined): string {
   return parts.join(", ");
 }
 
-// flagsAndNote plus the inspection mileage, for the lot lists / flag summary.
+// Object-code descriptions already identify the inspection type, so only append
+// legacy mileage details that are not represented by an object-code flag.
 export function flagsFullDisplay(entry: FlagEntry | null | undefined): string {
   const base = flagsAndNote(entry);
-  const detail = (entry && entry.inspOption ? inspectionOptionLabel(entry.inspOption) : "") || inspMilesDisplay(entry);
+  const detail = inspMilesDisplay(entry);
   if (base && detail) return `${base} · ${detail}`;
   return base || detail;
 }
@@ -869,7 +976,7 @@ export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[]
     for (const id of FUEL_SUMMARY_FLAGS) {
       if (!entry.flags.includes(id)) continue;
       let detail = "";
-      if (id === "inspection") detail = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
+      if (id === "inspection") detail = inspectionObjectCodeDescription(entry) || inspMilesDisplay(entry);
       else if (id === "hold") detail = (entry.holdReason || "").trim();
       else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       items.push({ id, label: flagLabel(id), detail });
@@ -897,7 +1004,7 @@ export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSect
     if (idx === -1) continue;
     const items: FlagItem[] = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
       let detail = "";
-      if (f === "inspection") detail = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
+      if (f === "inspection") detail = inspectionObjectCodeDescription(entry) || inspMilesDisplay(entry);
       else if (f === "hold") detail = (entry.holdReason || "").trim();
       else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       return { id: f, label: flagLabel(f), detail };
