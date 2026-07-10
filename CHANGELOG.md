@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.14 - 2026-07-10
+
+- Added sortable employee columns and a mobile-friendly sort control for names, employee IDs, seniority, hire dates, and classifications.
+- Linked every inspection chip to its authoritative object-code flag, including all A/B/C mileage intervals.
+- Added Transmission PM-75000 as an inspection option linked to object code 1375.
+- Recognized typed inspection shorthand such as C-24, PMC-24000, full PM descriptions, and transmission PM wording instead of saving them as Other notes.
+- Normalized existing saved inspection options so their matching object-code flags appear automatically.
+
 ## 0.1.13 - 2026-07-10
 
 - Spelled out object-code descriptions on-screen and in PDFs for the Turnover sheet and Buses with Flags summary while keeping compact Lot Sheet cells short.

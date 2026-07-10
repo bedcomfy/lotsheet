@@ -22,6 +22,7 @@ import type { Pool as PgPool } from "pg";
 import { mergeLotSheet } from "./lotSheetMerge";
 import { applyLotSheetOpsToSheet, normalizeOps, type LotSheetOp, type LotSheetOpRecord } from "./lotSheetOps";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
+import { inspectionOptionFromText, setInspectionOption } from "./grid";
 
 const IS_PROD = process.env.VERCEL_ENV === "production";
 
@@ -72,7 +73,7 @@ function toEntry(v: unknown): FlagEntry {
   // A retorque needs a tire (a hold can stand on its own, reason optional).
   if (flags.includes("retorque") && retorqueTires.length === 0) flags = flags.filter((f) => f !== "retorque");
   const inspOption = flags.includes("inspection") && typeof o.inspOption === "string" ? o.inspOption.trim() : "";
-  return {
+  const entry: FlagEntry = {
     flags,
     note: typeof o.note === "string" ? o.note : "",
     inspMiles: toMiles(o.inspMiles),
@@ -80,6 +81,7 @@ function toEntry(v: unknown): FlagEntry {
     retorqueTires,
     inspOption,
   };
+  return inspectionOptionFromText(inspOption) ? setInspectionOption(entry, inspOption) : entry;
 }
 function isEmpty(e: FlagEntry): boolean {
   return !e.flags.length && !(e.note && e.note.trim());

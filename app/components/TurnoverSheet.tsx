@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { closestFlagMatch, flagsFullDisplay } from "../lib/grid";
+import { closestFlagMatch, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
 import { History, Eraser, FileDown, Search, X } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -164,8 +164,11 @@ export default function TurnoverSheet() {
     const current = latest[bus] || {
       flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "",
     };
-    const matched = closestFlagMatch(typed);
-    const next: FlagEntry = matched
+    const inspection = inspectionOptionFromText(typed);
+    const matched = inspection ? null : closestFlagMatch(typed);
+    const next: FlagEntry = inspection
+      ? setInspectionOption(current, inspection.id)
+      : matched
       ? { ...current, flags: Array.from(new Set([...(current.flags || []), matched.id])) }
       : {
           ...current,

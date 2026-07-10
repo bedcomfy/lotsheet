@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay, flagColorStyle } from "../lib/grid";
+import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay, flagColorStyle, inspectionOptionLabel } from "../lib/grid";
 import type { FlagEntry } from "../lib/types";
 
 // Pill color by severity — one shared visual language across every menu.
@@ -16,7 +16,7 @@ function pillText(id: string, entry: FlagEntry): string {
   if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
   if (id === "hold") return (entry.holdReason || "").trim() ? `Hold · ${entry.holdReason}` : "Hold";
   if (id === "inspection") {
-    const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+    const o = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
     return o ? `Inspection · ${o}` : "Inspection";
   }
   return flagName(id);

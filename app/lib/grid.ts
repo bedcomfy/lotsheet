@@ -9,7 +9,7 @@
 // blocked "X" sits where slot 40 would have been in ROW 10.
 
 import type { FlagEntry, FlagMap } from "./types";
-import { OBJECT_CODE_FLAGS, objectCodeFromFlagId } from "./objectCodes";
+import { OBJECT_CODE_FLAGS, objectCodeFlagId, objectCodeFromFlagId } from "./objectCodes";
 
 export const SLOTS: (number | string | null)[][] = [
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null],
@@ -286,7 +286,7 @@ export const FLAGS: FlagDef[] = [
   { id: "eng", label: "ENG", objectCodes: ["0800", "5008"] },
   { id: "trans", label: "TRANS", objectCodes: ["1300", "5013"] },
   { id: "oos", label: "OUT OF SERVICE" },
-  { id: "inspection", label: "INSPECTION", objectCodes: ["6500", "6603", "6706", "6800"] },
+  { id: "inspection", label: "INSPECTION", objectCodes: ["6500", "6603", "6609", "6615", "6621", "6706", "6712", "6718", "6800", "1375"] },
   { id: "retorque", label: "RETORQUE", objectCodes: ["2402"] },
   { id: "hold", label: "HOLD" },
   { id: "split", label: "SPLIT" },
@@ -333,8 +333,9 @@ export function flagName(id: string): string {
 
 export function flagObjectCodes(id: string): string[] {
   const override = flagConfigEntry(id);
-  if (override?.objectCodes) return override.objectCodes;
-  return ALL_FLAGS.find((f) => f.id === id)?.objectCodes || [];
+  const codes = override?.objectCodes || ALL_FLAGS.find((f) => f.id === id)?.objectCodes || [];
+  if (id !== "inspection") return codes;
+  return Array.from(new Set([...codes, ...INSPECTION_OPTIONS.map((option) => option.objectCode)]));
 }
 
 export interface FlagAdminRow {
@@ -412,9 +413,63 @@ export const RETORQUE_TIRES = [
   { id: "rr", label: "Roadside rear" },
   { id: "cr", label: "Curbside rear" },
 ];
-// Optional inspection type (the A/B/C inspection at its mileage). Inspection can
-// still be selected on its own.
-export const INSPECTION_OPTIONS = ["A-3", "B-6", "A-9", "B-12", "A-15", "B-18", "A-21", "C-24"];
+// Inspection details and their authoritative object codes. Keeping this in one
+// table prevents chip labels, typed recognition, and saved object-code flags
+// from drifting apart.
+export interface InspectionOption {
+  id: string;
+  label: string;
+  objectCode: string;
+  aliases: string[];
+}
+
+export const INSPECTION_OPTIONS: InspectionOption[] = [
+  { id: "A-3", label: "A-3", objectCode: "6603", aliases: ["a3", "pm a 3000", "pma 3000", "pma-3000", "pm-a 3000 miles"] },
+  { id: "B-6", label: "B-6", objectCode: "6706", aliases: ["b6", "pm b 6000", "pmb 6000", "pmb-6000", "pm-b 6000 miles"] },
+  { id: "A-9", label: "A-9", objectCode: "6609", aliases: ["a9", "pm a 9000", "pma 9000", "pma-9000", "pm-a 9000 miles"] },
+  { id: "B-12", label: "B-12", objectCode: "6712", aliases: ["b12", "pm b 12000", "pmb 12000", "pmb-12000", "pm-b 12000 miles"] },
+  { id: "A-15", label: "A-15", objectCode: "6615", aliases: ["a15", "pm a 15000", "pma 15000", "pma-15000", "pm-a 15000 miles"] },
+  { id: "B-18", label: "B-18", objectCode: "6718", aliases: ["b18", "pm b 18000", "pmb 18000", "pmb-18000", "pm-b 18000 miles"] },
+  { id: "A-21", label: "A-21", objectCode: "6621", aliases: ["a21", "pm a 21000", "pma 21000", "pma-21000", "pm-a 21000 miles"] },
+  { id: "C-24", label: "C-24", objectCode: "6800", aliases: ["c24", "pm c 24000", "pmc 24000", "pmc-24000", "pm-c 24000 miles"] },
+  { id: "TRANS-75", label: "Transmission PM-75000", objectCode: "1375", aliases: ["trans 75", "trans pm 75000", "transmission pm 75000", "trans p.m. 75000"] },
+];
+
+const normalizeInspectionText = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+export function inspectionOptionFromText(value: string | null | undefined): InspectionOption | null {
+  const query = normalizeInspectionText(String(value || ""));
+  if (!query) return null;
+  return INSPECTION_OPTIONS.find((option) =>
+    [option.id, option.label, option.objectCode, ...option.aliases]
+      .some((candidate) => normalizeInspectionText(candidate) === query)
+  ) || null;
+}
+
+export function inspectionOptionLabel(value: string | null | undefined): string {
+  return inspectionOptionFromText(value)?.label || String(value || "").trim();
+}
+
+const INSPECTION_OBJECT_FLAGS = new Set(INSPECTION_OPTIONS.map((option) => objectCodeFlagId(option.objectCode)));
+
+export function setInspectionOption(entry: FlagEntry, value: string): FlagEntry {
+  const option = inspectionOptionFromText(value);
+  const flags = (entry.flags || []).filter((id) => !INSPECTION_OBJECT_FLAGS.has(id));
+  if (!option) return { ...entry, flags, inspOption: "" };
+  return {
+    ...entry,
+    flags: Array.from(new Set([...flags, "inspection", objectCodeFlagId(option.objectCode)])),
+    inspOption: option.id,
+  };
+}
+
+export function removeInspection(entry: FlagEntry): FlagEntry {
+  return {
+    ...entry,
+    flags: (entry.flags || []).filter((id) => id !== "inspection" && !INSPECTION_OBJECT_FLAGS.has(id)),
+    inspOption: "",
+  };
+}
 
 export type FlagDetailKind = "retorque_tires" | "hold_reason" | "inspection_type";
 export interface FlagDetailDefinition {
@@ -518,7 +573,10 @@ const FLAG_ALIASES: Record<string, string[]> = {
   service: ["fuel", "def", "fluids", "oil"],
   followup: ["follow up", "revisit", "check back", "recheck"],
   cards: ["card"],
-  inspection: ["pm", "preventive"],
+  inspection: [
+    "pm", "preventive",
+    ...INSPECTION_OPTIONS.flatMap((option) => [option.id, option.label, option.objectCode, ...option.aliases]),
+  ],
   accident: ["crash", "collision", "wreck"],
   legal: ["law"],
 };
@@ -721,7 +779,7 @@ export function flagsAndNote(entry: FlagEntry | null | undefined): string {
 // flagsAndNote plus the inspection mileage, for the lot lists / flag summary.
 export function flagsFullDisplay(entry: FlagEntry | null | undefined): string {
   const base = flagsAndNote(entry);
-  const detail = (entry && entry.inspOption ? String(entry.inspOption).trim() : "") || inspMilesDisplay(entry);
+  const detail = (entry && entry.inspOption ? inspectionOptionLabel(entry.inspOption) : "") || inspMilesDisplay(entry);
   if (base && detail) return `${base} · ${detail}`;
   return base || detail;
 }
@@ -811,7 +869,7 @@ export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[]
     for (const id of FUEL_SUMMARY_FLAGS) {
       if (!entry.flags.includes(id)) continue;
       let detail = "";
-      if (id === "inspection") detail = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+      if (id === "inspection") detail = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
       else if (id === "hold") detail = (entry.holdReason || "").trim();
       else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       items.push({ id, label: flagLabel(id), detail });
@@ -839,7 +897,7 @@ export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSect
     if (idx === -1) continue;
     const items: FlagItem[] = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
       let detail = "";
-      if (f === "inspection") detail = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+      if (f === "inspection") detail = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
       else if (f === "hold") detail = (entry.holdReason || "").trim();
       else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       return { id: f, label: flagLabel(f), detail };

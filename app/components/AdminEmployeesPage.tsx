@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Plus, Save, Trash2 } from "lucide-react";
 import type { Employee } from "../lib/types";
 
 // Normalize a stored record (which may be legacy {name, badge}) into the full
@@ -25,6 +25,16 @@ function normalize(e: Partial<Employee> & { name?: string }): Employee {
 }
 
 const EMPTY: Employee = { firstName: "", lastName: "", badge: "", startDate: "", hireDate: "", classification: "" };
+type SortKey = "firstName" | "lastName" | "badge" | "startDate" | "hireDate" | "classification";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "firstName", label: "First name" },
+  { key: "lastName", label: "Last name" },
+  { key: "badge", label: "Employee ID" },
+  { key: "startDate", label: "Shop seniority" },
+  { key: "hireDate", label: "Pace hire date" },
+  { key: "classification", label: "Classification" },
+];
 
 export default function AdminEmployeesPage() {
   const [rows, setRows] = useState<Employee[]>([]);
@@ -32,6 +42,8 @@ export default function AdminEmployeesPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("startDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     fetch("/api/employees")
@@ -72,6 +84,18 @@ export default function AdminEmployeesPage() {
   }
 
   const q = query.trim().toLowerCase();
+  function chooseSort(key: SortKey) {
+    if (sortKey === key) setSortDirection((direction) => direction === "asc" ? "desc" : "asc");
+    else {
+      setSortKey(key);
+      setSortDirection("asc");
+    }
+  }
+  function SortIcon({ field }: { field: SortKey }) {
+    if (sortKey !== field) return <ArrowUpDown size={13} />;
+    return sortDirection === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />;
+  }
+
   const shown = rows
     .map((r, i) => ({ r, i }))
     .filter(
@@ -81,7 +105,16 @@ export default function AdminEmployeesPage() {
         r.lastName.toLowerCase().includes(q) ||
         r.badge.toLowerCase().includes(q) ||
         r.classification.toLowerCase().includes(q)
-    );
+    )
+    .sort((a, b) => {
+      const av = String(a.r[sortKey] || "").trim();
+      const bv = String(b.r[sortKey] || "").trim();
+      if (!av && !bv) return 0;
+      if (!av) return 1;
+      if (!bv) return -1;
+      const order = av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" });
+      return sortDirection === "asc" ? order : -order;
+    });
 
   return (
     <section className="adminpanel">
@@ -101,21 +134,34 @@ export default function AdminEmployeesPage() {
       <div className="adminflag__toolbar">
         <input
           className="manager__search buslist__search"
-          placeholder="Search name, badge, or job title…"
+          placeholder="Search name, employee ID, or classification…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <label className="emplsort">
+          <span>Sort</span>
+          <select value={sortKey} onChange={(event) => { setSortKey(event.target.value as SortKey); setSortDirection("asc"); }}>
+            {SORT_OPTIONS.map((option) => <option value={option.key} key={option.key}>{option.label}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortDirection((direction) => direction === "asc" ? "desc" : "asc")}
+            aria-label={sortDirection === "asc" ? "Sort descending" : "Sort ascending"}
+            title={sortDirection === "asc" ? "Ascending" : "Descending"}
+          >
+            {sortDirection === "asc" ? <ArrowUp size={15} /> : <ArrowDown size={15} />}
+          </button>
+        </label>
         <span className="adminflag__count">{rows.length} employees</span>
       </div>
 
       <div className="emptable">
         <div className="emptable__head">
-          <span>First name</span>
-          <span>Last name</span>
-          <span>Badge #</span>
-          <span>Shop seniority</span>
-          <span>Pace hire date</span>
-          <span>Classification</span>
+          {SORT_OPTIONS.map((option) => (
+            <button type="button" className="emptable__sort" onClick={() => chooseSort(option.key)} key={option.key}>
+              {option.label}<SortIcon field={option.key} />
+            </button>
+          ))}
           <span />
         </div>
         {!loaded && <div className="lotlist__empty">Loading…</div>}
@@ -133,8 +179,8 @@ export default function AdminEmployeesPage() {
               <input value={r.lastName} placeholder="Last" onChange={(e) => setRow(i, "lastName", e.target.value)} />
             </label>
             <label className="emptable__cell">
-              <span className="emptable__label">Badge #</span>
-              <input value={r.badge} placeholder="Badge #" inputMode="numeric" onChange={(e) => setRow(i, "badge", e.target.value)} />
+              <span className="emptable__label">Employee ID</span>
+              <input value={r.badge} placeholder="Employee ID" inputMode="numeric" onChange={(e) => setRow(i, "badge", e.target.value)} />
             </label>
             <label className="emptable__cell">
               <span className="emptable__label">Shop seniority</span>

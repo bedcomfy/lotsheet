@@ -21,6 +21,10 @@ import {
   flagObjectCodes,
   flagHasDetail,
   flagRequiresDetail,
+  inspectionOptionFromText,
+  inspectionOptionLabel,
+  removeInspection,
+  setInspectionOption,
 } from "../lib/grid";
 import { X, Plus, Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
@@ -173,12 +177,12 @@ function InspOptionPicker({
       <div className="reasonpick">
         {INSPECTION_OPTIONS.map((o) => (
           <button
-            key={o}
+            key={o.id}
             type="button"
-            className={`deptchip ${option === o ? "deptchip--on--service" : ""}`}
-            onClick={() => onChange(option === o ? "" : o)}
+            className={`deptchip ${inspectionOptionFromText(option)?.id === o.id ? "deptchip--on--service" : ""}`}
+            onClick={() => onChange(inspectionOptionFromText(option)?.id === o.id ? "" : o.id)}
           >
-            {o}
+            {o.label}
           </button>
         ))}
         {onFollowUpToggle && (
@@ -227,8 +231,17 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
     if (flagHasDetail(id)) openDetail(id);
   }
   function remove(id: string) {
+    const linkedInspectionFlag = inspectionOptionFromText(entry.inspOption);
+    if (id === "inspection") {
+      onChange(removeInspection(entry));
+      closeDetail(id);
+      return;
+    }
+    if (linkedInspectionFlag && id === `object:${linkedInspectionFlag.objectCode}`) {
+      onChange(setInspectionOption(entry, ""));
+      return;
+    }
     const patch: FlagEntry = { ...entry, flags: entry.flags.filter((f) => f !== id) };
-    if (id === "inspection") patch.inspOption = "";
     if (id === "hold") patch.holdReason = "";
     if (id === "retorque") patch.retorqueTires = [];
     onChange(patch);
@@ -252,7 +265,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
     if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
     if (id === "hold" && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
     if (id === "inspection") {
-      const o = (entry.inspOption || "").trim() || inspMilesDisplay(entry);
+      const o = inspectionOptionLabel(entry.inspOption) || inspMilesDisplay(entry);
       return o ? `Inspection · ${o}` : "Inspection";
     }
     return flagName(id);
@@ -291,7 +304,7 @@ function FlagPicker({ entry, onChange }: { entry: FlagEntry; onChange: (e: FlagE
             {id === "inspection" && (
               <InspOptionPicker
                 option={entry.inspOption || ""}
-                onChange={(o) => onChange({ ...entry, inspOption: o })}
+                onChange={(o) => onChange(setInspectionOption(entry, o))}
                 followUpActive={entry.flags.includes("followup")}
                 onFollowUpToggle={() => {
                   const flags = entry.flags.includes("followup")
@@ -457,8 +470,9 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
       setPending((p) => p.filter((b) => b !== bus));
       return;
     }
-    const patch: FlagEntry = { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
-    if (pickedFlag === "inspection") patch.inspOption = "";
+    const patch: FlagEntry = pickedFlag === "inspection"
+      ? removeInspection(cur)
+      : { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
     if (pickedFlag === "retorque") patch.retorqueTires = [];
     if (pickedFlag === "hold") patch.holdReason = "";
     save(bus, patch);
@@ -668,7 +682,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                       <InspOptionPicker
                         key={bus}
                         option={entry.inspOption || ""}
-                        onChange={(o) => save(bus, { ...getEntry(bus), inspOption: o })}
+                        onChange={(o) => save(bus, setInspectionOption(getEntry(bus), o))}
                         followUpActive={(entry.flags || []).includes("followup")}
                         onFollowUpToggle={() => {
                           const cur = getEntry(bus);

@@ -47,7 +47,7 @@ export interface FlagEntry {
   inspMiles: number | null; // legacy inspection mileage detail
   holdReason: string; // detail for the Hold flag
   retorqueTires: string[]; // tire ids for the Retorque flag (rf/cf/rr/cr)
-  inspOption: string; // inspection type (A-3 … C-24), optional
+  inspOption: string; // inspection type (A-3 through C-24 or TRANS-75), optional
 }
 
 export type FlagMap = Record<string, FlagEntry>; // busNumber -> entry
