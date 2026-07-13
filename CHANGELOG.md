@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.18 - 2026-07-13
+
+- Added a new Staffing section to the sidebar with a Seniority list and an editable Work Pick schedule.
+- Seniority shows the shop seniority roster (sortable, searchable); editing is unlocked with the admin password.
+- Work Pick mirrors the printed schedule — every shift, its hours, each person's worked/off days, and break times — pre-loaded with the current pick and editable for future picks.
+- Added an "Available Now" section on Home that counts, by role bucket (Mechanics vs. Cleaner/Janitor/Servicer/Utility), who is on the clock based on the current Chicago day and time, including overnight shifts. Tap a bucket to see who.
+- Availability now attributes each shift to the day where most of its hours fall, so an overnight 3rd shift labeled "Monday" is counted as in progress from Sunday night through Monday morning.
+- Added an employee availability status (Time Off, Vacation, Out of Service, Sick, Light Duty, Leave) editable in the Seniority roster; unavailable employees are excluded from "Available Now" and struck through on the Work Pick.
+- Moved employee editing out of Admin Tools into Staffing › Seniority.
+- Staffing and Admin Tools each show a single sidebar entry (their in-page tabs handle the rest), and the roster/pick editors have a Done button to leave edit mode.
+- Simplified Seniority sorting to the column headers alone, with the active column highlighted, and fixed the header buttons showing as white boxes in dark mode.
+- Flattened the sidebar into a single list of destinations under Home, with Admin Tools and the Audit Log pinned at the bottom.
+- Added a search box on the Work Pick that highlights an employee's spot(s) on the schedule (by name or ID) instead of filtering the list, and scrolls the first match into view.
+- The Lot Sheet "Usable / Out of Service" chip and the Home "Out of Service" card now open a list of each unusable bus with where it is and why (its flags), instead of the Missing dialog.
+
 ## 0.1.17 - 2026-07-10
 
 - Renamed service readiness to Usable and Out of Service on Home and the Lot Sheet status bar.

@@ -53,3 +53,30 @@ export function chicagoMinuteKey(now = new Date()): string {
   const p = chicagoParts(now);
   return `${p.year}-${p.month}-${p.day}T${p.hour24}:${p.minute}`;
 }
+
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+// Day of week in Chicago: 0 = Sunday … 6 = Saturday (matches the Work Pick's
+// Sunday-first columns).
+export function chicagoWeekday(now = new Date()): number {
+  const short = new Intl.DateTimeFormat("en-US", {
+    timeZone: CHICAGO_TIME_ZONE,
+    weekday: "short",
+  }).format(now);
+  return WEEKDAY_INDEX[short.slice(0, 3)] ?? 0;
+}
+
+// Minutes since Chicago midnight (0–1439), so a clock time can be compared to a
+// shift's start/end.
+export function chicagoNowMinutes(now = new Date()): number {
+  const p = chicagoParts(now);
+  return Number(p.hour24) * 60 + Number(p.minute);
+}

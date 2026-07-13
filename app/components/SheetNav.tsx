@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, Bus, ClipboardList, Droplets, FileText, Flag, Fuel, Home, RefreshCw, SearchCode, Users, Wrench } from "lucide-react";
+import { Activity, ClipboardList, Droplets, FileText, Fuel, Home, RefreshCw, SearchCode, ShieldAlert, Users, Wrench } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { APP_VERSION } from "../lib/appVersion";
 
@@ -10,6 +10,10 @@ export interface SheetLink {
   path: string;
   label: string;
   icon: LucideIcon;
+  // Grouped destinations (Staffing, Admin Tools) land on a default page but own a
+  // whole path prefix via in-page tabs; matchPrefix keeps the single sidebar entry
+  // highlighted across all of its sub-pages.
+  matchPrefix?: string;
 }
 
 const HOME_LINK: SheetLink = { path: "/home", label: "Home", icon: Home };
@@ -29,33 +33,45 @@ export const FORM_SHEETS: SheetLink[] = [
   { path: "/workorder", label: "Work Order", icon: FileText },
 ];
 
-export const SYSTEM_LINKS: SheetLink[] = [
-  { path: "/audit", label: "Audit Log", icon: Activity },
-];
+// Staffing and Admin Tools each have their own tabbed shell, so the sidebar lists
+// ONE entry apiece (the tabs handle Seniority/Work Pick and Flag Editor/Bus Lists).
+export const STAFFING_LINK: SheetLink = { path: "/staffing/seniority", label: "Staffing", icon: Users, matchPrefix: "/staffing" };
+export const ADMIN_LINK: SheetLink = { path: "/admin/flags", label: "Admin Tools", icon: ShieldAlert, matchPrefix: "/admin" };
 
 export const UTILITY_LINKS: SheetLink[] = [
   { path: "/object-codes", label: "Object Codes", icon: SearchCode },
 ];
 
-export const ADMIN_LINKS: SheetLink[] = [
-  { path: "/admin/flags", label: "Flag Editor", icon: Flag },
-  { path: "/admin/buses", label: "Bus Lists", icon: Bus },
-  { path: "/admin/employees", label: "Employees", icon: Users },
+export const SYSTEM_LINKS: SheetLink[] = [
+  { path: "/audit", label: "Audit Log", icon: Activity },
 ];
 
-// The sheets available in the mobile picker. Add new ones here.
-export const SHEETS: SheetLink[] = [HOME_LINK, ...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS, ...UTILITY_LINKS, ...ADMIN_LINKS, ...SYSTEM_LINKS];
+// The main flat list under Home (everyday destinations). Admin Tools and the
+// Audit Log are pinned to the bottom of the sidebar instead.
+export const NAV_LINKS: SheetLink[] = [...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS, STAFFING_LINK, ...UTILITY_LINKS];
+
+// Pinned to the bottom, above the theme toggle / version.
+export const BOTTOM_LINKS: SheetLink[] = [ADMIN_LINK, ...SYSTEM_LINKS];
+
+// Every destination for the mobile picker.
+export const SHEETS: SheetLink[] = [HOME_LINK, ...NAV_LINKS, ...BOTTOM_LINKS];
+
+function isActive(sheet: SheetLink, pathname: string | null): boolean {
+  if (!pathname) return false;
+  if (sheet.matchPrefix) return pathname === sheet.path || pathname.startsWith(sheet.matchPrefix);
+  return pathname === sheet.path;
+}
 
 export default function SheetNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const current = pathname && SHEETS.some((s) => s.path === pathname) ? pathname : "/";
+  const current = SHEETS.find((s) => isActive(s, pathname))?.path || "/";
   const renderLink = (sheet: SheetLink) => {
     const Icon = sheet.icon;
     return (
       <button
         key={sheet.path}
-        className={`appnav__link ${current === sheet.path ? "appnav__link--active" : ""}`}
+        className={`appnav__link ${isActive(sheet, pathname) ? "appnav__link--active" : ""}`}
         onClick={() => router.push(sheet.path)}
       >
         <Icon size={18} />
@@ -97,33 +113,11 @@ export default function SheetNav() {
       </div>
 
       <div className="appnav__section appnav__section--sheets">
-        <div className="appnav__sectionlabel">Daily Sheets</div>
-        {DAILY_SHEETS.map(renderLink)}
-      </div>
-
-      <div className="appnav__section">
-        <div className="appnav__sectionlabel">Shop</div>
-        {SHOP_SHEETS.map(renderLink)}
-      </div>
-
-      <div className="appnav__section">
-        <div className="appnav__sectionlabel">Forms</div>
-        {FORM_SHEETS.map(renderLink)}
-      </div>
-
-      <div className="appnav__section">
-        <div className="appnav__sectionlabel">Utilities</div>
-        <div className="appnav__subsection">{UTILITY_LINKS.map(renderLink)}</div>
-      </div>
-
-      <div className="appnav__section">
-        <div className="appnav__sectionlabel">Admin Tools</div>
-        <div className="appnav__subsection">{ADMIN_LINKS.map(renderLink)}</div>
+        {NAV_LINKS.map(renderLink)}
       </div>
 
       <div className="appnav__section appnav__section--bottom">
-        <div className="appnav__sectionlabel">System</div>
-        {SYSTEM_LINKS.map(renderLink)}
+        {BOTTOM_LINKS.map(renderLink)}
         <ThemeToggle />
         <div className="appnav__version">v{APP_VERSION}</div>
       </div>

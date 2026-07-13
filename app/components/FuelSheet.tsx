@@ -14,7 +14,7 @@ import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
-const FONT_DEFAULT = 14;
+const FONT_DEFAULT = 16;
 const FONT_MIN = 8;
 const FONT_MAX = 16;
 
@@ -252,12 +252,14 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     const ind = fuelIndicator(busFlags[bus]);
     return [
       <td key={`${g}-b`} className={`fuelt__bus ${ind ? "fuelt__bus--flagged" : ""}`}>
-        {ind && (
-          <span className="fuelt__ind">
-            <span className="fuelt__indl">{ind}</span>
-          </span>
-        )}
-        {bus}
+        <span className="fuelt__buscontent">
+          {ind && (
+            <span className="fuelt__ind">
+              <span className="fuelt__indl">{ind}</span>
+            </span>
+          )}
+          <span className="fuelt__busnum">{bus}</span>
+        </span>
       </td>,
       <td key={`${g}-g`}>
         <input
@@ -331,6 +333,13 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
       <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
         <div className={`sheet fuel-sheet ${showFlags ? "fuel-sheet--flags" : ""}`}>
           <table className="fuelt">
+            <colgroup>
+              {Array.from({ length: 4 }).flatMap((_, group) => [
+                <col className="fuelt__col--bus" key={`${group}-bus`} />,
+                <col className="fuelt__col--entry" key={`${group}-gals`} />,
+                <col className="fuelt__col--entry" key={`${group}-serv`} />,
+              ])}
+            </colgroup>
             <tbody>
               {/* Header row (title + date / shift fields) */}
               <tr className="fuelt__hdr">

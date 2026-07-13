@@ -62,6 +62,10 @@ export interface Employee {
   startDate: string; // Shop seniority, ISO "YYYY-MM-DD", or "" if unset
   hireDate: string; // Pace hire date, ISO "YYYY-MM-DD", or "" if unset
   classification: string; // job title / role
+  // "" = available/on the schedule; otherwise the reason they're unavailable
+  // (Vacation, Time Off, Out of Service…). Unavailable employees never count as
+  // "Available Now" and are struck through on the Work Pick.
+  availability?: string;
   name?: string; // legacy combined name (old data); derive from first+last otherwise
 }
 

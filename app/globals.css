@@ -1737,13 +1737,16 @@ textarea:focus-visible {
 .home-status-row {
   display: grid;
   grid-template-columns: minmax(64px, auto) minmax(0, 1fr);
+  grid-template-areas: "bus where" "bus why";
   align-items: center;
-  gap: 14px;
+  gap: 2px 14px;
   min-height: 49px;
   padding: 10px 3px;
   border-bottom: 1px solid var(--edge);
 }
 .home-status-row strong {
+  grid-area: bus;
+  align-self: center;
   color: var(--text);
   font-size: 15px;
   font-weight: 650;
@@ -1755,6 +1758,14 @@ textarea:focus-visible {
   font-size: 13px;
   line-height: 1.35;
   text-align: right;
+}
+.home-status-where {
+  grid-area: where;
+}
+.home-status-why {
+  grid-area: why;
+  color: var(--pill-maintenance-tx) !important;
+  font-weight: 600;
 }
 .homecols {
   display: grid;
@@ -4183,32 +4194,40 @@ textarea:focus-visible {
 }
 
 /* ---------- Toolbar stats chip (tap to see the missing buses) ---------- */
+/* Usable / Out of Service are two standalone pill chips (not a segmented pill),
+   styled like .statchip so they match the rest of the toolbar chips. */
 .servicechips {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  background: var(--surface);
+  gap: 8px;
 }
 .servicechip {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 3px 9px;
+  padding: 5px 11px;
+  border: 1px solid transparent;
   border-radius: 999px;
+  background: none;
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.12s;
 }
 .servicechip--ready {
   color: var(--success);
   background: color-mix(in srgb, var(--success) 12%, transparent);
 }
+.servicechip--ready:hover {
+  border-color: color-mix(in srgb, var(--success) 42%, transparent);
+}
 .servicechip--notready {
   color: var(--pill-maintenance-tx);
   background: var(--pill-maintenance-bg);
+}
+.servicechip--notready:hover {
+  border-color: var(--pill-maintenance-ed);
 }
 .statchip {
   font-size: 12px;
@@ -5040,6 +5059,14 @@ textarea:focus-visible {
   flex: 1 1 auto; /* fill the page; rows share the leftover height */
   height: 100%;
 }
+/* Each BUS column gains 6px while each GALS/SERV column contributes 3px.
+   The twelve columns still total 100%, so the table does not grow wider. */
+.fuelt__col--bus {
+  width: calc(8.333333% + 6px);
+}
+.fuelt__col--entry {
+  width: calc(8.333333% - 3px);
+}
 .fuelt td {
   border: 1px solid #000;
   height: auto; /* row height comes from the page, not the font size */
@@ -5131,28 +5158,33 @@ textarea:focus-visible {
   position: relative;
   padding: 0;
   text-align: center; /* bus number centered horizontally */
+  vertical-align: middle;
   font-variant-numeric: tabular-nums; /* all bus numbers are 4 uniform digits */
 }
 /* Highlight on a bus box that carries a flag. */
 .fuelt__bus--flagged {
   background: #ffe066;
 }
-/* ONE flag letter (R/H/I, or ∗ when a bus has more than one) sits in the left
-   margin — the space between the box edge and the centered number — and is
-   centered within it, so the gap to the box line equals the gap to the first
-   digit. The margin = half the cell minus half the 4-digit number (2ch). The
-   OUTER span is sized in the number's font (so ch = a digit's width); the inner
-   span draws the bigger slab-serif letter. */
-.fuelt__ind {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: calc(50% - 2ch);
+/* Center the flag and bus number as one group. The flag occupies real space,
+   so it pushes the number aside instead of overlapping it. */
+.fuelt__buscontent {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--ffz, 12px);
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  line-height: 1;
+}
+.fuelt__busnum {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+.fuelt__ind {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
   pointer-events: none;
 }
 .fuelt__indl {
@@ -5160,6 +5192,7 @@ textarea:focus-visible {
   font-weight: 700 !important;
   font-size: calc(var(--ffz, 12px) + 2px);
   line-height: 1;
+  transform: translateY(-1px);
   /* Barred capital I (bold top + bottom slab bars) so I isn't read as l. */
 }
 .fuelt__in {
@@ -6181,4 +6214,650 @@ td.turnt__head {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ============================= Staffing ============================= */
+/* Shared: a small primary/secondary button size + the inline unlock bar. */
+.btn--small {
+  padding: 6px 11px;
+  font-size: 13px;
+}
+.unlockbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.unlockbar .manager__search {
+  width: 160px;
+}
+.unlockbar__err {
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- Home: Available Now ---------- */
+.homeavail {
+  margin-bottom: 26px;
+}
+.homeavail__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.homeavail__head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.homeavail__head h2 svg {
+  color: var(--accent);
+}
+.homeavail__when {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+.homeavail__link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+.homeavail__link:hover {
+  color: var(--text);
+  background: var(--surface-hover, var(--surface-2));
+}
+.homeavail__cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.availcard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon value"
+    "label label";
+  align-items: center;
+  gap: 6px 12px;
+  min-height: 104px;
+  padding: 17px 18px;
+  text-align: left;
+}
+.availcard svg {
+  grid-area: icon;
+  color: var(--accent);
+}
+.availcard__value {
+  grid-area: value;
+  justify-self: end;
+  font-size: 34px;
+  font-weight: 650;
+  line-height: 1;
+}
+.availcard__label {
+  grid-area: label;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.availcard--mech svg,
+.availcard--mech .availcard__value {
+  color: var(--pill-maintenance-tx);
+}
+.availcard--service svg,
+.availcard--service .availcard__value {
+  color: var(--pill-service-tx);
+}
+.availrow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 9px 2px;
+  border-top: 1px solid var(--edge);
+}
+.availrow strong {
+  font-size: 14px;
+}
+.availrow__role {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+.availrow__shift {
+  grid-column: 1 / -1;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* ---------- Seniority: read-only table ---------- */
+.sentable {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sentable__head {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface-2);
+}
+.sentable__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.sentable__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr 0.9fr 0.9fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 1px solid var(--edge);
+  font-size: 13.5px;
+}
+.sentable__row span[data-label="Classification"] {
+  color: var(--text-dim);
+}
+@media screen and (max-width: 860px) {
+  .sentable__head {
+    display: none;
+  }
+  .sentable__row {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 10px;
+    padding: 12px 14px;
+  }
+  .sentable__row span {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .sentable__row span::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+}
+
+/* ---------- Work Pick ---------- */
+/* Find-an-employee bar: highlights spots, never filters the pick. */
+.picksearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.picksearch__icon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.picksearch .manager__search {
+  flex: 1 1 auto;
+  padding-left: 34px;
+}
+.picksearch__count {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.picksearch__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.picksearch__clear:hover {
+  color: var(--text);
+}
+/* Highlighted spot (search match) — accent tint + left bar, in both modes. */
+.picktable__row--match,
+.pickedit__row--match {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+  border-radius: 0 6px 6px 0;
+}
+.pickeff {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.pickeff input {
+  min-height: 34px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 9px;
+  font: inherit;
+}
+.pickshifts {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pickshift {
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.pickshift__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--edge);
+}
+.pickshift__head h3 {
+  font-size: 15px;
+  font-weight: 800;
+}
+.pickshift__times {
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+}
+.pickshift__edithead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.pickshift__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 9px;
+  font: inherit;
+  font-weight: 700;
+}
+.pickshift__edithead .pickshift__times {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pickshift__edithead .pickshift__times input {
+  min-height: 34px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 4px 7px;
+  font: inherit;
+}
+
+/* View table */
+.picktable {
+  display: flex;
+  flex-direction: column;
+}
+.picktable__head,
+.picktable__row {
+  display: grid;
+  grid-template-columns: 1.4fr 1.4fr repeat(7, 34px) 1.1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 16px;
+}
+.picktable__head {
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--edge);
+}
+.picktable__row {
+  border-top: 1px solid var(--edge);
+  font-size: 13px;
+}
+.picktable__role {
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.picktable__name {
+  font-weight: 650;
+}
+.picktable__off {
+  color: var(--text-dim);
+  font-size: 12px;
+  text-align: right;
+}
+.picktable__head .pickday {
+  text-align: center;
+}
+.pickday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pickday--on {
+  color: var(--success);
+}
+.pickday--off {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+/* Edit rows */
+.pickedit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.pickedit__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pickedit__role {
+  flex: 0 0 auto;
+  min-height: 36px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.pickedit__name {
+  flex: 1 1 160px;
+  min-width: 130px;
+  min-height: 36px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+.pickedit__days {
+  display: inline-flex;
+  gap: 4px;
+}
+.pickdaybtn {
+  width: 34px;
+  min-height: 34px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.pickdaybtn--on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pickdaybtn--off {
+  background: var(--surface-2);
+  color: var(--text-dim);
+  opacity: 0.65;
+}
+
+/* Breaks */
+.pickbreaks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 10px 16px;
+  border-top: 1px dashed var(--edge);
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.pickbreak strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.pickbreaks--edit {
+  align-items: center;
+  gap: 8px;
+}
+.pickbreak--edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pickbreak--edit input {
+  min-height: 30px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 4px 7px;
+  font: inherit;
+  font-size: 12px;
+}
+.pickbreak--edit input:first-of-type {
+  width: 96px;
+}
+.pickbreak--edit input:last-of-type {
+  width: 118px;
+}
+
+@media screen and (max-width: 860px) {
+  .picktable__head {
+    display: none;
+  }
+  .picktable__row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 10px;
+    padding: 12px 14px;
+  }
+  .picktable__row .pickday {
+    display: none;
+  }
+  .picktable__role {
+    order: 2;
+    text-align: right;
+  }
+  .picktable__name {
+    order: 1;
+  }
+  .picktable__off {
+    order: 3;
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+  .picktable__off::before {
+    content: "Off: ";
+    font-weight: 700;
+  }
+}
+
+/* ---------- Seniority sort headers + out-of-service status ---------- */
+/* The active-sorted column header stands out (accent) in both themes; the rest
+   stay dim but brighten on hover so they read as clickable. Reset the default
+   button chrome (light background + outset border) that otherwise shows as a
+   white box in dark mode. */
+.sentable__sort,
+.emptable__sort {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.sentable__sort:hover,
+.emptable__sort:hover {
+  color: var(--text);
+}
+/* Two classes on the same element so this beats the base `.sentable__sort`
+   color regardless of source order (they'd otherwise tie on specificity). */
+.sentable__sort.sentable__sort--active,
+.emptable__sort.emptable__sort--active {
+  color: var(--accent);
+}
+.sentable__sort.sentable__sort--active svg,
+.emptable__sort.emptable__sort--active svg {
+  color: var(--accent);
+}
+
+/* Out-of-service employee in the seniority VIEW: name struck through + a reason
+   pill after the classification. */
+.sentable__row--out span[data-label="First"],
+.sentable__row--out span[data-label="Last"] {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+.senstatus {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--pill-maintenance-bg);
+  color: var(--pill-maintenance-tx);
+  border: 1px solid var(--pill-maintenance-ed);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+/* Seniority EDITOR: an 8th "Status" column on desktop (mobile keeps the 2-col
+   stacked layout from the base .emptable rules). */
+@media screen and (min-width: 861px) {
+  .emptable--sen .emptable__head,
+  .emptable--sen .emptable__row {
+    grid-template-columns: 1fr 1fr 1.1fr 0.95fr 0.95fr 0.85fr 1fr 40px;
+  }
+}
+.emptable__statushead {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.emptable__cell select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13px;
+}
+.emptable__status--out select {
+  border-color: var(--pill-maintenance-ed);
+  color: var(--pill-maintenance-tx);
+  font-weight: 700;
+}
+
+/* Struck-out person on the Work Pick when they're out of service. */
+.picktable__name--out {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+.pickout {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--pill-maintenance-bg);
+  color: var(--pill-maintenance-tx);
+  border: 1px solid var(--pill-maintenance-ed);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+/* ---------- Out-of-Service / Usable bus list (lot-sheet chip menu) ---------- */
+/* One row per bus with WHERE it is and WHY it's off the grid (its flags). */
+.oositem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 3px;
+  border-bottom: 1px solid var(--edge);
+}
+.oositem__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.oositem__flagbtn {
+  margin-left: auto;
+}
+.oositem__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  padding-left: 2px;
+}
+.oositem__where {
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.oositem__why {
+  color: var(--pill-maintenance-tx);
+  font-size: 12.5px;
+  font-weight: 700;
 }

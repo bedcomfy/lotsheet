@@ -50,7 +50,7 @@ import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
 import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
-import { fleetStats } from "../lib/fleetStats";
+import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -295,6 +295,7 @@ export default function LotSheet() {
   const [selectMode, setSelectMode] = useState(false); // multi-select: tap buses, act on all at once
   const [selected, setSelected] = useState<string[]>([]); // selected cell ids
   const [missingOpen, setMissingOpen] = useState(false); // "which buses are missing" list
+  const [serviceDetail, setServiceDetail] = useState<"usable" | "outOfService" | null>(null); // service-readiness list w/ where + why
   const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
   const [shopOpen, setShopOpen] = useState(false); // the Shop menu (edit Apron/Bays/Cards from here)
   const [editingBay, setEditingBay] = useState<number | null>(null); // bay slot editor (from the Shop menu)
@@ -1358,6 +1359,7 @@ export default function LotSheet() {
 
   // Shared with Home: lots are North/East/Fence; shop is Apron/Bays/Cards.
   const fleet = fleetStats(sheet, flags, masterBuses);
+  const fleetLocations = fleetBusLocations(sheet, flags); // bus -> every place it sits (grid, lots, shop, off-property)
   const onGridCount = fleet.onGrid.size;
   const inLotsCount = fleet.inLots.size;
   const readyForServiceCount = fleet.readyForService.size;
@@ -1443,14 +1445,22 @@ export default function LotSheet() {
           )}
         </div>
         <div className="toolbar__spacer" />
-        <button
-          className="servicechips"
-          onClick={() => setMissingOpen(true)}
-          title="Usable buses are on the grid. Out of Service buses are in lots, shop, or off property."
-        >
-          <span className="servicechip servicechip--ready">{readyForServiceCount} Usable</span>
-          <span className="servicechip servicechip--notready">{notReadyForServiceCount} Out of Service</span>
-        </button>
+        <div className="servicechips">
+          <button
+            className="servicechip servicechip--ready"
+            onClick={() => setServiceDetail("usable")}
+            title="Buses on the service grid"
+          >
+            {readyForServiceCount} Usable
+          </button>
+          <button
+            className="servicechip servicechip--notready"
+            onClick={() => setServiceDetail("outOfService")}
+            title="Buses in lots, shop, or off property — tap to see where and why"
+          >
+            {notReadyForServiceCount} Out of Service
+          </button>
+        </div>
         <button
           className={`statchip ${missingBuses.length ? "statchip--warn" : ""}`}
           onClick={() => setMissingOpen(true)}
@@ -1847,6 +1857,72 @@ export default function LotSheet() {
           </div>
         </Overlay>
       )}
+
+      {serviceDetail && (() => {
+        const isOut = serviceDetail === "outOfService";
+        const buses = [...(isOut ? fleet.notReadyForService : fleet.readyForService)].sort((a, b) =>
+          a.localeCompare(b, undefined, { numeric: true })
+        );
+        return (
+          <Overlay
+            onClose={() => setServiceDetail(null)}
+            overlayClassName="modal-backdrop no-print"
+            contentClassName="modal modal--tall"
+            label={isOut ? "Out of Service" : "Usable buses"}
+          >
+            <div className="modal__head">
+              <div>
+                <div className="modal__title">{isOut ? "Out of Service" : "Usable buses"}</div>
+                <div className="modal__sub">
+                  {isOut
+                    ? `${buses.length} active bus${buses.length === 1 ? "" : "es"} off the service grid — where they are and why.`
+                    : `${buses.length} active bus${buses.length === 1 ? "" : "es"} on the service grid.`}
+                </div>
+              </div>
+              <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <div className="lotlist">
+              {buses.length === 0 && (
+                <div className="lotlist__empty">
+                  {isOut ? "Every active bus is on the grid." : "No buses on the grid yet."}
+                </div>
+              )}
+              {buses.map((bus) => {
+                const where = (fleetLocations[bus] || []).join(" / ");
+                const why = flagsFullDisplay(flagFor(bus));
+                return (
+                  <div className="oositem" key={bus}>
+                    <div className="oositem__main">
+                      <span className="lotitem__bus">{busLabel(bus)}</span>
+                      <TypeCodes num={bus} />
+                      <button
+                        className="lotitem__move oositem__flagbtn"
+                        onClick={() => setFlagBus(bus)} /* stacks on top — Done returns here */
+                        aria-label="Edit flags"
+                        title="Edit this bus's flags"
+                      >
+                        <Flag size={13} />
+                      </button>
+                    </div>
+                    <div className="oositem__meta">
+                      <span className="oositem__where">{where || "Not placed"}</span>
+                      {why && <span className="oositem__why">{why}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="modal__actions">
+              <div className="toolbar__spacer" />
+              <button className="btn btn--primary" onClick={closeOverlayFromEvent}>
+                Done
+              </button>
+            </div>
+          </Overlay>
+        );
+      })()}
 
       {editingLot && (
         <LotEditor

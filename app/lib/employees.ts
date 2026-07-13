@@ -60,6 +60,7 @@ export function mergeEmployeeRoster(existing: Employee[]): Employee[] {
       startDate: saved.startDate || employee.startDate,
       hireDate: saved.hireDate || employee.hireDate,
       classification: saved.classification || employee.classification,
+      availability: saved.availability || "",
     };
   });
   const importedBadges = new Set(EMPLOYEE_ROSTER.map((employee) => employee.badge));

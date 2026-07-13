@@ -2,13 +2,12 @@
 
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bus, Flag, Users } from "lucide-react";
+import { Bus, Flag } from "lucide-react";
 import AdminGate from "./AdminGate";
 
 const TABS = [
   { id: "flags", label: "Flag Editor", icon: Flag, path: "/admin/flags" },
   { id: "buses", label: "Bus Lists", icon: Bus, path: "/admin/buses" },
-  { id: "employees", label: "Employees", icon: Users, path: "/admin/employees" },
 ] as const;
 
 // The shared frame for every Admin Tools page: the password gate, the hero, and

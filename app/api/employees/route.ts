@@ -26,11 +26,12 @@ function sanitize(list: unknown): Employee[] {
     const startDate = String(e?.startDate ?? "").trim();
     const hireDate = String(e?.hireDate ?? "").trim();
     const classification = String(e?.classification ?? "").trim();
+    const availability = String(e?.availability ?? "").trim();
     if (!firstName && !lastName && !badge) continue;
     const key = `${firstName.toLowerCase()}|${lastName.toLowerCase()}|${badge.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ firstName, lastName, badge, startDate, hireDate, classification });
+    out.push({ firstName, lastName, badge, startDate, hireDate, classification, availability });
   }
   return out;
 }

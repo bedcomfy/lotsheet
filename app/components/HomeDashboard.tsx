@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  CalendarClock,
   ClipboardList,
+  Clock,
   Droplets,
   FileText,
   Fuel,
@@ -15,11 +17,23 @@ import {
   CircleAlert,
   MapPinOff,
   ShieldAlert,
+  Users,
   Wrench,
   X,
 } from "lucide-react";
-import type { FlagMap, LotSheet, MasterBus } from "../lib/types";
+import type { Employee, FlagMap, LotSheet, MasterBus } from "../lib/types";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
+import { flagsFullDisplay } from "../lib/grid";
+import { chicagoNowMinutes, chicagoParts, chicagoWeekday } from "../lib/chicagoTime";
+import {
+  availabilityByBucket,
+  availableNow,
+  BUCKETS,
+  DAYS,
+  type Bucket,
+  type WorkPick,
+} from "../lib/staffing";
+import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 
 interface BusMasterResponse {
@@ -33,6 +47,14 @@ interface SheetResponse {
 
 interface FlagsResponse {
   flags?: FlagMap;
+}
+
+interface WorkPickResponse {
+  value?: WorkPick | null;
+}
+
+interface EmployeesResponse {
+  employees?: Employee[];
 }
 
 type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
@@ -53,8 +75,12 @@ export default function HomeDashboard() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [flags, setFlags] = useState<FlagMap>({});
   const [masterBuses, setMasterBuses] = useState<MasterBus[]>([]);
+  const [pick, setPick] = useState<WorkPick | null>(null);
+  const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
+  const [now, setNow] = useState<number>(0);
   const [findBus, setFindBus] = useState("");
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
+  const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -68,12 +94,25 @@ export default function HomeDashboard() {
       fetch("/api/buses", { cache: "no-store" })
         .then((r) => r.json() as Promise<BusMasterResponse>)
         .catch((): BusMasterResponse => ({})),
-    ]).then(([sheetData, flagData, busData]) => {
+      fetch("/api/state/workpick", { cache: "no-store" })
+        .then((r) => r.json() as Promise<WorkPickResponse>)
+        .catch((): WorkPickResponse => ({})),
+      fetch("/api/employees", { cache: "no-store" })
+        .then((r) => r.json() as Promise<EmployeesResponse>)
+        .catch((): EmployeesResponse => ({})),
+    ]).then(([sheetData, flagData, busData, pickData, empData]) => {
       if (!alive) return;
       setSheet(sheetData.sheet || null);
       setUpdatedAt(sheetData.updatedAt || null);
       setFlags(flagData.flags || {});
       setMasterBuses(busData.master?.buses || []);
+      setPick(pickData.value && Array.isArray(pickData.value.shifts) ? pickData.value : null);
+      const out = new Set<string>();
+      for (const e of empData.employees || []) {
+        if ((e.availability || "").trim() && e.badge) out.add(e.badge);
+      }
+      setUnavailable(out);
+      setNow(Date.now());
     });
     load();
     const timer = window.setInterval(load, 3000);
@@ -82,6 +121,23 @@ export default function HomeDashboard() {
       window.clearInterval(timer);
     };
   }, []);
+
+  const availability = useMemo(() => {
+    const effectivePick = pick || WORK_PICK_SEED;
+    if (!now) return { byBucket: availabilityByBucket([]), label: "", usingSeed: !pick };
+    const d = new Date(now);
+    const today = chicagoWeekday(d);
+    const nowMin = chicagoNowMinutes(d);
+    const p = chicagoParts(d);
+    const h24 = Number(p.hour24);
+    const h12 = h24 % 12 || 12;
+    const ampm = h24 >= 12 ? "PM" : "AM";
+    return {
+      byBucket: availabilityByBucket(availableNow(effectivePick, today, nowMin, unavailable)),
+      label: `${DAYS[today].long} ${h12}:${p.minute} ${ampm}`,
+      usingSeed: !pick,
+    };
+  }, [pick, now, unavailable]);
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [flags, masterBuses, sheet]);
   const locations = useMemo(() => fleetBusLocations(sheet, flags), [flags, sheet]);
@@ -181,6 +237,34 @@ export default function HomeDashboard() {
         </div>
       </section>
 
+      <section className="homeavail" aria-label="Available employees">
+        <div className="homeavail__head">
+          <h2><Clock size={17} /> Available Now</h2>
+          <span className="homeavail__when">{availability.label}</span>
+          <button className="homeavail__link" onClick={() => router.push("/staffing/workpick")}>
+            <CalendarClock size={15} /> Work Pick
+          </button>
+        </div>
+        <div className="homeavail__cards">
+          {BUCKETS.map((b) => {
+            const people = availability.byBucket[b.id];
+            const Icon = b.id === "mech" ? Wrench : Users;
+            return (
+              <button
+                key={b.id}
+                className={`homecard availcard availcard--${b.id}`}
+                onClick={() => setAvailBucket(b.id)}
+                aria-haspopup="dialog"
+              >
+                <Icon size={18} />
+                <span className="availcard__value">{people.length}</span>
+                <span className="availcard__label">{b.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="homegrid homegrid--service" aria-label="Service readiness">
         <button className="homecard statcard statcard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
           <CheckCircle2 size={18} />
@@ -267,6 +351,40 @@ export default function HomeDashboard() {
         </div>
       </section>
 
+      {availBucket && (() => {
+        const label = BUCKETS.find((b) => b.id === availBucket)?.label || "";
+        const people = availability.byBucket[availBucket];
+        return (
+          <Overlay
+            onClose={() => setAvailBucket(null)}
+            overlayClassName="modal-backdrop home-status-backdrop no-print"
+            contentClassName="modal modal--tall home-status-modal"
+            label={label}
+          >
+            <div className="modal__head">
+              <div>
+                <div className="modal__title">{label}</div>
+                <div className="modal__sub">On the clock right now — {availability.label}.</div>
+              </div>
+              <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close"><X size={20} /></button>
+            </div>
+            <div className="home-status-summary">
+              <strong>{people.length}</strong> available now
+            </div>
+            <div className="home-status-list">
+              {people.length === 0 && <div className="lotlist__empty">No one scheduled right now.</div>}
+              {people.map((person, i) => (
+                <div className="availrow" key={`${person.employeeId || person.name}-${i}`}>
+                  <strong>{person.name || "—"}</strong>
+                  <span className="availrow__role">{person.role}</span>
+                  <span className="availrow__shift">{person.shift} · {person.hours}</span>
+                </div>
+              ))}
+            </div>
+          </Overlay>
+        );
+      })()}
+
       {detail && (
         <Overlay
           onClose={() => setStatusDetail(null)}
@@ -286,12 +404,18 @@ export default function HomeDashboard() {
           </div>
           <div className="home-status-list">
             {detail.buses.length === 0 && <div className="lotlist__empty">No buses in this group.</div>}
-            {detail.buses.map((bus) => (
-              <div className="home-status-row" key={bus}>
-                <strong>{bus}</strong>
-                <span>{statusDetail === "missing" ? "No current location" : (locations[bus] || ["No current location"]).join(" / ")}</span>
-              </div>
-            ))}
+            {detail.buses.map((bus) => {
+              const why = flags[bus] ? flagsFullDisplay(flags[bus]) : "";
+              return (
+                <div className="home-status-row" key={bus}>
+                  <strong>{bus}</strong>
+                  <span className="home-status-where">
+                    {statusDetail === "missing" ? "No current location" : (locations[bus] || ["No current location"]).join(" / ")}
+                  </span>
+                  {why && <span className="home-status-why">{why}</span>}
+                </div>
+              );
+            })}
           </div>
         </Overlay>
       )}
