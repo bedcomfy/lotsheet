@@ -2,24 +2,15 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { ADMIN_PASSWORD, ADMIN_SESSION_KEY } from "../lib/admin";
+import { useAdminUnlock } from "../lib/useAdminUnlock";
 
 export default function AdminGate({ children }: { children: ReactNode }) {
-  const [unlocked, setUnlocked] = useState(
-    () => typeof sessionStorage !== "undefined" && sessionStorage.getItem(ADMIN_SESSION_KEY) === "1"
-  );
+  const { unlocked, tryUnlock } = useAdminUnlock();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
   function unlock() {
-    if (password.trim().toLowerCase() !== ADMIN_PASSWORD) {
-      setError(true);
-      return;
-    }
-    try {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
-    } catch {}
-    setUnlocked(true);
+    if (!tryUnlock(password)) setError(true);
   }
 
   if (unlocked) return <>{children}</>;

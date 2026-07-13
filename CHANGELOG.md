@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 - 2026-07-13
+
+- Introduced TanStack Query for shared, cached, deduplicated server state, and
+  rebuilt the Home dashboard on it — one cache instead of five separate polling
+  loops. Reusable hooks (sheet, flags, bus master, employees, work pick) are
+  ready for the rest of the app to adopt.
+- Moved the admin-unlock state to a Zustand store, so every gated screen
+  (Seniority, Work Pick, Admin Tools) shares one reactive unlock instead of each
+  keeping its own copy — unlocking anywhere unlocks everywhere for the session.
+
 ## 0.3.0 - 2026-07-13
 
 - Replaced the hand-rolled data layer with a single typed one (Drizzle ORM). The

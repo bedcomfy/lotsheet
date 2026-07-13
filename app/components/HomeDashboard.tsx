@@ -21,7 +21,6 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import type { Employee, FlagMap, LotSheet, MasterBus } from "../lib/types";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import { flagsFullDisplay } from "../lib/grid";
 import { chicagoNowMinutes, chicagoParts, chicagoWeekday } from "../lib/chicagoTime";
@@ -31,31 +30,10 @@ import {
   BUCKETS,
   DAYS,
   type Bucket,
-  type WorkPick,
 } from "../lib/staffing";
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
+import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
-
-interface BusMasterResponse {
-  master?: { buses?: MasterBus[] };
-}
-
-interface SheetResponse {
-  sheet?: LotSheet | null;
-  updatedAt?: string | null;
-}
-
-interface FlagsResponse {
-  flags?: FlagMap;
-}
-
-interface WorkPickResponse {
-  value?: WorkPick | null;
-}
-
-interface EmployeesResponse {
-  employees?: Employee[];
-}
 
 type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
 
@@ -71,59 +49,36 @@ function formatSaved(iso: string | null | undefined): string {
 
 export default function HomeDashboard() {
   const router = useRouter();
-  const [sheet, setSheet] = useState<LotSheet | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-  const [flags, setFlags] = useState<FlagMap>({});
-  const [masterBuses, setMasterBuses] = useState<MasterBus[]>([]);
-  const [pick, setPick] = useState<WorkPick | null>(null);
-  const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
+  // Shared, cached, deduplicated server state (TanStack Query).
+  const { data: sheetData } = useLotSheet();
+  const { data: flags = {} } = useFlags();
+  const { data: masterBuses = [] } = useBusMasterList();
+  const { data: pick = null } = useWorkPick();
+  const { data: employees = [] } = useEmployees();
   const [now, setNow] = useState<number>(0);
   const [findBus, setFindBus] = useState("");
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
+  const sheet = sheetData?.sheet || null;
+  const updatedAt = sheetData?.updatedAt || null;
+
+  // "Available Now" depends on wall-clock time (it changes at minute boundaries),
+  // independent of the data refetch — so tick it on its own timer.
   useEffect(() => {
-    let alive = true;
-    const load = () => Promise.all([
-      fetch("/api/sheet", { cache: "no-store" })
-        .then((r) => r.json() as Promise<SheetResponse>)
-        .catch((): SheetResponse => ({})),
-      fetch("/api/flags", { cache: "no-store" })
-        .then((r) => r.json() as Promise<FlagsResponse>)
-        .catch((): FlagsResponse => ({})),
-      fetch("/api/buses", { cache: "no-store" })
-        .then((r) => r.json() as Promise<BusMasterResponse>)
-        .catch((): BusMasterResponse => ({})),
-      fetch("/api/state/workpick", { cache: "no-store" })
-        .then((r) => r.json() as Promise<WorkPickResponse>)
-        .catch((): WorkPickResponse => ({})),
-      fetch("/api/employees", { cache: "no-store" })
-        .then((r) => r.json() as Promise<EmployeesResponse>)
-        .catch((): EmployeesResponse => ({})),
-    ]).then(([sheetData, flagData, busData, pickData, empData]) => {
-      if (!alive) return;
-      setSheet(sheetData.sheet || null);
-      setUpdatedAt(sheetData.updatedAt || null);
-      setFlags(flagData.flags || {});
-      setMasterBuses(busData.master?.buses || []);
-      setPick(pickData.value && Array.isArray(pickData.value.shifts) ? pickData.value : null);
-      const out = new Set<string>();
-      for (const e of empData.employees || []) {
-        if ((e.availability || "").trim() && e.badge) out.add(e.badge);
-      }
-      setUnavailable(out);
-      setNow(Date.now());
-    });
-    load();
-    const timer = window.setInterval(load, 3000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
+    setNow(Date.now());
+    const t = window.setInterval(() => setNow(Date.now()), 20000);
+    return () => window.clearInterval(t);
   }, []);
 
+  const unavailable = useMemo(() => {
+    const out = new Set<string>();
+    for (const e of employees) if ((e.availability || "").trim() && e.badge) out.add(e.badge);
+    return out;
+  }, [employees]);
+
   const availability = useMemo(() => {
-    const effectivePick = pick || WORK_PICK_SEED;
+    const effectivePick = pick && Array.isArray(pick.shifts) ? pick : WORK_PICK_SEED;
     if (!now) return { byBucket: availabilityByBucket([]), label: "", usingSeed: !pick };
     const d = new Date(now);
     const today = chicagoWeekday(d);

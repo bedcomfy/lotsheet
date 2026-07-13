@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import SheetNav from "./components/SheetNav";
+import Providers from "./components/Providers";
 import { BusMasterProvider } from "./components/BusMasterProvider";
 import FlagConfigProvider from "./components/FlagConfigProvider";
 import BusTypeConfigProvider from "./components/BusTypeConfigProvider";
@@ -42,17 +43,19 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
       <body>
-        <BusMasterProvider>
-          <FlagConfigProvider>
-            <BusTypeConfigProvider>
-              <SheetNav />
-              {/* The wide sheet is contained here (overflow-x: clip) instead of on
-                  <body>, so the sticky mobile nav can pin to the viewport — a clip
-                  on <body> makes body children stick to the scrolling body instead. */}
-              <div className="appmain">{children}</div>
-            </BusTypeConfigProvider>
-          </FlagConfigProvider>
-        </BusMasterProvider>
+        <Providers>
+          <BusMasterProvider>
+            <FlagConfigProvider>
+              <BusTypeConfigProvider>
+                <SheetNav />
+                {/* The wide sheet is contained here (overflow-x: clip) instead of on
+                    <body>, so the sticky mobile nav can pin to the viewport — a clip
+                    on <body> makes body children stick to the scrolling body instead. */}
+                <div className="appmain">{children}</div>
+              </BusTypeConfigProvider>
+            </FlagConfigProvider>
+          </BusMasterProvider>
+        </Providers>
       </body>
     </html>
   );
