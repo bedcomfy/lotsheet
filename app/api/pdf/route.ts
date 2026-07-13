@@ -113,6 +113,43 @@ async function launchBrowser(): Promise<any> {
   });
 }
 
+// A single long-lived browser, reused across requests. Launching a browser per
+// PDF is slow AND, on Windows, makes concurrent renders fight over the same temp
+// profile directory (EBUSY). One shared browser with a fresh PAGE per render
+// fixes both, and warm requests skip the launch entirely. If it ever disconnects
+// (crash, or a cold serverless container), the next call relaunches it.
+let _browser: any = null;
+let _browserPromise: Promise<any> | null = null;
+
+async function getBrowser(): Promise<any> {
+  if (_browser && _browser.connected !== false) return _browser;
+  if (!_browserPromise) {
+    _browserPromise = launchBrowser()
+      .then((b) => {
+        _browser = b;
+        b.on?.("disconnected", () => {
+          _browser = null;
+          _browserPromise = null;
+        });
+        return b;
+      })
+      .catch((e) => {
+        _browserPromise = null;
+        throw e;
+      });
+  }
+  return _browserPromise;
+}
+
+function resetBrowser(): void {
+  const b = _browser;
+  _browser = null;
+  _browserPromise = null;
+  try {
+    b?.close?.();
+  } catch {}
+}
+
 // Sheets that can be exported to PDF. Each must render its print view at
 // `<path>?print=1` and expose a #print-ready marker when loaded.
 const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover", "/workorder"]);
@@ -141,22 +178,33 @@ async function renderPdf(
   // couple of times with a short backoff so a cold print doesn't just error out.
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
-    let browser: any;
+    let page: any;
     try {
-      browser = await launchBrowser();
-      const page = await browser.newPage();
-      await page.goto(pageUrl, { waitUntil: "networkidle0", timeout: 45000 });
+      const browser = await getBrowser();
+      page = await browser.newPage();
+      // Don't wait for full network idle — a sheet may keep a background request
+      // alive. The page exposes #print-ready once its data is loaded, which is the
+      // real "safe to snapshot" signal.
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForSelector("#print-ready", { timeout: 20000 });
+      // Ensure @font-face fonts (the barred-I indicator, etc.) are loaded before
+      // snapshotting, since domcontentloaded fires before subresources finish.
+      await page.evaluate(() => (document as any).fonts?.ready).catch(() => {});
       const pdf = await page.pdf({ format: "letter", printBackground: true, preferCSSPageSize: true });
       return Buffer.from(pdf);
     } catch (err: any) {
       lastErr = err;
       const msg = String(err?.message || err);
-      const transient = /ETXTBSY|spawn|Failed to launch|Target closed|Protocol error/i.test(msg);
+      const transient = /ETXTBSY|spawn|Failed to launch|Target closed|Protocol error|disconnected|Session closed/i.test(msg);
+      // A crashed/disconnected browser must be torn down so the next attempt
+      // relaunches a fresh one instead of reusing the dead handle.
+      if (transient) resetBrowser();
       if (!transient || attempt === 2) throw err;
       await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
     } finally {
-      if (browser) await browser.close();
+      try {
+        await page?.close();
+      } catch {}
     }
   }
   throw lastErr;

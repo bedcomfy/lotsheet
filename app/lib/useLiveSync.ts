@@ -10,6 +10,12 @@ import { useQueryClient } from "@tanstack/react-query";
 export function useLiveSync() {
   const qc = useQueryClient();
   useEffect(() => {
+    // The print view (?print=1) is a static snapshot rendered by the PDF engine —
+    // it must NOT hold a long-poll open, or the headless browser never sees the
+    // network go idle. (The sheets skip their own polling in print mode too.)
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("print") === "1") {
+      return;
+    }
     let active = true;
     let since = 0;
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.0 - 2026-07-13
+
+- Overhauled PDF generation for reliability and speed while keeping the exact
+  print layouts. One long-lived headless browser is now reused across renders
+  (a fresh page per PDF) instead of launching a browser every time — this fixes
+  local generation on Windows (concurrent renders no longer fight over the temp
+  profile) and makes warm requests much faster.
+- The print view no longer holds the real-time connection open, and rendering
+  waits for the page's own "ready" marker (and web fonts) instead of full network
+  idle — so a background request can't stall a print. Every sheet's PDF now
+  generates in about a second, even several at once.
+
 ## 0.6.0 - 2026-07-13
 
 - Added a test suite. Vitest covers the business logic (availability including the
