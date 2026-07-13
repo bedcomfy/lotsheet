@@ -6,6 +6,7 @@ import type { Employee } from "../lib/types";
 import { employeeFullName } from "../lib/types";
 import { DAYS, STAFF_ROLES, type PickBreak, type PickRow, type PickShift, type WorkPick } from "../lib/staffing";
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
+import { useEmployees, useWorkPick } from "../lib/queries";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import AdminUnlockButton from "./AdminUnlockButton";
 import EmployeeInput from "./EmployeeInput";
@@ -35,24 +36,31 @@ function blankRow(): PickRow {
 export default function WorkPickPage() {
   const { unlocked, tryUnlock, lock } = useAdminUnlock();
   const [pick, setPick] = useState<WorkPick | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [search, setSearch] = useState("");
   const shiftsRef = useRef<HTMLDivElement>(null);
 
+  // Employees are read-only here (autocomplete + strike-through), so read them
+  // straight from the shared live cache. The work pick, by contrast, seeds the
+  // editable local draft exactly ONCE — a refetch/pulse must never clobber an
+  // unsaved edit. Save re-PUTs the draft; Home picks it up via the live pulse.
+  const { data: employees = [] } = useEmployees();
+  const { data: pickData, isSuccess: pickLoaded, isError: pickFailed } = useWorkPick();
+  const seededRef = useRef(false);
   useEffect(() => {
-    Promise.all([
-      fetch("/api/state/workpick", { cache: "no-store" }).then((r) => r.json()).catch(() => ({})),
-      fetch("/api/employees").then((r) => r.json()).catch(() => ({})),
-    ]).then(([pickRes, empRes]) => {
-      const value = (pickRes && pickRes.value) as WorkPick | null;
-      setPick(value && Array.isArray(value.shifts) ? value : WORK_PICK_SEED);
-      setEmployees((empRes && empRes.employees) || []);
+    if (seededRef.current) return;
+    if (pickLoaded) {
+      setPick(pickData && Array.isArray(pickData.shifts) ? pickData : WORK_PICK_SEED);
+      seededRef.current = true;
       setLoaded(true);
-    });
-  }, []);
+    } else if (pickFailed) {
+      setPick(WORK_PICK_SEED);
+      seededRef.current = true;
+      setLoaded(true);
+    }
+  }, [pickLoaded, pickFailed, pickData]);
 
   // Bring the first highlighted spot into view when the search changes.
   useEffect(() => {

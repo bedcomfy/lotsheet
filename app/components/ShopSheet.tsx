@@ -10,6 +10,8 @@ import CellEditor from "./CellEditor";
 import LotEditor from "./LotEditor";
 import ManagerPanel from "./ManagerPanel";
 import { getDeviceActor } from "../lib/deviceActor";
+import { useFlags } from "../lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 
 // Everything "inside the shop" in one place: the Apron (buses parked anywhere on
@@ -42,7 +44,9 @@ export default function ShopSheet() {
   const [cellsSnap, setCellsSnap] = useState<Record<string, unknown>>({}); // grid cells, read-only (for locate)
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [flags, setFlags] = useState<FlagMap>({});
+  // Universal flags come from the shared, deduplicated, live query cache.
+  const { data: flags = {} } = useFlags();
+  const qc = useQueryClient();
   const [flagBus, setFlagBus] = useState<string | null>(null);
   const [editingList, setEditingList] = useState<"apron" | "cards" | null>(null); // list editor (Apron / Cards)
   const [editingBay, setEditingBay] = useState<number | null>(null); // one fixed bay spot
@@ -78,23 +82,10 @@ export default function ShopSheet() {
     };
   }, []);
 
-  // Universal flags: load + poll.
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
-      fetch("/api/flags")
-        .then((r) => r.json())
-        .then((d) => alive && setFlags(d.flags || {}))
-        .catch(() => {});
-    load();
-    const iv = setInterval(load, 5000);
-    return () => {
-      alive = false;
-      clearInterval(iv);
-    };
-  }, []);
+  // Optimistically patch the shared flag cache so the just-edited pill updates
+  // instantly; the /api/live pulse then reconciles with the server.
   function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
-    setFlags((prev) => {
+    qc.setQueryData<FlagMap>(["flags"], (prev = {}) => {
       const next = { ...prev };
       const empty =
         !entry ||

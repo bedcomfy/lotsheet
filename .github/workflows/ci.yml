@@ -1,0 +1,22 @@
+name: CI
+
+# Runs the full verify pipeline (type-check + tests + production build) on every
+# push and pull request, so broken code can't reach main unnoticed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check, test, build
+        run: npm run verify

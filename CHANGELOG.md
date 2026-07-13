@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0 - 2026-07-13
+
+- Completed the shared/live data migration: the Fuel, DEF, Turnover, Shop,
+  Seniority, and Work Pick screens now read flags and the employee roster from the
+  same cached, deduplicated source as Home, so a flag or roster change appears on
+  every screen within about a second — no more per-screen polling. Each sheet's
+  own state and autosave are unchanged.
+- Added an error boundary: if one screen hits an unexpected error it shows a
+  friendly "try again" card instead of a blank page.
+- Added continuous integration: type-check, tests, and a production build run
+  automatically on every push and pull request.
+
 ## 0.7.1 - 2026-07-13
 
 - Pinned the Node.js version to 24.x (matching the Vercel project + local dev) so

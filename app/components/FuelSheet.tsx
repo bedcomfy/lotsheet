@@ -12,6 +12,8 @@ import ManagerPanel from "./ManagerPanel";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import { useFlags } from "../lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
 const FONT_DEFAULT = 16;
@@ -85,17 +87,19 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
-  const [busFlags, setBusFlags] = useState<FlagMap>({}); // universal flags: { bus: { flags:[...] } }
+  const { data: busFlags = {} } = useFlags(); // universal flags from the shared live cache
+  const qc = useQueryClient();
   const [showFlags, setShowFlags] = useState(false); // print WITH the R/H/I flags?
   const [managerOpen, setManagerOpen] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Keep the local flag map in sync when the editor changes a bus (it also posts
-  // to /api/flags itself), so the indicators + summary update immediately.
+  // Optimistically patch the shared flag cache when the editor changes a bus (it
+  // also posts to /api/flags itself), so the indicators + summary update instantly;
+  // the /api/live pulse then reconciles with the server.
   function onFlagsUpdated(bus: string, entry: FlagEntry) {
-    setBusFlags((prev) => ({ ...prev, [bus]: entry }));
+    qc.setQueryData<FlagMap>(["flags"], (prev = {}) => ({ ...prev, [bus]: entry }));
   }
 
   useEffect(() => {
@@ -117,18 +121,6 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     if (printMode) return;
     localStorage.setItem(`pace:flags:${storageKey}`, showFlags ? "1" : "0");
   }, [showFlags, storageKey, printMode]);
-
-  // Universal bus flags (shared across the whole site).
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/flags")
-      .then((r) => r.json())
-      .then((d) => alive && setBusFlags(d.flags || {}))
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
 
   // Quietly (re)build the cached PDF after edits (or a font change) so the next
   // "Print PDF" is instant. Keyed to fz so the prewarm matches what we print.

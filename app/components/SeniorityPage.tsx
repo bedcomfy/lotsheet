@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Check, Lock, Plus, Save, Trash2 } from "lucide-react";
 import type { Employee } from "../lib/types";
 import { UNAVAILABLE_REASONS } from "../lib/staffing";
+import { useEmployees } from "../lib/queries";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import AdminUnlockButton from "./AdminUnlockButton";
 
@@ -57,13 +58,22 @@ export default function SeniorityPage() {
   const [sortKey, setSortKey] = useState<SortKey>("startDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  // Read the shared roster from the app-wide cache, but seed the editable draft
+  // exactly ONCE — a background refetch (or the live pulse) must never overwrite
+  // in-progress edits. Save still re-seeds `rows` locally from its own response.
+  const { data: employees, isSuccess, isError } = useEmployees();
+  const seededRef = useRef(false);
   useEffect(() => {
-    fetch("/api/employees")
-      .then((r) => r.json())
-      .then((d) => setRows((d.employees || []).map(normalize)))
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, []);
+    if (seededRef.current) return;
+    if (isSuccess) {
+      setRows((employees || []).map(normalize));
+      seededRef.current = true;
+      setLoaded(true);
+    } else if (isError) {
+      seededRef.current = true;
+      setLoaded(true); // don't hang on "Loading…" if the fetch failed
+    }
+  }, [isSuccess, isError, employees]);
 
   function setRow(i: number, key: keyof Employee, val: string) {
     setSaved(false);

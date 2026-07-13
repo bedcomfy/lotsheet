@@ -15,7 +15,9 @@ import LotEditor from "./LotEditor";
 import DatePickerField from "./DatePickerField";
 import { chicagoParts } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
-import type { Employee, FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
+import { useEmployees, useFlags } from "../lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
 
 const STORAGE_KEY = "turnover";
 const FONT_DEFAULT = 13;
@@ -70,10 +72,12 @@ export default function TurnoverSheet() {
   const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [editingLot, setEditingLot] = useState<LotKey | null>(null);
 
-  const [flags, setFlags] = useState<FlagMap>({});
+  // Universal flags + employee roster from the shared, deduplicated, live cache.
+  const { data: flags = {} } = useFlags();
+  const qc = useQueryClient();
   const [flagBus, setFlagBus] = useState<string | null>(null);
 
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const { data: employees = [] } = useEmployees();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -111,33 +115,10 @@ export default function TurnoverSheet() {
     });
   }, [loaded, data.cells["date-m"], data.cells["date-d"], data.cells["date-y"]]);
 
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/employees")
-      .then((r) => r.json())
-      .then((d) => alive && setEmployees(d.employees || []))
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let alive = true;
-    const load = () =>
-      fetch("/api/flags")
-        .then((r) => r.json())
-        .then((d) => alive && setFlags(d.flags || {}))
-        .catch(() => {});
-    load();
-    const iv = setInterval(load, 5000);
-    return () => {
-      alive = false;
-      clearInterval(iv);
-    };
-  }, []);
+  // Optimistically patch the shared flag cache so a just-set flag shows instantly;
+  // the /api/live pulse then reconciles with the server.
   function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
-    setFlags((prev) => {
+    qc.setQueryData<FlagMap>(["flags"], (prev = {}) => {
       const next = { ...prev };
       const empty =
         !entry ||

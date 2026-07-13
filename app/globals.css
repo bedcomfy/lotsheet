@@ -6861,3 +6861,43 @@ td.turnt__head {
   font-size: 12.5px;
   font-weight: 700;
 }
+
+/* ---------- Route error boundary (app/error.tsx) ---------- */
+.errpage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 24px;
+}
+.errpage__card {
+  max-width: 460px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 28px 26px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+.errpage__card h1 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.errpage__card p {
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.errpage__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.errpage__digest {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
