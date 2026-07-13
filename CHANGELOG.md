@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.1 - 2026-07-13
+
+- Pinned the Node.js version to 22.x so a future Node release can't silently
+  change the deploy runtime.
+- Removed the unused full `puppeteer` dev dependency (only `puppeteer-core` is
+  used at runtime) and the now-unneeded `.npmrc`, clearing the build warnings.
+
 ## 0.7.0 - 2026-07-13
 
 - Overhauled PDF generation for reliability and speed while keeping the exact
