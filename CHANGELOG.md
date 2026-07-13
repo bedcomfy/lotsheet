@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 - 2026-07-13
+
+- Added real-time sync: a single change token bumps on every shared-data write,
+  and an /api/live long-poll returns the instant it advances, so the dashboard
+  and shared data refresh within about a second of any change on any device —
+  without each client polling on a fixed interval.
+- Query refetch intervals are now generous fallbacks; the live signal handles
+  immediacy.
+
 ## 0.4.0 - 2026-07-13
 
 - Introduced TanStack Query for shared, cached, deduplicated server state, and

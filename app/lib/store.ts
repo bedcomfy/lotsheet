@@ -5,8 +5,9 @@
 // PGlite database in local dev (see ./db). The API surface below is unchanged;
 // callers don't know or care which database is behind it.
 
-import { and, asc, desc, eq, gt, max, sql } from "drizzle-orm";
+import { asc, desc, eq, gt, max, sql } from "drizzle-orm";
 import { getDb } from "./db";
+import type { DB } from "./db";
 import { appState, auditEvents, busFlags, lotSheetOps, sheetHistory, TABLE_SUFFIX } from "./db/schema";
 import { mergeLotSheet } from "./lotSheetMerge";
 import { applyLotSheetOpsToSheet, normalizeOps, type LotSheetOp, type LotSheetOpRecord } from "./lotSheetOps";
@@ -48,6 +49,26 @@ function isEmpty(e: FlagEntry): boolean {
   return !e.flags.length && !(e.note && e.note.trim());
 }
 
+// ---------- change token (for real-time long-poll) ----------
+// One monotonic counter bumped on every shared-data write, stored in app_state.
+// The /api/live long-poll watches it so clients refetch the instant anything
+// changes — without each client hammering the DB on a fixed interval.
+const PULSE_KEY = "__pulse";
+async function bumpPulse(db: DB): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO ${appState} (key, value, updated_at)
+    VALUES (${PULSE_KEY}, to_jsonb(1), now())
+    ON CONFLICT (key) DO UPDATE SET
+      value = to_jsonb(COALESCE((${appState}.value #>> '{}')::bigint, 0) + 1),
+      updated_at = now()
+  `);
+}
+export async function getPulse(): Promise<number> {
+  const { value } = await getState(PULSE_KEY);
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
 // ---------- bus flags ----------
 export async function getFlags(): Promise<FlagMap> {
   const db = await getDb();
@@ -72,22 +93,23 @@ export async function setBusFlags(bus: string, entry: unknown): Promise<void> {
   const db = await getDb();
   if (isEmpty(e)) {
     await db.delete(busFlags).where(eq(busFlags.bus, bus));
-    return;
+  } else {
+    const values = {
+      bus,
+      flag: e.flags.join(","),
+      note: e.note,
+      inspMiles: e.inspMiles,
+      holdReason: e.holdReason,
+      retorqueTires: (e.retorqueTires || []).join(","),
+      inspOption: e.inspOption || "",
+      updatedAt: sql`now()`,
+    };
+    await db
+      .insert(busFlags)
+      .values(values)
+      .onConflictDoUpdate({ target: busFlags.bus, set: { ...values, bus: undefined } });
   }
-  const values = {
-    bus,
-    flag: e.flags.join(","),
-    note: e.note,
-    inspMiles: e.inspMiles,
-    holdReason: e.holdReason,
-    retorqueTires: (e.retorqueTires || []).join(","),
-    inspOption: e.inspOption || "",
-    updatedAt: sql`now()`,
-  };
-  await db
-    .insert(busFlags)
-    .values(values)
-    .onConflictDoUpdate({ target: busFlags.bus, set: { ...values, bus: undefined } });
+  await bumpPulse(db);
 }
 
 // ---------- shared current lot sheet ----------
@@ -120,6 +142,7 @@ export async function setSheet(sheet: LotSheet): Promise<string> {
     .values({ key: SHEET_KEY, value: sheet, updatedAt: sql`now()` })
     .onConflictDoUpdate({ target: appState.key, set: { value: sheet, updatedAt: sql`now()` } })
     .returning({ updatedAt: appState.updatedAt });
+  await bumpPulse(db);
   return isoOrNull(rows[0]?.updatedAt) || new Date().toISOString();
 }
 
@@ -129,7 +152,7 @@ export async function mergeSetSheet(
   force = false
 ): Promise<{ sheet: LotSheet; updatedAt: string }> {
   const db = await getDb();
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SHEET_LOCK}))`);
     const rows = await tx.select({ value: appState.value }).from(appState).where(eq(appState.key, SHEET_KEY));
     const current = (rows[0]?.value || null) as LotSheet | null;
@@ -141,6 +164,8 @@ export async function mergeSetSheet(
       .returning({ updatedAt: appState.updatedAt });
     return { sheet: next, updatedAt: isoOrNull(written[0]?.updatedAt) || new Date().toISOString() };
   });
+  await bumpPulse(db);
+  return result;
 }
 
 export async function applySheetOps(
@@ -149,7 +174,7 @@ export async function applySheetOps(
 ): Promise<{ sheet: LotSheet; updatedAt: string; revision: number; ops: LotSheetOpRecord[] }> {
   const ops = normalizeOps(rawOps);
   const db = await getDb();
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SHEET_LOCK}))`);
     const rows = await tx.select({ value: appState.value }).from(appState).where(eq(appState.key, SHEET_KEY));
     const current = (rows[0]?.value || null) as LotSheet | null;
@@ -177,6 +202,8 @@ export async function applySheetOps(
       ops: records,
     };
   });
+  await bumpPulse(db);
+  return result;
 }
 
 export async function listSheetOpsSince(since: number): Promise<LotSheetOpRecord[]> {
@@ -225,6 +252,7 @@ export async function setState(key: string, value: unknown): Promise<string> {
     .values({ key, value, updatedAt: sql`now()` })
     .onConflictDoUpdate({ target: appState.key, set: { value, updatedAt: sql`now()` } })
     .returning({ updatedAt: appState.updatedAt });
+  await bumpPulse(db);
   return isoOrNull(rows[0]?.updatedAt) || new Date().toISOString();
 }
 

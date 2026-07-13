@@ -15,9 +15,10 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// The shared lot sheet (read view — the live ops sync on the Lot Sheet itself is
-// separate and intentionally untouched).
-export function useLotSheet(refetchInterval = 3000) {
+// Refetch intervals below are only a safety FALLBACK — the /api/live long-poll
+// (useLiveSync) invalidates these queries within ~1s of any change, so the
+// intervals can be generous.
+export function useLotSheet(refetchInterval = 30000) {
   return useQuery({
     queryKey: ["sheet"],
     queryFn: () => getJson<{ sheet: LotSheet | null; updatedAt: string | null }>("/api/sheet"),
@@ -25,7 +26,7 @@ export function useLotSheet(refetchInterval = 3000) {
   });
 }
 
-export function useFlags(refetchInterval = 3000) {
+export function useFlags(refetchInterval = 30000) {
   return useQuery({
     queryKey: ["flags"],
     queryFn: async () => (await getJson<{ flags?: FlagMap }>("/api/flags")).flags || {},
@@ -33,7 +34,7 @@ export function useFlags(refetchInterval = 3000) {
   });
 }
 
-export function useBusMasterList(refetchInterval = 15000) {
+export function useBusMasterList(refetchInterval = 60000) {
   return useQuery({
     queryKey: ["buses"],
     queryFn: async () => (await getJson<{ master?: { buses?: MasterBus[] } }>("/api/buses")).master?.buses || [],
@@ -41,7 +42,7 @@ export function useBusMasterList(refetchInterval = 15000) {
   });
 }
 
-export function useEmployees(refetchInterval = 15000) {
+export function useEmployees(refetchInterval = 60000) {
   return useQuery({
     queryKey: ["employees"],
     queryFn: async () => (await getJson<{ employees?: Employee[] }>("/api/employees")).employees || [],
@@ -49,7 +50,7 @@ export function useEmployees(refetchInterval = 15000) {
   });
 }
 
-export function useWorkPick(refetchInterval = 15000) {
+export function useWorkPick(refetchInterval = 60000) {
   return useQuery({
     queryKey: ["workpick"],
     queryFn: async () => (await getJson<{ value?: WorkPick | null }>("/api/state/workpick")).value ?? null,

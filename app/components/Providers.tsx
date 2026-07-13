@@ -3,6 +3,14 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useLiveSync } from "../lib/useLiveSync";
+
+// Runs the real-time long-poll; refreshes queries on any change. Rendered inside
+// the provider so it has access to the query client.
+function LiveSync() {
+  useLiveSync();
+  return null;
+}
 
 // App-wide client providers. Hosts the TanStack Query cache so any component can
 // read shared server state through a single deduplicated, cached source instead
@@ -22,5 +30,10 @@ export default function Providers({ children }: { children: ReactNode }) {
         },
       })
   );
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={client}>
+      <LiveSync />
+      {children}
+    </QueryClientProvider>
+  );
 }
