@@ -2,8 +2,8 @@
 
 ## 0.7.1 - 2026-07-13
 
-- Pinned the Node.js version to 22.x so a future Node release can't silently
-  change the deploy runtime.
+- Pinned the Node.js version to 24.x (matching the Vercel project + local dev) so
+  a future Node release can't silently change the deploy runtime.
 - Removed the unused full `puppeteer` dev dependency (only `puppeteer-core` is
   used at runtime) and the now-unneeded `.npmrc`, clearing the build warnings.
 
