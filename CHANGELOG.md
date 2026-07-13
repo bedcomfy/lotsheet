@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 - 2026-07-13
+
+- Added a test suite. Vitest covers the business logic (availability including the
+  overnight day-attribution, fleet stats) and the data layer end-to-end against an
+  in-memory PGlite database — 19 tests. `npm run verify` now runs the tests
+  between the type-check and the build.
+- Added a Playwright end-to-end smoke scaffold (`npm run e2e`) for whole-page
+  rendering checks; run `npx playwright install chromium` once first.
+
 ## 0.5.0 - 2026-07-13
 
 - Added real-time sync: a single change token bumps on every shared-data write,

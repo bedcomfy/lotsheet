@@ -56,7 +56,10 @@ async function create(): Promise<DB> {
   } else {
     const { PGlite } = await import("@electric-sql/pglite");
     const { drizzle } = await import("drizzle-orm/pglite");
-    const client = new PGlite(path.join(process.cwd(), ".data", "pglite"));
+    // PGLITE_DATA="memory" gives a fresh in-memory database (used by tests); the
+    // default persists dev data to .data/pglite.
+    const dataDir = process.env.PGLITE_DATA || path.join(process.cwd(), ".data", "pglite");
+    const client = dataDir === "memory" ? new PGlite() : new PGlite(dataDir);
     // PGlite and node-postgres expose the same Drizzle query API; the cast keeps
     // store.ts written against a single db type.
     db = drizzle(client, { schema }) as unknown as DB;
