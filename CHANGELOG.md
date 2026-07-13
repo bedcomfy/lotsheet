@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 - 2026-07-13
+
+- Replaced the hand-rolled data layer with a single typed one (Drizzle ORM). The
+  same queries now run in every environment: Neon/Postgres in production, an
+  embedded PGlite database in local development — no more separate JSON-file dev
+  backend that could drift from production.
+- Added Zod validation at the API boundaries (flags, employees, keyed state), so
+  malformed requests are rejected with a clear 400 instead of reaching storage.
+- No data migration: production keeps its existing tables and the same idempotent
+  schema setup; storage isolation for previews is unchanged.
+
 ## 0.2.0 - 2026-07-13
 
 - Upgraded to Next.js 16 and React 19 (from Next 14.2 / React 18).

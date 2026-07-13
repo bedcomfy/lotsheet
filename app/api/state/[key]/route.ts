@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getState, setState } from "../../../lib/store";
+import { parseBody, statePayloadSchema } from "../../../lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,8 @@ export async function PUT(req: Request, { params }: KeyParams) {
   if (!ALLOWED.has(key)) {
     return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   }
-  const body = await req.json().catch(() => ({}));
-  const updatedAt = await setState(key, body.value ?? null);
+  const { data, error } = await parseBody(req, statePayloadSchema);
+  if (error) return error;
+  const updatedAt = await setState(key, data.value ?? null);
   return NextResponse.json({ ok: true, updatedAt });
 }

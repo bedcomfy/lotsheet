@@ -3,7 +3,7 @@ const nextConfig = {
   // Keep the Postgres driver and the headless-Chromium packages out of the
   // server bundle (they're loaded at runtime via dynamic import). Stable in
   // Next 15+, so no longer under `experimental`.
-  serverExternalPackages: ["pg", "@sparticuz/chromium", "puppeteer-core"],
+  serverExternalPackages: ["pg", "@sparticuz/chromium", "puppeteer-core", "@electric-sql/pglite"],
   // Force the Chromium binary AND its sibling shared libraries (libnss3.so, etc.)
   // into the /api/pdf function bundle. Next's tracer includes the binary but
   // misses these runtime-loaded files — the cause of the earlier

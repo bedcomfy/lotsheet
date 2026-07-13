@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getState, setState } from "../../lib/store";
 import type { Employee } from "../../lib/types";
 import { EMPLOYEE_ROSTER_VERSION, mergeEmployeeRoster } from "../../lib/employees";
+import { employeesPayloadSchema, parseBody } from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +50,9 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const employees = sanitize(body.employees);
+  const { data, error } = await parseBody(req, employeesPayloadSchema);
+  if (error) return error;
+  const employees = sanitize(data.employees);
   const updatedAt = await setState("employees", { employees, rosterVersion: EMPLOYEE_ROSTER_VERSION });
   return NextResponse.json({ ok: true, employees, updatedAt });
 }
