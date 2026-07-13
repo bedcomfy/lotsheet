@@ -10,13 +10,14 @@ function check(key: string): boolean {
   return ALLOWED.has(key);
 }
 
+// Next 15+ makes route `params` a Promise — await it before use.
 interface KeyParams {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }
 
 // List this sheet's archived copies, newest first.
 export async function GET(_req: Request, { params }: KeyParams) {
-  const { key } = params;
+  const { key } = await params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const sheets = await listHistory(key);
   return NextResponse.json({ sheets });
@@ -24,7 +25,7 @@ export async function GET(_req: Request, { params }: KeyParams) {
 
 // Archive a copy of this sheet (capped at 20 newest per sheet).
 export async function POST(req: Request, { params }: KeyParams) {
-  const { key } = params;
+  const { key } = await params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const body = await req.json().catch(() => ({}));
   if (!body || typeof body.sheet !== "object" || body.sheet === null) {
@@ -37,7 +38,7 @@ export async function POST(req: Request, { params }: KeyParams) {
 
 // Delete one archived copy by id (?id=...).
 export async function DELETE(req: Request, { params }: KeyParams) {
-  const { key } = params;
+  const { key } = await params;
   if (!check(key)) return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });

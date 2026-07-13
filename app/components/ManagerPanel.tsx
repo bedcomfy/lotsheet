@@ -205,7 +205,7 @@ function InspOptionPicker({
 function FlagPicker({ entry, onChange, searchRef }: {
   entry: FlagEntry;
   onChange: (e: FlagEntry) => void;
-  searchRef?: RefObject<HTMLInputElement>;
+  searchRef?: RefObject<HTMLInputElement | null>;
 }) {
   const [query, setQuery] = useState("");
   const localSearchRef = useRef<HTMLInputElement>(null);

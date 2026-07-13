@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 - 2026-07-13
+
+- Upgraded to Next.js 16 and React 19 (from Next 14.2 / React 18).
+- Migrated the config to the stable `serverExternalPackages` and top-level `outputFileTracingIncludes`, and removed the OneDrive-era webpack cache workaround (the repo now lives on a local drive).
+- Made the dynamic `[key]` API routes await their params, per the Next 15+ async request API.
+- Builds now use Turbopack by default.
+
 ## 0.1.18 - 2026-07-13
 
 - Added a new Staffing section to the sidebar with a Seniority list and an editable Work Pick schedule.

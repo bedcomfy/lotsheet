@@ -6,12 +6,13 @@ export const dynamic = "force-dynamic";
 // Sheets allowed to use the shared keyed store. Add new sheet keys here.
 const ALLOWED = new Set(["fuel", "def", "turnover", "workorder", "workpick"]);
 
+// Next 15+ makes route `params` a Promise — await it before use.
 interface KeyParams {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }
 
 export async function GET(_req: Request, { params }: KeyParams) {
-  const key = params.key;
+  const { key } = await params;
   if (!ALLOWED.has(key)) {
     return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   }
@@ -20,7 +21,7 @@ export async function GET(_req: Request, { params }: KeyParams) {
 }
 
 export async function PUT(req: Request, { params }: KeyParams) {
-  const key = params.key;
+  const { key } = await params;
   if (!ALLOWED.has(key)) {
     return NextResponse.json({ error: "Unknown sheet" }, { status: 404 });
   }
