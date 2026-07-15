@@ -52,6 +52,8 @@ import { mergeLotSheet } from "../lib/lotSheetMerge";
 import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
+import { useFlags } from "../lib/queries";
+import { useQueryClient } from "@tanstack/react-query";
 
 const STORAGE_KEY = "lotsheet:current";
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
@@ -280,10 +282,17 @@ export default function LotSheet() {
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
   const [syncReady, setSyncReady] = useState(false);
-  const [flagsLoaded, setFlagsLoaded] = useState(false);
   const [editing, setEditing] = useState<{ id: string; subLabel: string; seed?: string } | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [flags, setFlags] = useState<FlagMap>({}); // bus number -> flag entry
+  // Bus flags come from the shared live cache (TanStack Query) — the /api/live
+  // long-poll invalidates ["flags"] within ~1s of any write on any device, so an
+  // already-open Lot Sheet reflects a flag changed elsewhere without a reload.
+  // "Ready" includes the ERROR state: if /api/flags is down, render with empty
+  // flags (like the old fetch().finally() did) instead of holding the PDF
+  // renderer's #print-ready marker hostage forever.
+  const { data: flags = {}, isSuccess: flagsOk, isError: flagsFailed } = useFlags();
+  const flagsReady = flagsOk || flagsFailed;
+  const qc = useQueryClient();
   const [managerOpen, setManagerOpen] = useState(false);
   const [flagBus, setFlagBus] = useState<string | null>(null); // open the flag editor on this bus
   const [dragNum, setDragNum] = useState<string | null>(null); // bus being dragged (for the overlay chip)
@@ -315,6 +324,9 @@ export default function LotSheet() {
   const [clockStamp, setClockStamp] = useState(() => printStamp());
   const [nativePrinting, setNativePrinting] = useState(false);
   const [blankPrintMode, setBlankPrintMode] = useState(false);
+  // Gates the PDF renderer's #print-ready marker + the prewarm. A blank print has
+  // no flags to wait for; otherwise it's ready once the flags query resolves.
+  const flagsLoaded = blankPrintMode || flagsReady;
 
   // Read the print query params on the client (not during SSR/prerender, where
   // window doesn't exist — a lazy initializer would bake in the wrong value).
@@ -479,19 +491,6 @@ export default function LotSheet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet, loaded, printMode]);
 
-  // Load shared bus flags.
-  useEffect(() => {
-    if (param("blank") === "1") {
-      setFlags({});
-      setFlagsLoaded(true);
-      return;
-    }
-    fetch("/api/flags")
-      .then((r) => r.json())
-      .then((d) => setFlags(d.flags || {}))
-      .catch(() => {})
-      .finally(() => setFlagsLoaded(true));
-  }, []);
 
   // Pre-build the PDF when flags or the maintenance toggle change, and once on
   // load (the sheet itself is pre-built after each autosave) so a later
@@ -738,8 +737,11 @@ export default function LotSheet() {
     return (num && displayFlags[num]) || EMPTY_FLAG;
   }
 
+  // Optimistically fold a just-saved entry into the shared flag cache so the UI
+  // updates instantly (the POST to /api/flags also bumps the live pulse, which
+  // reconciles every other device). Mirrors FuelSheet's onFlagsUpdated.
   function onBusFlagsUpdated(bus: string, entry: FlagEntry) {
-    setFlags((prev) => {
+    qc.setQueryData<FlagMap>(["flags"], (prev = {}) => {
       const next = { ...prev };
       const empty =
         !entry ||
