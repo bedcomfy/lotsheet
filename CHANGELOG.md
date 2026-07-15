@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.13.0 - 2026-07-15
+
+- Reworked the phone Lot Sheet into a paper viewer: the unchanged Letter sheet
+  now pans inside a fixed-height viewport while the page and navigation stay put.
+- Added a five-button mobile action dock for Fill, Flags, Shop, Print, and More.
+  The scrollable More sheet retains Find Bus, fleet status, selection, previous
+  sheets, sharing, blank printing, maintenance details, and both clear actions.
+- Added Fit and 100% viewing modes plus double-tap zoom that returns to the
+  tapped area when expanding the sheet.
+- Replaced the cramped mobile page select with a full-screen page switcher built
+  from the shared navigation list, including descriptions and current-page state.
+- Added a compact mobile Lot Sheet status pill and one-tap bus search in the top
+  bar, both wired to the existing live status and search behavior.
+- Kept multi-select controls above the phone action dock and made all sheet
+  scrollers contain two-axis touch panning without creating page-level overflow.
+- Simplified the desktop sidebar, brand treatment, buttons, and toolbar surfaces
+  with calmer weights, flatter controls, and less visual decoration.
+- Print routes and PDF geometry are unchanged; mobile viewer controls are not
+  rendered in Lot Sheet print mode.
+
 ## 0.12.0 - 2026-07-15
 
 - Rebuilt Service Sheets around one full-width navigation and print bar with a

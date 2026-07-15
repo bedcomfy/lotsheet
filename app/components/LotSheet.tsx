@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -44,6 +44,8 @@ import { MissingBusesModal, ServiceDetailModal } from "./LotStatusModals";
 import ToolMenu from "./ToolMenu";
 import Overlay from "./Overlay";
 import DatePickerField from "./DatePickerField";
+import MobileLotChrome from "./MobileLotChrome";
+import { useMobileNav } from "./MobileNavContext";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
@@ -119,6 +121,7 @@ function param(name: string): string | null {
 }
 
 export default function LotSheet() {
+  const { registerLotActions, setLotStatus } = useMobileNav();
   const { label: busLabel, isKnown, buses: masterBuses } = useBusMaster();
   const [sheet, setSheet] = useState<LotSheetData>(emptySheet);
   const [loaded, setLoaded] = useState(false);
@@ -220,6 +223,9 @@ export default function LotSheet() {
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
   const [mobileSheetView, setMobileSheetView] = useState<"pan" | "fit">("pan");
+  const [mobileSearchRequest, setMobileSearchRequest] = useState(0);
+  const sheetScrollRef = useRef<HTMLDivElement>(null);
+  const lastTouchTapRef = useRef<{ at: number; x: number; y: number } | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
@@ -1212,6 +1218,21 @@ export default function LotSheet() {
   const missingBuses = fleet.missing;
   const accountedBuses = fleet.accountedByFlagOnly;
 
+  useEffect(() => {
+    setLotStatus({ usable: readyForServiceCount, outOfService: notReadyForServiceCount });
+  }, [notReadyForServiceCount, readyForServiceCount, setLotStatus]);
+
+  useEffect(() => () => setLotStatus(null), [setLotStatus]);
+
+  useEffect(() => {
+    if (printMode) return;
+    registerLotActions({
+      openStatus: () => setServiceDetail(notReadyForServiceCount ? "outOfService" : "usable"),
+      openSearch: () => setMobileSearchRequest((request) => request + 1),
+    });
+    return () => registerLotActions(null);
+  }, [notReadyForServiceCount, printMode, registerLotActions]);
+
   // The whole sheet as clean text — for pasting into a group chat at handoff.
   function buildShareText(): string {
     const lines: string[] = [];
@@ -1261,8 +1282,75 @@ export default function LotSheet() {
     }
   }
 
+  function setMobileZoom(next: "pan" | "fit", clientX?: number, clientY?: number) {
+    const viewport = sheetScrollRef.current;
+    if (!viewport || next === mobileSheetView) return;
+
+    if (next === "fit" || clientX == null || clientY == null) {
+      setMobileSheetView(next);
+      if (next === "fit") {
+        requestAnimationFrame(() => {
+          viewport.scrollLeft = 0;
+          viewport.scrollTop = 0;
+        });
+      }
+      return;
+    }
+
+    const paper = viewport.querySelector<HTMLElement>(".lot-sheet-front");
+    if (!paper) {
+      setMobileSheetView(next);
+      return;
+    }
+    const paperRect = paper.getBoundingClientRect();
+    const xRatio = Math.max(0, Math.min(1, (clientX - paperRect.left) / paperRect.width));
+    const yRatio = Math.max(0, Math.min(1, (clientY - paperRect.top) / paperRect.height));
+    setMobileSheetView(next);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        void viewport.scrollWidth;
+        const expandedPaper = viewport.querySelector<HTMLElement>(".lot-sheet-front");
+        if (!expandedPaper) return;
+        viewport.scrollLeft =
+          expandedPaper.offsetLeft + expandedPaper.offsetWidth * xRatio - viewport.clientWidth / 2;
+        viewport.scrollTop =
+          expandedPaper.offsetTop + expandedPaper.offsetHeight * yRatio - viewport.clientHeight / 2;
+      });
+    });
+  }
+
+  function toggleMobileZoomAt(clientX: number, clientY: number) {
+    setMobileZoom(mobileSheetView === "fit" ? "pan" : "fit", clientX, clientY);
+  }
+
+  function onMobileDoubleClick(event: ReactMouseEvent<HTMLDivElement>) {
+    if ((event.target as HTMLElement).closest("input, button, select, textarea")) return;
+    toggleMobileZoomAt(event.clientX, event.clientY);
+  }
+
+  function onMobileTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
+    if (event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const now = Date.now();
+    const previous = lastTouchTapRef.current;
+    lastTouchTapRef.current = { at: now, x: touch.clientX, y: touch.clientY };
+    if (!previous) return;
+    const distance = Math.hypot(touch.clientX - previous.x, touch.clientY - previous.y);
+    if (now - previous.at > 300 || distance > 28) return;
+    event.preventDefault();
+    lastTouchTapRef.current = null;
+    toggleMobileZoomAt(touch.clientX, touch.clientY);
+  }
+
+  function onMobileFind(value: string) {
+    const next = sanitizeBus(value);
+    setFindVal(next);
+    if (isKnown(next)) findBus(next);
+  }
+
   return (
-    <div className="app">
+    <div className="app app--lot">
       {/* Toolbar — never printed */}
       <div className="toolbar no-print">
         <div className="toolbar__title">Lot Sheet</div>
@@ -1387,28 +1475,15 @@ export default function LotSheet() {
         </button>
       </div>
 
-      <div className="mobile-actions no-print" aria-label="Quick actions">
-        <button className="mobile-action mobile-action--primary" onClick={() => setFillOpen(true)} type="button">
-          <LayoutGrid size={18} />
-          <span>Fill</span>
-        </button>
-        <button className="mobile-action" onClick={() => setManagerOpen(true)} type="button">
-          <Flag size={18} />
-          <span>Flags</span>
-        </button>
-        <button className="mobile-action" onClick={() => setShopOpen(true)} type="button">
-          <Wrench size={18} />
-          <span>Shop</span>
-        </button>
-        <button className="mobile-action" onClick={openPdf} type="button">
-          <FileDown size={18} />
-          <span>Print</span>
-        </button>
-      </div>
-
       {/* The printable sheet */}
       <DndContext id="lot-sheet-dnd" sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
-      <div className={`sheet-scroll sheet-scroll--${mobileSheetView}`} style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
+      <div
+        ref={sheetScrollRef}
+        className={`sheet-scroll sheet-scroll--${mobileSheetView}`}
+        style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}
+        onDoubleClick={onMobileDoubleClick}
+        onTouchEndCapture={onMobileTouchEnd}
+      >
         <div className={`sheet lot-sheet-front ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}
           <div className="head">
@@ -1585,6 +1660,37 @@ export default function LotSheet() {
         ) : null}
       </DragOverlay>
       </DndContext>
+
+      {!printMode && (
+        <MobileLotChrome
+          zoom={mobileSheetView}
+          onZoom={setMobileZoom}
+          searchRequest={mobileSearchRequest}
+          onFill={() => setFillOpen(true)}
+          onFlags={() => setManagerOpen(true)}
+          onShop={() => setShopOpen(true)}
+          onPrint={openPdf}
+          selectMode={selectMode}
+          onToggleSelect={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+          onPrev={() => setPrevOpen(true)}
+          onShare={shareSheet}
+          onPrintBlank={openBlankPdf}
+          onClearGrid={newSheet}
+          onClearLots={clearLots}
+          showMaint={showMaint}
+          onShowMaint={setShowMaint}
+          usableCount={readyForServiceCount}
+          outCount={notReadyForServiceCount}
+          missingCount={missingBuses.length}
+          onUsable={() => setServiceDetail("usable")}
+          onOut={() => setServiceDetail("outOfService")}
+          onMissing={() => setMissingOpen(true)}
+          findVal={findVal}
+          onFind={onMobileFind}
+          foundWhere={foundWhere}
+          foundBus={foundBus}
+        />
+      )}
 
       {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
       {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}

@@ -59,7 +59,7 @@
   --ctl-radius: 9px;
   --font-sheet: Arial, Helvetica, sans-serif;
   --font-ui: "Segoe UI Variable Text", "Segoe UI", Arial, Helvetica, sans-serif;
-  --nav-w: 272px;
+  --nav-w: 248px;
 }
 
 /* ---- DARK THEME: only the chrome tokens flip; the paper tokens above stay put,

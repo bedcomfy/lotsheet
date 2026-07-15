@@ -8,8 +8,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
-  background: color-mix(in srgb, var(--chrome) 94%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--chrome);
   border-bottom: 1px solid var(--edge);
 }
 .toolbar__title {
@@ -97,13 +96,13 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: background 0.16s, border-color 0.16s, transform 0.08s, box-shadow 0.16s;
+  box-shadow: none;
+  transition: background 0.16s, border-color 0.16s, transform 0.08s;
 }
 .btn:hover {
   background: var(--surface-2);
   border-color: var(--edge-strong);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 18px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
 }
 .btn:active {
   transform: translateY(1px);
@@ -115,19 +114,10 @@
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.16);
+  box-shadow: none;
 }
 .btn--primary::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.34) 45%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.55s cubic-bezier(.2,.8,.2,1);
-  pointer-events: none;
-}
-.btn--primary:hover::before {
-  transform: translateX(120%);
+  display: none;
 }
 .btn > svg,
 .btn > span {
@@ -154,9 +144,10 @@
 /* ---------- Sheet ---------- */
 .sheet-scroll {
   padding: 14px;
-  overflow-x: auto;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain; /* don't hand sideways pans to the page/history swipe */
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
 }
 .sheet {
   background: var(--paper);

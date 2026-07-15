@@ -167,6 +167,358 @@
   }
 }
 
+/* ---------- Mobile Lot Sheet: Direction A paper viewer ---------- */
+.mchrome__zoom,
+.mchrome__scrim {
+  display: none;
+}
+
+@media screen and (max-width: 699px) {
+  .appmain:has(> .app--lot) {
+    height: calc(100dvh - var(--sticky-top, 56px));
+    overflow: hidden;
+  }
+  .app--lot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+  .app--lot > .toolbar {
+    display: none;
+  }
+  .app--lot > .sheet-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    padding: 8px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    scroll-behavior: smooth;
+  }
+  .app--lot > .sheet-scroll--pan {
+    scroll-behavior: auto;
+  }
+  .app--lot .mobile-actions {
+    position: relative;
+    inset: auto;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-top: 1px solid var(--edge);
+    border-radius: 0;
+    background: var(--chrome);
+    box-shadow: none;
+    backdrop-filter: none;
+    flex: none;
+  }
+  .app--lot .mobile-action {
+    min-width: 0;
+    min-height: 51px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .app--lot .mobile-action:not(.mobile-action--primary) {
+    border-color: transparent;
+    background: transparent;
+  }
+  .app--lot .mobile-action--primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: none;
+  }
+  .app--lot .mobile-action--open {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .mchrome__zoom {
+    position: absolute;
+    right: 14px;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    z-index: 28;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--edge-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--chrome) 94%, transparent);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 650;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(12px);
+  }
+  .app--lot:has(.selectbar) .mchrome__zoom {
+    display: none;
+  }
+
+  .mchrome__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 310;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: color-mix(in srgb, #000 55%, transparent);
+    backdrop-filter: blur(6px);
+    animation: mchrome-fade 0.18s ease-out both;
+  }
+  .mchrome__sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(75dvh, 640px);
+    border: 1px solid var(--edge);
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    background: var(--chrome);
+    color: var(--text);
+    box-shadow: var(--shadow-pop);
+    overflow: hidden;
+    animation: mchrome-rise 0.22s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .mchrome__scrim--closing {
+    animation: mchrome-fade-out 0.18s ease-in both;
+    pointer-events: none;
+  }
+  .mchrome__scrim--closing .mchrome__sheet {
+    animation: mchrome-drop 0.18s ease-in both;
+  }
+  .mchrome__grab {
+    width: 38px;
+    height: 4px;
+    margin: 7px auto 2px;
+    border-radius: 999px;
+    background: var(--edge-strong);
+    flex: none;
+  }
+  .mchrome__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 16px 12px;
+    border-bottom: 1px solid var(--edge);
+  }
+  .mchrome__head h2,
+  .mchrome__head p {
+    margin: 0;
+  }
+  .mchrome__head h2 {
+    font-size: 18px;
+    font-weight: 650;
+  }
+  .mchrome__head p {
+    margin-top: 2px;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+  .mchrome__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    flex: none;
+  }
+  .mchrome__body {
+    padding: 12px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mchrome__body h3 {
+    margin: 16px 0 8px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+  .mchrome__find {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 11px;
+    border: 1px solid var(--edge-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+  .mchrome__find:focus-within {
+    border-color: var(--accent);
+  }
+  .mchrome__find input {
+    min-width: 0;
+    min-height: 42px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;
+    flex: 1;
+  }
+  .mchrome__findclear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .mchrome__findmsg {
+    margin: 5px 2px 0;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+  .mchrome__findmsg--found {
+    color: var(--accent);
+  }
+  .mchrome__stats {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mchrome__stat {
+    min-height: 38px;
+    padding: 0 11px;
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .mchrome__stat--ok {
+    color: var(--success, #15803d);
+  }
+  .mchrome__stat--bad {
+    color: var(--warning, #b45309);
+  }
+  .mchrome__stat--warn {
+    border-color: var(--warning, #b45309);
+  }
+  .mchrome__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .mchrome__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 9px 11px;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .mchrome__item--danger {
+    color: var(--danger, #dc2626);
+  }
+  .mchrome__toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 11px;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .mchrome__toggle input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+  }
+  .mchrome__toggle span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mchrome__toggle strong {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .mchrome__toggle small {
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+
+  .app--lot .selectbar {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    z-index: 70;
+    max-width: none;
+    max-height: 132px;
+    padding: 8px;
+    border-radius: 8px;
+    transform: none;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .app--lot .selectbar__count {
+    width: 100%;
+  }
+}
+
+@keyframes mchrome-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mchrome-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mchrome-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes mchrome-drop {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(20px); }
+}
+
 /* ---------- Fill Rows (mobile entry) ---------- */
 .rf__nav {
   display: flex;
