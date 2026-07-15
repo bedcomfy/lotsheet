@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 - 2026-07-15
+
+- The Lot Sheet's bus flags now update live: a flag changed from any other
+  device appears on an already-open Lot Sheet within about a second, instead of
+  waiting for a reload. (It was the last screen still loading flags once.) If
+  the flag service is unreachable, PDFs still render — with empty flags —
+  instead of timing out.
+- Made the heavy list pages fast: the admin Fleet editor no longer re-renders
+  all 130+ rows on every keystroke or single-row edit, off-screen rows on the
+  Fleet / Object Codes / Flag Editor lists skip layout and paint entirely, and
+  searching stays responsive while long lists re-filter in the background.
+- Menus that open on tap (Edit Flags, Fill Rows, Prev Sheets, lot editors, the
+  CSV editor) now load on first use instead of with every page, trimming
+  15-66kB of JavaScript per page.
+- Maintainability: LotSheet.tsx shrank from 2,219 to 1,853 lines (grid cells,
+  the Shop menu, and the status modals moved to their own files) and the
+  6,900-line stylesheet became 9 ordered partials — both verified identical in
+  behavior and byte-identical in built CSS output, so nothing printed changes.
+
 ## 0.8.1 - 2026-07-13
 
 - Flag notes and the "Other" hold reason now save automatically — as you type, on
