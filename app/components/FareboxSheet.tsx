@@ -183,9 +183,15 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
   const doneCount = buses.filter((b) => data.entries[b]?.yn === "y").length;
   const displayDate = blankMode ? "" : data.date && data.date.trim() ? data.date : chicagoDateShort();
 
-  // Letter-size pages, exactly like the paper concept.
-  const pages: string[][] = [];
+  // Letter-size pages, exactly like the paper concept. Every page is a full
+  // 35 rows — the last page is padded with EMPTY slots (same size as every
+  // other row) for writing in buses serviced more than once in a night.
+  const pages: (string | null)[][] = [];
   for (let i = 0; i < buses.length; i += ROWS_PER_PAGE) pages.push(buses.slice(i, i + ROWS_PER_PAGE));
+  if (pages.length) {
+    const last = pages[pages.length - 1];
+    while (last.length < ROWS_PER_PAGE) last.push(null);
+  }
   // Which sets to render: normally one plain set on screen; the PDF prints an
   // N-circled and an S-circled set; a blank print is a single plain set.
   const lanes: ("n" | "s" | null)[] = printMode && laneCopies && !blankMode ? ["n", "s"] : [null];
@@ -218,7 +224,25 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
     );
   }
 
-  function paper(lane: "n" | "s" | null, pageBuses: string[], pageNo: number) {
+  // An empty write-in slot: blank bus box, plain Y / N to circle by pen.
+  function emptyRow(key: number) {
+    return (
+      <tr key={`empty-${key}`}>
+        <td className="fbx__bus" />
+        <td className="fbx__pd">
+          <span className="fbx__yn">
+            <span className="fbx__ynopt">Y</span>
+            <span className="fbx__ynsep">/</span>
+            <span className="fbx__ynopt">N</span>
+          </span>
+        </td>
+        <td />
+        <td />
+      </tr>
+    );
+  }
+
+  function paper(lane: "n" | "s" | null, pageBuses: (string | null)[], pageNo: number) {
     return (
       <div className="sheet fbx-sheet" key={`${lane ?? "x"}-${pageNo}`}>
         <table className="fbx">
@@ -244,7 +268,7 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
                     </span>
                   ) : null}
                   <span className="fbx__page">
-                    Page {pageNo + 1} of {pages.length}
+                    Total: {buses.length} · Page {pageNo + 1} of {pages.length}
                   </span>
                 </div>
               </td>
@@ -257,7 +281,8 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
             </tr>
           </thead>
           <tbody>
-            {pageBuses.map((bus) => {
+            {pageBuses.map((bus, i) => {
+              if (bus === null) return emptyRow(i);
               const e = data.entries[bus] || EMPTY_ENTRY;
               return (
                 <tr key={bus} className={e.yn === "y" ? "fbx__row--done" : ""}>
@@ -285,11 +310,6 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
                 </tr>
               );
             })}
-            {pageNo === pages.length - 1 && (
-              <tr className="fbx__totalrow">
-                <td colSpan={4}>Total: {buses.length}</td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>

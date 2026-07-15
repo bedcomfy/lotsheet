@@ -10,10 +10,11 @@
 - Regular prints always include the flags now, so the "Print with flags"
   checkbox is gone. DEF and Farebox print an N-circled copy and an S-circled
   copy in one PDF — no more circling the lane by hand.
-- Farebox: the sheet is now real letter-size pages (35 buses each, "Page X of
-  Y" on every page) instead of one long strip, the header is much more compact,
-  and "Probed & Dumped" is a circle-able Y / N — tap it on screen, or circle it
-  with a pen on paper.
+- Farebox: the sheet is now real letter-size pages (35 uniform rows each,
+  "Total · Page X of Y" on every page) instead of one long strip, the header is
+  much more compact, and "Probed & Dumped" is a circle-able Y / N — tap it on
+  screen, or circle it with a pen on paper. The last page is padded with empty
+  same-size slots for writing in buses serviced more than once in a night.
 
 ## 0.10.0 - 2026-07-15
 
