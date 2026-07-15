@@ -1297,46 +1297,56 @@ td.turnt__head {
 }
 
 
-/* ---------- Service Sheets page (Fuel / DEF / Farebox tabs) ---------- */
-.servicetabs {
+/* ---------- Service Sheets page ---------- */
+/* Uses the same header + tabs structure as Staffing/Admin (.adminpage,
+   .adminhero, .admintabs). Only the extras live here. */
+.admintab__hint {
+  font-size: 10.5px;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.serviceall {
   display: flex;
-  gap: 8px;
-  padding: 12px 14px 0;
-  flex-wrap: wrap;
-}
-.servicetab {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 6px 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 2px 0 10px;
+  padding: 10px 14px;
   border: 1px solid var(--edge);
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--surface);
+}
+.serviceall__note {
+  font-size: 13px;
   color: var(--text-dim);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+  flex: 1 1 240px;
 }
-.servicetab small {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-dim);
-  opacity: 0.75;
+/* Sheets stacked inside the service page shouldn't double up page padding. */
+.servicepage .app {
+  padding: 0;
 }
-.servicetab--active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+
+/* ---------- Lane indicator (N / S) ---------- */
+/* Plain text for pen-circling; when the PDF prints one copy per lane, the
+   copy's lane letter is circled in ink. */
+.lanemark {
+  display: inline-block;
+  min-width: 1.2em;
+  text-align: center;
 }
-.servicetab--active small {
-  color: var(--accent-ink);
-  opacity: 0.85;
+.lanemark--circled {
+  border: 1.5px solid #000;
+  border-radius: 999px;
+  padding: 0 5px;
+}
+.fuelt__nssep {
+  padding: 0 2px;
 }
 
 /* ---------- Farebox sheet (Daily Fare Box Checks) ---------- */
-/* One row per lane bus; flows across as many printed pages as it needs, with
-   the thead (title + date + column labels) repeating on every page. */
+/* Real letter-size pages (~35 buses each), on screen and in print, like the
+   paper concept: title + date + lane + column headers on every page. */
 .fbx__count {
   font-size: 12px;
   font-weight: 800;
@@ -1347,45 +1357,55 @@ td.turnt__head {
   background: var(--surface);
   white-space: nowrap;
 }
+.fbx-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 .fbx-sheet {
   background: var(--paper);
   color: var(--ink); /* white paper, dark ink — even in dark theme */
   min-width: 560px;
   max-width: 704px;
+  width: 100%;
   margin: 0 auto;
-  padding: 26px 30px 24px;
+  padding: 24px 30px 22px;
+  aspect-ratio: 8.5 / 11; /* a real portrait page on screen */
+  display: flex;
+  flex-direction: column;
 }
 .fbx {
   width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
   border-collapse: collapse;
   table-layout: fixed;
 }
-.fbx__col--bus { width: 13%; }
-.fbx__col--pd { width: 17%; }
-.fbx__col--serv { width: 13%; }
-.fbx__col--note { width: 57%; }
+.fbx__col--bus { width: 12%; }
+.fbx__col--pd { width: 16%; }
+.fbx__col--serv { width: 12%; }
+.fbx__col--note { width: 60%; }
 .fbx td {
   border: 1px solid #000;
   padding: 0 5px;
-  height: 26px;
+  height: auto; /* rows share the page height, like the fuel sheet */
   font-size: 12px;
   text-align: center;
   overflow: hidden;
   white-space: nowrap;
 }
-/* Title row: no vertical dividers, just a bottom rule (matches fuel/def). */
+/* Title row: compact single line, no vertical dividers. */
 .fbx__hdr td {
   border: none;
   border-bottom: 1px solid #000;
-  padding: 5px 6px;
-  height: auto;
+  padding: 2px 4px 4px;
 }
 .fbx__hdrrow {
   display: flex;
   align-items: center;
-  gap: 0 14px;
+  gap: 0 12px;
   width: 100%;
-  font-size: 14px;
+  font-size: 12px;
 }
 .fbx__name {
   flex: 0 0 auto;
@@ -1398,23 +1418,42 @@ td.turnt__head {
   align-items: center;
   gap: 5px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 11px;
 }
 .fbx__dateval {
   flex: 1 1 auto;
   border-bottom: 1px solid #000;
-  min-width: 60px;
+  min-width: 54px;
+  min-height: 1em;
   text-align: center;
+  font-size: 12px;
 }
 .fbx__ns {
   flex: 0 0 auto;
-  letter-spacing: 0.14em;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  letter-spacing: 0.02em;
+}
+.fbx__lane {
+  display: inline-block;
+  min-width: 1.15em;
+  text-align: center;
+}
+.fbx__lane--circled {
+  border: 1.5px solid #000;
+  border-radius: 999px;
+  padding: 0 4px;
+}
+.fbx__page {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: #555;
 }
 .fbx__colhdr td {
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.04em;
   background: #f0f0f0;
-  height: 20px;
 }
 .fbx__bus {
   font-size: 13px;
@@ -1422,23 +1461,42 @@ td.turnt__head {
 .fbx__row--done .fbx__bus {
   color: #15803d;
 }
-.fbx__check {
+/* Y / N — tap to pick on screen; the pick prints circled. Unfilled rows print
+   a plain "Y / N" to circle with a pen. */
+.fbx__yn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+}
+.fbx__ynopt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 19px;
+  min-width: 21px;
   height: 19px;
-  padding: 0;
-  border: 1.5px solid #000;
-  border-radius: 3px;
-  background: #fff;
-  color: #15803d;
+  padding: 0 4px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
   cursor: pointer;
-  vertical-align: middle;
 }
-.fbx__check:focus-visible {
+button.fbx__ynopt:hover {
+  border-color: #bbb;
+}
+.fbx__ynopt--on {
+  border-color: #000;
+}
+.fbx__ynopt:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+.fbx__ynsep {
+  color: #555;
 }
 .fbx__in {
   width: 100%;
@@ -1464,39 +1522,36 @@ td.turnt__head {
 }
 .fbx__totalrow td {
   text-align: right;
-  font-size: 11px;
+  font-size: 10px;
   border-left: none;
   border-right: none;
   border-bottom: none;
-  padding-top: 4px;
-  height: auto;
+  padding-top: 3px;
 }
 @media print {
-  /* The farebox sheet FLOWS across pages (unlike the one-page fuel grid):
-     undo the global one-page .sheet clamp for it. */
-  .fbx-sheet {
-    height: auto !important;
-    overflow: visible !important;
-    min-width: 0;
-    max-width: none;
-    padding: 0.42in 0.5in 0.35in;
-    display: block !important;
+  /* One .fbx-sheet per printed page (the global .sheet print rules already
+     give each a full 100vh page); make the break explicit. */
+  .fbx-scroll {
+    display: block;
   }
-  .fbx tr {
-    break-inside: avoid;
+  .fbx-sheet {
+    break-after: page;
+    padding: 0.4in 0.5in 0.32in;
+  }
+  .fbx-sheet:last-child {
+    break-after: auto;
   }
   .fbx td {
-    height: 0.27in; /* room to handwrite */
     font-size: 11px;
   }
-  .fbx__hdr td,
-  .fbx__colhdr td,
-  .fbx__totalrow td {
-    height: auto;
+  /* The Y/N pickers print as plain text; only a chosen circle carries ink. */
+  .fbx__ynopt {
+    border-color: transparent;
   }
-  .fbx__check {
-    width: 0.17in;
-    height: 0.17in;
-    border-width: 1px;
+  .fbx__ynopt--on {
+    border-color: #000;
+  }
+  button.fbx__ynopt:hover {
+    border-color: transparent;
   }
 }

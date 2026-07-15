@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "30"; // shared date pickers and updated sheet controls
+const PDF_VERSION = "31"; // flags always on regular prints; N/S lane copies; blank set
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -152,7 +152,7 @@ function resetBrowser(): void {
 
 // Sheets that can be exported to PDF. Each must render its print view at
 // `<path>?print=1` and expose a #print-ready marker when loaded.
-const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/farebox", "/turnover", "/workorder"]);
+const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/farebox", "/service/print-blank", "/turnover", "/workorder"]);
 
 async function renderPdf(
   req: Request,
@@ -160,6 +160,7 @@ async function renderPdf(
   path: string,
   fz: number | null,
   blank: boolean,
+  variant: string,
   overrides: { timeOverride?: string; dateOverride?: string }
 ): Promise<Buffer> {
   const host = req.headers.get("host");
@@ -170,6 +171,7 @@ async function renderPdf(
     `${proto}://${host}${path}?print=1&maint=${maint ? "1" : "0"}` +
     (fz ? `&fz=${fz}` : "") +
     (blank ? "&blank=1" : "") +
+    (variant ? `&variant=${variant}` : "") +
     (overrides.timeOverride ? `&timeOverride=${encodeURIComponent(overrides.timeOverride)}` : "") +
     (overrides.dateOverride ? `&dateOverride=${encodeURIComponent(overrides.dateOverride)}` : "");
 
@@ -221,6 +223,9 @@ export async function GET(req: Request) {
   };
   let path = url.searchParams.get("path") || "/";
   if (!ALLOWED_PATHS.has(path)) path = "/";
+  // Optional render variant: "ns" prints an N-circled copy + an S-circled copy
+  // (DEF and Farebox lane sheets).
+  const variant = url.searchParams.get("variant") === "ns" ? "ns" : "";
   // Optional font size (fuel/def) so the printout matches the chosen on-screen size.
   const fzRaw = parseInt(url.searchParams.get("fz") || "", 10);
   const fz = Number.isNaN(fzRaw) ? null : Math.max(8, Math.min(16, fzRaw));
@@ -231,7 +236,7 @@ export async function GET(req: Request) {
   try {
     // Every sheet is cached by a signature of its data (+ font), so a later
     // "Print PDF" (or a background prewarm after edits) returns instantly.
-    const sig = signature({ d: await sheetData(path, blank), fz, blank, overrides, printMinute: blank ? null : chicagoMinuteKey() }, maint);
+    const sig = signature({ d: await sheetData(path, blank), fz, blank, variant, overrides, printMinute: blank ? null : chicagoMinuteKey() }, maint);
     const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
       if (prewarm) return Response.json({ ok: true, cached: true });
@@ -239,7 +244,7 @@ export async function GET(req: Request) {
     }
 
     // Cache miss — generate (the slow path) and store for next time.
-    const pdf = await renderPdf(req, maint, path, fz, blank, overrides);
+    const pdf = await renderPdf(req, maint, path, fz, blank, variant, overrides);
     await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
     return new Response(pdf as unknown as BodyInit, { status: 200, headers });

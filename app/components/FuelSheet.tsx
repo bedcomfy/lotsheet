@@ -79,17 +79,22 @@ interface FuelSheetProps {
   title: string;
   storageKey: string;
   showShiftFields?: boolean;
+  // Print an N-circled copy + an S-circled copy (the DEF sheet's two lanes).
+  laneCopies?: boolean;
+  // Render the #print-ready marker (a composite print page renders its own).
+  marker?: boolean;
 }
 
-export default function FuelSheet({ title, storageKey, showShiftFields = false }: FuelSheetProps) {
+export default function FuelSheet({ title, storageKey, showShiftFields = false, laneCopies = false, marker = true }: FuelSheetProps) {
   const [data, setData] = useState<FuelData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  const [blankMode, setBlankMode] = useState(false);
+  const [laneVariant, setLaneVariant] = useState(false); // ?variant=ns on the print URL
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const { data: busFlags = {} } = useFlags(); // universal flags from the shared live cache
   const qc = useQueryClient();
-  const [showFlags, setShowFlags] = useState(false); // print WITH the R/H/I flags?
   const [managerOpen, setManagerOpen] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -105,22 +110,15 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   useEffect(() => {
     const isPrint = param("print") === "1";
     setPrintMode(isPrint);
-    // The headless PDF render gets the chosen size + flag state via the query so
-    // the printout matches the screen (it has no localStorage of its own).
+    setBlankMode(param("blank") === "1");
+    setLaneVariant(param("variant") === "ns");
+    // The headless PDF render gets the chosen size via the query so the
+    // printout matches the screen (it has no localStorage of its own).
     if (isPrint) {
       const fz = parseInt(param("fz") || "", 10);
       if (!Number.isNaN(fz)) setFontPx(Math.max(FONT_MIN, Math.min(FONT_MAX, fz)));
-      setShowFlags(param("maint") === "1");
-    } else {
-      setShowFlags(localStorage.getItem(`pace:flags:${storageKey}`) === "1");
     }
   }, [storageKey]);
-
-  // The print-with-flags preference (per device, per sheet).
-  useEffect(() => {
-    if (printMode) return;
-    localStorage.setItem(`pace:flags:${storageKey}`, showFlags ? "1" : "0");
-  }, [showFlags, storageKey, printMode]);
 
   // Quietly (re)build the cached PDF after edits (or a font change) so the next
   // "Print PDF" is instant. Keyed to fz so the prewarm matches what we print.
@@ -128,15 +126,20 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     if (printMode) return;
     clearTimeout(prewarmTimer.current);
     prewarmTimer.current = setTimeout(() => {
-      fetch(`/api/pdf?path=/${storageKey}&fz=${fontPx}&maint=${showFlags ? 1 : 0}&prewarm=1`).catch(() => {});
+      fetch(`/api/pdf?path=/${storageKey}&fz=${fontPx}&maint=1${laneCopies ? "&variant=ns" : ""}&prewarm=1`).catch(() => {});
     }, 1500);
   }
   useEffect(() => {
     if (loaded) schedulePrewarm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fontPx, showFlags, busFlags]);
+  }, [fontPx, busFlags]);
 
   useEffect(() => {
+    if (param("blank") === "1") {
+      setData(emptyData());
+      setLoaded(true);
+      return;
+    }
     let alive = true;
     fetch(`/api/state/${storageKey}`)
       .then((r) => r.json())
@@ -213,8 +216,8 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
   function printPdf() {
     openSheetPdf({
       path: `/${storageKey}`,
-      maint: showFlags, // print the R/H/I flags?
-      params: { fz: fontPx },
+      maint: true, // regular prints always carry the R/H/I flags
+      params: { fz: fontPx, ...(laneCopies ? { variant: "ns" } : {}) },
       flush: () =>
         fetch(`/api/state/${storageKey}`, {
           method: "PUT",
@@ -241,7 +244,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
     const bus = columns[g][r];
     if (!bus) return [<td key={`${g}-b`} />, <td key={`${g}-g`} />, <td key={`${g}-s`} />];
     const e = data.entries[bus] || { gals: "", serv: "" };
-    const ind = fuelIndicator(busFlags[bus]);
+    const ind = blankMode ? "" : fuelIndicator(busFlags[bus]);
     return [
       <td key={`${g}-b`} className={`fuelt__bus ${ind ? "fuelt__bus--flagged" : ""}`}>
         <span className="fuelt__buscontent">
@@ -254,32 +257,52 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
         </span>
       </td>,
       <td key={`${g}-g`}>
-        <input
-          className="fuelt__in"
-          inputMode="decimal"
-          value={e.gals}
-          onChange={(ev) => setEntry(bus, "gals", sanitizeGals(ev.target.value))}
-        />
+        {!blankMode && (
+          <input
+            className="fuelt__in"
+            inputMode="decimal"
+            value={e.gals}
+            onChange={(ev) => setEntry(bus, "gals", sanitizeGals(ev.target.value))}
+          />
+        )}
       </td>,
       <td key={`${g}-s`}>
-        <input
-          className="fuelt__in"
-          value={e.serv}
-          maxLength={4}
-          onChange={(ev) => setEntry(bus, "serv", ev.target.value.toUpperCase())}
-        />
+        {!blankMode && (
+          <input
+            className="fuelt__in"
+            value={e.serv}
+            maxLength={4}
+            onChange={(ev) => setEntry(bus, "serv", ev.target.value.toUpperCase())}
+          />
+        )}
       </td>,
     ];
   }
 
   // Second sheet: flagged buses split into sections by flag group. Shown on
-  // screen when any exist; printed only when "Print with flags" is on.
-  // The summary always renders (so it shows on screen); the date + summary only
-  // PRINT when "Print with flags" is on — gated by CSS so the browser's Ctrl+P
-  // respects it too, not just the PDF render.
+  // screen when any exist and always printed with a regular (non-blank) sheet;
+  // a blank print carries no flags at all.
   const sections = fuelFlagSections(busFlags);
-  const showSummary = sections.length > 0;
-  const displayDate = data.date && data.date.trim() ? data.date : printDate();
+  const showSummary = sections.length > 0 && !blankMode;
+  const withFlags = !blankMode; // regular prints always carry flags now
+  const displayDate = blankMode ? "" : data.date && data.date.trim() ? data.date : printDate();
+  // Which copies to render: normally one plain sheet; the DEF/farebox PDF
+  // prints an N-circled copy and an S-circled copy; blanks are a single plain
+  // copy with no lane indicator at all.
+  const lanes: ("n" | "s" | null)[] = printMode && laneVariant && !blankMode ? ["n", "s"] : [null];
+
+  // The lane indicator: plain "N / S" for pen-circling, or the copy's lane
+  // circled when the PDF prints one copy per lane.
+  function nsField(lane: "n" | "s" | null) {
+    if (blankMode) return null; // blank DEF prints without the lane indicator
+    return (
+      <span className="fuelt__field fuelt__ns">
+        <span className={lane === "n" ? "lanemark lanemark--circled" : "lanemark"}>N</span>
+        <span className="fuelt__nssep">/</span>
+        <span className={lane === "s" ? "lanemark lanemark--circled" : "lanemark"}>S</span>
+      </span>
+    );
+  }
 
   return (
     <div className="app">
@@ -307,81 +330,82 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
           <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
             <Eraser size={16} /> Clear sheet
           </button>
-          <div className="toolmenu__sep" />
-          <label
-            className="toolmenu__item"
-            onClick={(e) => e.stopPropagation()}
-            title="Print the R/H/I flags and the flagged-buses page"
-          >
-            <input type="checkbox" checked={showFlags} onChange={(e) => setShowFlags(e.target.checked)} />
-            Print with flags
-          </label>
         </ToolMenu>
-        <button className="btn btn--primary" onClick={printPdf}>
+        <button className="btn btn--primary" onClick={printPdf} title={laneCopies ? "Prints an N-circled copy and an S-circled copy, with flags" : "Prints with flags"}>
           <FileDown size={16} /> Print PDF
         </button>
       </div>
 
       <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
-        <div className={`sheet fuel-sheet ${showFlags ? "fuel-sheet--flags" : ""}`}>
-          <table className="fuelt">
-            <colgroup>
-              {Array.from({ length: 4 }).flatMap((_, group) => [
-                <col className="fuelt__col--bus" key={`${group}-bus`} />,
-                <col className="fuelt__col--entry" key={`${group}-gals`} />,
-                <col className="fuelt__col--entry" key={`${group}-serv`} />,
-              ])}
-            </colgroup>
-            <tbody>
-              {/* Header row (title + date / shift fields) */}
-              <tr className="fuelt__hdr">
-                {showShiftFields ? (
-                  <td colSpan={12}>
-                    <div className="fuelt__hdrrow">
-                      <span className="fuelt__name">{title}</span>
-                      <span className="fuelt__field">
+        {lanes.map((lane) => (
+          <div className={`sheet fuel-sheet ${withFlags ? "fuel-sheet--flags" : ""}`} key={lane ?? "x"}>
+            <table className="fuelt">
+              <colgroup>
+                {Array.from({ length: 4 }).flatMap((_, group) => [
+                  <col className="fuelt__col--bus" key={`${group}-bus`} />,
+                  <col className="fuelt__col--entry" key={`${group}-gals`} />,
+                  <col className="fuelt__col--entry" key={`${group}-serv`} />,
+                ])}
+              </colgroup>
+              <tbody>
+                {/* Header row (title + date / shift fields) */}
+                <tr className="fuelt__hdr">
+                  {showShiftFields ? (
+                    <td colSpan={12}>
+                      <div className="fuelt__hdrrow">
+                        <span className="fuelt__name">{title}</span>
+                        <span className="fuelt__field">
+                          DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
+                        </span>
+                        {nsField(lane)}
+                        <span className="fuelt__field">
+                          START:{" "}
+                          {blankMode ? (
+                            <span className="fuelt__hin fuelt__hin--line" />
+                          ) : (
+                            <input className="fuelt__hin fuelt__hin--line" value={data.start} onChange={(e) => setField("start", e.target.value)} />
+                          )}
+                        </span>
+                        <span className="fuelt__field">
+                          END:{" "}
+                          {blankMode ? (
+                            <span className="fuelt__hin fuelt__hin--line" />
+                          ) : (
+                            <input className="fuelt__hin fuelt__hin--line" value={data.end} onChange={(e) => setField("end", e.target.value)} />
+                          )}
+                        </span>
+                      </div>
+                    </td>
+                  ) : (
+                    <>
+                      <td colSpan={6}>
+                        <span className="fuelt__name">{title}</span>
+                      </td>
+                      <td colSpan={6}>
                         DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
-                      </span>
-                      <span className="fuelt__field fuelt__ns">N / S</span>
-                      <span className="fuelt__field">
-                        START:{" "}
-                        <input className="fuelt__hin fuelt__hin--line" value={data.start} onChange={(e) => setField("start", e.target.value)} />
-                      </span>
-                      <span className="fuelt__field">
-                        END:{" "}
-                        <input className="fuelt__hin fuelt__hin--line" value={data.end} onChange={(e) => setField("end", e.target.value)} />
-                      </span>
-                    </div>
-                  </td>
-                ) : (
-                  <>
-                    <td colSpan={6}>
-                      <span className="fuelt__name">{title}</span>
-                    </td>
-                    <td colSpan={6}>
-                      DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
-                    </td>
-                  </>
-                )}
-              </tr>
-              {/* Column headers */}
-              <tr className="fuelt__colhdr">
-                {COL_HEADERS.map((c, i) => (
-                  <td key={i}>{c}</td>
+                      </td>
+                    </>
+                  )}
+                </tr>
+                {/* Column headers */}
+                <tr className="fuelt__colhdr">
+                  {COL_HEADERS.map((c, i) => (
+                    <td key={i}>{c}</td>
+                  ))}
+                </tr>
+                {/* Data rows */}
+                {Array.from({ length: rows }).map((_, r) => (
+                  <tr key={r}>{[0, 1, 2, 3].flatMap((g) => groupCells(g, r))}</tr>
                 ))}
-              </tr>
-              {/* Data rows */}
-              {Array.from({ length: rows }).map((_, r) => (
-                <tr key={r}>{[0, 1, 2, 3].flatMap((g) => groupCells(g, r))}</tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        ))}
       </div>
 
       {showSummary && (
         <div className="sheet-scroll fuelsum-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
-          <div className={`sheet fuel-sheet fuelsum ${showFlags ? "fuel-sheet--flags" : ""}`}>
+          <div className={`sheet fuel-sheet fuelsum ${withFlags ? "fuel-sheet--flags" : ""}`}>
             <div className="fuelsum__head">
               <div className="fuelsum__title">SERVICE LANE</div>
               <div className="fuelsum__date">{displayDate}</div>
@@ -430,7 +454,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false }
       )}
 
       {/* Signals the headless PDF renderer that the sheet + bus list have loaded. */}
-      {loaded && busReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
+      {marker && loaded && busReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </div>
   );
 }

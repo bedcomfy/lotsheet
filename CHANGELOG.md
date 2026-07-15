@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.11.0 - 2026-07-15
+
+- Service Sheets now uses the same header + tabs layout as Staffing/Admin, with
+  a new "All" tab that shows every sheet on one page.
+- New "Print Blank (all sheets)" on the All tab: one PDF with a blank Fuel, a
+  blank DEF (no N/S indicator), and one blank Farebox set — no flags, no
+  detailed flag list, ready for the clipboard stash.
+- Regular prints always include the flags now, so the "Print with flags"
+  checkbox is gone. DEF and Farebox print an N-circled copy and an S-circled
+  copy in one PDF — no more circling the lane by hand.
+- Farebox: the sheet is now real letter-size pages (35 buses each, "Page X of
+  Y" on every page) instead of one long strip, the header is much more compact,
+  and "Probed & Dumped" is a circle-able Y / N — tap it on screen, or circle it
+  with a pen on paper.
+
 ## 0.10.0 - 2026-07-15
 
 - New Farebox sheet (Daily Fare Box Checks): every service-lane bus gets a row
