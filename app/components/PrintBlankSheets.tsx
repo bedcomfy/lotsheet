@@ -5,7 +5,8 @@ import FareboxSheet from "./FareboxSheet";
 import { useBusMaster } from "./BusMasterProvider";
 
 // The "Print Blank (all sheets)" target: a blank fuel sheet, a blank DEF sheet
-// (no lane indicator), and one blank farebox set, stacked into one printout.
+// with plain N / S, and one blank farebox set with plain N / S, stacked into
+// one printout.
 // Always loaded with ?print=1&blank=1 — the sheets see blank=1 themselves and
 // render empty with no flags. One shared #print-ready marker fires when the
 // bus list is in (blank sheets have no other data to wait for).

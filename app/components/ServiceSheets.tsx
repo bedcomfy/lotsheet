@@ -1,107 +1,159 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Layers, Fuel, Droplets, Coins, FileDown } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Coins, Droplets, FileDown, Flag, Fuel, Layers, Printer } from "lucide-react";
+import { chicagoDateShort } from "../lib/chicagoTime";
 import { openSheetPdf } from "../lib/pdf";
-import FuelSheet from "./FuelSheet";
+import DatePickerField from "./DatePickerField";
 import FareboxSheet from "./FareboxSheet";
-
-// Service Sheets — the lane sheets printed at the start of every shift, on one
-// page. Structured like the Staffing/Admin pages: header, tabs, then the sheet.
-// "All" stacks every sheet on one page and offers Print Blank — one blank copy
-// of each (no flags, no lane indicator on DEF, a single farebox set) for the
-// clipboard stash. The individual tabs behave exactly like the old separate
-// pages, except printing now always carries flags, and DEF/Farebox print an
-// N-circled copy and an S-circled copy in one PDF.
+import FuelSheet from "./FuelSheet";
+import ServiceFlagSummary from "./ServiceFlagSummary";
 
 const TABS = [
-  { id: "all", label: "All", hint: "every sheet", icon: Layers },
-  { id: "fuel", label: "Fuel", hint: "1 copy", icon: Fuel },
-  { id: "def", label: "DEF", hint: "N + S copies", icon: Droplets },
-  { id: "farebox", label: "Farebox", hint: "N + S sets", icon: Coins },
+  { id: "all", label: "All", icon: Layers },
+  { id: "fuel", label: "Fuel", icon: Fuel },
+  { id: "def", label: "DEF", icon: Droplets },
+  { id: "farebox", label: "Farebox", icon: Coins },
+  { id: "summary", label: "Flag Summary", icon: Flag },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
+type Flush = () => Promise<unknown>;
 
 function initialTab(): TabId {
   if (typeof window === "undefined") return "all";
-  const t = new URLSearchParams(window.location.search).get("tab");
-  return t === "fuel" || t === "def" || t === "farebox" ? t : "all";
+  const tab = new URLSearchParams(window.location.search).get("tab");
+  return TABS.some((item) => item.id === tab) ? (tab as TabId) : "all";
 }
 
 export default function ServiceSheets() {
   const [tab, setTab] = useState<TabId>(initialTab);
+  const [date, setDate] = useState(chicagoDateShort);
+  const flushers = useRef<Record<"fuel" | "def" | "farebox", Flush | null>>({
+    fuel: null,
+    def: null,
+    farebox: null,
+  });
 
-  // Keep the tab in the URL so links/refresh land on the same sheet.
-  useEffect(() => {
+  const registerFuel = useCallback((flush: Flush | null) => {
+    flushers.current.fuel = flush;
+  }, []);
+  const registerDef = useCallback((flush: Flush | null) => {
+    flushers.current.def = flush;
+  }, []);
+  const registerFarebox = useCallback((flush: Flush | null) => {
+    flushers.current.farebox = flush;
+  }, []);
+
+  function selectTab(next: TabId) {
+    setTab(next);
     const url = new URL(window.location.href);
-    if (tab === "all") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", tab);
+    if (next === "all") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
     window.history.replaceState(null, "", url.toString());
-  }, [tab]);
+  }
+
+  function flushAll() {
+    return Promise.all(
+      Object.values(flushers.current)
+        .filter((flush): flush is Flush => !!flush)
+        .map((flush) => flush())
+    );
+  }
 
   function printBlankAll() {
-    // One PDF: blank fuel + blank DEF (no N/S) + one blank farebox set.
     openSheetPdf({ path: "/service/print-blank", params: { blank: 1 } });
   }
 
-  // marker={false}: #print-ready is only for the standalone print routes the
-  // PDF renderer loads (/fuel, /def, /farebox) — never this page, and three
-  // sheets on one page must not render duplicate ids.
-  const fuel = <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" marker={false} />;
-  const def = <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies marker={false} />;
-  const farebox = <FareboxSheet marker={false} />;
+  function printAll() {
+    openSheetPdf({
+      path: "/service/print-all",
+      maint: true,
+      params: { dateOverride: date },
+      flush: flushAll,
+    });
+  }
 
   return (
-    <main className="adminpage servicepage">
-      <section className="adminhero">
-        <div>
-          <span className="adminhero__eyebrow">Daily sheets</span>
-          <h1>Service Sheets</h1>
-          <p>The lane sheets printed at the start of every shift — Fuel (1 copy), DEF (N &amp; S copies), and the Farebox checks (N &amp; S sets).</p>
-        </div>
-      </section>
+    <main className="servicepage">
+      <header className="servicehero">
+        <h1>Service Sheets</h1>
+      </header>
 
-      <nav className="admintabs" aria-label="Service sheets">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = t.id === tab;
+      <nav className="servicetabs" aria-label="Service sheets">
+        {TABS.map((item) => {
+          const Icon = item.icon;
+          const active = item.id === tab;
           return (
             <button
-              key={t.id}
-              className={`admintab ${active ? "admintab--active" : ""}`}
-              onClick={() => setTab(t.id)}
+              key={item.id}
+              className={`servicetab ${active ? "servicetab--active" : ""}`}
+              onClick={() => selectTab(item.id)}
               aria-current={active ? "page" : undefined}
             >
               <Icon size={17} />
-              <span>{t.label}</span>
-              <small className="admintab__hint">{t.hint}</small>
+              <span>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {tab === "all" && (
-        <>
-          <div className="serviceall no-print">
-            <span className="serviceall__note">
-              Every sheet, one page. Each sheet keeps its own toolbar and Print PDF.
-            </span>
-            <button
-              className="btn"
-              onClick={printBlankAll}
-              title="One blank copy of every sheet — no flags, no lane indicator on DEF, one farebox set"
-            >
-              <FileDown size={16} /> Print Blank (all sheets)
+      {(tab === "all" || tab === "summary") && (
+        <div className="servicecontrols no-print">
+          <label className="servicecontrols__date">
+            <span>Date</span>
+            <DatePickerField value={date} onValueChange={setDate} shortYear ariaLabel="Service sheets date" />
+          </label>
+
+          <div className="servicecontrols__actions">
+            {tab === "all" && (
+              <button className="btn" onClick={printBlankAll}>
+                <FileDown size={16} /> Print Blank
+              </button>
+            )}
+            <button className="btn btn--primary" onClick={printAll}>
+              <Printer size={16} /> Print PDF
             </button>
           </div>
-          {fuel}
-          {def}
-          {farebox}
-        </>
+        </div>
       )}
-      {tab === "fuel" && fuel}
-      {tab === "def" && def}
-      {tab === "farebox" && farebox}
+
+      {tab === "all" && (
+        <div className="servicepreview" aria-label="Combined print preview">
+          <FuelSheet
+            title="PNW FUEL SHEET"
+            storageKey="fuel"
+            embedded
+            marker={false}
+            showFlags
+            dateOverride={date}
+            onRegisterFlush={registerFuel}
+          />
+          <FuelSheet
+            title="PNW DEF SHEET"
+            storageKey="def"
+            showShiftFields
+            embedded
+            marker={false}
+            showFlags
+            previewLaneCopies
+            dateOverride={date}
+            onRegisterFlush={registerDef}
+          />
+          <FareboxSheet
+            embedded
+            marker={false}
+            previewLaneCopies
+            dateOverride={date}
+            onRegisterFlush={registerFarebox}
+          />
+          <ServiceFlagSummary dateOverride={date} />
+        </div>
+      )}
+
+      {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" />}
+      {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies />}
+      {tab === "farebox" && <FareboxSheet />}
+      {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
     </main>
   );
 }

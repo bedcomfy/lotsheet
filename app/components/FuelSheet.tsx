@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
-import { fuelIndicator, fuelFlagSections } from "../lib/grid";
-import { Flag, History, Eraser, FileDown } from "lucide-react";
+import { fuelIndicator } from "../lib/grid";
+import { Flag, History, Eraser, FileDown, FileText } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
 import ManagerPanel from "./ManagerPanelLazy";
@@ -83,9 +83,34 @@ interface FuelSheetProps {
   laneCopies?: boolean;
   // Render the #print-ready marker (a composite print page renders its own).
   marker?: boolean;
+  // Embedded previews use the shared Service Sheets controls instead of
+  // repeating one toolbar above every paper page.
+  embedded?: boolean;
+  // Controlled by the Service Sheets "Include flags" switch.
+  showFlags?: boolean;
+  // The All tab previews the same N/S copies the combined PDF will create.
+  previewLaneCopies?: boolean;
+  // One shared date across the Service Sheets All preview and combined PDF.
+  dateOverride?: string;
+  // Composite print pages wait until every embedded sheet has loaded.
+  onReady?: (ready: boolean) => void;
+  // Lets the shared Print All control flush the latest in-progress edits first.
+  onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
 }
 
-export default function FuelSheet({ title, storageKey, showShiftFields = false, laneCopies = false, marker = true }: FuelSheetProps) {
+export default function FuelSheet({
+  title,
+  storageKey,
+  showShiftFields = false,
+  laneCopies = false,
+  marker = true,
+  embedded = false,
+  showFlags,
+  previewLaneCopies = false,
+  dateOverride = "",
+  onReady,
+  onRegisterFlush,
+}: FuelSheetProps) {
   const [data, setData] = useState<FuelData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -99,6 +124,23 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
   const [prevOpen, setPrevOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const dataRef = useRef<FuelData>(data);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    if (!onRegisterFlush) return;
+    const flush = () =>
+      fetch(`/api/state/${storageKey}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: dataRef.current }),
+      });
+    onRegisterFlush(flush);
+    return () => onRegisterFlush(null);
+  }, [onRegisterFlush, storageKey]);
 
   // Optimistically patch the shared flag cache when the editor changes a bus (it
   // also posts to /api/flags itself), so the indicators + summary update instantly;
@@ -172,6 +214,11 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
     return () => clearTimeout(saveTimer.current);
   }, [data, loaded, storageKey, printMode]);
 
+  useEffect(() => {
+    if (!loaded || printMode || !dateOverride) return;
+    setData((current) => (current.date === dateOverride ? current : { ...current, date: dateOverride }));
+  }, [dateOverride, loaded, printMode]);
+
   function setField(field: FuelStringField, value: string) {
     setData((d) => ({ ...d, [field]: value }));
   }
@@ -226,9 +273,21 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
         }),
     });
   }
+  function printBlank() {
+    openSheetPdf({
+      path: `/${storageKey}`,
+      maint: false,
+      params: { blank: 1, fz: fontPx },
+    });
+  }
 
   const { laneBuses, ready: busReady } = useBusMaster();
   const { columns, rows, total } = buildLaneColumns(laneBuses());
+  const flagsEnabled = !blankMode && (showFlags ?? param("maint") !== "0");
+
+  useEffect(() => {
+    onReady?.(loaded && busReady);
+  }, [busReady, loaded, onReady]);
 
   // The 3 cells for one column-group at a given row (BUS, GALS, SERV).
   function groupCells(g: number, r: number) {
@@ -244,7 +303,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
     const bus = columns[g][r];
     if (!bus) return [<td key={`${g}-b`} />, <td key={`${g}-g`} />, <td key={`${g}-s`} />];
     const e = data.entries[bus] || { gals: "", serv: "" };
-    const ind = blankMode ? "" : fuelIndicator(busFlags[bus]);
+    const ind = flagsEnabled ? fuelIndicator(busFlags[bus]) : "";
     return [
       <td key={`${g}-b`} className={`fuelt__bus ${ind ? "fuelt__bus--flagged" : ""}`}>
         <span className="fuelt__buscontent">
@@ -279,22 +338,17 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
     ];
   }
 
-  // Second sheet: flagged buses split into sections by flag group. Shown on
-  // screen when any exist and always printed with a regular (non-blank) sheet;
-  // a blank print carries no flags at all.
-  const sections = fuelFlagSections(busFlags);
-  const showSummary = sections.length > 0 && !blankMode;
-  const withFlags = !blankMode; // regular prints always carry flags now
-  const displayDate = blankMode ? "" : data.date && data.date.trim() ? data.date : printDate();
+  const requestedDate = dateOverride || param("dateOverride") || "";
+  const displayDate = blankMode ? "" : requestedDate || (data.date && data.date.trim() ? data.date : printDate());
   // Which copies to render: normally one plain sheet; the DEF/farebox PDF
   // prints an N-circled copy and an S-circled copy; blanks are a single plain
-  // copy with no lane indicator at all.
-  const lanes: ("n" | "s" | null)[] = printMode && laneVariant && !blankMode ? ["n", "s"] : [null];
+  // copy with a plain, uncircled lane indicator.
+  const lanes: ("n" | "s" | null)[] =
+    !blankMode && ((printMode && laneVariant) || previewLaneCopies) ? ["n", "s"] : [null];
 
   // The lane indicator: plain "N / S" for pen-circling, or the copy's lane
-  // circled when the PDF prints one copy per lane.
+  // circled when the PDF prints one copy per lane; blank DEF keeps plain N / S.
   function nsField(lane: "n" | "s" | null) {
-    if (blankMode) return null; // blank DEF prints without the lane indicator
     return (
       <span className="fuelt__field fuelt__ns">
         <span className={lane === "n" ? "lanemark lanemark--circled" : "lanemark"}>N</span>
@@ -306,7 +360,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
 
   return (
     <div className="app">
-      <div className="toolbar no-print">
+      {!embedded && <div className="toolbar no-print">
         <div className="toolbar__title">{title}</div>
         <DatePickerField
           className="toolbar__date"
@@ -331,14 +385,19 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
             <Eraser size={16} /> Clear sheet
           </button>
         </ToolMenu>
+        <button className="btn" onClick={printBlank} title="Print a blank form">
+          <FileText size={16} /> Print Blank
+        </button>
         <button className="btn btn--primary" onClick={printPdf} title={laneCopies ? "Prints an N-circled copy and an S-circled copy, with flags" : "Prints with flags"}>
           <FileDown size={16} /> Print PDF
         </button>
-      </div>
+      </div>}
 
       <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
         {lanes.map((lane) => (
-          <div className={`sheet fuel-sheet ${withFlags ? "fuel-sheet--flags" : ""}`} key={lane ?? "x"}>
+          <div className={`sheet fuel-sheet ${flagsEnabled ? "fuel-sheet--flags" : ""}`} key={lane ?? "x"}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="sheet-brand-logo" src="/logo.png" alt="Pace" />
             <table className="fuelt">
               <colgroup>
                 {Array.from({ length: 4 }).flatMap((_, group) => [
@@ -354,11 +413,11 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
                     <td colSpan={12}>
                       <div className="fuelt__hdrrow">
                         <span className="fuelt__name">{title}</span>
-                        <span className="fuelt__field">
+                        <span className="fuelt__field fuelt__field--date">
                           DATE: <span className="fuelt__date"><span className="fuelt__dateval">{displayDate}</span></span>
                         </span>
                         {nsField(lane)}
-                        <span className="fuelt__field">
+                        <span className="fuelt__field fuelt__field--time">
                           START:{" "}
                           {blankMode ? (
                             <span className="fuelt__hin fuelt__hin--line" />
@@ -366,7 +425,7 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
                             <input className="fuelt__hin fuelt__hin--line" value={data.start} onChange={(e) => setField("start", e.target.value)} />
                           )}
                         </span>
-                        <span className="fuelt__field">
+                        <span className="fuelt__field fuelt__field--time">
                           END:{" "}
                           {blankMode ? (
                             <span className="fuelt__hin fuelt__hin--line" />
@@ -402,32 +461,6 @@ export default function FuelSheet({ title, storageKey, showShiftFields = false, 
           </div>
         ))}
       </div>
-
-      {showSummary && (
-        <div className="sheet-scroll fuelsum-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
-          <div className={`sheet fuel-sheet fuelsum ${withFlags ? "fuel-sheet--flags" : ""}`}>
-            <div className="fuelsum__head">
-              <div className="fuelsum__title">SERVICE LANE</div>
-              <div className="fuelsum__date">{displayDate}</div>
-            </div>
-            <div className="fuelsum__sections">
-              {sections.map((sec) => (
-                <div className="fuelsum__section" key={sec.id}>
-                  <div className="fuelsum__seclabel">{sec.label}</div>
-                  {sec.rows.map((row) => (
-                    <div className="fuelsum__row" key={row.bus}>
-                      <span className="fuelsum__bus">{row.bus}</span>
-                      <span className="fuelsum__flags">
-                        {row.items.map((it) => `${it.label}${it.detail ? ` (${it.detail})` : ""}`).join(", ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {managerOpen && (
         <ManagerPanel

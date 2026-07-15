@@ -1409,7 +1409,7 @@ export default function LotSheet() {
       {/* The printable sheet */}
       <DndContext id="lot-sheet-dnd" sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
       <div className={`sheet-scroll sheet-scroll--${mobileSheetView}`} style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}>
-        <div className={`sheet ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
+        <div className={`sheet lot-sheet-front ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
           {/* Header */}
           <div className="head">
             <div className="head__logo">

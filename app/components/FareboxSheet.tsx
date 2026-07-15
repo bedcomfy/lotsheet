@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
-import { History, Eraser, FileDown } from "lucide-react";
+import { History, Eraser, FileDown, FileText } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
 import SheetHistory from "./SheetHistory";
@@ -11,9 +11,9 @@ import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 
 // Daily Fare Box Checks — one row per service-lane bus: Y / N for "probed &
-// dumped" (circle it, on screen or with a pen), the servicer, and a note for
+// emptied" (circle it, on screen or with a pen), the servicer, and a note for
 // why a box wasn't done. The sheet is split into real letter-size pages
-// (~35 buses each) exactly like the paper concept, with the title + column
+// (32 buses each) exactly like the paper concept, with the title + column
 // headers on every page. Printing produces one N-circled set and one
 // S-circled set (the two lane clipboards); a blank print is a single plain set.
 
@@ -21,14 +21,16 @@ interface FareboxEntry {
   yn: "" | "y" | "n";
   serv: string;
   note: string;
+  noPower: boolean;
+  wontProbe: boolean;
 }
 interface FareboxData {
   date: string;
   entries: Record<string, FareboxEntry>;
 }
 
-const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "" };
-const ROWS_PER_PAGE = 35; // matches the original paper concept (4 pages today)
+const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false };
+const ROWS_PER_PAGE = 32; // four pages with taller rows and minimal write-in padding
 
 // Same bus list and familiar order as the Fuel/DEF sheets.
 const BASE_ORDER = FUEL_COLUMNS.flat().map(String);
@@ -51,15 +53,33 @@ function emptyData(): FareboxData {
 function normalizeEntry(raw: any): FareboxEntry {
   if (!raw) return { ...EMPTY_ENTRY };
   const yn: FareboxEntry["yn"] = raw.yn === "y" || raw.yn === "n" ? raw.yn : raw.pd ? "y" : "";
-  return { yn, serv: raw.serv || "", note: raw.note || "" };
+  return {
+    yn,
+    serv: raw.serv || "",
+    note: raw.note || "",
+    noPower: raw.noPower === true,
+    wontProbe: raw.wontProbe === true,
+  };
 }
 
 interface FareboxSheetProps {
   // Render the #print-ready marker (a composite print page renders its own).
   marker?: boolean;
+  embedded?: boolean;
+  previewLaneCopies?: boolean;
+  dateOverride?: string;
+  onReady?: (ready: boolean) => void;
+  onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
 }
 
-export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
+export default function FareboxSheet({
+  marker = true,
+  embedded = false,
+  previewLaneCopies = false,
+  dateOverride = "",
+  onReady,
+  onRegisterFlush,
+}: FareboxSheetProps) {
   const [data, setData] = useState<FareboxData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -69,6 +89,23 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
   const [prevOpen, setPrevOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const dataRef = useRef<FareboxData>(data);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
+    if (!onRegisterFlush) return;
+    const flush = () =>
+      fetch("/api/state/farebox", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: dataRef.current }),
+      });
+    onRegisterFlush(flush);
+    return () => onRegisterFlush(null);
+  }, [onRegisterFlush]);
 
   useEffect(() => {
     setPrintMode(param("print") === "1");
@@ -128,11 +165,16 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, loaded, printMode]);
 
+  useEffect(() => {
+    if (!loaded || printMode || !dateOverride) return;
+    setData((current) => (current.date === dateOverride ? current : { ...current, date: dateOverride }));
+  }, [dateOverride, loaded, printMode]);
+
   function setEntry(bus: string, patch: Partial<FareboxEntry>) {
     setData((d) => {
       const next = { ...(d.entries[bus] || EMPTY_ENTRY), ...patch };
       const entries = { ...d.entries };
-      if (!next.yn && !next.serv && !next.note) delete entries[bus];
+      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe) delete entries[bus];
       else entries[bus] = next;
       return { ...d, entries };
     });
@@ -177,14 +219,21 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
         }),
     });
   }
+  function printBlank() {
+    openSheetPdf({ path: "/farebox", maint: false, params: { blank: 1 } });
+  }
 
   const { laneBuses, ready: busReady } = useBusMaster();
   const buses = laneOrder(laneBuses());
-  const doneCount = buses.filter((b) => data.entries[b]?.yn === "y").length;
-  const displayDate = blankMode ? "" : data.date && data.date.trim() ? data.date : chicagoDateShort();
+  const requestedDate = dateOverride || param("dateOverride") || "";
+  const displayDate = blankMode ? "" : requestedDate || (data.date && data.date.trim() ? data.date : chicagoDateShort());
+
+  useEffect(() => {
+    onReady?.(loaded && busReady);
+  }, [busReady, loaded, onReady]);
 
   // Letter-size pages, exactly like the paper concept. Every page is a full
-  // 35 rows — the last page is padded with EMPTY slots (same size as every
+  // 32 rows — the last page is padded with EMPTY slots (same size as every
   // other row) for writing in buses serviced more than once in a night.
   const pages: (string | null)[][] = [];
   for (let i = 0; i < buses.length; i += ROWS_PER_PAGE) pages.push(buses.slice(i, i + ROWS_PER_PAGE));
@@ -194,7 +243,8 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
   }
   // Which sets to render: normally one plain set on screen; the PDF prints an
   // N-circled and an S-circled set; a blank print is a single plain set.
-  const lanes: ("n" | "s" | null)[] = printMode && laneCopies && !blankMode ? ["n", "s"] : [null];
+  const lanes: ("n" | "s" | null)[] =
+    !blankMode && ((printMode && laneCopies) || previewLaneCopies) ? ["n", "s"] : [null];
 
   function ynCell(bus: string) {
     const e = data.entries[bus] || EMPTY_ENTRY;
@@ -206,7 +256,7 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
           className={`fbx__ynopt ${e.yn === "y" ? "fbx__ynopt--on" : ""}`}
           onClick={() => setEntry(bus, { yn: e.yn === "y" ? "" : "y" })}
           aria-pressed={e.yn === "y"}
-          aria-label={`Bus ${bus} probed and dumped: yes`}
+          aria-label={`Bus ${bus} probed and emptied: yes`}
         >
           Y
         </button>
@@ -216,11 +266,60 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
           className={`fbx__ynopt ${e.yn === "n" ? "fbx__ynopt--on" : ""}`}
           onClick={() => setEntry(bus, { yn: e.yn === "n" ? "" : "n" })}
           aria-pressed={e.yn === "n"}
-          aria-label={`Bus ${bus} probed and dumped: no`}
+          aria-label={`Bus ${bus} probed and emptied: no`}
         >
           N
         </button>
       </span>
+    );
+  }
+
+  function reasonControl(
+    bus: string,
+    field: "noPower" | "wontProbe",
+    label: string,
+    forceBlank = false,
+  ) {
+    const checked = !forceBlank && (data.entries[bus] || EMPTY_ENTRY)[field];
+    const content = (
+      <>
+        <span className="fbx__reasonbox" aria-hidden="true">{checked ? "X" : ""}</span>
+        <span>{label}</span>
+      </>
+    );
+    if (blankMode || forceBlank) return <span className="fbx__reason">{content}</span>;
+    return (
+      <button
+        type="button"
+        className="fbx__reason"
+        aria-pressed={checked}
+        onClick={() => setEntry(bus, { [field]: !checked })}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  function notesCell(bus: string, forceBlank = false) {
+    const entry = forceBlank ? EMPTY_ENTRY : data.entries[bus] || EMPTY_ENTRY;
+    return (
+      <div className="fbx__notes">
+        {reasonControl(bus, "noPower", "No Power", forceBlank)}
+        {reasonControl(bus, "wontProbe", "Won't Probe", forceBlank)}
+        <span className="fbx__other">
+          <span>Other:</span>
+          {blankMode || forceBlank ? (
+            <span className="fbx__otherline" />
+          ) : (
+            <input
+              className="fbx__in"
+              value={entry.note}
+              aria-label={`Other farebox note for bus ${bus}`}
+              onChange={(ev) => setEntry(bus, { note: ev.target.value })}
+            />
+          )}
+        </span>
+      </div>
     );
   }
 
@@ -237,6 +336,7 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
           </span>
         </td>
         <td />
+        <td>{notesCell("", true)}</td>
         <td />
       </tr>
     );
@@ -245,6 +345,8 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
   function paper(lane: "n" | "s" | null, pageBuses: (string | null)[], pageNo: number) {
     return (
       <div className="sheet fbx-sheet" key={`${lane ?? "x"}-${pageNo}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="sheet-brand-logo" src="/logo.png" alt="Pace" />
         <table className="fbx">
           <colgroup>
             <col className="fbx__col--bus" />
@@ -260,24 +362,19 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
                   <span className="fbx__field">
                     DATE: <span className="fbx__dateval">{displayDate}</span>
                   </span>
-                  {!blankMode || lane ? (
-                    <span className="fbx__ns">
-                      <span className={lane === "n" ? "fbx__lane fbx__lane--circled" : "fbx__lane"}>N</span>
-                      <span className="fbx__ynsep">/</span>
-                      <span className={lane === "s" ? "fbx__lane fbx__lane--circled" : "fbx__lane"}>S</span>
-                    </span>
-                  ) : null}
-                  <span className="fbx__page">
-                    Total: {buses.length} · Page {pageNo + 1} of {pages.length}
+                  <span className="fbx__ns">
+                    <span className={lane === "n" ? "fbx__lane fbx__lane--circled" : "fbx__lane"}>N</span>
+                    <span className="fbx__ynsep">/</span>
+                    <span className={lane === "s" ? "fbx__lane fbx__lane--circled" : "fbx__lane"}>S</span>
                   </span>
                 </div>
               </td>
             </tr>
             <tr className="fbx__colhdr">
               <td>BUS</td>
-              <td>PROBED &amp; DUMPED</td>
+              <td>PROBED &amp; EMPTIED</td>
               <td>SERV</td>
-              <td>NOTES (if not probed/dumped, why?)</td>
+              <td>IF NO, WHY?</td>
             </tr>
           </thead>
           <tbody>
@@ -298,27 +395,25 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
                       />
                     )}
                   </td>
-                  <td>
-                    {blankMode ? null : (
-                      <input
-                        className="fbx__in"
-                        value={e.note}
-                        onChange={(ev) => setEntry(bus, { note: ev.target.value })}
-                      />
-                    )}
-                  </td>
+                  <td>{notesCell(bus)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+        <div className="fbx__footer">
+          {pageNo === pages.length - 1 ? (
+            <span className="fbx__footer-total">Total: {buses.length}</span>
+          ) : null}
+          <span className="fbx__footer-page">Page {pageNo + 1} of {pages.length}</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="app">
-      <div className="toolbar no-print">
+      {!embedded && <div className="toolbar no-print">
         <div className="toolbar__title">Farebox Sheet</div>
         <DatePickerField
           className="toolbar__date"
@@ -327,7 +422,6 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
           shortYear
           ariaLabel="Farebox sheet date"
         />
-        <span className="fbx__count">{doneCount}/{buses.length} done</span>
         <div className="toolbar__spacer" />
         <span className="toolbar__saved">
           {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
@@ -341,10 +435,13 @@ export default function FareboxSheet({ marker = true }: FareboxSheetProps) {
             <Eraser size={16} /> Clear sheet
           </button>
         </ToolMenu>
+        <button className="btn" onClick={printBlank} title="Print a blank Farebox form">
+          <FileText size={16} /> Print Blank
+        </button>
         <button className="btn btn--primary" onClick={printPdf} title="Prints an N-circled set and an S-circled set">
           <FileDown size={16} /> Print PDF
         </button>
-      </div>
+      </div>}
 
       <div className="sheet-scroll fbx-scroll">
         {lanes.flatMap((lane) => pages.map((pageBuses, i) => paper(lane, pageBuses, i)))}

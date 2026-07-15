@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.12.0 - 2026-07-15
+
+- Rebuilt Service Sheets around one full-width navigation and print bar with a
+  shared date, blank/flag options, and exact print previews for every sheet.
+- Fuel, DEF, and Farebox now use the same letter-page geometry on screen and in
+  generated PDFs, including the corrected full-width Farebox layout.
+- Both Lot Sheet pages now use the same Letter dimensions and internal margins
+  on screen as in generated PDFs, without changing sheet editing or page-two
+  content.
+- Added a small Pace mark to Fuel, DEF, Farebox, and Service Lane pages
+  without changing their printable table geometry. Turnover remains unbranded.
+- Flag Summary is now its own Service Sheets tab. It is excluded from
+  individual sheet PDFs and appears once at the end of a flagged Print All.
+- Print All now produces Fuel, both DEF lane copies, all Farebox lane copies,
+  and the optional single Flag Summary in the same order shown in the preview.
+- Farebox now matches Fuel/DEF's 16px sheet text, uses a larger title and taller
+  column headings, labels checks as "Probed & Emptied," and places page numbers
+  in the bottom-right margin. Its servicer field is wider without reducing the
+  Notes field, and totals appear at bottom-left only on each lane set's final
+  page. DEF Start and End lines are now equal length.
+- The standalone service-lane summary uses a cleaner "Service Lane" heading
+  and a larger printed date.
+- Farebox Notes now has separate "No Power" and "Won't Probe" checkboxes plus
+  an Other write-in line; existing notes remain in Other.
+- The DEF header now uses fixed, non-overlapping zones for its date, N/S lane,
+  and equal Start/End fields.
+- Service Sheets now offers only filled Print PDF and Print Blank actions;
+  blank DEF/Farebox forms retain plain N / S, and Farebox blanks omit the date.
+- Farebox now uses 32 taller rows per page, preserving four-page lane sets while
+  giving the Other write-in line more handwriting room.
+- Farebox removes the toolbar completion counter and labels its reason column
+  "If No, Why?" to make the Y/N workflow explicit.
+- Fuel, DEF, and Farebox cells now share explicit middle alignment and uniform
+  line-height so text placement stays consistent through the final row.
+- The Farebox header now distributes its title, date, and N/S lane marker
+  across the full printable width.
+
 ## 0.11.0 - 2026-07-15
 
 - Service Sheets now uses the same header + tabs layout as Staffing/Admin, with

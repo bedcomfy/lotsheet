@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "31"; // flags always on regular prints; N/S lane copies; blank set
+const PDF_VERSION = "36"; // Letter-accurate Lot Sheet previews and aligned Pace sheet branding
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -57,6 +57,26 @@ async function sheetData(path: string, blank: boolean) {
       flags,
       flagConfig: flagConfig.value || null,
       busMaster: busMaster.value || null,
+      busTypeConfig: busTypeConfig.value || null,
+    };
+  }
+  if (path === "/service/print-all") {
+    const [fuel, def, farebox, flags, busMaster, flagConfig, busTypeConfig] = await Promise.all([
+      getState("fuel"),
+      getState("def"),
+      getState("farebox"),
+      getFlags(),
+      getState("bus_master"),
+      getState("flag_config"),
+      getState("bus_type_config"),
+    ]);
+    return {
+      fuel: fuel.value || null,
+      def: def.value || null,
+      farebox: farebox.value || null,
+      flags,
+      busMaster: busMaster.value || null,
+      flagConfig: flagConfig.value || null,
       busTypeConfig: busTypeConfig.value || null,
     };
   }
@@ -152,7 +172,16 @@ function resetBrowser(): void {
 
 // Sheets that can be exported to PDF. Each must render its print view at
 // `<path>?print=1` and expose a #print-ready marker when loaded.
-const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/farebox", "/service/print-blank", "/turnover", "/workorder"]);
+const ALLOWED_PATHS = new Set([
+  "/",
+  "/fuel",
+  "/def",
+  "/farebox",
+  "/service/print-all",
+  "/service/print-blank",
+  "/turnover",
+  "/workorder",
+]);
 
 async function renderPdf(
   req: Request,

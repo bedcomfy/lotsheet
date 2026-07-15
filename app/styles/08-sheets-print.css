@@ -463,14 +463,28 @@
    is a portrait page with margins, the table fills it, and the rows share the
    page height — so changing the font only changes the text, not the sheet size. */
 .fuel-sheet {
+  position: relative;
   background: var(--paper);
   color: var(--ink); /* white paper, dark ink — even in dark theme */
-  min-width: 660px; /* 12 columns stay readable; scrolls on phones */
-  max-width: 704px;
-  aspect-ratio: 8.5 / 11; /* a real portrait page */
+  width: 8.5in;
+  min-width: 8.5in;
+  max-width: 8.5in;
+  height: 11in;
+  min-height: 11in;
+  aspect-ratio: auto;
   display: flex;
   flex-direction: column;
-  padding: 26px 30px 24px; /* margins around the grid, roughly matching print */
+  padding: 0.5in 0.55in 0.45in;
+}
+.sheet-brand-logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 30px;
+  height: auto;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
 }
 .fuelt {
   width: 100%;
@@ -492,7 +506,9 @@
   height: auto; /* row height comes from the page, not the font size */
   padding: 0 4px;
   text-align: center;
+  vertical-align: middle;
   font-size: var(--ffz, 12px);
+  line-height: 1;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -506,6 +522,8 @@
 }
 .fuelt__name {
   letter-spacing: 0.03em;
+  font-size: calc(var(--ffz, 12px) + 3px);
+  line-height: 1;
 }
 .fuelt__hin {
   border: none;
@@ -521,8 +539,8 @@
 .fuelt__hin--line {
   width: 84px; /* Start and End lines kept equal */
 }
-/* The header is one line that fills the full width: the title is fixed and each
-   field grows to share the rest, so the lines stretch and N/S gets room. */
+/* The header is one line that fills the full width: the title and time fields
+   stay stable while the date and N/S fields share the remaining room. */
 .fuelt__hdrrow {
   display: flex;
   align-items: center;
@@ -541,6 +559,12 @@
   align-items: center;
   gap: 5px;
   white-space: nowrap;
+}
+.fuelt__field--time {
+  flex: 0 0 auto;
+}
+.fuelt__field--date {
+  flex: 0 0 122px;
 }
 /* DATE / START / END lines: grow to fill, same look + height. The fuel sheet's
    date isn't in the flex header, so inline-block + min-width keeps a visible
@@ -565,10 +589,22 @@
 .fuelt__date {
   min-width: 110px;
 }
+.fuelt__hdrrow .fuelt__field--date .fuelt__date {
+  flex: 0 0 74px;
+  width: 74px;
+  min-width: 74px;
+}
+.fuelt__hdrrow .fuelt__field--time .fuelt__hin--line {
+  flex: 0 0 96px;
+  width: 96px;
+  min-width: 96px;
+}
 /* Room to circle N or S by hand. */
 .fuelt__ns {
+  flex: 0 0 62px;
   justify-content: center;
-  letter-spacing: 4px;
+  gap: 0;
+  letter-spacing: 0;
 }
 .fuelt__colhdr td {
   font-size: var(--ffz, 12px);
@@ -620,6 +656,7 @@
   border: none;
   text-align: center;
   font-size: var(--ffz, 12px);
+  line-height: 1;
   padding: 0;
   background: transparent;
 }
@@ -648,7 +685,7 @@
   letter-spacing: 0.06em;
 }
 .fuelsum__date {
-  font-size: calc(var(--ffz, 12px) + 2px);
+  font-size: calc(var(--ffz, 12px) + 5px);
   margin-top: 3px;
 }
 .fuelsum__sections {
@@ -849,6 +886,97 @@
   }
 }
 
+/* The Lot Sheet previews use the same Letter page box and internal padding as
+   Chromium's PDF output. Page two keeps its existing content and may grow if
+   a long flag summary needs more room, but its first page is still true Letter. */
+@media screen {
+  .lot-sheet-front,
+  .back-sheet {
+    width: 8.5in;
+    min-width: 8.5in;
+    max-width: 8.5in;
+    padding: 0.32in 0.34in;
+  }
+  .lot-sheet-front {
+    height: 11in;
+    min-height: 11in;
+    aspect-ratio: auto;
+  }
+  .back-sheet {
+    min-height: 11in;
+  }
+  .lot-sheet-front .head__logo {
+    width: 56px;
+  }
+  .lot-sheet-front .head__field {
+    padding: 2px 8px;
+  }
+  .lot-sheet-front .head__field label {
+    font-size: 12px;
+  }
+  .lot-sheet-front .head__field input {
+    font-size: 14px;
+  }
+  .lot-sheet-front .head__title {
+    font-size: 14px;
+  }
+  .lot-sheet-front .counters {
+    gap: 16px;
+    padding: 8px 4px;
+  }
+  .lot-sheet-front .counter {
+    font-size: 12px;
+  }
+  .lot-sheet-front .counter input {
+    width: 90px;
+    font-size: 14px;
+  }
+  .lot-sheet-front .grid__header {
+    padding: 5px 1px;
+    font-size: 11px;
+  }
+  .lot-sheet-front .cell__num,
+  .lot-sheet-front .front .cell__num {
+    font-size: calc(15px + var(--fz, 0px));
+  }
+  .lot-sheet-front .cell__slot {
+    font-size: 9px;
+  }
+  .lot-sheet-front .eastlot__cell {
+    min-height: 0.5in;
+  }
+  .lot-sheet-front .cell--filled {
+    background: var(--paper);
+  }
+  .lot-sheet-front .front--filled {
+    outline: none;
+  }
+  .lot-sheet-front .date-picker::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+}
+
+/* Preserve the optional mobile overview while the default pan view remains a
+   literal Letter sheet with print-matching typography and spacing. */
+@media screen and (max-width: 699px) {
+  .sheet-scroll--fit .lot-sheet-front,
+  .sheet-scroll--fit .back-sheet {
+    width: calc(100vw - 16px);
+    min-width: 0;
+    max-width: none;
+    padding: 10px 10px 16px;
+  }
+  .sheet-scroll--fit .lot-sheet-front {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 8.5 / 11;
+  }
+  .sheet-scroll--fit .back-sheet {
+    min-height: 0;
+    aspect-ratio: 8.5 / 11;
+  }
+}
+
 /* ---------- Print ---------- */
 @media print {
   @page {
@@ -861,6 +989,11 @@
     background: #fff;
     padding: 0;
     --sticky-top: 0px;
+  }
+  .appmain,
+  .app,
+  .service-print-all {
+    background: #fff !important;
   }
   .no-print,
   .toolbar {
@@ -949,6 +1082,7 @@
     width: 100%;
     margin: 0;
     padding: 0.32in 0.34in;
+    min-height: 100vh;
   }
   .backlot {
     min-height: 4.4in;
@@ -977,6 +1111,8 @@
 @media print {
   .fuel-sheet {
     min-width: 0;
+    max-width: none;
+    width: 100%;
     padding: 0.5in 0.55in 0.45in;
   }
   .fuelt {
@@ -1298,33 +1434,192 @@ td.turnt__head {
 
 
 /* ---------- Service Sheets page ---------- */
-/* Uses the same header + tabs structure as Staffing/Admin (.adminpage,
-   .adminhero, .admintabs). Only the extras live here. */
-.admintab__hint {
-  font-size: 10.5px;
-  font-weight: 700;
-  opacity: 0.7;
-  margin-left: 2px;
+.servicepage {
+  width: 100%;
+  padding: 22px 24px 64px;
 }
-.serviceall {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 2px 0 10px;
-  padding: 10px 14px;
+.servicehero {
+  width: 100%;
+  margin-bottom: 14px;
+}
+.servicehero h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+.servicetabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
   border: 1px solid var(--edge);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface);
 }
-.serviceall__note {
-  font-size: 13px;
+.servicetab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text-dim);
-  flex: 1 1 240px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
-/* Sheets stacked inside the service page shouldn't double up page padding. */
-.servicepage .app {
+.servicetab:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.servicetab--active {
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.servicetab--active svg {
+  color: var(--accent);
+}
+.servicecontrols {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 10px 8px 14px;
+  margin-bottom: 18px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.servicecontrols__date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+.servicecontrols__date .date-picker {
+  min-height: 36px;
+}
+.servicecontrols__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.servicecontrols__toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.servicecontrols__switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.servicecontrols__switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 160ms ease, background 160ms ease;
+}
+.servicecontrols__toggle input:checked + .servicecontrols__switch {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.servicecontrols__toggle input:checked + .servicecontrols__switch::after {
+  transform: translateX(14px);
+  background: var(--accent);
+}
+.servicecontrols__toggle input:focus-visible + .servicecontrols__switch {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.servicecontrols__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.servicepreview {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+.servicepage .app,
+.service-print-all .app {
   padding: 0;
+}
+.servicepreview .sheet-scroll,
+.service-print-all .sheet-scroll {
+  padding: 0;
+}
+.servicepreview .sheet-scroll > .sheet + .sheet {
+  margin-top: 24px;
+}
+.fuelsum__empty {
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  color: #555;
+  font-size: 15px;
+}
+@media screen and (max-width: 760px) {
+  .servicepage {
+    padding: 14px 10px 72px;
+  }
+  .servicehero h1 {
+    font-size: 24px;
+  }
+  .servicetabs {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .servicetabs::-webkit-scrollbar {
+    display: none;
+  }
+  .servicetab {
+    flex: 0 0 auto;
+    min-width: 108px;
+  }
+  .servicecontrols {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+  .servicecontrols__actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .servicecontrols__actions .btn {
+    flex: 1 1 0;
+  }
 }
 
 /* ---------- Lane indicator (N / S) ---------- */
@@ -1345,7 +1640,7 @@ td.turnt__head {
 }
 
 /* ---------- Farebox sheet (Daily Fare Box Checks) ---------- */
-/* Real letter-size pages (~35 buses each), on screen and in print, like the
+/* Real letter-size pages (32 buses each), on screen and in print, like the
    paper concept: title + date + lane + column headers on every page. */
 .fbx__count {
   font-size: 12px;
@@ -1363,34 +1658,39 @@ td.turnt__head {
   gap: 14px;
 }
 .fbx-sheet {
+  position: relative;
   background: var(--paper);
   color: var(--ink); /* white paper, dark ink — even in dark theme */
-  min-width: 560px;
-  max-width: 704px;
-  width: 100%;
+  width: 8.5in;
+  min-width: 8.5in;
+  max-width: 8.5in;
+  height: 11in;
+  min-height: 11in;
   margin: 0 auto;
-  padding: 24px 30px 22px;
-  aspect-ratio: 8.5 / 11; /* a real portrait page on screen */
+  padding: 0.4in 0.5in 0.32in;
+  aspect-ratio: auto;
   display: flex;
   flex-direction: column;
 }
 .fbx {
   width: 100%;
-  height: 100%;
-  flex: 1 1 auto;
+  height: calc(100% - 18px);
+  flex: 0 0 calc(100% - 18px);
   border-collapse: collapse;
   table-layout: fixed;
 }
-.fbx__col--bus { width: 12%; }
-.fbx__col--pd { width: 16%; }
-.fbx__col--serv { width: 12%; }
-.fbx__col--note { width: 60%; }
+.fbx__col--bus { width: 10%; }
+.fbx__col--pd { width: 15%; }
+.fbx__col--serv { width: 14%; }
+.fbx__col--note { width: 61%; }
 .fbx td {
   border: 1px solid #000;
   padding: 0 5px;
   height: auto; /* rows share the page height, like the fuel sheet */
-  font-size: 12px;
+  font-size: 16px;
+  line-height: 1;
   text-align: center;
+  vertical-align: middle;
   overflow: hidden;
   white-space: nowrap;
 }
@@ -1398,41 +1698,45 @@ td.turnt__head {
 .fbx__hdr td {
   border: none;
   border-bottom: 1px solid #000;
-  padding: 2px 4px 4px;
+  padding: 4px 4px 6px;
 }
 .fbx__hdrrow {
   display: flex;
   align-items: center;
   gap: 0 12px;
   width: 100%;
-  font-size: 12px;
+  font-size: 16px;
 }
 .fbx__name {
   flex: 0 0 auto;
   letter-spacing: 0.03em;
+  font-size: 19px;
 }
 .fbx__field {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 5px;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 16px;
 }
 .fbx__dateval {
-  flex: 1 1 auto;
+  flex: 0 0 78px;
+  width: 78px;
   border-bottom: 1px solid #000;
-  min-width: 54px;
+  min-width: 78px;
   min-height: 1em;
   text-align: center;
-  font-size: 12px;
+  font-size: 16px;
 }
 .fbx__ns {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  margin-left: 60px;
+  margin-right: 48px;
   letter-spacing: 0.02em;
 }
 .fbx__lane {
@@ -1445,18 +1749,31 @@ td.turnt__head {
   border-radius: 999px;
   padding: 0 4px;
 }
-.fbx__page {
-  flex: 0 0 auto;
-  font-size: 9px;
-  color: #555;
-}
 .fbx__colhdr td {
-  font-size: 9.5px;
-  letter-spacing: 0.04em;
+  height: 34px;
+  padding: 3px 5px;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: normal;
   background: #f0f0f0;
 }
+.fbx__footer {
+  height: 18px;
+  flex: 0 0 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-top: 4px;
+  font-size: 12px;
+  line-height: 1;
+  color: #555;
+}
+.fbx__footer-page {
+  margin-left: auto;
+}
 .fbx__bus {
-  font-size: 13px;
+  font-size: 16px;
 }
 .fbx__row--done .fbx__bus {
   color: #15803d;
@@ -1466,22 +1783,22 @@ td.turnt__head {
 .fbx__yn {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 7px;
   vertical-align: middle;
 }
 .fbx__ynopt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 21px;
-  height: 19px;
+  min-width: 26px;
+  height: 22px;
   padding: 0 4px;
   border: 1.5px solid transparent;
   border-radius: 999px;
   background: transparent;
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1502,7 +1819,8 @@ button.fbx__ynopt:hover {
   width: 100%;
   border: none;
   text-align: center;
-  font-size: 12px;
+  font-size: 16px;
+  line-height: 1;
   padding: 0;
   background: transparent;
   color: inherit;
@@ -1517,8 +1835,67 @@ button.fbx__ynopt:hover {
 .fbx td:last-child {
   text-align: left;
 }
+.fbx__colhdr td:last-child {
+  text-align: center;
+  vertical-align: middle;
+}
 .fbx td:last-child .fbx__in {
   text-align: left;
+}
+.fbx__notes {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(70px, 1fr);
+  align-items: center;
+  gap: 0 8px;
+  width: 100%;
+  min-width: 0;
+}
+.fbx__reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+button.fbx__reason {
+  cursor: pointer;
+}
+.fbx__reasonbox {
+  width: 13px;
+  height: 13px;
+  border: 1px solid #000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.fbx__other {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.fbx__otherline,
+.fbx__other .fbx__in {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  border: none;
+  border-bottom: 1px solid #000;
+  font-size: 13px;
+  line-height: 21px;
+  padding: 0 2px;
 }
 @media print {
   /* One .fbx-sheet per printed page (the global .sheet print rules already
@@ -1528,13 +1905,13 @@ button.fbx__ynopt:hover {
   }
   .fbx-sheet {
     break-after: page;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
     padding: 0.4in 0.5in 0.32in;
   }
   .fbx-sheet:last-child {
     break-after: auto;
-  }
-  .fbx td {
-    font-size: 11px;
   }
   /* The Y/N pickers print as plain text; only a chosen circle carries ink. */
   .fbx__ynopt {
