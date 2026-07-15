@@ -13,7 +13,9 @@ import {
 } from "../lib/grid";
 import { busModelId, busTypeIds, busWrapId, BUS_STATUSES } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
-import CsvEditor from "./CsvEditor";
+import dynamic from "next/dynamic";
+// Loads on first "Edit full list (CSV)" tap, not with the page.
+const CsvEditor = dynamic(() => import("./CsvEditor"), { ssr: false });
 import { getDeviceActor } from "../lib/deviceActor";
 import type { MasterBus } from "../lib/types";
 

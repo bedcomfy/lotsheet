@@ -8,7 +8,7 @@ import { fuelIndicator, fuelFlagSections } from "../lib/grid";
 import { Flag, History, Eraser, FileDown } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import ToolMenu from "./ToolMenu";
-import ManagerPanel from "./ManagerPanel";
+import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";

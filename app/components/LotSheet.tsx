@@ -37,12 +37,15 @@ import {
 import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, Plus } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
+import dynamic from "next/dynamic";
 import CellEditor from "./CellEditor";
-import ManagerPanel from "./ManagerPanel";
+import ManagerPanel from "./ManagerPanelLazy";
 import TypeCodes from "./TypeCodes";
-import LotEditor from "./LotEditor";
-import RowFill from "./RowFill";
-import PrevSheets from "./PrevSheets";
+import LotEditor from "./LotEditorLazy";
+// Tap-to-open overlays load on first use, not with the page. CellEditor stays
+// eager — tapping a cell is the hot path and must never wait on a chunk fetch.
+const RowFill = dynamic(() => import("./RowFill"), { ssr: false });
+const PrevSheets = dynamic(() => import("./PrevSheets"), { ssr: false });
 import ToolMenu from "./ToolMenu";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import DatePickerField from "./DatePickerField";
