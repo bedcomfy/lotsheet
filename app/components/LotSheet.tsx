@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -9,8 +9,6 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  useDraggable,
-  useDroppable,
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
@@ -22,15 +20,9 @@ import {
   numberedCellId,
   frontCellId,
   row11CellId,
-  flagDisplay,
-  inspMilesDisplay,
   flagsFullDisplay,
   groupFlaggedBuses,
   cellLocationLabel,
-  pinnedFlagText,
-  alwaysPrintFlagIds,
-  mostSevereFlag,
-  flagColorStyle,
   departmentGroups,
   flagName,
 } from "../lib/grid";
@@ -38,6 +30,7 @@ import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Sh
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import dynamic from "next/dynamic";
+import { GridCell, FrontCell, BackLotBox } from "./LotGridCells";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanelLazy";
 import TypeCodes from "./TypeCodes";
@@ -46,8 +39,10 @@ import LotEditor from "./LotEditorLazy";
 // eager — tapping a cell is the hot path and must never wait on a chunk fetch.
 const RowFill = dynamic(() => import("./RowFill"), { ssr: false });
 const PrevSheets = dynamic(() => import("./PrevSheets"), { ssr: false });
+import ShopMenu from "./ShopMenu";
+import { MissingBusesModal, ServiceDetailModal } from "./LotStatusModals";
 import ToolMenu from "./ToolMenu";
-import Overlay, { closeOverlayFromEvent } from "./Overlay";
+import Overlay from "./Overlay";
 import DatePickerField from "./DatePickerField";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
@@ -121,163 +116,6 @@ function printStamp(now = new Date()) {
 function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
-}
-
-// ---- drag-and-drop cells ----
-// Top-level components (NOT defined inside LotSheet) so they keep their identity
-// across re-renders — an inline component would remount mid-drag and break dnd.
-// Every cell is a drop target; a cell with a bus is also draggable. Tap still
-// opens the editor (mouse drags need ~6px of movement, touch a long-press).
-
-interface GridCellProps {
-  id: string | null;
-  slotLabel: string | number | null;
-  num: string;
-  entry: FlagEntry | null;
-  selected?: boolean;
-  foundBus?: string; // the searched bus — steady highlight while it matches
-  locked?: boolean; // survives "Clear Grid"
-  onOpen: (id: string, subLabel: string) => void;
-}
-
-function GridCell({ id, slotLabel, num, entry, selected, foundBus, locked, onOpen }: GridCellProps) {
-  const { label: busLabel } = useBusMaster();
-  const blocked = slotLabel === "X"; // the form's own X (ROW 10) — not editable
-  const xed = num === "X"; // user-blocked spot — tap to unblock via the editor
-  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !id || !num || xed });
-  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: !id || xed });
-  if (blocked) {
-    return (
-      <div className="cell cell--blocked">
-        <span className="cell__x">X</span>
-      </div>
-    );
-  }
-  const found = !!foundBus && num === foundBus;
-  const disp = entry ? flagDisplay(entry) : "";
-  const miles = entry ? inspMilesDisplay(entry) : "";
-  const pin = entry ? pinnedFlagText(entry) : "";
-  const dispFlag = entry ? mostSevereFlag(entry.flags) : null;
-  const pinFlag = entry ? alwaysPrintFlagIds().find((flag) => entry.flags.includes(flag)) || null : null;
-  return (
-    <button
-      type="button"
-      ref={(el) => {
-        drag.setNodeRef(el);
-        drop.setNodeRef(el);
-      }}
-      {...drag.listeners}
-      {...drag.attributes}
-      data-cellid={id ?? undefined}
-      className={`cell ${num && !xed ? "cell--filled" : ""} ${xed ? "cell--blocked" : ""} ${
-        drag.isDragging ? "cell--dragsrc" : ""
-      } ${drop.isOver ? "cell--dropover" : ""} ${selected ? "cell--selected" : ""} ${found ? "cell--found" : ""}`}
-      onClick={() => onOpen(id!, slotLabel != null ? `Slot ${slotLabel}` : "ROW 11")}
-    >
-      {slotLabel != null && <span className="cell__slot">{slotLabel}</span>}
-      {locked && num && !xed && (
-        <span className="cell__lockicon no-print" title="Locked — survives Clear Grid">
-          <Lock size={9} />
-        </span>
-      )}
-      {xed ? (
-        <span className="cell__x">X</span>
-      ) : (
-        <>
-          {num && <TypeCodes num={num} className="cell__types" />}
-          <span className="cell__num">{busLabel(num)}</span>
-          {(disp || miles || pin) && (
-            <span className="cell__meta">
-              {disp && <span className="cell__flag" style={flagColorStyle(dispFlag) as CSSProperties}>{disp}</span>}
-              {miles && <span className="cell__insp">{miles}</span>}
-              {pin && <span className="cell__pin" style={flagColorStyle(pinFlag) as CSSProperties}>{pin}</span>}
-            </span>
-          )}
-        </>
-      )}
-    </button>
-  );
-}
-
-interface FrontCellProps {
-  c: number;
-  num: string;
-  entry: FlagEntry | null;
-  selected?: boolean;
-  foundBus?: string;
-  locked?: boolean;
-  onOpen: (id: string, subLabel: string) => void;
-}
-
-function FrontCell({ c, num, entry, selected, foundBus, locked, onOpen }: FrontCellProps) {
-  const { label: busLabel } = useBusMaster();
-  const id = frontCellId(c);
-  const xed = num === "X";
-  const drag = useDraggable({ id: `cell:${id}`, data: { cellId: id, num }, disabled: !num || xed });
-  const drop = useDroppable({ id: `cell:${id}`, data: { cellId: id }, disabled: xed });
-  const found = !!foundBus && num === foundBus;
-  const disp = entry ? flagDisplay(entry) : "";
-  const miles = entry ? inspMilesDisplay(entry) : "";
-  const pin = entry ? pinnedFlagText(entry) : "";
-  const dispFlag = entry ? mostSevereFlag(entry.flags) : null;
-  const pinFlag = entry ? alwaysPrintFlagIds().find((flag) => entry.flags.includes(flag)) || null : null;
-  return (
-    <button
-      type="button"
-      ref={(el) => {
-        drag.setNodeRef(el);
-        drop.setNodeRef(el);
-      }}
-      {...drag.listeners}
-      {...drag.attributes}
-      data-cellid={id}
-      className={`front ${num && !xed ? "front--filled" : ""} ${xed ? "cell--blocked" : ""} ${
-        drag.isDragging ? "cell--dragsrc" : ""
-      } ${drop.isOver ? "cell--dropover" : ""} ${selected ? "cell--selected" : ""} ${found ? "cell--found" : ""}`}
-      onClick={() => onOpen(id, `ROW ${c + 1} — front bus`)}
-    >
-      {locked && num && !xed && (
-        <span className="cell__lockicon no-print" title="Locked — survives Clear Grid">
-          <Lock size={9} />
-        </span>
-      )}
-      {xed ? (
-        <span className="cell__x">X</span>
-      ) : (
-        <>
-          {num && <TypeCodes num={num} className="front__types" />}
-          <span className="cell__num">{busLabel(num)}</span>
-          {disp && <span className="front__flag" style={flagColorStyle(dispFlag) as CSSProperties}>{disp}</span>}
-          {miles && <span className="front__flag front__insp">{miles}</span>}
-          {pin && <span className="front__flag front__pin" style={flagColorStyle(pinFlag) as CSSProperties}>{pin}</span>}
-        </>
-      )}
-    </button>
-  );
-}
-
-// A back-of-sheet lot box that accepts a dragged bus (drops it at the end of
-// that lot's list) and still opens the lot editor on tap.
-function BackLotBox({ lotKey, found, onOpen, children }: { lotKey: string; found?: boolean; onOpen: () => void; children: ReactNode }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `lot:${lotKey}`, data: { lotKey } });
-  return (
-    <div
-      ref={setNodeRef}
-      data-lotkey={lotKey}
-      className={`backlot ${isOver ? "backlot--dropover" : ""} ${found ? "backlot--found" : ""}`}
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-    >
-      {children}
-    </div>
-  );
 }
 
 export default function LotSheet() {
@@ -1802,132 +1640,26 @@ export default function LotSheet() {
 
       {/* Which active buses aren't anywhere on the sheet (tap the stats chip) */}
       {missingOpen && (
-        <Overlay
+        <MissingBusesModal
+          missingBuses={missingBuses}
+          accountedBuses={accountedBuses}
+          flagFor={flagFor}
+          onEditFlags={setFlagBus}
           onClose={() => setMissingOpen(false)}
-          overlayClassName="modal-backdrop no-print"
-          contentClassName="modal modal--tall"
-          label="Missing buses"
-        >
-          <div className="modal__head">
-            <div>
-              <div className="modal__title">Missing buses</div>
-              <div className="modal__sub">
-                {missingBuses.length
-                  ? `${missingBuses.length} active bus${missingBuses.length === 1 ? "" : "es"} unaccounted for.`
-                  : "Every active bus is accounted for."}
-                {accountedBuses.length
-                  ? ` ${accountedBuses.length} off property / in shop.`
-                  : ""}
-              </div>
-            </div>
-            <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
-              ×
-            </button>
-          </div>
-          <div className="lotlist">
-            {[...missingBuses, ...accountedBuses].map((bus, i) => {
-              const fdisp = flagsFullDisplay(flagFor(bus));
-              const firstAccounted = i === missingBuses.length && accountedBuses.length > 0;
-              return (
-                <div key={bus}>
-                  {firstAccounted && (
-                    <div className="lotlist__section">Off property / in shop (not missing)</div>
-                  )}
-                  <div className="lotitem">
-                    <div className="lotitem__info">
-                      <span className="lotitem__bus">{busLabel(bus)}</span>
-                      <TypeCodes num={bus} />
-                      {fdisp && <span className="lotitem__flag">{fdisp}</span>}
-                    </div>
-                    <div className="lotitem__actions">
-                      <button
-                        className="lotitem__move"
-                        onClick={() => setFlagBus(bus)} /* stacks on top — Done returns here */
-                        aria-label="Edit flags"
-                        title="Edit this bus's flags"
-                      >
-                        <Flag size={13} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="modal__actions">
-            <div className="toolbar__spacer" />
-            <button className="btn btn--primary" onClick={closeOverlayFromEvent}>
-              Done
-            </button>
-          </div>
-        </Overlay>
+        />
       )}
 
-      {serviceDetail && (() => {
-        const isOut = serviceDetail === "outOfService";
-        const buses = [...(isOut ? fleet.notReadyForService : fleet.readyForService)].sort((a, b) =>
-          a.localeCompare(b, undefined, { numeric: true })
-        );
-        return (
-          <Overlay
-            onClose={() => setServiceDetail(null)}
-            overlayClassName="modal-backdrop no-print"
-            contentClassName="modal modal--tall"
-            label={isOut ? "Out of Service" : "Usable buses"}
-          >
-            <div className="modal__head">
-              <div>
-                <div className="modal__title">{isOut ? "Out of Service" : "Usable buses"}</div>
-                <div className="modal__sub">
-                  {isOut
-                    ? `${buses.length} active bus${buses.length === 1 ? "" : "es"} off the service grid — where they are and why.`
-                    : `${buses.length} active bus${buses.length === 1 ? "" : "es"} on the service grid.`}
-                </div>
-              </div>
-              <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
-                ×
-              </button>
-            </div>
-            <div className="lotlist">
-              {buses.length === 0 && (
-                <div className="lotlist__empty">
-                  {isOut ? "Every active bus is on the grid." : "No buses on the grid yet."}
-                </div>
-              )}
-              {buses.map((bus) => {
-                const where = (fleetLocations[bus] || []).join(" / ");
-                const why = flagsFullDisplay(flagFor(bus));
-                return (
-                  <div className="oositem" key={bus}>
-                    <div className="oositem__main">
-                      <span className="lotitem__bus">{busLabel(bus)}</span>
-                      <TypeCodes num={bus} />
-                      <button
-                        className="lotitem__move oositem__flagbtn"
-                        onClick={() => setFlagBus(bus)} /* stacks on top — Done returns here */
-                        aria-label="Edit flags"
-                        title="Edit this bus's flags"
-                      >
-                        <Flag size={13} />
-                      </button>
-                    </div>
-                    <div className="oositem__meta">
-                      <span className="oositem__where">{where || "Not placed"}</span>
-                      {why && <span className="oositem__why">{why}</span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="modal__actions">
-              <div className="toolbar__spacer" />
-              <button className="btn btn--primary" onClick={closeOverlayFromEvent}>
-                Done
-              </button>
-            </div>
-          </Overlay>
-        );
-      })()}
+      {serviceDetail && (
+        <ServiceDetailModal
+          kind={serviceDetail}
+          readyForService={fleet.readyForService}
+          notReadyForService={fleet.notReadyForService}
+          fleetLocations={fleetLocations}
+          flagFor={flagFor}
+          onEditFlags={setFlagBus}
+          onClose={() => setServiceDetail(null)}
+        />
+      )}
 
       {editingLot && (
         <LotEditor
@@ -1956,115 +1688,17 @@ export default function LotSheet() {
       {/* The SHOP menu — edit Apron / Bays / Cards right from the lot sheet.
           Screen-only data flows; the printout is never touched. */}
       {shopOpen && (
-        <Overlay
+        <ShopMenu
+          inShopCount={inShopCount}
+          bays={sheet.lots?.bay || []}
+          flags={flags}
+          flagFor={flagFor}
+          lotList={lotList}
+          foundBus={foundBus}
+          onEditLot={setEditingLot}
+          onEditBay={setEditingBay}
           onClose={() => setShopOpen(false)}
-          overlayClassName="modal-backdrop no-print"
-          contentClassName="modal modal--tall modal--shop"
-          label="Shop"
-        >
-          <div className="modal__head">
-            <div>
-              <div className="modal__title">Shop</div>
-              <div className="modal__sub">
-                {inShopCount} bus{inShopCount === 1 ? "" : "es"} inside · shared live with the Shop page
-              </div>
-            </div>
-            <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
-              ×
-            </button>
-          </div>
-
-          <div className="shopmenu">
-            <div className="shopmenu__sec">
-              <div className="shopmenu__head">
-                Apron <span className="shopcard__count">({lotList("apron").length})</span>
-                <button className="btn btn--mini" onClick={() => setEditingLot("apron")}>
-                  Edit
-                </button>
-              </div>
-              <div className="apronchips">
-                {lotList("apron").length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
-                {lotList("apron").map((b, i) => {
-                  const f = flagsFullDisplay(flagFor(b));
-                  return (
-                    <span key={`a${i}`} className={`apronchip ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}>
-                      {busLabel(b)}
-                      {f && <span className="apronchip__flags">{f}</span>}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="shopmenu__sec">
-              <div className="shopmenu__head">Bays</div>
-              <div className="shopslots">
-                {Array.from({ length: BAY_SPOTS }, (_, i) => {
-                  const b = (sheet.lots?.bay || [])[i] || "";
-                  const xed = b === "X";
-                  const entry = b && !xed ? flags[b] : undefined;
-                  // Full flags (hold reason, inspection option, the whole note)
-                  // — the most important info for a shop bus.
-                  const disp = entry ? flagsFullDisplay(entry) : "";
-                  const rfs = !!entry?.flags?.includes("rfs");
-                  const isFound = !!foundBus && b === foundBus;
-                  return (
-                    <button
-                      key={`bay${i}`}
-                      type="button"
-                      className={`shopslot ${b && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
-                        rfs ? "shopslot--rfs" : ""
-                      } ${isFound ? "shopslot--found" : ""}`}
-                      onClick={() => setEditingBay(i)}
-                    >
-                      <span className="shopslot__label">BAY {i + 1}</span>
-                      {xed ? (
-                        <span className="shopslot__x">X</span>
-                      ) : b ? (
-                        <>
-                          <span className="shopslot__bus">{busLabel(b)}</span>
-                          {disp && <span className="shopslot__flag">{disp}</span>}
-                        </>
-                      ) : (
-                        <span className="shopslot__empty">
-                          <Plus size={15} />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="shopmenu__sec">
-              <div className="shopmenu__head">
-                Cards <span className="shopcard__count">({lotList("cards").length})</span>
-                <button className="btn btn--mini" onClick={() => setEditingLot("cards")}>
-                  Edit
-                </button>
-                <span className="shopcard__legend">
-                  <span className="shopcard__legenddot" /> Ready for Service
-                </span>
-              </div>
-              <div className="apronchips">
-                {lotList("cards").length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
-                {lotList("cards").map((b, i) => {
-                  const rfs = !!flags[b]?.flags?.includes("rfs");
-                  const f = flagsFullDisplay(flagFor(b));
-                  return (
-                    <span
-                      key={`c${i}`}
-                      className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}
-                    >
-                      {busLabel(b)}
-                      {f && <span className="apronchip__flags">{f}</span>}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Overlay>
+        />
       )}
 
       {/* One bay's spot, edited from the Shop menu */}
