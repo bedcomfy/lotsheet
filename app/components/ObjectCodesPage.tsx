@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { FLAGS, flagName } from "../lib/grid";
 import { OBJECT_CODES } from "../lib/objectCodes";
@@ -14,7 +14,8 @@ const FLAG_BY_CODE = FLAGS.reduce<Record<string, string[]>>((acc, flag) => {
 
 export default function ObjectCodesPage() {
   const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
+  // Deferred: keystrokes repaint instantly; re-rendering ~370 rows follows async.
+  const q = useDeferredValue(query).trim().toLowerCase();
   const rows = useMemo(() => {
     if (!q) return OBJECT_CODES;
     return OBJECT_CODES.filter((item) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, Check, RotateCcw, Save, Search } from "lucide-react";
 import {
@@ -94,8 +94,11 @@ export default function AdminFlagEditor() {
       .finally(() => setLoaded(true));
   }, []);
 
+  // Deferred: typing repaints instantly; re-filtering the long flag list
+  // (object codes are flags too — 400+ rows on "All") follows async.
+  const deferredQuery = useDeferredValue(query);
   const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     return rows.filter((row) => {
       if (scope === "daily" && row.objectCode) return false;
       if (scope === "object" && !row.objectCode) return false;
@@ -108,7 +111,7 @@ export default function AdminFlagEditor() {
         row.aliases.join(" ").toLowerCase().includes(q)
       );
     });
-  }, [query, rows, scope]);
+  }, [deferredQuery, rows, scope]);
 
   const selected = useMemo(() => rows.find((r) => r.id === selectedId) || null, [rows, selectedId]);
 

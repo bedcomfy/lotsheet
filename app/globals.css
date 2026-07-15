@@ -930,6 +930,10 @@ textarea:focus-visible {
   color: var(--text);
   text-align: left;
   cursor: pointer;
+  /* Long list (every object code is a flag): skip layout/paint of off-screen
+     rows. The intrinsic-size hint keeps the scrollbar steady. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 58px;
 }
 .flagrow2:hover {
   background: var(--surface-hover, var(--surface-2));
@@ -1276,6 +1280,9 @@ textarea:focus-visible {
   gap: 10px;
   padding: 14px 18px;
   border-top: 1px solid var(--edge);
+  /* 130+ rows, each with two <select>s: skip layout/paint while off-screen. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 118px;
 }
 .fleetrow:first-child {
   border-top: none;
@@ -2063,6 +2070,12 @@ textarea:focus-visible {
   border: 1px solid var(--edge);
   border-radius: 8px;
   background: var(--surface);
+}
+/* ~370 rows: skip layout/paint of off-screen rows (the sticky head row is
+   excluded — containment and position:sticky don't mix). */
+.objectcodes__row:not(.objectcodes__row--head) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 46px;
 }
 .objectcodes__row--head {
   position: sticky;

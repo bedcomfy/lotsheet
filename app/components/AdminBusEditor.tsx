@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Check, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import {
@@ -60,6 +60,72 @@ function setupRowsToConfig(typeRows: BusTypeAdminRow[], modelRows: BusModelAdmin
   return { types, models };
 }
 
+function CodePreview({ bus, modelById, typeById }: {
+  bus: MasterBus;
+  modelById: Record<string, BusModelAdminRow>;
+  typeById: Record<string, BusTypeAdminRow>;
+}) {
+  const model = modelById[busModelId(bus)];
+  const ids = model ? [busWrapId(bus), model.typeId].filter(Boolean) : busTypeIds(bus);
+  const visible = ids.map((id) => typeById[id]).filter((type) => type?.code);
+  if (!visible.length) return <span className="busprev busprev--none">no sheet tag</span>;
+  return (
+    <span className="busprev">
+      {visible.map((type, index) => (
+        <span key={type.id} className="busprev__seg">
+          {index > 0 && <span className="busprev__sep">/</span>}
+          <span className="badge" style={{ color: safeColor(type.color) }}>{type.code}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// One bus row, memoized: with 130+ rows each holding two <select>s (a dozen+
+// options apiece), re-rendering the whole list on every filter keystroke or
+// single-row edit is what made this page feel slow. All callbacks are stable
+// (useCallback in the parent), so a row only re-renders when ITS bus changes.
+const FleetRow = memo(function FleetRow({ bus, modelRows, wrapRows, modelById, typeById, onUpdate, onAssignModel, onAssignWrap }: {
+  bus: MasterBus;
+  modelRows: BusModelAdminRow[];
+  wrapRows: BusTypeAdminRow[];
+  modelById: Record<string, BusModelAdminRow>;
+  typeById: Record<string, BusTypeAdminRow>;
+  onUpdate: (num: string, patch: Partial<MasterBus>) => void;
+  onAssignModel: (bus: MasterBus, id: string) => void;
+  onAssignWrap: (bus: MasterBus, wrapId: string) => void;
+}) {
+  const selectedModelId = busModelId(bus);
+  return (
+    <div className={`fleetrow ${bus.status === "retired" ? "fleetrow--retired" : ""}`}>
+      <div className="fleetrow__head">
+        <span className="fleetrow__num">{bus.name ? `${bus.name} (${bus.num})` : bus.num}</span>
+        <span className="fleetrow__preview"><CodePreview bus={bus} modelById={modelById} typeById={typeById} /></span>
+        <div className="toolbar__spacer" />
+        <label className="buslist__field"><span className="buslist__fieldlabel">Status</span>
+          <select className="buslist__sel" value={bus.status || "active"} onChange={(event) => onUpdate(bus.num, { status: event.target.value })}>
+            {BUS_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
+          </select></label>
+        <label className="buslist__lane" title="Included on the Fuel / DEF service-lane sheets">
+          <input type="checkbox" checked={!!bus.lane} disabled={bus.status === "retired"}
+            onChange={(event) => onUpdate(bus.num, { lane: event.target.checked })} /> Fuel/DEF
+        </label>
+      </div>
+      <div className="fleetrow__assignments">
+        <label className="buslist__field"><span className="buslist__fieldlabel">Model</span>
+          <select className="buslist__typesel" value={selectedModelId} onChange={(event) => onAssignModel(bus, event.target.value)}>
+            {!selectedModelId && <option value="">Choose model</option>}
+            {modelRows.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
+          </select></label>
+        <label className="buslist__field"><span className="buslist__fieldlabel">Wrap</span>
+          <select className="buslist__typesel" value={busWrapId(bus)} onChange={(event) => onAssignWrap(bus, event.target.value)}>
+            {wrapRows.map((wrap) => <option key={wrap.id} value={wrap.id}>{wrap.label}</option>)}
+          </select></label>
+      </div>
+    </div>
+  );
+});
+
 export default function AdminBusEditor() {
   const { master, setMaster } = useBusMaster();
   const [buses, setBuses] = useState<MasterBus[]>(() => master.buses.map((bus) => ({ ...bus })));
@@ -93,23 +159,28 @@ export default function AdminBusEditor() {
   const typeById = useMemo(() => Object.fromEntries(typeRows.map((row) => [row.id, row])), [typeRows]);
   const modelById = useMemo(() => Object.fromEntries(modelRows.map((row) => [row.id, row])), [modelRows]);
 
+  // Deferred: the search box repaints on every keystroke; re-filtering the
+  // 130-row list (DOM mount/unmount) happens async so typing never stutters.
+  const deferredFilter = useDeferredValue(filter);
   const shown = useMemo(() => {
-    const query = filter.trim().toUpperCase();
+    const query = deferredFilter.trim().toUpperCase();
     if (!query) return buses;
     return buses.filter((bus) => {
       const profile = modelById[busModelId(bus)];
       return bus.num.includes(query) || (profile?.label || bus.model || "").toUpperCase().includes(query) ||
         (bus.name || "").toUpperCase().includes(query);
     });
-  }, [buses, filter, modelById]);
+  }, [buses, deferredFilter, modelById]);
 
-  function updateBus(num: string, patch: Partial<MasterBus>) {
+  // Stable callbacks (identity only changes when modelById does) so the
+  // memoized FleetRow actually skips re-renders.
+  const updateBus = useCallback((num: string, patch: Partial<MasterBus>) => {
     setBuses((list) => list.map((bus) => (bus.num === num ? { ...bus, ...patch } : bus)));
     setBusDirty(true);
     setBusSaved(false);
-  }
+  }, []);
 
-  function assignModel(bus: MasterBus, id: string) {
+  const assignModel = useCallback((bus: MasterBus, id: string) => {
     const model = modelById[id];
     const wrapId = busWrapId(bus);
     updateBus(bus.num, {
@@ -118,15 +189,15 @@ export default function AdminBusEditor() {
       length: model?.length || "",
       types: Array.from(new Set([wrapId, model?.typeId || ""].filter(Boolean))),
     });
-  }
+  }, [modelById, updateBus]);
 
-  function assignWrap(bus: MasterBus, wrapId: string) {
+  const assignWrap = useCallback((bus: MasterBus, wrapId: string) => {
     const model = modelById[busModelId(bus)];
     updateBus(bus.num, {
       wrapId,
       types: Array.from(new Set([wrapId, model?.typeId || ""].filter(Boolean))),
     });
-  }
+  }, [modelById, updateBus]);
 
   async function saveBuses() {
     setBusSaving(true);
@@ -226,23 +297,6 @@ export default function AdminBusEditor() {
         setModelRows(data?.models || []);
       })
       .finally(() => setSetupLoaded(true));
-  }
-
-  function CodePreview({ bus }: { bus: MasterBus }) {
-    const model = modelById[busModelId(bus)];
-    const ids = model ? [busWrapId(bus), model.typeId].filter(Boolean) : busTypeIds(bus);
-    const visible = ids.map((id) => typeById[id]).filter((type) => type?.code);
-    if (!visible.length) return <span className="busprev busprev--none">no sheet tag</span>;
-    return (
-      <span className="busprev">
-        {visible.map((type, index) => (
-          <span key={type.id} className="busprev__seg">
-            {index > 0 && <span className="busprev__sep">/</span>}
-            <span className="badge" style={{ color: safeColor(type.color) }}>{type.code}</span>
-          </span>
-        ))}
-      </span>
-    );
   }
 
   function renderTagRows(rows: BusTypeAdminRow[], removable: boolean) {
@@ -378,37 +432,19 @@ export default function AdminBusEditor() {
 
         <div className="manager__list buslist__scroll">
           {!shown.length && <div className="lotlist__empty">No buses match.</div>}
-          {shown.map((bus) => {
-            const selectedModelId = busModelId(bus);
-            return (
-              <div className={`fleetrow ${bus.status === "retired" ? "fleetrow--retired" : ""}`} key={bus.num}>
-                <div className="fleetrow__head">
-                  <span className="fleetrow__num">{bus.name ? `${bus.name} (${bus.num})` : bus.num}</span>
-                  <span className="fleetrow__preview"><CodePreview bus={bus} /></span>
-                  <div className="toolbar__spacer" />
-                  <label className="buslist__field"><span className="buslist__fieldlabel">Status</span>
-                    <select className="buslist__sel" value={bus.status || "active"} onChange={(event) => updateBus(bus.num, { status: event.target.value })}>
-                      {BUS_STATUSES.map((status) => <option key={status.id} value={status.id}>{status.label}</option>)}
-                    </select></label>
-                  <label className="buslist__lane" title="Included on the Fuel / DEF service-lane sheets">
-                    <input type="checkbox" checked={!!bus.lane} disabled={bus.status === "retired"}
-                      onChange={(event) => updateBus(bus.num, { lane: event.target.checked })} /> Fuel/DEF
-                  </label>
-                </div>
-                <div className="fleetrow__assignments">
-                  <label className="buslist__field"><span className="buslist__fieldlabel">Model</span>
-                    <select className="buslist__typesel" value={selectedModelId} onChange={(event) => assignModel(bus, event.target.value)}>
-                      {!selectedModelId && <option value="">Choose model</option>}
-                      {modelRows.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
-                    </select></label>
-                  <label className="buslist__field"><span className="buslist__fieldlabel">Wrap</span>
-                    <select className="buslist__typesel" value={busWrapId(bus)} onChange={(event) => assignWrap(bus, event.target.value)}>
-                      {wrapRows.map((wrap) => <option key={wrap.id} value={wrap.id}>{wrap.label}</option>)}
-                    </select></label>
-                </div>
-              </div>
-            );
-          })}
+          {shown.map((bus) => (
+            <FleetRow
+              key={bus.num}
+              bus={bus}
+              modelRows={modelRows}
+              wrapRows={wrapRows}
+              modelById={modelById}
+              typeById={typeById}
+              onUpdate={updateBus}
+              onAssignModel={assignModel}
+              onAssignWrap={assignWrap}
+            />
+          ))}
         </div>
       </section>
     </>
