@@ -10,12 +10,12 @@ import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 
-// Daily Fare Box Checks — one row per service-lane bus: Y / N for "probed &
-// emptied" (circle it, on screen or with a pen), the servicer, and a note for
-// why a box wasn't done. The sheet is split into real letter-size pages
+// Daily Fare Box Checks — one row per service-lane bus: the servicer and a
+// note explaining why the farebox would not probe. The sheet is split into
+// real letter-size pages
 // (32 buses each) exactly like the paper concept, with the title + column
-// headers on every page. Printing produces one N-circled set and one
-// S-circled set (the two lane clipboards); a blank print is a single plain set.
+// headers on every page. Printing produces one N-marked set and one S-marked
+// set (the two lane clipboards); a blank print is a single plain set.
 
 interface FareboxEntry {
   yn: "" | "y" | "n";
@@ -246,34 +246,6 @@ export default function FareboxSheet({
   const lanes: ("n" | "s" | null)[] =
     !blankMode && ((printMode && laneCopies) || previewLaneCopies) ? ["n", "s"] : [null];
 
-  function ynCell(bus: string) {
-    const e = data.entries[bus] || EMPTY_ENTRY;
-    if (blankMode) return <span className="fbx__yn"><span className="fbx__ynopt">Y</span><span className="fbx__ynsep">/</span><span className="fbx__ynopt">N</span></span>;
-    return (
-      <span className="fbx__yn">
-        <button
-          type="button"
-          className={`fbx__ynopt ${e.yn === "y" ? "fbx__ynopt--on" : ""}`}
-          onClick={() => setEntry(bus, { yn: e.yn === "y" ? "" : "y" })}
-          aria-pressed={e.yn === "y"}
-          aria-label={`Bus ${bus} probed and emptied: yes`}
-        >
-          Y
-        </button>
-        <span className="fbx__ynsep">/</span>
-        <button
-          type="button"
-          className={`fbx__ynopt ${e.yn === "n" ? "fbx__ynopt--on" : ""}`}
-          onClick={() => setEntry(bus, { yn: e.yn === "n" ? "" : "n" })}
-          aria-pressed={e.yn === "n"}
-          aria-label={`Bus ${bus} probed and emptied: no`}
-        >
-          N
-        </button>
-      </span>
-    );
-  }
-
   function reasonControl(
     bus: string,
     field: "noPower" | "wontProbe",
@@ -323,21 +295,13 @@ export default function FareboxSheet({
     );
   }
 
-  // An empty write-in slot: blank bus box, plain Y / N to circle by pen.
+  // An empty write-in slot with the same geometry as every populated row.
   function emptyRow(key: number) {
     return (
       <tr key={`empty-${key}`}>
         <td className="fbx__bus" />
-        <td className="fbx__pd">
-          <span className="fbx__yn">
-            <span className="fbx__ynopt">Y</span>
-            <span className="fbx__ynsep">/</span>
-            <span className="fbx__ynopt">N</span>
-          </span>
-        </td>
         <td />
         <td>{notesCell("", true)}</td>
-        <td />
       </tr>
     );
   }
@@ -350,13 +314,12 @@ export default function FareboxSheet({
         <table className="fbx">
           <colgroup>
             <col className="fbx__col--bus" />
-            <col className="fbx__col--pd" />
             <col className="fbx__col--serv" />
             <col className="fbx__col--note" />
           </colgroup>
           <thead>
             <tr className="fbx__hdr">
-              <td colSpan={4}>
+              <td colSpan={3}>
                 <div className="fbx__hdrrow">
                   <span className="fbx__name">DAILY FARE BOX CHECKS</span>
                   <span className="fbx__field">
@@ -372,9 +335,8 @@ export default function FareboxSheet({
             </tr>
             <tr className="fbx__colhdr">
               <td>BUS</td>
-              <td>PROBED &amp; EMPTIED</td>
               <td>SERV</td>
-              <td>IF NO, WHY?</td>
+              <td>IF FAREBOX WON&apos;T PROBE, WHY?</td>
             </tr>
           </thead>
           <tbody>
@@ -382,9 +344,8 @@ export default function FareboxSheet({
               if (bus === null) return emptyRow(i);
               const e = data.entries[bus] || EMPTY_ENTRY;
               return (
-                <tr key={bus} className={e.yn === "y" ? "fbx__row--done" : ""}>
+                <tr key={bus}>
                   <td className="fbx__bus">{bus}</td>
-                  <td className="fbx__pd">{ynCell(bus)}</td>
                   <td>
                     {blankMode ? null : (
                       <input

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.1 - 2026-07-15
+
+- Simplified the Farebox sheet to three columns by removing the Probed &
+  Emptied field and moving Serv directly beside Bus.
+- Renamed the expanded handwriting area to "IF FAREBOX WON'T PROBE, WHY?" and
+  gave it all reclaimed table width while making Serv about 4px wider.
+- Kept the Farebox browser preview and printable North/South sets on the same
+  exact Letter-page table geometry without deleting older saved check data.
+
 ## 0.13.0 - 2026-07-15
 
 - Reworked the phone Lot Sheet into a paper viewer: the unchanged Letter sheet

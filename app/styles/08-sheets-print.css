@@ -1680,9 +1680,8 @@ td.turnt__head {
   table-layout: fixed;
 }
 .fbx__col--bus { width: 10%; }
-.fbx__col--pd { width: 15%; }
-.fbx__col--serv { width: 14%; }
-.fbx__col--note { width: 61%; }
+.fbx__col--serv { width: 105px; }
+.fbx__col--note { width: auto; }
 .fbx td {
   border: 1px solid #000;
   padding: 0 5px;
@@ -1774,43 +1773,6 @@ td.turnt__head {
 }
 .fbx__bus {
   font-size: 16px;
-}
-.fbx__row--done .fbx__bus {
-  color: #15803d;
-}
-/* Y / N — tap to pick on screen; the pick prints circled. Unfilled rows print
-   a plain "Y / N" to circle with a pen. */
-.fbx__yn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  vertical-align: middle;
-}
-.fbx__ynopt {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 26px;
-  height: 22px;
-  padding: 0 4px;
-  border: 1.5px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-}
-button.fbx__ynopt:hover {
-  border-color: #bbb;
-}
-.fbx__ynopt--on {
-  border-color: #000;
-}
-.fbx__ynopt:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
 }
 .fbx__ynsep {
   color: #555;
@@ -1912,15 +1874,5 @@ button.fbx__reason {
   }
   .fbx-sheet:last-child {
     break-after: auto;
-  }
-  /* The Y/N pickers print as plain text; only a chosen circle carries ink. */
-  .fbx__ynopt {
-    border-color: transparent;
-  }
-  .fbx__ynopt--on {
-    border-color: #000;
-  }
-  button.fbx__ynopt:hover {
-    border-color: transparent;
   }
 }
