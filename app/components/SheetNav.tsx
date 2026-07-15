@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, ClipboardList, Droplets, FileText, Fuel, Home, RefreshCw, SearchCode, ShieldAlert, Users, Wrench } from "lucide-react";
+import { Activity, ClipboardList, FileText, Fuel, Home, RefreshCw, SearchCode, ShieldAlert, Users, Wrench } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { APP_VERSION } from "../lib/appVersion";
 
@@ -21,8 +21,10 @@ const HOME_LINK: SheetLink = { path: "/home", label: "Home", icon: Home };
 export const DAILY_SHEETS: SheetLink[] = [
   { path: "/", label: "Lot Sheet", icon: ClipboardList },
   { path: "/turnover", label: "Turnover Sheet", icon: RefreshCw },
-  { path: "/fuel", label: "Fuel Sheet", icon: Fuel },
-  { path: "/def", label: "DEF Sheet", icon: Droplets },
+  // Fuel, DEF, and Farebox live together — they're the lane sheets printed at
+  // the start of every shift. (/fuel, /def, /farebox stay routable for the PDF
+  // renderer and old links.)
+  { path: "/service", label: "Service Sheets", icon: Fuel, matchPrefix: "/service" },
 ];
 
 export const SHOP_SHEETS: SheetLink[] = [

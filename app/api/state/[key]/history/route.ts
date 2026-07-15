@@ -4,7 +4,7 @@ import { listHistory, archiveSheet, deleteHistory } from "../../../../lib/store"
 export const dynamic = "force-dynamic";
 
 // Prev Sheets archive for the hub sheets (fuel / def / turnover), keyed per sheet.
-const ALLOWED = new Set(["fuel", "def", "turnover", "workorder"]);
+const ALLOWED = new Set(["fuel", "def", "farebox", "turnover", "workorder"]);
 
 function check(key: string): boolean {
   return ALLOWED.has(key);

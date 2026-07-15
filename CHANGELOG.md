@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.0 - 2026-07-15
+
+- New Farebox sheet (Daily Fare Box Checks): every service-lane bus gets a row
+  with one Probed & Dumped box, the servicer, and a notes line for why a box
+  wasn't done. Fill it on screen or print it (2 copies — north & south lane)
+  for the clipboard; the printout flows across pages with the title and column
+  headers repeating on every page.
+- Fuel, DEF, and the new Farebox sheet now live together on one "Service
+  Sheets" page with tabs (each tab notes how many copies to print at shift
+  start). The sidebar shows one entry instead of two; /fuel and /def links
+  still work.
+
 ## 0.9.0 - 2026-07-15
 
 - The Lot Sheet's bus flags now update live: a flag changed from any other

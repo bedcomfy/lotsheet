@@ -5,7 +5,7 @@ import { parseBody, statePayloadSchema } from "../../../lib/schemas";
 export const dynamic = "force-dynamic";
 
 // Sheets allowed to use the shared keyed store. Add new sheet keys here.
-const ALLOWED = new Set(["fuel", "def", "turnover", "workorder", "workpick"]);
+const ALLOWED = new Set(["fuel", "def", "farebox", "turnover", "workorder", "workpick"]);
 
 // Next 15+ makes route `params` a Promise — await it before use.
 interface KeyParams {

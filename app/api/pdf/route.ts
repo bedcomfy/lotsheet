@@ -152,7 +152,7 @@ function resetBrowser(): void {
 
 // Sheets that can be exported to PDF. Each must render its print view at
 // `<path>?print=1` and expose a #print-ready marker when loaded.
-const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/turnover", "/workorder"]);
+const ALLOWED_PATHS = new Set(["/", "/fuel", "/def", "/farebox", "/turnover", "/workorder"]);
 
 async function renderPdf(
   req: Request,

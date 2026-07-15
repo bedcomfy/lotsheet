@@ -6,7 +6,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock,
-  Droplets,
+  Coins,
   FileText,
   Fuel,
   Gauge,
@@ -161,8 +161,8 @@ export default function HomeDashboard() {
   ];
 
   const sheetLinks = [
-    { label: "Fuel Sheet", path: "/fuel", icon: Fuel },
-    { label: "DEF Sheet", path: "/def", icon: Droplets },
+    { label: "Service Sheets", path: "/service", icon: Fuel },
+    { label: "Farebox Checks", path: "/service?tab=farebox", icon: Coins },
     { label: "Shop", path: "/shop", icon: Wrench },
     { label: "Admin Tools", path: "/admin/flags", icon: ShieldAlert },
   ];
