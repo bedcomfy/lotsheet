@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1 - 2026-07-13
+
+- Flag notes and the "Other" hold reason now save automatically — as you type, on
+  blur, and when you close the menu — so you no longer have to press Enter first.
+  (A focused input that gets removed when a dialog closes never fired its blur, so
+  the last thing typed could be lost.)
+
 ## 0.8.0 - 2026-07-13
 
 - Completed the shared/live data migration: the Fuel, DEF, Turnover, Shop,

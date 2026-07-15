@@ -32,6 +32,7 @@ import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import { getDeviceActor } from "../lib/deviceActor";
+import { useAutoSaveText } from "../lib/useAutoSaveText";
 import type { FlagEntry, FlagMap } from "../lib/types";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
@@ -54,25 +55,23 @@ function typeNames(codes: string[]): string {
 
 // ---- detail pickers (shown inline under an active detail flag) ----
 function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: string) => void }) {
-  const [v, setV] = useState(value || "");
+  // Auto-saves as you type / on blur / on close — no need to press Enter.
+  const { text, onChange, flush, saveNow } = useAutoSaveText(value, onSave);
   return (
     <div className="noterow">
       <input
         className="detailbox__text"
         placeholder="Type a note…"
-        value={v}
-        onChange={(e) => setV(e.target.value)}
-        onBlur={() => v !== (value || "") && onSave(v)}
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={flush}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
       />
-      {!!v && (
+      {!!text && (
         <button
           type="button"
           className="noterow__clear"
-          onClick={() => {
-            setV("");
-            onSave("");
-          }}
+          onClick={() => saveNow("")}
           aria-label="Remove note"
           title="Remove the note"
         >
@@ -120,8 +119,9 @@ function TirePicker({ tires, onChange }: { tires: string[] | undefined; onChange
   );
 }
 
-function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; onChange: (r: string) => void }) {
-  const [text, setText] = useState(reason || "");
+function HoldReasonPicker({ reason, onChange: onSave }: { reason: string | undefined; onChange: (r: string) => void }) {
+  // Same auto-save behavior for the free-text "Other reason".
+  const { text, onChange, flush, saveNow } = useAutoSaveText(reason, onSave);
   return (
     <div className="detailbox detailbox--col">
       <div className="detailbox__label">Hold reason (optional)</div>
@@ -131,10 +131,7 @@ function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; on
             key={r}
             type="button"
             className={`deptchip ${reason === r ? "deptchip--on--maintenance" : ""}`}
-            onClick={() => {
-              setText(r);
-              onChange(r);
-            }}
+            onClick={() => saveNow(r)}
           >
             {r}
           </button>
@@ -144,8 +141,8 @@ function HoldReasonPicker({ reason, onChange }: { reason: string | undefined; on
         className="detailbox__text"
         placeholder="Other reason…"
         value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={() => text !== (reason || "") && onChange(text)}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={flush}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
       />
     </div>
