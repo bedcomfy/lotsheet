@@ -1,0 +1,175 @@
+/* Roboto Slab — used ONLY for the fuel/DEF R/H/I flag letter. Being a slab serif,
+   its capital I has bold top + bottom bars (clearly not a lowercase L). The rest
+   of the site stays Arial. Self-hosted so it also renders in the server-side PDF. */
+@font-face {
+  font-family: "Roboto Slab";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/robotoslab-700.woff2") format("woff2");
+}
+
+:root {
+  /* ---- PAPER tokens: the printed sheets. These NEVER change with the theme —
+     the lot/turnover/fuel/DEF sheets always look like white paper so screen
+     matches the printout 1:1. ---- */
+  --ink: #111111;
+  --line: #111111;
+  --bg: #f6f7f9;
+  --paper: #ffffff;
+  --muted: #6b7280;
+  --border-soft: #e6e8eb;
+
+  /* ---- CHROME tokens: the app around the sheet (nav, toolbars, menus, popups).
+     These DO flip between light + dark (see [data-theme="dark"] below). Light
+     mode values ≈ the old look so nothing breaks. ---- */
+  --app-bg: #eef0f3; /* canvas behind the white sheet */
+  --chrome: #ffffff; /* nav + toolbar surface */
+  --surface: #ffffff; /* menus / popovers / cards */
+  --surface-2: #f3f4f6; /* inputs, chips, hover */
+  --surface-3: #e9ecef; /* deeper hover (e.g. result rows) */
+  --text: #111827; /* primary text on chrome */
+  --text-dim: #6b7280; /* secondary text on chrome */
+  --edge: #e2e5e9; /* hairline border */
+  --edge-strong: #cbd0d6; /* stronger border / control outline */
+  --surface-hover: #f3f4f6; /* legacy alias (kept for older rules) */
+  --shadow-soft: 0 10px 28px rgba(17, 24, 39, 0.1);
+  --shadow-pop: 0 22px 60px rgba(17, 24, 39, 0.26);
+
+  --accent: #2563eb;
+  --accent-dark: #1d4ed8;
+  --accent-ink: #ffffff; /* text on an accent fill */
+  --accent-soft: #e8f1fc; /* subtle accent background */
+
+  /* Semantic text colors (readable in each theme) */
+  --danger: #dc2626;
+  --success: #15803d;
+
+  /* Department pill colors (flags are colored by the team that owns them). */
+  --pill-service-bg: #e8f1fc;
+  --pill-service-tx: #1e40af;
+  --pill-service-ed: #93c5fd;
+  --pill-maintenance-bg: #fdf3e7;
+  --pill-maintenance-tx: #92400e;
+  --pill-maintenance-ed: #f4cd94;
+  --pill-safety-bg: #fdecec;
+  --pill-safety-tx: #991b1b;
+  --pill-safety-ed: #f4b4b4;
+
+  --ctl-radius: 9px;
+  --font-sheet: Arial, Helvetica, sans-serif;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", Arial, Helvetica, sans-serif;
+  --nav-w: 272px;
+}
+
+/* ---- DARK THEME: only the chrome tokens flip; the paper tokens above stay put,
+   so the sheets remain white paper floating on a dark canvas. ---- */
+:root[data-theme="dark"] {
+  --app-bg: #16181c;
+  --chrome: #212429;
+  --surface: #292d33;
+  --surface-2: #333841;
+  --surface-3: #3c424b;
+  --text: #e8eaee;
+  --text-dim: #9aa1ac;
+  --edge: #383d45;
+  --edge-strong: #4a515b;
+  --surface-hover: #333841;
+  --shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.24);
+  --shadow-pop: 0 26px 70px rgba(0, 0, 0, 0.48);
+
+  --accent: #4f8ef7;
+  --accent-dark: #3f7fe8;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(79, 142, 247, 0.18);
+
+  --pill-service-bg: rgba(59, 130, 246, 0.2);
+  --pill-service-tx: #93c5fd;
+  --pill-service-ed: rgba(59, 130, 246, 0.45);
+  --pill-maintenance-bg: rgba(217, 119, 6, 0.2);
+  --pill-maintenance-tx: #fbbf24;
+  --pill-maintenance-ed: rgba(217, 119, 6, 0.5);
+  --pill-safety-bg: rgba(220, 38, 38, 0.22);
+  --pill-safety-tx: #fca5a5;
+  --pill-safety-ed: rgba(220, 38, 38, 0.5);
+
+  --danger: #f08a8a;
+  --success: #5dcaa5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  scrollbar-gutter: stable;
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-text-size-adjust: 100%;
+}
+/* The PAGE never scrolls sideways — wide content (the sheet) pans inside its own
+   scroll area instead. This clip lives on the content wrapper, NOT on <body>: a
+   clip on <body> makes body's own children (the sticky nav) stick to the
+   scrolling body rather than the viewport. `clip` doesn't create a scroll
+   container, so the sticky toolbar inside still works. */
+.appmain {
+  overflow-x: clip;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit; /* iOS Safari otherwise renders button text in system blue */
+  -webkit-text-fill-color: currentColor;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 1px solid var(--text-dim);
+  outline-offset: 1px;
+}
+
+.sheet,
+.sheet *,
+.back-sheet,
+.back-sheet *,
+.wo-sheet,
+.wo-sheet * {
+  font-family: var(--font-sheet);
+}
+
+.appnav *,
+.toolbar *,
+.home *,
+.adminpage *,
+.manager__inner *,
+.modal * {
+  letter-spacing: 0;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+::view-transition-new(root) {
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

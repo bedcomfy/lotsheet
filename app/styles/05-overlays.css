@@ -1,0 +1,569 @@
+/* ---------- Modal editor (screen only) ---------- */
+/* Backdrop is just the dim layer now; Radix renders the dialog box as a sibling,
+   so the box positions itself (see .modal). The page behind is scroll-locked by
+   Radix (react-remove-scroll), which is iOS-safe and stops bleed-through. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 21, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 50;
+}
+.modal-backdrop[data-state="open"] {
+  animation: overlayBlurIn 0.18s cubic-bezier(.2,.8,.2,1);
+}
+.modal-backdrop[data-state="closed"] {
+  animation: overlayBlurOut 0.16s cubic-bezier(.4,0,1,1);
+}
+.modal-backdrop.is-closing {
+  pointer-events: none;
+  animation: overlayBlurOut 0.32s cubic-bezier(.4,0,1,1) forwards;
+}
+/* Menus sit near the TOP on phones — the on-screen keyboard can never cover
+   them (a bottom sheet got blocked whenever the keyboard opened). Desktop
+   centers them. */
+.modal {
+  position: fixed;
+  z-index: 51;
+  left: 50%;
+  top: 5dvh;
+  transform: translateX(-50%);
+  width: calc(100% - 20px);
+  max-width: 460px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 16px 18px 18px;
+  box-shadow: var(--shadow-pop);
+  max-height: 88dvh; /* scroll within the dialog if it's tall */
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.modal[data-state="open"] {
+  animation: blurFadeIn 0.2s cubic-bezier(.2,.8,.2,1);
+}
+.modal[data-state="closed"] {
+  animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
+}
+.modal.is-closing {
+  pointer-events: none;
+  animation: blurFadeOut 0.32s cubic-bezier(.4,0,1,1) forwards;
+}
+.modal.modal--gate {
+  max-width: 430px;
+}
+@media (min-width: 540px) {
+  .modal {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .modal--wide {
+    max-width: 820px;
+  }
+}
+/* Inputs never inherit the dark surface's text color — keep every field inside
+   a menu light (the paper sheets aren't affected; their inputs live in .sheet,
+   not in these overlays). */
+.modal input,
+.modal textarea,
+.manager__inner input,
+.manager__inner textarea {
+  color: var(--text);
+}
+.modal input::placeholder,
+.modal textarea::placeholder,
+.manager__inner input::placeholder,
+.manager__inner textarea::placeholder {
+  color: var(--text-dim);
+}
+/* ...and never a white field behind that light text (checkboxes excluded). */
+.modal input:not([type="checkbox"]):not([type="radio"]),
+.modal textarea,
+.manager__inner input:not([type="checkbox"]):not([type="radio"]),
+.manager__inner textarea {
+  background: var(--surface-2);
+}
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -16px -18px 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--edge);
+  background: var(--surface);
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+}
+.modal__title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.modal__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--text-dim);
+  padding: 0;
+}
+.modal__close:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--edge);
+}
+.modal__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin: 12px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.modal__input {
+  width: 100%;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  padding: 12px;
+  border: 2px solid var(--edge-strong);
+  border-radius: 8px;
+  letter-spacing: 0.01em;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.modal__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.modal__warn {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--pill-maintenance-tx);
+  background: var(--pill-maintenance-bg);
+  border: 1px solid var(--pill-maintenance-ed);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.modal__warnactions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.modal__ok {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success);
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.swatch {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+}
+.swatch--on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.swatch--none {
+  background: #fff;
+  color: #9ca3af;
+  font-size: 16px;
+}
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.chip--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* ---------- Manager panel ---------- */
+.manager {
+  position: fixed;
+  inset: 0;
+  /* Full-screen cover (no bleed-through). */
+  z-index: 130;
+  background: var(--app-bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.manager[data-state="open"] {
+  animation: blurFadeIn 0.22s cubic-bezier(.2,.8,.2,1);
+}
+.manager[data-state="closed"] {
+  animation: blurFadeOut 0.16s cubic-bezier(.4,0,1,1);
+}
+.manager.is-closing {
+  pointer-events: none;
+  animation: blurFadeOut 0.32s cubic-bezier(.4,0,1,1) forwards;
+}
+.manager--rowfill .manager__inner {
+  max-width: min(1180px, 100%);
+}
+/* Keep the manager content narrow so rows are compact (less mouse travel). */
+.manager__inner {
+  width: 100%;
+  max-width: 700px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+}
+.manager__bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--edge);
+  background: var(--surface);
+}
+.manager__title {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0;
+}
+.manager__hint {
+  padding: 10px 14px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.manager__search {
+  margin: 12px 16px;
+  padding: 12px 13px;
+  font-size: 16px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  width: calc(100% - 32px);
+}
+.manager__search::placeholder { color: var(--text-dim); }
+.manager__search:focus {
+  outline: none;
+  border-color: var(--text-dim);
+  box-shadow: 0 0 0 1px var(--text-dim);
+}
+.manager__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 0 16px 24px;
+}
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px 0;
+}
+.tab {
+  flex: 1;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.tab--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* By-bus rows */
+.fchip {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #374151;
+  white-space: nowrap;
+}
+.fchip--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.busrow__clear {
+  border: 1px solid var(--pill-safety-ed);
+  background: var(--surface);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.busrow__saving {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.busrow__note {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* By-flag screen */
+.byflag {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.flagpicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 14px 6px;
+}
+.byflag__add {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 8px;
+}
+.byflag__input {
+  margin: 0;
+  flex: 1;
+}
+.byflag__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 14px 8px;
+}
+.byflag__count {
+  font-size: 12px;
+  color: var(--muted);
+}
+.byflag__bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--edge));
+  border-radius: 7px;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.byflag__bulk:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.byflag__bulk:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.busitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.busitem__note {
+  font-size: 13px;
+  color: #374151;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+/* ---------- Streamlined cell editor ---------- */
+/* Full-width primary action (one clear button, not a row of six). */
+.btn--block {
+  width: 100%;
+}
+.modal__save {
+  margin-top: 8px;
+  padding: 11px;
+  font-size: 15px;
+}
+/* "✓ On the list · Pulse" confirmation line under the number. */
+.cellstatus {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 10px;
+}
+/* The bus's flags, shown as colored pills; the whole strip taps into the flag
+   editor (so there's no separate "Flags" button). */
+.cellflags {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
+}
+.cellflags:hover {
+  border-color: var(--accent);
+}
+.cellflags__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+.cellflags .fpill {
+  font-size: 12px;
+  padding: 4px 11px;
+}
+.cellflags__add {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 600;
+}
+.cellflags__chev {
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+/* Quiet secondary actions (Clear / Block / Lock) below a divider. */
+.cellact-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--edge);
+}
+.cellact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.cellact:hover {
+  color: var(--text);
+}
+.cellact--danger {
+  color: var(--danger);
+}
+.cellact--danger:hover {
+  opacity: 0.8;
+}
+
+/* Manager-set flag shown (read-only) in the cell editor */
+.flag-readout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  font-size: 13px;
+}
+/* Clickable readout — tap it to jump into that bus's flag editor. */
+.flag-readout--btn {
+  cursor: pointer;
+}
+.flag-readout--btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.flag-readout__code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+.flag-readout__note {
+  color: var(--text-dim);
+}
+.flag-readout__codes {
+  flex: 0 0 auto;
+}
+.flag-readout__codes .badge,
+.flag-readout__codes .typecodes__sep {
+  font-size: 15px;
+}
+

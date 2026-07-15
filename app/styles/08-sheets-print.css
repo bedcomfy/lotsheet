@@ -1,0 +1,1298 @@
+/* ---------- Back of sheet (lot lists) ---------- */
+.back-sheet {
+  background: var(--paper);
+  color: var(--ink); /* stays dark ink on white paper in dark theme */
+  width: 100%;
+  max-width: 850px;
+  margin: 16px auto 0;
+  padding: 18px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+.back__cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.backlot {
+  border: 1px solid var(--line);
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+.backlot:hover {
+  border-color: var(--accent);
+}
+.backlot__head {
+  border: none;
+  background: #f3f4f6;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  cursor: pointer;
+}
+.backlot__count {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.backlot__edit {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.backlot__list {
+  margin: 0;
+  padding: 6px 10px 6px 30px;
+  font-size: calc(13px + var(--fz, 0px));
+  line-height: 1.55;
+}
+.backlot__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.backlot__bus {
+  font-variant-numeric: tabular-nums;
+}
+.backlot__type .badge,
+.backlot__type .typecodes__sep {
+  font-size: 9px;
+}
+
+/* Back-of-sheet flag summary — buses grouped by most-severe flag */
+.flagsum {
+  margin-top: 22px;
+}
+.flagsum__title {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+.flagsum__group {
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+.flagsum__cat {
+  font-weight: 700 !important;
+  font-size: calc(13px + var(--fz, 0px));
+  border-bottom: 1px solid #d1d5db;
+  padding-bottom: 2px;
+  margin-bottom: 4px;
+}
+.flagsum__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: calc(12px + var(--fz, 0px));
+  line-height: 1.5;
+}
+.flagsum__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 1px 0;
+}
+.flagsum__bus {
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+}
+.flagsum__type .badge,
+.flagsum__type .typecodes__sep {
+  font-size: 9px;
+}
+.flagsum__loc {
+  color: #374151;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.flagsum__flags {
+  color: #b91c1c;
+}
+
+/* Lot editor modal */
+.modal--tall {
+  display: flex;
+  flex-direction: column;
+  max-height: 85dvh;
+  min-height: 0;
+}
+.lotadd {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.lotadd__input {
+  flex: 1;
+  font-size: 22px;
+}
+.lotlist {
+  margin-top: 12px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Material-style outlined date control using the browser's native picker. */
+.date-picker {
+  min-height: 38px;
+  min-width: 148px;
+  padding: 7px 10px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  color-scheme: light dark;
+}
+.date-picker:focus,
+.date-picker:focus-visible {
+  border-color: var(--text-dim);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--text-dim);
+}
+.toolbar__date {
+  min-height: 34px;
+  height: 34px;
+}
+.head__field .date-picker,
+.wo-in.date-picker {
+  min-width: 0;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  font: inherit;
+}
+.sheet .date-picker,
+.wo-sheet .date-picker {
+  color-scheme: light;
+}
+@media print {
+  .date-picker::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+}
+.findbox__in:focus,
+.findbox__in:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+.flagedit__filters {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.flagedit__filter {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--edge);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.flagedit__filter--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.emptable__sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.emptable__sort:hover {
+  color: var(--text);
+}
+.emplsort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 4px 5px 4px 10px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+.emplsort select {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.emplsort button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+@media screen and (max-width: 699px) {
+  .emplsort select {
+    font-size: 16px;
+  }
+}
+@media screen and (max-width: 699px) {
+  .modal--tall {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: none;
+  }
+  .modal--tall .modal__head,
+  .modal--tall .modal__actions,
+  .modal--tall > .modal__save {
+    flex: 0 0 auto;
+  }
+}
+.lotlist__empty {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 12px 2px;
+}
+.lotitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--edge);
+}
+/* The info group flexes/wraps; the actions group is fixed-width on the right so
+   the up/down arrows always line up regardless of flag length. */
+.lotitem__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lotitem__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lotitem__idx {
+  color: var(--text-dim);
+  width: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.lotitem__bus {
+  font-weight: 700;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.lotitem__move,
+.lotitem__del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  line-height: 1;
+}
+.lotitem__move:disabled {
+  opacity: 0.35;
+}
+.lotitem__del {
+  color: var(--danger);
+}
+.lotitem__del:hover {
+  border-color: var(--danger);
+}
+/* Tappable flag area on a lot row (colored pills, or an "add flags" hint). */
+.lotitem__flags,
+.lotitem__flagpills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lotitem__flags {
+  border: none;
+  background: transparent;
+  padding: 3px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.lotitem__flags:hover {
+  background: var(--surface-2);
+}
+.lotitem .fpill {
+  font-size: 11px;
+  padding: 3px 9px;
+}
+.lotitem__addflags {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* Manager warning banner (e.g. inspection cap reached) */
+.manager__warn {
+  margin: 8px 14px 0;
+  font-size: 13px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+/* A flag chip that can't be turned on right now (inspection cap reached) */
+.fchip--blocked {
+  opacity: 0.45;
+}
+/* Inspection miles input inside the manager rows */
+.milesinput {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.milesinput__label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.milesinput__sign {
+  width: 38px;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+.milesinput__sign:active {
+  transform: translateY(1px);
+}
+.milesinput__field {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.milesinput__field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Flag shown next to a bus in the lot lists (back of sheet + lot editor) */
+.backlot__flag {
+  color: #b91c1c;
+  font-size: calc(10px + var(--fz, 0px));
+}
+.lotitem__flag {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+/* Prev Sheets list */
+.prevsheet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--edge);
+}
+.prevsheet__when {
+  font-weight: 700;
+  font-size: 15px;
+}
+.prevsheet__meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Fuel / DEF sheet ---------- */
+/* Faithful to the Google Sheet: ONE continuous grid, title/DATE as the first row
+   (no separate header band, no gaps between groups). Shown on screen as a fixed
+   paper-shaped preview (like the lot sheet) so it matches the printout: the card
+   is a portrait page with margins, the table fills it, and the rows share the
+   page height — so changing the font only changes the text, not the sheet size. */
+.fuel-sheet {
+  background: var(--paper);
+  color: var(--ink); /* white paper, dark ink — even in dark theme */
+  min-width: 660px; /* 12 columns stay readable; scrolls on phones */
+  max-width: 704px;
+  aspect-ratio: 8.5 / 11; /* a real portrait page */
+  display: flex;
+  flex-direction: column;
+  padding: 26px 30px 24px; /* margins around the grid, roughly matching print */
+}
+.fuelt {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  flex: 1 1 auto; /* fill the page; rows share the leftover height */
+  height: 100%;
+}
+/* Each BUS column gains 6px while each GALS/SERV column contributes 3px.
+   The twelve columns still total 100%, so the table does not grow wider. */
+.fuelt__col--bus {
+  width: calc(8.333333% + 6px);
+}
+.fuelt__col--entry {
+  width: calc(8.333333% - 3px);
+}
+.fuelt td {
+  border: 1px solid #000;
+  height: auto; /* row height comes from the page, not the font size */
+  padding: 0 4px;
+  text-align: center;
+  font-size: var(--ffz, 12px);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* Header row: title + date — only a bottom rule, no vertical dividers */
+.fuelt__hdr td {
+  border: none;
+  border-bottom: 1px solid #000;
+  text-align: left;
+  padding: 5px 6px;
+  font-size: calc(var(--ffz, 12px) + 3px);
+}
+.fuelt__name {
+  letter-spacing: 0.03em;
+}
+.fuelt__hin {
+  border: none;
+  border-bottom: 1px solid #000;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  padding: 0 2px;
+  width: 88px;
+  background: transparent;
+}
+.fuelt__hin--sm {
+  width: 32px;
+}
+.fuelt__hin--line {
+  width: 84px; /* Start and End lines kept equal */
+}
+/* The header is one line that fills the full width: the title is fixed and each
+   field grows to share the rest, so the lines stretch and N/S gets room. */
+.fuelt__hdrrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0 12px;
+  width: 100%;
+  font-size: calc(var(--ffz, 12px) + 1px);
+}
+.fuelt__hdrrow .fuelt__name {
+  flex: 0 0 auto;
+}
+.fuelt__field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+/* DATE / START / END lines: grow to fill, same look + height. The fuel sheet's
+   date isn't in the flex header, so inline-block + min-width keeps a visible
+   blank line even when the date isn't printed. */
+.fuelt__date,
+.fuelt__hdrrow .fuelt__hin--line {
+  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 30px;
+  width: auto;
+  box-sizing: border-box;
+  height: 1.6em;
+  line-height: 1.5em;
+  border: none;
+  border-bottom: 1px solid #000;
+  text-align: center;
+  background: transparent;
+  font-size: calc(var(--ffz, 12px) + 1px);
+  padding: 0 4px;
+  vertical-align: middle;
+}
+.fuelt__date {
+  min-width: 110px;
+}
+/* Room to circle N or S by hand. */
+.fuelt__ns {
+  justify-content: center;
+  letter-spacing: 4px;
+}
+.fuelt__colhdr td {
+  font-size: var(--ffz, 12px);
+  background: #f3f4f6;
+}
+.fuelt__bus {
+  position: relative;
+  padding: 0;
+  text-align: center; /* bus number centered horizontally */
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums; /* all bus numbers are 4 uniform digits */
+}
+/* Highlight on a bus box that carries a flag. */
+.fuelt__bus--flagged {
+  background: #ffe066;
+}
+/* Center the flag and bus number as one group. The flag occupies real space,
+   so it pushes the number aside instead of overlapping it. */
+.fuelt__buscontent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  line-height: 1;
+}
+.fuelt__busnum {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+.fuelt__ind {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+.fuelt__indl {
+  font-family: "Roboto Slab", "Times New Roman", serif;
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  line-height: 1;
+  transform: translateY(-1px);
+  /* Barred capital I (bold top + bottom slab bars) so I isn't read as l. */
+}
+.fuelt__in {
+  width: 100%;
+  border: none;
+  text-align: center;
+  font-size: var(--ffz, 12px);
+  padding: 0;
+  background: transparent;
+}
+.fuelt__in:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.fuelt__total {
+  text-align: right;
+  padding-right: 4px;
+}
+
+/* Fuel/DEF second sheet — "SERVICE LANE" + print date header, then flag sections */
+.fuelsum {
+  justify-content: flex-start;
+}
+.fuelsum__head {
+  text-align: center;
+  border-bottom: 1px solid #000;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.fuelsum__title {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 7px);
+  letter-spacing: 0.06em;
+}
+.fuelsum__date {
+  font-size: calc(var(--ffz, 12px) + 2px);
+  margin-top: 3px;
+}
+.fuelsum__sections {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 28px;
+  width: 100%;
+}
+.fuelsum__section {
+  flex: 1 1 44%;
+  min-width: 0;
+}
+.fuelsum__seclabel {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 2px);
+  border-bottom: 1px solid #000;
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+.fuelsum__row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 2px 0;
+  border-bottom: 1px solid #ddd;
+}
+.fuelsum__bus {
+  font-weight: 700 !important;
+  font-size: calc(var(--ffz, 12px) + 1px);
+  min-width: 52px;
+  font-variant-numeric: tabular-nums;
+}
+.fuelsum__flags {
+  font-size: var(--ffz, 12px);
+}
+
+/* Hold-reason picker in the flag editor */
+.holdreason {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.holdreason__label {
+  font-size: 12px;
+  font-weight: 700;
+}
+.holdreason__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.fchip--sm {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.holdreason__field {
+  flex: 1 1 140px;
+  min-width: 120px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* ---------- "More ▾" toolbar dropdown ---------- */
+.toolmenu {
+  position: relative;
+  display: inline-flex;
+}
+/* Fixed-position panel (measured from the button) so the phone's horizontally
+   scrolling toolbar can't clip it. */
+.toolmenu__panel {
+  z-index: 120; /* above the sticky toolbar and the fixed sidebar */
+  min-width: 252px;
+  max-width: calc(100vw - 20px);
+  background: var(--surface);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  box-shadow: var(--shadow-pop);
+  padding: 7px;
+  max-height: min(420px, calc(100dvh - 24px));
+  overflow-y: auto;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  will-change: opacity, filter, transform;
+}
+.toolmenu__panel[data-state="open"] {
+  animation: dropdownIn 0.16s cubic-bezier(.2,.8,.2,1);
+}
+.toolmenu__panel[data-state="closed"] {
+  animation: dropdownOut 0.14s cubic-bezier(.4,0,1,1);
+}
+.toolmenu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.toolmenu__item:hover {
+  background: var(--surface-2);
+}
+.toolmenu__item svg {
+  color: var(--text-dim);
+}
+.toolmenu__item:hover svg {
+  color: var(--accent);
+}
+.toolmenu__item--danger {
+  color: var(--danger);
+}
+.toolmenu__item--danger svg {
+  color: currentColor;
+}
+.toolmenu__item input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+}
+.toolmenu__sep {
+  height: 1px;
+  background: var(--edge);
+  margin: 5px 6px;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes dropdownOut {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(8px);
+    transform: scale(0.97) translateY(-3px);
+  }
+}
+@keyframes blurFadeIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes blurFadeOut {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+@keyframes overlayBlurIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(2px);
+  }
+}
+@keyframes overlayBlurOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(2px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+
+/* ---------- Print ---------- */
+@media print {
+  @page {
+    /* margin 0 removes the browser's URL / date / "Page X of Y" header+footer */
+    size: letter portrait;
+    margin: 0;
+  }
+  html,
+  body {
+    background: #fff;
+    padding: 0;
+    --sticky-top: 0px;
+  }
+  .no-print,
+  .toolbar {
+    display: none !important;
+  }
+  .sheet-scroll {
+    padding: 0;
+    overflow: visible;
+  }
+  /* Natural flow with fixed cell heights — prints consistently across devices
+     (the old flex/fixed-height approach scaled wrong on iOS and spilled onto
+     extra pages). The internal padding replaces the @page margin we removed. */
+  .sheet {
+    box-shadow: none;
+    max-width: none;
+    width: 100%;
+    padding: 0.32in 0.34in;
+    /* Fill the whole page so there's no empty band at the bottom. */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  /* The grid grows to absorb the leftover vertical space; rows share it evenly. */
+  .grid {
+    flex: 1 1 auto;
+    grid-template-rows: auto repeat(10, minmax(0, 1fr));
+  }
+  .cell {
+    min-height: 0;
+  }
+  /* Keep every border/ink crisp on paper */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cell--filled {
+    background: #fff !important;
+  }
+  .front--filled {
+    outline: none !important;
+  }
+  .eastlot__cell {
+    min-height: 0.5in;
+  }
+  /* Maintenance overlays (type codes + flags) are hidden on the printout by
+     default, so the printed sheet stays 1:1. They appear only when the
+     "Maintenance info" checkbox is on (.sheet--maint). The boxes never change. */
+  .cell__types,
+  .cell__flag,
+  .cell__insp,
+  .front__types,
+  .front__flag {
+    display: none;
+  }
+  .sheet--maint .cell__types {
+    display: flex;
+  }
+  .sheet--maint .cell__flag {
+    display: block;
+  }
+  .sheet--maint .cell__insp {
+    display: block;
+  }
+  /* HOLD / SPLIT print even without maintenance info; when maintenance info IS
+     on, the full flag line covers them, so hide the pin to avoid duplicates. */
+  .cell__pin,
+  .front__pin {
+    display: block;
+  }
+  .sheet--maint .cell__pin,
+  .sheet--maint .front__pin {
+    display: none;
+  }
+  .sheet--maint .front__types {
+    display: inline-flex;
+  }
+  .sheet--maint .front__flag {
+    display: block;
+  }
+  /* Back of the sheet prints on its own page (page 2). */
+  .back-sheet {
+    page-break-before: always;
+    box-shadow: none;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 0.32in 0.34in;
+  }
+  .backlot {
+    min-height: 4.4in;
+  }
+  .backlot__head {
+    background: #fff;
+  }
+  .backlot__edit {
+    display: none !important;
+  }
+  /* The flag summary flows right after the lot lists (its own page only if it
+     doesn't fit). Groups avoid splitting across a page break. */
+  .flagsum {
+    margin-top: 0.3in;
+  }
+  /* Hide screen-only inputs' focus styling; show plain text */
+  input {
+    color: #000;
+  }
+}
+
+/* Fuel / DEF print: fill exactly one page. The global .sheet print rule makes
+   this a flex column (height:100vh, overflow:hidden); we let the table grow to
+   fill it so the rows share the space evenly — no empty band at the bottom, and
+   never a 2nd page, at any font size. Just widen the margins here. */
+@media print {
+  .fuel-sheet {
+    min-width: 0;
+    padding: 0.5in 0.55in 0.45in;
+  }
+  .fuelt {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+  .fuelt td {
+    height: auto;
+  }
+  .fuelt__hdr td {
+    padding-bottom: 8px;
+  }
+  /* R/H/I, the highlight, the date, AND the summary page all follow the
+     "print with flags" toggle — gated in CSS so Ctrl+P respects it too. */
+  .fuelt__ind {
+    display: none;
+  }
+  .fuel-sheet--flags .fuelt__ind {
+    display: flex;
+  }
+  .fuelt__bus--flagged {
+    background: none;
+  }
+  .fuel-sheet--flags .fuelt__bus--flagged {
+    background: #ffe066;
+  }
+  /* Date value hidden unless printing with flags (blank line stays). */
+  .fuelt__dateval {
+    visibility: hidden;
+  }
+  .fuel-sheet--flags .fuelt__dateval {
+    visibility: visible;
+  }
+  /* The flagged-buses summary prints (its own page) only with flags on. */
+  .fuelsum {
+    display: none;
+  }
+  .fuelsum.fuel-sheet--flags {
+    display: flex;
+    page-break-before: always;
+  }
+}
+
+/* ---------- Turnover sheet (LEGAL size, 8.5 x 14) — fixed 1:1 grid ---------- */
+.turn-sheet {
+  background: var(--paper);
+  color: var(--ink); /* white paper, dark ink — even in dark theme */
+  min-width: 740px; /* stays readable; scrolls horizontally on phones */
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+  font-size: var(--tfz, 13px);
+}
+.turnt {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+/* Thin GRAY grid (matches the Google-Sheets original; not heavy black). */
+.turnt td {
+  border: 1px solid #999;
+  /* Uniform fixed-height rows so empty cells don't collapse (1:1 with paper). */
+  height: 1.9em;
+  padding: 0 4px;
+  font-size: var(--tfz, 13px);
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: middle;
+}
+/* Title + foreman/date band — no grid borders */
+.turnt__band td {
+  border: none;
+}
+.turnt__brand {
+  text-align: center;
+  font-weight: normal;
+}
+.turnt__shiftpick {
+  text-align: center;
+  white-space: nowrap;
+  font-size: calc(var(--tfz, 13px) + 2px);
+}
+.turnt__shiftsep {
+  color: #6b7280;
+  margin: 0 5px;
+}
+/* Plain text "3rd to 1st | 1st to 2nd | 2nd to 3rd" — tap to circle one. */
+.turnt__shiftopt {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: #000;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 14px;
+}
+.turnt__shiftopt.is-on {
+  outline: 1.5px solid #000;
+}
+/* Keep the cell a real table cell (so its colspan width holds); the flex layout
+   goes on an INNER wrapper. */
+.turnt__field {
+  padding: 2px 0;
+}
+.turnt__fline {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.turnt__fieldlbl {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* Foreman/date write-lines look like the original underscores (band rows only). */
+.turnt__band .turnt__in {
+  border-bottom: 1px solid #000;
+}
+.turnt__datein {
+  flex: 0 0 70px;
+  width: 70px;
+  text-align: center;
+}
+.turnt__slash {
+  flex: 0 0 auto;
+}
+/* Header rows: underlined labels with light shading. */
+.turnt__head td,
+td.turnt__head {
+  text-align: center;
+  font-weight: normal;
+  text-decoration: underline;
+  background: #e6e6e6;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+/* The Bay header keeps the underline but no shading. */
+.turnt__head--plain td {
+  background: #fff;
+}
+.turnt__head--btn,
+.turnt__reason--btn,
+.turnt__veh--btn {
+  cursor: pointer;
+}
+.turnt__edit {
+  text-decoration: none;
+  color: var(--accent);
+  margin-left: 3px;
+}
+.turnt__divlbl {
+  text-align: center;
+  text-decoration: underline;
+}
+.turnt__c {
+  text-align: center;
+}
+.turnt__veh {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* Reasons (a bus's flags) wrap to as many lines as needed; the row grows and
+   pushes the buses below it down. (height on .turnt td is a minimum.) */
+.turnt__reason {
+  text-align: left;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+}
+.turnt__reasonhint {
+  color: var(--muted);
+}
+/* Lane / bay bus-list cells. */
+.turnt__listcell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.turnt__bay {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.turnt__bayno {
+  flex: 0 0 auto;
+}
+/* The bay bus's flags under 1ST HALF — auto from the flag system, tap to edit.
+   The input next to it stays free for extra hand-typed notes. */
+.turnt__bayflag {
+  flex: 0 1 auto;
+  max-width: 55%;
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 0.85em;
+  line-height: 1.15;
+  text-align: left;
+  white-space: normal;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.turnt__in {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: var(--tfz, 13px);
+  padding: 0;
+  text-align: left;
+}
+.turnt__in--c {
+  text-align: center;
+}
+.turnt__in--fill {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.turnt__flagentry::placeholder {
+  color: #6b7280;
+  font-size: 0.82em;
+}
+.turnt__flagentry:disabled {
+  cursor: default;
+}
+.turnt__in:focus {
+  outline: 2px solid var(--accent);
+}
+/* Employee autocomplete dropdown (position:fixed so the cell's overflow:hidden
+   can't clip it). */
+.empac {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  z-index: 80;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.empac__item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink);
+}
+.empac__item.is-hi {
+  background: #e8f1fc;
+}
+.empac__badge {
+  color: var(--muted);
+}
+/* Employees editor */
+.emplist {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 2px;
+}
+.emprow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+}
+.emprow__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 15px;
+}
+.emprow__badge {
+  flex: 0 0 110px;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 15px;
+}
+
+@media print {
+  .turn-sheet {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    padding: 0.3in 0.34in;
+  }
+  /* The on-screen edit affordances don't print. */
+  .turnt__edit,
+  .turnt__reasonhint {
+    display: none;
+  }
+  /* "Print with flags" off → blank form: hide the filled-in values (buses,
+     flags, lot/lane/calloff/bay inputs, shift) but keep the grid, labels, bay
+     numbers, AND the FOREMAN/SR + DATE write-lines (just emptied). */
+  .turn-sheet--blank .turnt__in,
+  .turn-sheet--blank .turnt__veh,
+  .turn-sheet--blank .turnt__reason,
+  .turn-sheet--blank .turnt__bayflag,
+  .turn-sheet--blank .turnt__listbus {
+    visibility: hidden;
+  }
+  .turn-sheet--blank .turnt__band .turnt__in {
+    visibility: visible;
+    color: transparent; /* keep the underline write-line, blank the value */
+  }
+  .turn-sheet--blank .turnt__shiftopt.is-on {
+    outline: none;
+  }
+}
+

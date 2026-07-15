@@ -1,0 +1,308 @@
+/* ---------- Small screens (phones) — screen only, never print ---------- */
+@media screen and (max-width: 480px) {
+  .app {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Toolbar wraps onto as many rows as it needs. (It used to be one sideways-
+     swipe row, but a horizontal drag that started on the More button also opened
+     the dropdown — wrapping removes the swipe gesture and that conflict, and
+     keeps every button visible instead of hidden off-screen.) */
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px 10px 10px;
+  }
+  .toolbar > * {
+    flex: none;
+  }
+  .toolbar__spacer {
+    display: none;
+  }
+  .toolbar__saved {
+    display: none;
+  }
+  .toolbar__title {
+    order: 1;
+    font-size: 14px;
+    min-width: 76px;
+  }
+  .toolbar .findbox {
+    order: 2;
+    flex: 1 1 154px;
+    min-width: 0;
+    max-width: none;
+  }
+  .toolbar .statchip {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: center;
+    min-height: 34px;
+    font-size: 12px;
+  }
+  .sheetview {
+    order: 4;
+    display: inline-flex;
+    flex: 1 1 126px;
+    min-width: 126px;
+  }
+  .sheetview__label {
+    padding-left: 8px;
+  }
+  .sheetview__btn {
+    flex: 1;
+  }
+  .toolbar__select,
+  .toolbar__more {
+    order: 5;
+    flex: 1 1 92px;
+    min-width: 0;
+  }
+  .toolbar__more {
+    order: 6;
+  }
+  .toolbar__action {
+    display: none;
+  }
+  .toolbar .btn {
+    padding: 9px 12px;
+    white-space: nowrap;
+  }
+  .toolbar__check {
+    white-space: nowrap;
+  }
+  .toolbar__font {
+    margin-left: auto;
+  }
+
+  .mobile-actions {
+    position: fixed;
+    z-index: 130;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 7px;
+    border: 1px solid var(--edge);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--chrome) 94%, transparent);
+    box-shadow: var(--shadow-pop);
+    backdrop-filter: blur(16px);
+  }
+  .mobile-action {
+    min-width: 0;
+    min-height: 54px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .mobile-action svg {
+    flex: none;
+  }
+  .mobile-action--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+  }
+  .mobile-action:not(.mobile-action--primary) {
+    background: var(--surface);
+    border-color: var(--edge);
+  }
+
+  .sheet-scroll {
+    padding: 8px;
+  }
+  .sheet {
+    padding: 10px 10px 16px;
+  }
+  .head__field {
+    padding: 2px 4px;
+  }
+  .head__field label {
+    font-size: 9px;
+  }
+  .head__field input {
+    font-size: 10px;
+  }
+  .head__logo {
+    width: 50px;
+  }
+  .head__title {
+    font-size: 12px;
+  }
+  .counters {
+    gap: 8px;
+    padding: 10px 2px;
+  }
+  .counter {
+    font-size: 10px;
+  }
+  .counter input {
+    width: 54px;
+  }
+  .grid__header {
+    font-size: 8.5px;
+    padding: 4px 0;
+  }
+  .cell {
+    min-height: 44px;
+  }
+  .cell__num,
+  .front .cell__num {
+    font-size: calc(12px + var(--fz, 0px));
+  }
+  .cell__slot {
+    font-size: 8px;
+  }
+}
+
+/* ---------- Fill Rows (mobile entry) ---------- */
+.rf__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 8px;
+}
+.rf__which {
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+.rf__hint {
+  padding: 0 20px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.rf__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  display: grid;
+  gap: 10px;
+  padding: 0 20px 28px;
+  align-content: start;
+}
+.rf__colhead {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--edge);
+  z-index: 1;
+}
+.rf__box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+  min-height: 56px;
+  /* Fill the box so it's one uniform color (the input inside shares it, no
+     lighter rectangle). */
+  background: var(--surface-2);
+  /* Let the 1fr grid columns shrink so 4-wide (Berto 3·4·5·6) fits the screen
+     instead of overflowing. */
+  min-width: 0;
+}
+/* Compact spacing when 3+ rows share the screen (Berto's 3·4·5·6). */
+.rf__grid--multi {
+  gap: 5px;
+}
+.rf__grid--multi .rf__box {
+  gap: 4px;
+  padding: 4px 5px;
+}
+.rf__grid--multi .rf__label {
+  min-width: 18px;
+  font-size: 11px;
+}
+.rf__grid--multi .rf__input {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+.rf__box--blocked {
+  justify-content: center;
+  color: var(--text-dim);
+  font-weight: 700;
+  font-size: 20px;
+  background: var(--surface-2);
+}
+.rf__box--empty {
+  border: none;
+  background: transparent;
+}
+.rf__label {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+}
+.rf__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.04em;
+  background: transparent;
+  color: var(--text);
+}
+.rf__input::placeholder {
+  color: var(--text-dim);
+}
+.rf__input:focus {
+  outline: none;
+}
+.rf__box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.rf__box--invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+.rf__box {
+  flex-wrap: wrap;
+}
+.rf__box--dup {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444;
+}
+.rf__dup {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #b91c1c;
+  text-align: center;
+  margin-top: 2px;
+}
+.rf__move {
+  margin-left: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+}
+

@@ -1,0 +1,595 @@
+/* ---------- Drag & drop (lot sheet grid) ---------- */
+/* Taps stay taps: drags only start after movement (mouse) or a hold (touch). */
+.cell,
+.front {
+  touch-action: manipulation;
+}
+/* Keyboard mode: the focused cell shows a clear ring (arrow keys move it). */
+.cell:focus-visible,
+.front:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.cell--dragsrc {
+  opacity: 0.35;
+}
+.cell--dropover {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-soft);
+}
+.backlot--dropover {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-soft);
+}
+/* The bus chip that follows the pointer while dragging */
+.dragchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+/* ---------- Find bus (toolbar) ---------- */
+.findbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--ctl-radius);
+  background: var(--surface);
+  color: var(--text-dim);
+}
+.findbox:focus-within {
+  border-color: var(--text-dim);
+  box-shadow: 0 0 0 1px var(--text-dim);
+}
+.findbox__in {
+  flex: 1 1 auto;
+  align-self: stretch;
+  border: none;
+  outline: none;
+  width: 100%;
+  min-width: 82px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+}
+.findbox__in::placeholder {
+  color: var(--text-dim);
+}
+.findbox__msg {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.findbox__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.findbox__clear:hover {
+  color: #b91c1c;
+  background: var(--surface-hover);
+}
+/* Steady highlight on the searched bus (until the search box is cleared) */
+.cell--found,
+.backlot--found {
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  background: #fef3c7;
+}
+/* Flash the found bus (grid cell or lot box) */
+.is-found {
+  animation: foundpulse 2.2s ease;
+}
+@keyframes foundpulse {
+  0%,
+  55% {
+    box-shadow: inset 0 0 0 3px var(--accent);
+    background: var(--accent-soft);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+/* ---------- Lot editor: drag-to-reorder ---------- */
+.lotitem__grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  padding: 6px 2px;
+  cursor: grab;
+  touch-action: none; /* the handle drags; the rest of the row scrolls/taps */
+}
+.lotitem__grip:active {
+  cursor: grabbing;
+}
+.lotitem--dragging {
+  opacity: 0.85;
+  background: var(--accent-soft);
+  border-radius: 8px;
+  position: relative;
+  z-index: 5;
+}
+
+/* Fill Rows progress (filled / total on this screen) */
+.rf__count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ---------- Undo toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #111827;
+  color: #fff;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: calc(100vw - 24px);
+}
+.toast__btn {
+  border: none;
+  background: transparent;
+  color: #93c5fd;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+
+/* ---------- Edit Flags as a menu (was a full page) ---------- */
+.modal--flags {
+  max-width: 560px;
+  padding-left: 0;
+  padding-right: 0;
+  display: flex;
+  flex-direction: column;
+}
+.modal--flags .manager__inner {
+  max-width: none;
+  background: var(--surface);
+}
+/* Editing a single bus: size to content instead of stretching to full height
+   (the modal itself scrolls if a bus has a lot of flags). */
+.manager__inner--fit {
+  flex: none;
+}
+.manager__inner--fit .manager__list {
+  flex: none;
+  overflow: visible;
+}
+
+/* iOS Safari auto-zooms the page when focusing an input smaller than 16px —
+   and inside a locked overlay that zoom gets stuck. Keep every MENU control at
+   16px on phones. (The printable sheets keep their own sizes — not touched.) */
+@media screen and (max-width: 699px) {
+  .detailbox__num,
+  .detailbox__text,
+  .emprow__name,
+  .emprow__badge,
+  .findbox__in,
+  .buslist__sel,
+  .appnav__select,
+  .csv__area,
+  .emplsort select {
+    font-size: 16px;
+  }
+}
+
+/* ---------- Toolbar stats chip (tap to see the missing buses) ---------- */
+/* Usable / Out of Service are two standalone pill chips (not a segmented pill),
+   styled like .statchip so they match the rest of the toolbar chips. */
+.servicechips {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.servicechip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.servicechip--ready {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+.servicechip--ready:hover {
+  border-color: color-mix(in srgb, var(--success) 42%, transparent);
+}
+.servicechip--notready {
+  color: var(--pill-maintenance-tx);
+  background: var(--pill-maintenance-bg);
+}
+.servicechip--notready:hover {
+  border-color: var(--pill-maintenance-ed);
+}
+.statchip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.statchip:hover {
+  border-color: var(--edge-strong);
+}
+.statchip--warn {
+  color: var(--pill-maintenance-tx);
+  background: var(--pill-maintenance-bg);
+}
+.statchip--warn:hover {
+  border-color: var(--pill-maintenance-ed);
+}
+/* Note input with a one-tap "remove note" X */
+.noterow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.noterow .detailbox__text {
+  padding-right: 36px; /* keep text clear of the X */
+}
+.noterow__clear {
+  position: absolute;
+  right: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.noterow__clear:hover {
+  color: #b91c1c;
+  background: var(--surface-hover);
+}
+/* Section divider inside the Missing buses list */
+.lotlist__section {
+  margin: 14px 0 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--edge);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Shop page (screen-only, never printed) ---------- */
+.shop {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+@media (min-width: 860px) {
+  .shop {
+    grid-template-columns: 1fr 1fr;
+  }
+  .shopcard--wide {
+    grid-column: 1 / -1;
+  }
+}
+.shopcard {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  box-shadow: none;
+}
+.shopcard--btn {
+  cursor: pointer;
+}
+.shopcard--btn:hover {
+  border-color: var(--accent);
+}
+.shopcard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.shopcard__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.shopcard__sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 3px 0 12px;
+}
+.shopcard__legend {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+}
+.shopcard__legenddot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: #e1f5ee;
+  border: 1px solid #1d9e75;
+}
+.shopslots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+}
+.shopslot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  min-height: 78px;
+  padding: 8px 6px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.shopslot:hover {
+  border-color: var(--accent);
+}
+.shopslot--filled {
+  background: var(--surface-3);
+}
+/* Flagged Ready for Service — done in the shop, waiting to go out */
+.shopslot--rfs {
+  background: rgba(29, 158, 117, 0.18);
+  border-color: #1d9e75;
+}
+.shopslot__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+.shopslot__bus {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.shopslot__flag {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--danger);
+  text-align: center;
+  white-space: normal; /* the full flags + note wrap inside the slot */
+  overflow-wrap: anywhere;
+}
+.shopslot__empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+/* Blocked (X'd out) spot */
+.shopslot--blocked {
+  background: var(--surface-3);
+}
+.shopslot__x {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+/* The searched bus's slot / chip stays lit until the search clears */
+.shopslot--found,
+.apronchip--found {
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  background: rgba(245, 158, 11, 0.22);
+}
+.apronchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 34px;
+}
+.apronchips__empty {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.apronchip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap; /* the flags line wraps underneath the number */
+  gap: 3px 6px;
+  max-width: 100%;
+  border: 1px solid var(--edge-strong);
+  border-radius: 12px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-2);
+  color: var(--text);
+}
+/* The bus's FULL flags (hold reason, inspection option, whole note) — the most
+   important info for a shop bus. */
+.apronchip__flags {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--danger);
+  white-space: normal;
+}
+
+/* ---------- The SHOP menu on the lot sheet (screen-only dialog) ---------- */
+.modal--shop {
+  max-width: 560px;
+  background: var(--surface);
+}
+.shopmenu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.shopmenu__sec {
+  border-top: 1px solid var(--edge);
+  padding-top: 12px;
+}
+.shopmenu__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 9px;
+}
+/* Ready for Service chip (Cards) */
+.apronchip--rfs {
+  background: rgba(29, 158, 117, 0.18);
+  border-color: #1d9e75;
+}
+
+/* Locked spot indicator (screen only) */
+.cell__lockicon {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: #6b7280;
+  line-height: 0;
+}
+
+/* The editors' action rows can hold several buttons now */
+.modal__actions {
+  flex-wrap: wrap;
+}
+
+/* ---------- Multi-select ---------- */
+.cell--selected {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--accent-soft);
+}
+.selectbar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  z-index: 79; /* just under the toast */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  max-width: calc(100vw - 20px);
+}
+.selectbar__count {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- "Send to…" row (cell editor) ---------- */
+.sendrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+.sendrow__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* ---------- Recent buses (lot editor) ---------- */
+.recentrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+.recentrow__lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.recentchip {
+  border: 1px solid var(--edge-strong);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.recentchip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+

@@ -1,0 +1,542 @@
+/* ---------- Toolbar (screen only) ---------- */
+.toolbar {
+  position: sticky;
+  top: var(--sticky-top, 0px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--chrome) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--edge);
+}
+.toolbar__title {
+  font-weight: 700;
+  font-size: 16px;
+}
+.toolbar__spacer {
+  flex: 1;
+}
+.toolbar__saved {
+  font-size: 12px;
+  color: var(--muted);
+}
+.toolbar__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.toolbar__check input {
+  width: 15px;
+  height: 15px;
+}
+.toolbar__font {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn--mini {
+  padding: 6px 9px;
+  font-size: 13px;
+}
+.toolbar__fontlabel {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 56px;
+  text-align: center;
+}
+.sheetview,
+.mobile-actions {
+  display: none;
+}
+.sheetview {
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.sheetview__label {
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.sheetview__btn {
+  min-width: 42px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 800;
+}
+.sheetview__btn--on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: background 0.16s, border-color 0.16s, transform 0.08s, box-shadow 0.16s;
+}
+.btn:hover {
+  background: var(--surface-2);
+  border-color: var(--edge-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 18px rgba(0, 0, 0, 0.1);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn svg {
+  flex: none;
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.16);
+}
+.btn--primary::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.34) 45%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.55s cubic-bezier(.2,.8,.2,1);
+  pointer-events: none;
+}
+.btn--primary:hover::before {
+  transform: translateX(120%);
+}
+.btn > svg,
+.btn > span {
+  position: relative;
+  z-index: 1;
+}
+.btn--primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+.btn--ghost {
+  border-color: transparent;
+  color: #b91c1c;
+}
+.btn--ghost:hover {
+  background: #fdecec;
+  border-color: transparent;
+}
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ---------- Sheet ---------- */
+.sheet-scroll {
+  padding: 14px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain; /* don't hand sideways pans to the page/history swipe */
+}
+.sheet {
+  background: var(--paper);
+  color: var(--ink); /* always dark ink on white paper, even in dark theme */
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 16px 18px 22px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+/* Phones: keep the sheet at a READABLE width and pan it inside .sheet-scroll
+   with one finger — no pinch-zooming the whole page (which dragged the toolbar
+   away and overshot to the right). The back-of-sheet lists match, so the two
+   pages line up while panning. */
+@media screen and (max-width: 699px) {
+  .sheet,
+  .back-sheet,
+  .wo-sheet {
+    min-width: 720px;
+  }
+  .sheet-scroll--fit .sheet,
+  .sheet-scroll--fit .back-sheet {
+    width: calc(100vw - 16px);
+    min-width: 0;
+  }
+}
+/* The paper form has no bold anywhere — keep every word on the sheet regular. */
+.sheet,
+.sheet * {
+  font-weight: 400 !important;
+}
+
+/* Show the sheet as a real portrait page (8.5x11) with the grid filling it —
+   so the website looks like the printout. This now applies on EVERY screen:
+   phones keep a 720px-wide sheet (panned inside .sheet-scroll), so locking the
+   paper proportions keeps the cells from looking stretched there too. */
+@media screen {
+  .sheet {
+    aspect-ratio: 8.5 / 11;
+    display: flex;
+    flex-direction: column;
+  }
+  .grid {
+    flex: 1 1 auto;
+    grid-template-rows: auto repeat(10, minmax(0, 1fr));
+  }
+  .sheet .cell {
+    min-height: 0;
+  }
+}
+
+/* Header */
+.head {
+  display: flex;
+  align-items: flex-start; /* logo tucks into the top-left corner, level with the box top */
+  gap: 10px;
+}
+.head__logo {
+  flex: 0 0 auto;
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+.head__logo img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.head__box {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  border: 1px solid var(--line);
+}
+.head__field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-right: 1px solid var(--line);
+}
+.head__field:last-child {
+  border-right: none;
+}
+.head__field label {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.head__field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  font-size: 14px;
+  padding: 2px 2px;
+  background: transparent;
+}
+.head__field input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+.head__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  border-right: 1px solid var(--line);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* Counters */
+.counters {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 4px;
+}
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.counter input {
+  width: 90px;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  font-size: 14px;
+  padding: 2px 4px;
+  background: transparent;
+}
+.counter input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+}
+/* Auto-calculated counter (off property) — read-only, looks filled-in */
+.counter__auto {
+  text-align: center;
+  cursor: default;
+  background: #f3f4f6;
+}
+@media print {
+  .counter__auto {
+    background: #fff;
+  }
+}
+
+/* Front-bus whitespace row — sits ABOVE the ROW bar, no visible lines.
+   Uses the same gap/border geometry as .grid so columns line up. */
+.frontrow {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  /* 1px transparent left edge matches the grid's 1px left border so columns align */
+  border-left: 1px solid transparent;
+}
+.front {
+  min-height: 42px;
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 1px 2px;
+  line-height: 1.05;
+}
+.front--empty {
+  background: transparent;
+}
+.front .cell__num {
+  font-size: calc(14px + var(--fz, 0px));
+}
+.front__types .badge,
+.front__types .typecodes__sep {
+  font-size: calc(8px + var(--fz, 0px));
+}
+.front__flag {
+  font-size: calc(7px + var(--fz, 0px));
+  line-height: 1.05;
+  color: #b91c1c;
+  text-align: center;
+  white-space: normal;
+}
+.front--filled {
+  outline: 1px dashed #cbd5e1; /* faint hint on screen only */
+}
+
+/* Grid — uniform 1px lines via real borders (these print reliably, unlike
+   background colours). The container draws the top+left edge; every cell draws
+   its right+bottom edge, so each interior line is a single 1px border. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.grid__header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 1px;
+  white-space: nowrap;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cells */
+.cell {
+  position: relative;
+  min-height: 52px;
+  background: var(--paper);
+  /* reset the default <button> styling, then draw a single right+bottom border */
+  border: none;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 100%;
+}
+.cell__slot {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 9px;
+  color: #374151;
+  line-height: 1;
+}
+.cell__num {
+  font-size: calc(15px + var(--fz, 0px));
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  padding: 0 1px;
+}
+.cell--filled {
+  background: #fafafa;
+}
+.cell__dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+/* Generic type-code letter (Pulse P, HEV, 30', COACH) — colour set inline */
+.badge {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+/* Type codes shown inline, dash-separated: P / HEV */
+.typecodes {
+  display: inline-flex;
+  align-items: baseline;
+}
+.typecodes__seg {
+  display: inline-flex;
+  align-items: baseline;
+}
+.typecodes__sep {
+  color: #6b7280;
+  padding: 0 1px;
+}
+/* Type code(s) pinned to the cell's top-right corner */
+.cell__types {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  line-height: 1;
+}
+.cell__types .badge,
+.cell__types .typecodes__sep {
+  font-size: calc(8.5px + var(--fz, 0px));
+}
+/* Manager flag + inspection miles stacked along the bottom of the cell */
+.cell__meta {
+  position: absolute;
+  bottom: 1px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0 1px;
+}
+.cell__flag {
+  text-align: center;
+  font-size: calc(7.5px + var(--fz, 0px));
+  line-height: 1.05;
+  color: #b91c1c;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  word-break: break-word;
+}
+/* Inspection mileage line, just below the flag text */
+.cell__insp {
+  text-align: center;
+  font-size: calc(7px + var(--fz, 0px));
+  line-height: 1.05;
+  color: #1d4ed8;
+  font-variant-numeric: tabular-nums;
+}
+.front__insp {
+  color: #1d4ed8;
+}
+/* Always-print flags (HOLD / SPLIT). Hidden on screen — the full flag line
+   already shows them there; these only surface on the printout. */
+.cell__pin,
+.front__pin {
+  display: none;
+  text-align: center;
+  color: #b91c1c;
+  line-height: 1.05;
+  white-space: normal;
+}
+.cell__pin {
+  font-size: calc(7.5px + var(--fz, 0px));
+}
+.front__pin {
+  font-size: calc(7px + var(--fz, 0px));
+}
+.cell--blocked {
+  background: var(--paper);
+}
+.cell__x {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* East Lot */
+.eastlot-label {
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 24px 0 8px;
+}
+.eastlot {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.eastlot__cell {
+  min-height: 40px;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Visually hidden but available to screen readers (e.g. Radix Dialog titles). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
