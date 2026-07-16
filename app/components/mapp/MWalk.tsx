@@ -1,11 +1,13 @@
 "use client";
 
 // The Walk — Fill Rows' proven workflow (row pairs, Berto grouping, swap,
-// auto-advance, duplicate catch) rebuilt phone-native: big spot targets and a
-// docked keypad we own, so the OS keyboard never exists and nothing reflows.
+// auto-advance, duplicate catch) rebuilt phone-native. Typing uses the REAL
+// iOS keyboard on one persistent input: focus never leaves it between spots
+// (so the keyboard stays open), the dock rides above the keyboard via the
+// VisualViewport-driven --mkb, and the glowing spot auto-scrolls into view.
 // Reads the shared ["sheet"] cache; writes set_cell ops through useCellOps.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   SLOTS,
   FRONT_COLUMNS,
@@ -18,6 +20,7 @@ import {
 import { useLotSheet } from "../../lib/queries";
 import { useBusMaster } from "../BusMasterProvider";
 import { useCellOps, cellNum } from "./useCellOps";
+import { useKeyboardInset } from "./useKeyboardInset";
 import type { LotSheet } from "../../lib/types";
 
 // The same walking groups as desktop Fill Rows (0-indexed grid columns).
@@ -76,6 +79,9 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
   const [focus, setFocus] = useState<string | null>(null);
   const [val, setVal] = useState("");
   const [dup, setDup] = useState<{ bus: string; label: string; cellId?: string } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const spotRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  useKeyboardInset(); // publishes --mkb so the dock rides above the iOS keyboard
 
   useEffect(() => {
     try { setBerto(localStorage.getItem(BERTO_KEY) === "1"); } catch {}
@@ -122,6 +128,14 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, berto, swapped, !!sheet]);
 
+  // Whenever the walk advances, scroll the glowing spot into view (it may be
+  // under the keyboard or the dock otherwise).
+  useEffect(() => {
+    if (!focus) return;
+    const el = spotRefs.current[focus];
+    el?.scrollIntoView({ block: "center", behavior: "auto" });
+  }, [focus]);
+
   function stats(c: number) {
     const cells = columnCells(c).filter((x) => !x.blocked);
     const filled = cells.filter((x) => {
@@ -142,31 +156,32 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
     try { localStorage.setItem(BERTO_KEY, next ? "1" : "0"); } catch {}
   }
 
-  function key(k: string) {
+  function onType(raw: string) {
     if (!focus) return;
     setDup(null);
-    if (k === "skip") {
-      setVal("");
-      setFocus(nextEmpty(focus));
-      return;
-    }
-    if (k === "back") {
-      setVal((v) => v.slice(0, -1));
-      return;
-    }
-    if (k === "clear") {
-      if (getNum(focus)) {
-        setCell(focus, "");
-        toast("Spot cleared");
-      }
-      setVal("");
-      return;
-    }
-    if (val.length >= 5) return;
-    const next = val + k;
+    const next = raw.replace(/\D/g, "").slice(0, 5);
     setVal(next);
     // Auto-place the moment the number is a real bus (desktop's auto-advance).
+    // Focus stays in the same input, so the iOS keyboard never closes.
     if (next.length >= 4 && isKnown(next)) place(next);
+  }
+
+  function skip() {
+    setDup(null);
+    setVal("");
+    setFocus(nextEmpty(focus));
+    inputRef.current?.focus();
+  }
+
+  function clearSpot() {
+    if (!focus) return;
+    if (getNum(focus)) {
+      setCell(focus, "");
+      toast("Spot cleared");
+    }
+    setVal("");
+    setDup(null);
+    inputRef.current?.focus();
   }
 
   function place(bus: string) {
@@ -188,6 +203,7 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
     setVal("");
     setDup(null);
     setFocus(nextEmpty(focus));
+    inputRef.current?.focus(); // keep the iOS keyboard open for the next spot
   }
 
   const focusLabel = (id: string) => {
@@ -256,7 +272,8 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
                   type="button"
                   key={cell.id}
                   className={`mwspot ${n ? "" : "mwspot--empty"} ${focus === cell.id ? "mwspot--focus" : ""} ${xed ? "mwspot--blocked" : ""}`}
-                  onClick={() => { setFocus(cell.id); setVal(""); setDup(null); }}
+                  ref={(el) => { spotRefs.current[cell.id] = el; }}
+                  onClick={() => { setFocus(cell.id); setVal(""); setDup(null); inputRef.current?.focus(); }}
                 >
                   <small>{cell.label}</small>
                   <b>{xed ? "✕" : n || (focus === cell.id ? "type…" : "empty")}</b>
@@ -289,15 +306,29 @@ export default function MWalk({ toast }: { toast: (msg: string) => void }) {
             )}
             {!dup && val.length >= 4 && !isKnown(val) && "Not a known bus — keep typing or ⌫"}
           </div>
-          <div className="mpad">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-              <button type="button" key={d} onClick={() => key(d)}>{d}</button>
-            ))}
-            <button type="button" className="mpad--txt" onClick={() => key(focusedFilled && !val ? "clear" : "back")}>
-              {focusedFilled && !val ? "Clear" : "⌫"}
-            </button>
-            <button type="button" onClick={() => key("0")}>0</button>
-            <button type="button" className="mpad--txt" onClick={() => key("skip")}>Skip ›</button>
+          <div className="mdock__inrow">
+            <input
+              ref={inputRef}
+              className="mdock__input"
+              inputMode="numeric"
+              enterKeyHint="next"
+              autoComplete="off"
+              placeholder="Bus number…"
+              value={val}
+              onChange={(e) => onType(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (val.length >= 4 && isKnown(val)) place(val);
+                  else skip();
+                }
+              }}
+              aria-label="Bus number for the highlighted spot"
+            />
+            {focusedFilled && !val && (
+              <button type="button" className="mdock__btn" onClick={clearSpot}>Clear</button>
+            )}
+            <button type="button" className="mdock__btn" onClick={skip}>Skip ›</button>
           </div>
         </div>
       )}

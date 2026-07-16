@@ -29,6 +29,7 @@ import MWalk from "./MWalk";
 import MShop from "./MShop";
 import MMore from "./MMore";
 import MBusCard from "./MBusCard";
+import { useKeyboardInset } from "./useKeyboardInset";
 
 type Tab = "tonight" | "buses" | "lot" | "shop" | "more";
 const TITLES: Record<Tab, string> = { tonight: "Tonight", buses: "Buses", lot: "The Walk", shop: "Shop", more: "More" };
@@ -42,6 +43,7 @@ const TABS: { id: Tab; em: string; label: string }[] = [
 
 export default function MobileApp() {
   const clock = useClock();
+  useKeyboardInset(); // publish --mkb app-wide (Bus Card, Move sheet, dock)
   const [tab, setTab] = useState<Tab>("tonight");
   const [openBus, setOpenBus] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -75,6 +77,9 @@ export default function MobileApp() {
   }
 
   function openBusCard(bus: string) {
+    // Close the iOS keyboard first — a bottom-sheet card must never open
+    // underneath it (the exact bug this replaces).
+    (document.activeElement as HTMLElement | null)?.blur?.();
     setOpenBus(bus);
     pushRecent(bus);
   }
@@ -114,7 +119,7 @@ export default function MobileApp() {
         ))}
       </div>
 
-      {openBus && <MBusCard bus={openBus} onClose={() => setOpenBus(null)} />}
+      {openBus && <MBusCard bus={openBus} onClose={() => setOpenBus(null)} toast={toast} />}
       {toastMsg && (
         <div className="mtoast" role="status">
           <b>✓</b>&nbsp;{toastMsg}

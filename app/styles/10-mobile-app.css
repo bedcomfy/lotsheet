@@ -494,3 +494,59 @@ body[data-mapp="1"] { overflow: hidden; }
 @media print {
   .mapp, .mcard, .mscrim, .mtoast { display: none !important; }
 }
+
+/* three-button card row + selected row chip in the move sheet */
+.mcard__acts--three { grid-template-columns: 1.3fr 1fr 1fr; }
+.mbuschip--onrow { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); }
+/* the move sheet can outgrow small screens — scroll inside itself, above the keyboard */
+.mcard { max-height: calc(100dvh - 40px - var(--mkb, 0px)); overflow-y: auto; bottom: var(--mkb, 0px); }
+
+/* ===== The Walk's dock — native keyboard edition =====
+   A real input (iOS keyboard) instead of a custom keypad. The dock is FIXED
+   and rides on top of the keyboard via --mkb (VisualViewport); with the
+   keyboard closed it sits just above the tab bar. */
+.mdockpad {
+  position: fixed;
+  left: 0;
+  right: 0;
+  max-width: 520px;
+  margin: 0 auto;
+  bottom: max(var(--mkb, 0px), calc(66px + env(safe-area-inset-bottom, 0px)));
+  border-radius: 20px;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.28), 0 8px 30px rgba(0, 0, 0, 0.18);
+}
+.mdock__inrow { display: flex; gap: 8px; }
+.mdock__input {
+  flex: 1;
+  min-width: 0;
+  border: 1.5px solid var(--edge-strong);
+  border-radius: 13px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  min-height: 50px;
+  padding: 0 14px;
+}
+.mdock__input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.mdock__input::placeholder { color: var(--text-dim); font-weight: 500; letter-spacing: 0; }
+.mdock__btn {
+  flex: none;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 13px;
+  min-height: 50px;
+  padding: 0 15px;
+  cursor: pointer;
+}
+/* room for the fixed dock (and a bit of thumb space) under every view */
+.mapp__view { padding-bottom: 170px; }
+/* the toast must clear the dock */
+.mtoast { bottom: calc(max(var(--mkb, 0px), 66px) + 116px); }

@@ -11,6 +11,7 @@ import { fleetBusLocations } from "../../lib/fleetStats";
 import { flagName } from "../../lib/grid";
 import { useBusMaster } from "../BusMasterProvider";
 import ManagerPanel from "../ManagerPanelLazy";
+import MMoveSheet from "./MMoveSheet";
 import type { FlagEntry, FlagMap } from "../../lib/types";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -35,12 +36,13 @@ function useServiceTonight(bus: string) {
   };
 }
 
-export default function MBusCard({ bus, onClose }: { bus: string; onClose: () => void }) {
+export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose: () => void; toast: (msg: string) => void }) {
   const { data: sheetData } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const { label } = useBusMaster();
   const qc = useQueryClient();
   const [flagOpen, setFlagOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const sheet = sheetData?.sheet || null;
 
   const where = useMemo(() => {
@@ -79,15 +81,30 @@ export default function MBusCard({ bus, onClose }: { bus: string; onClose: () =>
           <b className={svc.defed ? "y" : "n"}>DEF {svc.defed ? "✓" : "—"}</b>
           <b className={svc.farebox ? "y" : "n"}>Farebox {svc.farebox ? "✓" : "—"}</b>
         </div>
-        <div className="mcard__acts">
+        <div className="mcard__acts mcard__acts--three">
           <button type="button" className="mactb mactb--hot" onClick={() => setFlagOpen(true)}>
-            ⚑ Flags &amp; notes
+            ⚑ Flags
+          </button>
+          <button type="button" className="mactb" onClick={() => setMoveOpen(true)}>
+            ➜ Move
           </button>
           <button type="button" className="mactb" onClick={onClose}>
             Done
           </button>
         </div>
       </div>
+
+      {moveOpen && (
+        <MMoveSheet
+          bus={bus}
+          onDone={(msg) => {
+            setMoveOpen(false);
+            toast(msg);
+            onClose();
+          }}
+          onClose={() => setMoveOpen(false)}
+        />
+      )}
 
       {flagOpen && (
         <ManagerPanel

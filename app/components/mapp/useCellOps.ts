@@ -7,7 +7,7 @@
 
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { LotSheet } from "../../lib/types";
+import type { LotKey, LotSheet } from "../../lib/types";
 import type { LotSheetOp } from "../../lib/lotSheetOps";
 import { getDeviceActor } from "../../lib/deviceActor";
 
@@ -27,12 +27,16 @@ export function useCellOps() {
       qc.setQueryData<SheetPayload>(["sheet"], (prev) => {
         if (!prev?.sheet) return prev;
         const cells = { ...(prev.sheet.cells || {}) };
+        const lots = { ...(prev.sheet.lots || {}) };
         for (const op of ops) {
-          if (op.type !== "set_cell") continue;
-          if (op.value) cells[op.id] = op.value;
-          else delete cells[op.id];
+          if (op.type === "set_cell") {
+            if (op.value) cells[op.id] = op.value;
+            else delete cells[op.id];
+          } else if (op.type === "set_lot") {
+            lots[op.key] = [...op.value];
+          }
         }
-        return { ...prev, sheet: { ...prev.sheet, cells } };
+        return { ...prev, sheet: { ...prev.sheet, cells, lots } };
       });
       // Real write — same endpoint, same op format, same actor tag as desktop.
       return fetch("/api/sheet/ops", {
@@ -66,5 +70,45 @@ export function useCellOps() {
     [postOps]
   );
 
-  return { setCell, moveCell };
+  // Move a bus to ANY destination (a grid spot, a lot, or a numbered bay
+  // slot), removing it from wherever it currently sits — one atomic batch.
+  const moveBus = useCallback(
+    (bus: string, dest: { cellId?: string; lotKey?: string; lotIndex?: number }) => {
+      const data = qc.getQueryData<SheetPayload>(["sheet"]);
+      const sheet = data?.sheet;
+      if (!sheet || !bus) return Promise.resolve();
+      const ops: LotSheetOp[] = [];
+      // remove from any grid cell
+      for (const [id, v] of Object.entries(sheet.cells || {})) {
+        if (cellNum(v) === bus && id !== dest.cellId) ops.push({ type: "set_cell", id, value: "" });
+      }
+      // remove from any lot (unless it's the destination lot — handled below)
+      const lots = sheet.lots || {};
+      for (const [key, arr] of Object.entries(lots)) {
+        if (!Array.isArray(arr) || !arr.includes(bus)) continue;
+        if (key === dest.lotKey) continue;
+        ops.push({
+          type: "set_lot",
+          key: key as LotKey,
+          value: key === "bay" ? arr.map((b) => (b === bus ? "" : b)) : arr.filter((b) => b !== bus),
+        });
+      }
+      // add at the destination
+      if (dest.cellId) {
+        ops.push({ type: "set_cell", id: dest.cellId, value: bus });
+      } else if (dest.lotKey === "bay" && dest.lotIndex != null) {
+        const arr = [...(lots.bay || [])];
+        while (arr.length < 10) arr.push("");
+        arr[dest.lotIndex] = bus;
+        ops.push({ type: "set_lot", key: "bay", value: arr });
+      } else if (dest.lotKey) {
+        const cur = (lots[dest.lotKey as LotKey] || []).filter((b) => b !== bus);
+        ops.push({ type: "set_lot", key: dest.lotKey as LotKey, value: [...cur, bus] });
+      }
+      return postOps(ops);
+    },
+    [postOps, qc]
+  );
+
+  return { setCell, moveCell, moveBus };
 }
