@@ -7,6 +7,7 @@ import { BusMasterProvider } from "./components/BusMasterProvider";
 import FlagConfigProvider from "./components/FlagConfigProvider";
 import BusTypeConfigProvider from "./components/BusTypeConfigProvider";
 import { MobileNavProvider } from "./components/MobileNavContext";
+import MobileGate from "./components/MobileGate";
 
 export const metadata: Metadata = {
   title: "Pace Northwest Sheets",
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <FlagConfigProvider>
               <BusTypeConfigProvider>
                 <MobileNavProvider>
+                <MobileGate />
                 <SheetNav />
                 {/* The wide sheet is contained here (overflow-x: clip) instead of on
                     <body>, so the sticky mobile nav can pin to the viewport — a clip
