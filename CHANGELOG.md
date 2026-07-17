@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.13.2 - 2026-07-17
+
+- Restored mouse-wheel scrolling over the paper on every desktop sheet by
+  allowing vertical wheel input to continue to the page while keeping wide
+  sheet panning contained horizontally.
+- Kept phone sheet scrolling and all print/PDF geometry unchanged.
+
 ## 0.13.1 - 2026-07-15
 
 - Simplified the Farebox sheet to three columns by removing the Probed &
