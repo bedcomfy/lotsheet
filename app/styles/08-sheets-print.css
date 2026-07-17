@@ -275,15 +275,65 @@
   }
 }
 @media screen and (max-width: 699px) {
+  .modal {
+    left: max(8px, env(safe-area-inset-left, 0px));
+    right: max(8px, env(safe-area-inset-right, 0px));
+    top: max(8px, env(safe-area-inset-top, 0px));
+    width: auto;
+    max-height: calc(
+      100dvh - max(8px, env(safe-area-inset-top, 0px)) -
+        max(8px, env(safe-area-inset-bottom, 0px))
+    );
+    transform: none;
+  }
+  .modal.home-status-modal {
+    width: auto;
+  }
   .modal--tall {
-    top: calc(8px + env(safe-area-inset-top, 0px));
-    height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    height: auto;
     max-height: none;
+    overflow: hidden;
   }
   .modal--tall .modal__head,
   .modal--tall .modal__actions,
   .modal--tall > .modal__save {
     flex: 0 0 auto;
+  }
+  .modal--tall > .modal__head {
+    position: relative;
+    top: auto;
+  }
+  .modal--tall > .modal__actions {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--edge);
+  }
+  .modal--tall > .lotlist,
+  .modal--tall > .manager__list,
+  .modal--tall > .home-status-list,
+  .modal--tall > .shopmenu,
+  .modal--tall > .csv__area {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+  .modal--tall > .csv__area {
+    height: auto;
+    resize: none;
+  }
+  .modal--flags > .manager__inner,
+  .modal--flags .manager__inner--fit {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .modal--flags .manager__inner--fit .manager__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
   }
 }
 .lotlist__empty {
@@ -761,16 +811,26 @@
 /* Fixed-position panel (measured from the button) so the phone's horizontally
    scrolling toolbar can't clip it. */
 .toolmenu__panel {
-  z-index: 120; /* above the sticky toolbar and the fixed sidebar */
+  z-index: 390; /* above mobile navigation and action bars, below dialogs */
   min-width: 252px;
-  max-width: calc(100vw - 20px);
+  max-width: calc(
+    100vw - max(10px, env(safe-area-inset-left, 0px)) -
+      max(10px, env(safe-area-inset-right, 0px))
+  );
   background: var(--surface);
   border: 1px solid var(--edge);
   border-radius: 10px;
   box-shadow: var(--shadow-pop);
   padding: 7px;
-  max-height: min(420px, calc(100dvh - 24px));
+  max-height: min(
+    420px,
+    calc(
+      100dvh - max(12px, env(safe-area-inset-top, 0px)) -
+        max(12px, env(safe-area-inset-bottom, 0px))
+    )
+  );
   overflow-y: auto;
+  overscroll-behavior-y: contain;
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
   will-change: opacity, filter, transform;
 }
@@ -1349,9 +1409,20 @@ td.turnt__head {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  z-index: 80;
-  max-height: 220px;
+  z-index: 390;
+  max-width: calc(
+    100vw - max(8px, env(safe-area-inset-left, 0px)) -
+      max(8px, env(safe-area-inset-right, 0px))
+  );
+  max-height: min(
+    220px,
+    calc(
+      100dvh - max(12px, env(safe-area-inset-top, 0px)) -
+        max(12px, env(safe-area-inset-bottom, 0px))
+    )
+  );
   overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 .empac__item {
   display: flex;

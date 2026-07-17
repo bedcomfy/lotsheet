@@ -72,6 +72,7 @@ export default function MMoveSheet({ bus, onDone, onClose }: MMoveSheetProps) {
       <div className="mscrim" onClick={onClose} />
       <div className="mcard" role="dialog" aria-label={`Move bus ${bus}`}>
         <div className="mcard__grab" />
+        <div className="mcard__body">
         <div className="mcard__top">
           <span className="mcard__num">{bus}</span>
           <span className="mcard__where">move to…</span>
@@ -136,7 +137,8 @@ export default function MMoveSheet({ bus, onDone, onClose }: MMoveSheetProps) {
           </div>
         )}
 
-        <div className="mcard__acts" style={{ marginTop: 12 }}>
+        </div>
+        <div className="mcard__acts mcard__footer">
           <button type="button" className="mactb" onClick={onClose}>Cancel</button>
         </div>
       </div>

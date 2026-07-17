@@ -63,6 +63,7 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
       <div className="mscrim" onClick={onClose} />
       <div className="mcard" role="dialog" aria-label={`Bus ${bus}`}>
         <div className="mcard__grab" />
+        <div className="mcard__body">
         <div className="mcard__top">
           <span className="mcard__num">{label(bus)}</span>
           <span className="mcard__where">{where}</span>
@@ -81,7 +82,8 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
           <b className={svc.defed ? "y" : "n"}>DEF {svc.defed ? "✓" : "—"}</b>
           <b className={svc.farebox ? "y" : "n"}>Farebox {svc.farebox ? "✓" : "—"}</b>
         </div>
-        <div className="mcard__acts mcard__acts--three">
+        </div>
+        <div className="mcard__acts mcard__acts--three mcard__footer">
           <button type="button" className="mactb mactb--hot" onClick={() => setFlagOpen(true)}>
             ⚑ Flags
           </button>

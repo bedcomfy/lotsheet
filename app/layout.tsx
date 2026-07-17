@@ -28,6 +28,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   // Allow pinch-zoom so the full grid stays usable on phones.
   maximumScale: 5,
   userScalable: true,

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.14.0 - 2026-07-17
+
+- Made the mobile app and shared phone pages respect notches, rounded screen
+  corners, landscape insets, and the home indicator.
+- Rebuilt long phone dialogs around fixed headers and action rows with one
+  reliable scrolling content area, so Close, Done, Save, and Cancel remain
+  reachable even with long bus or flag lists.
+- Kept mobile dialogs above the page header and bottom action bar, and raised
+  smaller dropdowns and autocomplete results above the surrounding chrome.
+- Refactored the phone Bus Card and Move menu so their content scrolls without
+  moving the action buttons, including when the on-screen keyboard is open.
+- Removed the desktop scrollbar gutter from phone layouts while leaving the
+  desktop and print/PDF layouts unchanged.
+
 ## 0.13.2 - 2026-07-17
 
 - Restored mouse-wheel scrolling over the paper on every desktop sheet by

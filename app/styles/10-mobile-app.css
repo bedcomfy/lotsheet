@@ -22,6 +22,7 @@ body[data-mapp="1"] { overflow: hidden; }
   background: var(--app-bg);
   color: var(--text);
   max-width: 520px;
+  height: 100dvh;
   margin: 0 auto;
   font-size: 15px;
 }
@@ -32,7 +33,9 @@ body[data-mapp="1"] { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px)) 10px
+    max(16px, env(safe-area-inset-left, 0px));
 }
 .mapp__logo {
   flex: none;
@@ -71,7 +74,8 @@ body[data-mapp="1"] { overflow: hidden; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 4px 14px 14px;
+  padding: 4px max(14px, env(safe-area-inset-right, 0px)) 14px
+    max(14px, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -378,7 +382,9 @@ body[data-mapp="1"] { overflow: hidden; }
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 2px;
-  padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 8px max(10px, env(safe-area-inset-right, 0px))
+    calc(10px + env(safe-area-inset-bottom, 0px))
+    max(10px, env(safe-area-inset-left, 0px));
   background: var(--chrome);
   border-top: 1px solid var(--edge);
 }
@@ -419,12 +425,26 @@ body[data-mapp="1"] { overflow: hidden; }
   border-radius: 24px 24px 0 0;
   border: 1px solid var(--edge-strong);
   border-bottom: 0;
-  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 10px max(16px, env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
   animation: mcardUp 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 @keyframes mcardUp { from { transform: translateY(60%); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .mcard { animation: none; } }
 .mcard__grab { width: 40px; height: 4.5px; background: var(--edge-strong); border-radius: 4px; margin: 2px auto 12px; }
+.mcard__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 0 1px 8px;
+}
 .mcard__top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .mcard__num { font-size: 32px; font-weight: 800; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .mcard__where { color: var(--text-dim); font-weight: 700; font-size: 14px; }
@@ -451,6 +471,12 @@ body[data-mapp="1"] { overflow: hidden; }
 .mcard__tonight b.y { color: var(--success); }
 .mcard__tonight b.n { color: var(--text-dim); font-weight: 600; }
 .mcard__acts { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.mcard__footer {
+  flex: 0 0 auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--edge);
+  background: var(--chrome);
+}
 .mactb {
   border: 1px solid var(--edge-strong);
   background: var(--surface-2);
@@ -472,7 +498,7 @@ body[data-mapp="1"] { overflow: hidden; }
 .mtoast {
   position: fixed;
   left: 50%;
-  bottom: 104px;
+  bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   z-index: 70;
   background: var(--chrome);
@@ -483,6 +509,12 @@ body[data-mapp="1"] { overflow: hidden; }
   border-radius: 999px;
   padding: 9px 16px;
   white-space: nowrap;
+  max-width: calc(
+    100vw - max(24px, env(safe-area-inset-left, 0px)) -
+      max(24px, env(safe-area-inset-right, 0px))
+  );
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: var(--shadow-pop);
   animation: mtoastIn 0.25s;
 }
@@ -499,7 +531,12 @@ body[data-mapp="1"] { overflow: hidden; }
 .mcard__acts--three { grid-template-columns: 1.3fr 1fr 1fr; }
 .mbuschip--onrow { border-color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); }
 /* the move sheet can outgrow small screens — scroll inside itself, above the keyboard */
-.mcard { max-height: calc(100dvh - 40px - var(--mkb, 0px)); overflow-y: auto; bottom: var(--mkb, 0px); }
+.mcard {
+  max-height: calc(
+    100dvh - var(--mkb, 0px) - max(12px, env(safe-area-inset-top, 0px))
+  );
+  bottom: var(--mkb, 0px);
+}
 
 /* ===== The Walk's dock — native keyboard edition =====
    A real input (iOS keyboard) instead of a custom keypad. The dock is FIXED
@@ -507,8 +544,8 @@ body[data-mapp="1"] { overflow: hidden; }
    keyboard closed it sits just above the tab bar. */
 .mdockpad {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: env(safe-area-inset-left, 0px);
+  right: env(safe-area-inset-right, 0px);
   max-width: 520px;
   margin: 0 auto;
   bottom: max(var(--mkb, 0px), calc(66px + env(safe-area-inset-bottom, 0px)));
@@ -549,4 +586,8 @@ body[data-mapp="1"] { overflow: hidden; }
 /* room for the fixed dock (and a bit of thumb space) under every view */
 .mapp__view { padding-bottom: 170px; }
 /* the toast must clear the dock */
-.mtoast { bottom: calc(max(var(--mkb, 0px), 66px) + 116px); }
+.mtoast {
+  bottom: calc(
+    max(var(--mkb, 0px), calc(66px + env(safe-area-inset-bottom, 0px))) + 116px
+  );
+}
