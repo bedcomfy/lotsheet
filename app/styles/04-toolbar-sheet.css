@@ -149,6 +149,16 @@
   overscroll-behavior: contain;
   touch-action: pan-x pan-y;
 }
+
+/* Desktop sheets grow with their content, so the wrapper usually has no
+   vertical range of its own. Let mouse-wheel input chain to the document while
+   keeping wide-paper horizontal panning contained inside the sheet wrapper. */
+@media screen and (min-width: 700px) {
+  .sheet-scroll {
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+  }
+}
 .sheet {
   background: var(--paper);
   color: var(--ink); /* always dark ink on white paper, even in dark theme */
