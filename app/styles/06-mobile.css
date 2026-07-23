@@ -284,6 +284,8 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    /* keep the sheet above an open phone keyboard (Find bus input) */
+    padding-bottom: var(--mkb, 0px);
     background: color-mix(in srgb, #000 55%, transparent);
     backdrop-filter: blur(6px);
     padding-left: env(safe-area-inset-left, 0px);
@@ -294,7 +296,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-height: min(75dvh, 640px);
+    max-height: min(calc(85dvh - var(--mkb, 0px)), 640px);
     border: 1px solid var(--edge);
     border-bottom: 0;
     border-radius: 8px 8px 0 0;

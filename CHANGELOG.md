@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.1 - 2026-07-23
+
+- Fixed phones being unable to scroll to the bottom of tall sheets (Turnover
+  and the other service pages): a vertical swipe on the paper was being
+  swallowed by the sheet's pan container instead of scrolling the page, which
+  also left a dark band under the sheet. Horizontal panning is still contained,
+  and the Lot Sheet's fixed viewer is unaffected.
+- Phone dialogs now track the on-screen keyboard's real height (ported from
+  the /m experiment): the flag editor, tall dialogs, dropdown menus, and the
+  Lot Sheet's More menu shrink to sit fully above an open keyboard, so inputs
+  and action buttons can't hide underneath it.
+- Desktop and print output unchanged.
+
 ## 0.14.0 - 2026-07-23
 
 - Fixed the phone "More" menu sometimes appearing but ignoring every tap: its

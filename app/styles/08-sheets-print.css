@@ -282,7 +282,7 @@
     width: auto;
     max-height: calc(
       100dvh - max(8px, env(safe-area-inset-top, 0px)) -
-        max(8px, env(safe-area-inset-bottom, 0px))
+        max(8px, env(safe-area-inset-bottom, 0px)) - var(--mkb, 0px)
     );
     transform: none;
   }
@@ -290,7 +290,7 @@
     width: auto;
   }
   .modal--tall {
-    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    bottom: calc(max(8px, env(safe-area-inset-bottom, 0px)) + var(--mkb, 0px));
     height: auto;
     max-height: none;
     overflow: hidden;
@@ -826,7 +826,7 @@
     420px,
     calc(
       100dvh - max(12px, env(safe-area-inset-top, 0px)) -
-        max(12px, env(safe-area-inset-bottom, 0px))
+        max(12px, env(safe-area-inset-bottom, 0px)) - var(--mkb, 0px)
     )
   );
   overflow-y: auto;
