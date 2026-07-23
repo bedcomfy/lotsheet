@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.15.0 - 2026-07-24
+
+- New phone navigation: a bottom tab bar on every screen — Tonight, Lot,
+  Sheets, Buses, More — so there is always a one-tap way anywhere. The Lot
+  Sheet's action dock sits above the bar, never on top of it.
+- Tonight: phones now open a floor-friendly status board (usable / out of
+  service, missing buses, lot progress) instead of the squeezed desktop
+  dashboard. Desktop keeps the full dashboard; both read the same live data.
+- New Buses tool on phones: type or tap a bus → its card with live location,
+  flags, tonight's fuel/DEF/farebox, and one-tap Flags or Move (to a lot, an
+  open shop bay, or an empty grid spot — one atomic change, so a bus can
+  never be in two places).
+- Sheets hub: every paper one tap away (Lot, Turnover, Service sheets with
+  Fuel/DEF/Farebox shortcuts, Work Order), each shown exactly as printed —
+  fixed size, pan to move around, no zoom controls, tap to edit as always.
+- More hub: Shop, Staffing, Object codes, and the light/dark switch.
+- The sheets themselves are untouched, on phones and desktop alike; print
+  output is unchanged.
+
 ## 0.14.1 - 2026-07-23
 
 - Fixed phones being unable to scroll to the bottom of tall sheets (Turnover

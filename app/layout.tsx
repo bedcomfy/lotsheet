@@ -7,6 +7,7 @@ import { BusMasterProvider } from "./components/BusMasterProvider";
 import FlagConfigProvider from "./components/FlagConfigProvider";
 import BusTypeConfigProvider from "./components/BusTypeConfigProvider";
 import { MobileNavProvider } from "./components/MobileNavContext";
+import MobileTabBar from "./components/MobileTabBar";
 
 export const metadata: Metadata = {
   title: "Pace Northwest Sheets",
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     <body>, so the sticky mobile nav can pin to the viewport — a clip
                     on <body> makes body children stick to the scrolling body instead. */}
                 <div className="appmain">{children}</div>
+                <MobileTabBar />
                 </MobileNavProvider>
               </BusTypeConfigProvider>
             </FlagConfigProvider>

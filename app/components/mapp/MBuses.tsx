@@ -1,0 +1,82 @@
+"use client";
+
+// Buses — a big numeric search plus recent buses. Four digits of a known bus
+// opens its card immediately.
+
+import { useEffect, useState } from "react";
+import { useFlags } from "../../lib/queries";
+import { useBusMaster } from "../BusMasterProvider";
+import { sanitizeBus } from "../../lib/buses";
+
+const RECENT_KEY = "pace:m:recent";
+
+export function pushRecent(bus: string) {
+  try {
+    const cur: string[] = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    const next = [bus, ...cur.filter((b) => b !== bus)].slice(0, 8);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+export default function MBuses({ onOpenBus }: { onOpenBus: (bus: string) => void }) {
+  const { data: flags = {} } = useFlags();
+  const { isKnown } = useBusMaster();
+  const [q, setQ] = useState("");
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => {
+    try { setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]")); } catch {}
+  }, []);
+
+  function onType(raw: string) {
+    const v = sanitizeBus(raw);
+    setQ(v);
+    if (v.length >= 4 && isKnown(v)) {
+      onOpenBus(v);
+      setQ("");
+    }
+  }
+
+  const hasFlags = (bus: string) => ((flags[bus]?.flags || []).length > 0);
+
+  return (
+    <>
+      <label className="msearch">
+        <span aria-hidden="true">⌕</span>
+        <input
+          placeholder="Bus number…"
+          inputMode="numeric"
+          value={q}
+          onChange={(e) => onType(e.target.value)}
+          aria-label="Find bus"
+        />
+        {q && (
+          <button type="button" className="msearch__clear" onClick={() => setQ("")} aria-label="Clear">✕</button>
+        )}
+      </label>
+      {q.length >= 4 && !isKnown(q) && <div className="mhint">“{q}” isn't a known bus number.</div>}
+
+      {recent.length > 0 && (
+        <>
+          <div className="mapp__sec">Recent</div>
+          <div className="mbuschips">
+            {recent.map((b) => (
+              <button
+                type="button"
+                key={b}
+                className={`mbuschip ${hasFlags(b) ? "mbuschip--flag" : ""}`}
+                onClick={() => onOpenBus(b)}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="mhint">
+        Type a bus number → its card: where it sits, its flags, tonight's service, and one-tap flagging.
+      </div>
+    </>
+  );
+}
