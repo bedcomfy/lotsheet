@@ -154,10 +154,10 @@
 }
 .modal.home-status-modal {
   width: min(560px, calc(100vw - 28px));
-  z-index: 141;
+  z-index: 401;
 }
 .modal-backdrop.home-status-backdrop {
-  z-index: 140;
+  z-index: 400;
 }
 .home-status-summary {
   display: flex;

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.14.0 - 2026-07-23
+
+- Fixed the phone "More" menu sometimes appearing but ignoring every tap: its
+  open state no longer depends on an animation frame that could be delayed or
+  dropped, so it is always clickable the moment it appears.
+- Phone dialogs and menus now respect notches, rounded corners, and the home
+  indicator; long dialogs keep their header and action buttons fixed with one
+  reliable scrolling middle, so Close / Done / Save are always reachable.
+- Dialog close buttons and small dialog actions are full thumb-size on phones,
+  and the More menu's bottom rows can no longer be clipped by the screen edge.
+- Unified menu/dialog layering on phones so nothing can appear underneath the
+  action dock, toolbar, or navigation again.
+- Desktop and print output are completely unchanged.
+
 ## 0.13.2 - 2026-07-17
 
 - Restored mouse-wheel scrolling over the paper on every desktop sheet by

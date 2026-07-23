@@ -47,22 +47,29 @@ export interface MobileLotChromeProps {
 }
 
 export default function MobileLotChrome(props: MobileLotChromeProps) {
+  // Open/close: the sheet renders while open OR closing; the rise animation
+  // plays via CSS the moment it mounts (no requestAnimationFrame state flip —
+  // that left the sheet stuck in its pointer-events:none "closing" style if
+  // the frame callback was delayed or dropped, which read as "the menu is
+  // there but nothing can be tapped").
   const [moreOpen, setMoreOpen] = useState(false);
-  const [moreMounted, setMoreMounted] = useState(false);
+  const [closing, setClosing] = useState(false);
   const findInputRef = useRef<HTMLInputElement>(null);
   const closeTimerRef = useRef<number | null>(null);
 
   const openMore = useCallback(() => {
     if (closeTimerRef.current != null) window.clearTimeout(closeTimerRef.current);
-    setMoreMounted(true);
-    requestAnimationFrame(() => setMoreOpen(true));
+    closeTimerRef.current = null;
+    setClosing(false);
+    setMoreOpen(true);
   }, []);
 
   const closeMore = useCallback(() => {
-    setMoreOpen(false);
+    setClosing(true);
     if (closeTimerRef.current != null) window.clearTimeout(closeTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => {
-      setMoreMounted(false);
+      setMoreOpen(false);
+      setClosing(false);
       closeTimerRef.current = null;
     }, 180);
   }, []);
@@ -134,8 +141,8 @@ export default function MobileLotChrome(props: MobileLotChromeProps) {
         </button>
       </div>
 
-      {moreMounted && (
-        <div className={`mchrome__scrim no-print ${moreOpen ? "" : "mchrome__scrim--closing"}`} onClick={closeMore}>
+      {(moreOpen || closing) && (
+        <div className={`mchrome__scrim no-print ${closing ? "mchrome__scrim--closing" : ""}`} onClick={closeMore}>
           <section
             className="mchrome__sheet"
             role="dialog"
