@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.16.0 - 2026-07-24
+
+- Added an alternate Maintenance Logistics interface for preview: a deep navy
+  operations sidebar, compact fleet command bar, photographic garage banner,
+  live readiness metrics, fleet distribution, available staffing, exception
+  monitoring, and streamlined daily-action panels.
+- Reworked the phone home, bottom navigation, and full-screen Sheets and More
+  hubs to match the new interface in both light and dark mode with real icons,
+  safe-area spacing, and reliable scrolling.
+- Restyled shared application controls, page headers, admin surfaces, and
+  toolbars without changing the live sheet data model, paper sheet markup, or
+  print/PDF styles.
+
 ## 0.15.1 - 2026-07-24
 
 - Fixed the Lot Sheet's "More" sheet on phones being partly hidden behind the

@@ -17,3 +17,4 @@
 @import "./styles/08-sheets-print.css";   /* back-of-sheet, fuel/def, PRINT, turnover */
 @import "./styles/09-pages.css";          /* work order, staffing, status lists */
 @import "./styles/10-mobile-app.css";     /* phone shell components (tabs, cards) — desktop untouched */
+@import "./styles/11-maintenance-logistics.css"; /* alternate preview UI shell + dashboard */

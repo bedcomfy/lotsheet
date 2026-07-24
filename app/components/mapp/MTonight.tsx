@@ -1,10 +1,18 @@
 "use client";
 
-// Tonight — the live status board: how's the night going, in one glance.
-// Same numbers as the desktop Home/Lot chips (fleetStats is the one shared
-// definition of the fleet totals).
-
 import { useMemo } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BusFront,
+  CheckCircle2,
+  ClipboardList,
+  Flag,
+  MapPinned,
+  Search,
+  Warehouse,
+  Wrench,
+} from "lucide-react";
 import { useLotSheet, useFlags, useBusMasterList } from "../../lib/queries";
 import { fleetStats } from "../../lib/fleetStats";
 
@@ -20,62 +28,90 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
   const sheet = sheetData?.sheet || null;
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [sheet, flags, masterBuses]);
-  const activeCount = useMemo(
-    () => masterBuses.filter((b) => b.status !== "retired").length,
-    [masterBuses]
-  );
   const flaggedCount = useMemo(
-    () => Object.values(flags).filter((e) => (e.flags || []).length > 0).length,
+    () => Object.values(flags).filter((entry) => (entry.flags || []).length > 0 || entry.note).length,
     [flags]
   );
-  const placed = fleet.onGrid.size;
-  const inShop = fleet.inShop.size;
-  const pct = (n: number, total: number) => (total > 0 ? Math.min(100, Math.round((n / total) * 100)) : 0);
+
+  const locations = [
+    { label: "On grid", value: fleet.onGrid.size, icon: ClipboardList, tone: "blue" },
+    { label: "In lots", value: fleet.inLots.size, icon: MapPinned, tone: "amber" },
+    { label: "In shop", value: fleet.inShop.size, icon: Wrench, tone: "purple" },
+    { label: "Off property", value: fleet.offProperty.size, icon: Warehouse, tone: "slate" },
+  ];
 
   return (
-    <>
-      <div className="mstats">
-        <div className="mstat mstat--ok"><b>{fleet.readyForService.size}</b><span>USABLE</span></div>
-        <div className="mstat mstat--bad"><b>{fleet.notReadyForService.size}</b><span>OUT OF SERVICE</span></div>
-      </div>
+    <div className="mtonight">
+      <section className="mtonight__hero">
+        <span className="mtonight__eyebrow"><i /> Live operations</span>
+        <h1>Maintenance Logistics</h1>
+        <p>Fleet readiness and garage placement, updated from the working sheets.</p>
+      </section>
+
+      <section className="mstats" aria-label="Service readiness">
+        <div className="mstat mstat--ok">
+          <span className="mstat__icon"><CheckCircle2 size={20} /></span>
+          <b>{fleet.readyForService.size}</b>
+          <span>Usable</span>
+        </div>
+        <div className="mstat mstat--bad">
+          <span className="mstat__icon"><AlertTriangle size={20} /></span>
+          <b>{fleet.notReadyForService.size}</b>
+          <span>Out of service</span>
+        </div>
+      </section>
 
       {fleet.missing.length > 0 && (
         <button type="button" className="mbanner" onClick={() => onOpenBus(fleet.missing[0])}>
-          <i></i>
-          <b>{fleet.missing.length} missing</b>
-          <span>· {fleet.missing.slice(0, 4).join(", ")}{fleet.missing.length > 4 ? "…" : ""}</span>
-          <span className="go">›</span>
+          <span className="mbanner__icon"><AlertTriangle size={18} /></span>
+          <span className="mbanner__copy">
+            <b>{fleet.missing.length} missing buses</b>
+            <small>{fleet.missing.slice(0, 4).join(", ")}{fleet.missing.length > 4 ? " and more" : ""}</small>
+          </span>
+          <ArrowRight size={18} />
         </button>
       )}
 
-      <div className="mapp__sec">Tonight's work</div>
-      <div className="mprog">
-        <div className="mprog__row">
-          <span>Lot placed</span>
-          <div className="mbar"><i style={{ width: `${pct(placed, activeCount)}%` }} /></div>
-          <b>{placed}/{activeCount}</b>
-        </div>
-        <div className="mprog__row">
-          <span>In shop</span>
-          <div className="mbar"><i className="warn" style={{ width: `${pct(inShop, Math.max(activeCount, 1))}%` }} /></div>
-          <b>{inShop}</b>
-        </div>
-        <div className="mprog__row">
-          <span>Flagged</span>
-          <div className="mbar"><i className="bad" style={{ width: `${pct(flaggedCount, Math.max(activeCount, 1))}%` }} /></div>
-          <b>{flaggedCount}</b>
-        </div>
-      </div>
+      <div className="mapp__sec">Fleet placement</div>
+      <section className="mlocations">
+        {locations.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div className={`mlocation mlocation--${item.tone}`} key={item.label}>
+              <span><Icon size={17} /></span>
+              <b>{item.value}</b>
+              <small>{item.label}</small>
+            </div>
+          );
+        })}
+      </section>
 
-      <div className="mapp__sec">Jump in</div>
-      <div className="mquick">
+      <section className="mnotice">
+        <span><Flag size={17} /></span>
+        <div><strong>{flaggedCount} flagged buses</strong><small>Open maintenance items</small></div>
+        <ArrowRight size={17} />
+      </section>
+
+      <div className="mapp__sec">Quick actions</div>
+      <section className="mquick">
         <button type="button" className="mquickbtn mquickbtn--hot" onClick={() => onGo("lot")}>
-          <span className="em">🅿️</span>Walk the lot<small>Two rows at a time</small>
+          <span className="mquickbtn__icon"><ClipboardList size={21} /></span>
+          <strong>Open Lot Sheet</strong>
+          <small>Place buses and update rows</small>
+          <ArrowRight size={16} />
         </button>
         <button type="button" className="mquickbtn" onClick={() => onGo("buses")}>
-          <span className="em">🚌</span>Find a bus<small>Flags &amp; location</small>
+          <span className="mquickbtn__icon"><Search size={21} /></span>
+          <strong>Find a Bus</strong>
+          <small>Location, model, and flags</small>
+          <ArrowRight size={16} />
         </button>
-      </div>
-    </>
+      </section>
+
+      <section className="mtonight__sync">
+        <BusFront size={15} />
+        <span>Connected to the live Pace Northwest sheets</span>
+      </section>
+    </div>
   );
 }

@@ -3,13 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CalendarClock,
+  ArrowRight,
+  BusFront,
   ClipboardList,
-  Clock,
   Coins,
   FileText,
   Fuel,
-  Gauge,
   ListChecks,
   RefreshCw,
   Search,
@@ -96,6 +95,10 @@ export default function HomeDashboard() {
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [flags, masterBuses, sheet]);
   const locations = useMemo(() => fleetBusLocations(sheet, flags), [flags, sheet]);
+  const activeFleetCount = useMemo(
+    () => masterBuses.filter((bus) => bus.status !== "retired").length,
+    [masterBuses]
+  );
   const stats = useMemo(() => {
     const flagged = Object.values(flags).filter((e) => (e.flags || []).length || e.note).length;
     return {
@@ -170,103 +173,150 @@ export default function HomeDashboard() {
   return (
     <main className="home">
       <section className="homehero">
-        <div>
-          <div className="homehero__eyebrow">Pace Northwest</div>
-          <h1>Operations Workspace</h1>
-          <p>Start the daily sheets, check bus status, and jump into the tools the garage uses most.</p>
-        </div>
-        <div className="homefind">
-          <Search size={17} />
-          <input
-            value={findBus}
-            inputMode="numeric"
-            placeholder="Find bus"
-            onChange={(e) => setFindBus(e.target.value.replace(/\D/g, "").slice(0, 5))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && findBus) router.push(`/?find=${encodeURIComponent(findBus)}`);
-            }}
-          />
-          <button onClick={() => router.push(findBus ? `/?find=${encodeURIComponent(findBus)}` : "/")}>
-            Open
-          </button>
-        </div>
-      </section>
-
-      <section className="homeavail" aria-label="Available employees">
-        <div className="homeavail__head">
-          <h2><Clock size={17} /> Available Now</h2>
-          <span className="homeavail__when">{availability.label}</span>
-          <button className="homeavail__link" onClick={() => router.push("/staffing/workpick")}>
-            <CalendarClock size={15} /> Work Pick
-          </button>
-        </div>
-        <div className="homeavail__cards">
-          {BUCKETS.map((b) => {
-            const people = availability.byBucket[b.id];
-            const Icon = b.id === "mech" ? Wrench : Users;
-            return (
-              <button
-                key={b.id}
-                className={`homecard availcard availcard--${b.id}`}
-                onClick={() => setAvailBucket(b.id)}
-                aria-haspopup="dialog"
-              >
-                <Icon size={18} />
-                <span className="availcard__value">{people.length}</span>
-                <span className="availcard__label">{b.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="homegrid homegrid--service" aria-label="Service readiness">
-        <button className="homecard statcard statcard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
-          <CheckCircle2 size={18} />
-          <span className="statcard__value">{stats.ready}</span>
-          <span className="statcard__label">Usable</span>
-        </button>
-        <button className="homecard statcard statcard--notready" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
-          <CircleAlert size={18} />
-          <span className="statcard__value">{stats.notReady}</span>
-          <span className="statcard__label">Out of Service</span>
-        </button>
-      </section>
-
-      <section className="homegrid homegrid--stats" aria-label="Daily locations">
-        <button className="homecard statcard" onClick={() => setStatusDetail("grid")} aria-haspopup="dialog">
-          <Gauge size={18} />
-          <span className="statcard__value">{stats.grid}</span>
-          <span className="statcard__label">On grid</span>
-        </button>
-        <button className="homecard statcard" onClick={() => setStatusDetail("lots")} aria-haspopup="dialog">
-          <ClipboardList size={18} />
-          <span className="statcard__value">{stats.lots}</span>
-          <span className="statcard__label">In lots</span>
-        </button>
-        <button className="homecard statcard" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">
-          <Wrench size={18} />
-          <span className="statcard__value">{stats.shop}</span>
-          <span className="statcard__label">In shop</span>
-        </button>
-        <button className="homecard statcard statcard--warn" onClick={() => setStatusDetail("missing")} aria-haspopup="dialog">
-          <ShieldAlert size={18} />
-          <span className="statcard__value">{stats.missing}</span>
-          <span className="statcard__label">Missing</span>
-        </button>
-        <button className="homecard statcard" onClick={() => setStatusDetail("offProperty")} aria-haspopup="dialog">
-          <MapPinOff size={18} />
-          <span className="statcard__value">{stats.offProperty}</span>
-          <span className="statcard__label">Off property</span>
-        </button>
-      </section>
-
-      <section className="homecols">
-        <div>
-          <div className="home__sectionhead">
-            <h2>Start Here</h2>
-            <span>Last saved {formatSaved(updatedAt)}</span>
+        <div className="homehero__content">
+          <div className="homehero__eyebrow"><span /> Pace Northwest Garage</div>
+          <h1>Maintenance Logistics</h1>
+          <p>Live fleet placement, service readiness, staffing, and the daily sheets in one operational view.</p>
+          <div className="homehero__actions">
+            <button type="button" onClick={() => router.push("/")}>
+              <ClipboardList size={17} /> Open Lot Sheet
+            </button>
+            <button type="button" onClick={() => router.push("/workorder")}>
+              <FileText size={17} /> Create Work Order
+            </button>
+            <button type="button" onClick={() => router.push("/service")}>
+              <Fuel size={17} /> Service Sheets
+            </button>
           </div>
+        </div>
+        <div className="homehero__search">
+          <span>Find a vehicle</span>
+          <div className="homefind">
+            <Search size={17} />
+            <input
+              value={findBus}
+              inputMode="numeric"
+              placeholder="Enter bus number"
+              onChange={(e) => setFindBus(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && findBus) router.push(`/?find=${encodeURIComponent(findBus)}`);
+              }}
+            />
+            <button onClick={() => router.push(findBus ? `/?find=${encodeURIComponent(findBus)}` : "/")}>
+              Search
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="homeoverview" aria-label="Fleet overview">
+        <button className="homecard metriccard metriccard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
+          <span className="metriccard__icon"><CheckCircle2 size={22} /></span>
+          <span className="metriccard__copy"><small>Usable fleet</small><strong>{stats.ready}</strong><em>Ready for service</em></span>
+          <ArrowRight size={18} />
+        </button>
+        <button className="homecard metriccard metriccard--out" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
+          <span className="metriccard__icon"><CircleAlert size={22} /></span>
+          <span className="metriccard__copy"><small>Out of service</small><strong>{stats.notReady}</strong><em>Lots, shop, or off property</em></span>
+          <ArrowRight size={18} />
+        </button>
+        <button className="homecard metriccard metriccard--shop" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">
+          <span className="metriccard__icon"><Wrench size={22} /></span>
+          <span className="metriccard__copy"><small>In shop</small><strong>{stats.shop}</strong><em>Apron, bays, and cards</em></span>
+          <ArrowRight size={18} />
+        </button>
+        <button className="homecard metriccard metriccard--missing" onClick={() => setStatusDetail("missing")} aria-haspopup="dialog">
+          <span className="metriccard__icon"><ShieldAlert size={22} /></span>
+          <span className="metriccard__copy"><small>Missing</small><strong>{stats.missing}</strong><em>No current placement</em></span>
+          <ArrowRight size={18} />
+        </button>
+      </section>
+
+      <section className="homedashboard">
+        <article className="homepanel homepanel--fleet">
+          <header className="homepanel__head">
+            <div>
+              <h2>Fleet Distribution</h2>
+              <p>{activeFleetCount} active buses across the garage</p>
+            </div>
+            <button type="button" onClick={() => router.push("/buses")}>View fleet <ArrowRight size={14} /></button>
+          </header>
+          <div className="distribution">
+            {[
+              { label: "On grid", value: stats.grid, detail: "Ready", tone: "blue", status: "grid" as StatusDetail },
+              { label: "In lots", value: stats.lots, detail: "North, East, Fence", tone: "amber", status: "lots" as StatusDetail },
+              { label: "In shop", value: stats.shop, detail: "Apron, Bays, Cards", tone: "purple", status: "shop" as StatusDetail },
+              { label: "Off property", value: stats.offProperty, detail: "Away from garage", tone: "slate", status: "offProperty" as StatusDetail },
+            ].map((item) => (
+              <button type="button" className="distribution__row" key={item.label} onClick={() => setStatusDetail(item.status)}>
+                <span className={`distribution__dot distribution__dot--${item.tone}`} />
+                <span className="distribution__label"><strong>{item.label}</strong><small>{item.detail}</small></span>
+                <span className="distribution__track"><i className={`distribution__fill distribution__fill--${item.tone}`} style={{ width: `${Math.max(3, Math.round((item.value / Math.max(activeFleetCount, 1)) * 100))}%` }} /></span>
+                <strong className="distribution__value">{item.value}</strong>
+              </button>
+            ))}
+          </div>
+        </article>
+
+        <article className="homepanel homepanel--staff">
+          <header className="homepanel__head">
+            <div>
+              <h2>Available Now</h2>
+              <p>{availability.label}</p>
+            </div>
+            <button type="button" onClick={() => router.push("/staffing/workpick")}>Work pick <ArrowRight size={14} /></button>
+          </header>
+          <div className="stafflist">
+            {BUCKETS.map((bucket) => {
+              const people = availability.byBucket[bucket.id];
+              const Icon = bucket.id === "mech" ? Wrench : Users;
+              return (
+                <button type="button" key={bucket.id} onClick={() => setAvailBucket(bucket.id)}>
+                  <span className={`stafflist__icon stafflist__icon--${bucket.id}`}><Icon size={18} /></span>
+                  <span><strong>{bucket.label}</strong><small>On the clock now</small></span>
+                  <b>{people.length}</b>
+                  <ArrowRight size={15} />
+                </button>
+              );
+            })}
+          </div>
+        </article>
+
+        <article className="homepanel homepanel--attention">
+          <header className="homepanel__head">
+            <div>
+              <h2>Needs Attention</h2>
+              <p>Live exceptions from the sheets</p>
+            </div>
+          </header>
+          <div className="attentionlist">
+            <button type="button" onClick={() => setStatusDetail("missing")}>
+              <span className="attentionlist__icon attentionlist__icon--danger"><ShieldAlert size={18} /></span>
+              <span><strong>{stats.missing} buses missing</strong><small>No location on any sheet</small></span>
+              <ArrowRight size={15} />
+            </button>
+            <button type="button" onClick={() => router.push("/?flags=1")}>
+              <span className="attentionlist__icon attentionlist__icon--warn"><CircleAlert size={18} /></span>
+              <span><strong>{stats.flagged} flagged buses</strong><small>Open maintenance items</small></span>
+              <ArrowRight size={15} />
+            </button>
+            <button type="button" onClick={() => setStatusDetail("offProperty")}>
+              <span className="attentionlist__icon"><MapPinOff size={18} /></span>
+              <span><strong>{stats.offProperty} off property</strong><small>Tracked outside the garage</small></span>
+              <ArrowRight size={15} />
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section className="homeworkspace">
+        <article className="homepanel">
+          <header className="homepanel__head">
+            <div>
+              <h2>Daily Operations</h2>
+              <p>Last saved {formatSaved(updatedAt)}</p>
+            </div>
+          </header>
           <div className="actionlist">
             {quickActions.map((action) => {
               const Icon = action.icon;
@@ -277,33 +327,40 @@ export default function HomeDashboard() {
                     <strong>{action.label}</strong>
                     <small>{action.meta}</small>
                   </span>
+                  <ArrowRight size={17} />
                 </button>
               );
             })}
           </div>
-        </div>
+        </article>
 
-        <div>
-          <div className="home__sectionhead">
-            <h2>Sheets & Tools</h2>
-            <span>{stats.flagged} flagged buses</span>
-          </div>
+        <article className="homepanel">
+          <header className="homepanel__head">
+            <div>
+              <h2>Sheets &amp; Tools</h2>
+              <p>Garage forms and references</p>
+            </div>
+          </header>
           <div className="tooltiles">
             {sheetLinks.map((link) => {
               const Icon = link.icon;
               return (
-                <button
-                  className="tooltile"
-                  key={link.label}
-                  onClick={() => router.push(link.path)}
-                >
-                  <Icon size={20} />
-                  <span>{link.label}</span>
+                <button className="tooltile" key={link.label} onClick={() => router.push(link.path)}>
+                  <span><Icon size={20} /></span>
+                  <strong>{link.label}</strong>
+                  <ArrowRight size={16} />
                 </button>
               );
             })}
           </div>
-        </div>
+        </article>
+      </section>
+
+      <section className="homefootnote">
+        <BusFront size={16} />
+        <span>Live from Pace Northwest operational sheets</span>
+        <i />
+        <span>Updates automatically</span>
       </section>
 
       {availBucket && (() => {

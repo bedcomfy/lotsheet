@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  BusFront,
   ChevronDown,
   ClipboardList,
   FileText,
@@ -121,6 +122,14 @@ export const NAV_LINKS: SheetLink[] = [
 export const BOTTOM_LINKS: SheetLink[] = [ADMIN_LINK, ...SYSTEM_LINKS];
 export const SHEETS: SheetLink[] = [HOME_LINK, ...NAV_LINKS, ...BOTTOM_LINKS];
 
+const NAV_GROUPS = [
+  { label: "Workspace", links: [HOME_LINK] },
+  { label: "Operations", links: [...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS] },
+  { label: "Workforce", links: [STAFFING_LINK] },
+  { label: "Reference", links: UTILITY_LINKS },
+  { label: "Administration", links: [ADMIN_LINK, ...SYSTEM_LINKS] },
+];
+
 function isActive(sheet: SheetLink, pathname: string | null): boolean {
   if (!pathname) return false;
   if (sheet.matchPrefix) return pathname === sheet.path || pathname.startsWith(sheet.matchPrefix);
@@ -132,6 +141,7 @@ export default function SheetNav() {
   const pathname = usePathname();
   const currentSheet = SHEETS.find((sheet) => isActive(sheet, pathname)) || DAILY_SHEETS[0];
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [globalFind, setGlobalFind] = useState("");
   const { lotStatus, openLotSearch, openLotStatus } = useMobileNav();
   const isLotSheet = currentSheet.path === "/";
 
@@ -154,6 +164,12 @@ export default function SheetNav() {
     router.push(path);
   }
 
+  function findBus(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const bus = globalFind.trim();
+    router.push(bus ? `/?find=${encodeURIComponent(bus)}` : "/");
+  }
+
   function renderLink(sheet: SheetLink) {
     const Icon = sheet.icon;
     return (
@@ -173,9 +189,14 @@ export default function SheetNav() {
     <>
       <nav className="appnav no-print" aria-label="Main navigation">
         <div className="appnav__brand">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="appnav__logo" src="/logo.png" alt="" />
-          <span className="appnav__name">Pace Northwest</span>
+          <span className="appnav__mark">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="appnav__logo" src="/logo.png" alt="" />
+          </span>
+          <span className="appnav__brandcopy">
+            <span className="appnav__name">Pace Northwest</span>
+            <span className="appnav__sub">Maintenance Logistics</span>
+          </span>
         </div>
 
         <div className="appnav__mobilebar">
@@ -203,18 +224,47 @@ export default function SheetNav() {
           )}
         </div>
 
-        <div className="appnav__section appnav__section--primary">
-          {renderLink(HOME_LINK)}
-        </div>
-        <div className="appnav__section appnav__section--sheets">
-          {NAV_LINKS.map(renderLink)}
+        <div className="appnav__desktoplinks">
+          {NAV_GROUPS.map((group) => (
+            <div className="appnav__section" key={group.label}>
+              <div className="appnav__sectionlabel">{group.label}</div>
+              {group.links.map(renderLink)}
+            </div>
+          ))}
         </div>
         <div className="appnav__section appnav__section--bottom">
-          {BOTTOM_LINKS.map(renderLink)}
           <ThemeToggle />
-          <div className="appnav__version">v{APP_VERSION}</div>
+          <div className="appnav__version">
+            <span>Maintenance Logistics</span>
+            <strong>v{APP_VERSION}</strong>
+          </div>
         </div>
       </nav>
+
+      <header className="appheader no-print">
+        <div className="appheader__page">
+          <strong>{currentSheet.label}</strong>
+          <span>{currentSheet.description}</span>
+        </div>
+        <form className="appheader__search" onSubmit={findBus}>
+          <Search size={18} />
+          <input
+            value={globalFind}
+            inputMode="numeric"
+            aria-label="Search fleet"
+            placeholder="Search fleet by bus number"
+            onChange={(event) => setGlobalFind(event.target.value.replace(/\D/g, "").slice(0, 5))}
+          />
+          <kbd>Enter</kbd>
+        </form>
+        <div className="appheader__status">
+          <span className="appheader__live"><i /> Live</span>
+          <button type="button" className="appheader__fleet" onClick={() => router.push("/buses")}>
+            <BusFront size={17} />
+            Fleet
+          </button>
+        </div>
+      </header>
 
       {switcherOpen && (
         <div
