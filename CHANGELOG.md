@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.16.0 - 2026-07-24
+
+UI polish pass — everything around the sheets; the papers themselves and the
+printouts are untouched.
+
+- Find any bus from anywhere on desktop: press "/" (or Ctrl/Cmd+K, or the new
+  sidebar "Find bus") → type the number → its live location and flags, with
+  one-tap "Show on Lot Sheet" or its Bus Card. Recent buses show as one-tap
+  chips there, on Home, and on the phone Tonight board.
+- Buses joined the desktop sidebar (the page existed but had no way in), and
+  the phone top bar no longer shows the wrong page name on /buses.
+- The Lot Sheet dock's "More" is now "Tools" — no more two different "More"
+  buttons stacked on top of each other on phones.
+- One icon language everywhere: the phone tab bar and hub menus now use the
+  same line icons as the rest of the app instead of emoji (which rendered
+  differently on every phone).
+- Loading looks intentional: shimmer placeholders instead of blank screens
+  and raw "Loading…" text (Home stats, Staffing, Prev Sheets, histories).
+- One header scale across every page — the oversized hero titles (Home,
+  Staffing, Service, Object Codes) are now compact and consistent.
+- Phones: Turnover/Service/Work Order toolbars are two tidy rows (the page
+  title row is gone — the top bar already names the page), so the paper
+  starts higher. Buttons and cards everywhere got hover/press feedback, and
+  keyboard focus is clearly visible.
+
 ## 0.15.1 - 2026-07-24
 
 - Fixed the Lot Sheet's "More" sheet on phones being partly hidden behind the

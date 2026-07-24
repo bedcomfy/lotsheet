@@ -441,7 +441,7 @@
 .adminpage {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 30px 0 58px;
+  padding: 22px 0 58px;
 }
 .adminhero {
   margin-bottom: 18px;
@@ -458,16 +458,17 @@
 .adminhero h1 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(28px, 3vw, 40px);
-  line-height: 1.1;
+  font-size: clamp(22px, 2.4vw, 26px);
+  line-height: 1.15;
   font-weight: 650;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 .adminhero p,
 .adminpanel p {
   max-width: 720px;
-  margin: 10px 0 0;
+  margin: 6px 0 0;
   color: var(--text-dim);
+  font-size: 13.5px;
   line-height: 1.45;
 }
 .admintiles {
@@ -488,6 +489,14 @@
   color: var(--text);
   text-align: left;
   box-shadow: var(--shadow-soft);
+  transition: border-color 0.14s, transform 0.14s;
+}
+.admintile:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.admintile:active {
+  transform: translateY(0) scale(0.99);
 }
 .admintile svg {
   color: var(--accent);
@@ -1597,6 +1606,13 @@
     background: var(--surface);
     color: var(--text);
     text-align: left;
+    transition: border-color 0.14s, background 0.14s, transform 0.12s;
+  }
+  .pageswitch__tile:hover {
+    border-color: var(--accent);
+  }
+  .pageswitch__tile:active {
+    transform: scale(0.985);
   }
   .pageswitch__tile--active {
     border-color: var(--accent);

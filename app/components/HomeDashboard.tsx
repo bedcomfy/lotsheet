@@ -34,6 +34,7 @@ import {
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
+import { SkeletonStat } from "./Skeleton";
 
 type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
 
@@ -50,7 +51,7 @@ function formatSaved(iso: string | null | undefined): string {
 export default function HomeDashboard() {
   const router = useRouter();
   // Shared, cached, deduplicated server state (TanStack Query).
-  const { data: sheetData } = useLotSheet();
+  const { data: sheetData, isLoading: sheetLoading } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const { data: masterBuses = [] } = useBusMasterList();
   const { data: pick = null } = useWorkPick();
@@ -59,9 +60,18 @@ export default function HomeDashboard() {
   const [findBus, setFindBus] = useState("");
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
+  const [recentBuses, setRecentBuses] = useState<string[]>([]);
+
+  // Shares the Bus Card's recents (pace:m:recent) so a bus checked on the
+  // phone shows up here too.
+  useEffect(() => {
+    try { setRecentBuses(JSON.parse(localStorage.getItem("pace:m:recent") || "[]").slice(0, 6)); } catch {}
+  }, []);
 
   const sheet = sheetData?.sheet || null;
   const updatedAt = sheetData?.updatedAt || null;
+  // First paint before the sheet arrives: show shimmer instead of misleading 0s.
+  const stat = (value: number) => (sheetLoading ? <SkeletonStat /> : value);
 
   // "Available Now" depends on wall-clock time (it changes at minute boundaries),
   // independent of the data refetch — so tick it on its own timer.
@@ -175,20 +185,32 @@ export default function HomeDashboard() {
           <h1>Operations Workspace</h1>
           <p>Start the daily sheets, check bus status, and jump into the tools the garage uses most.</p>
         </div>
-        <div className="homefind">
-          <Search size={17} />
-          <input
-            value={findBus}
-            inputMode="numeric"
-            placeholder="Find bus"
-            onChange={(e) => setFindBus(e.target.value.replace(/\D/g, "").slice(0, 5))}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && findBus) router.push(`/?find=${encodeURIComponent(findBus)}`);
-            }}
-          />
-          <button onClick={() => router.push(findBus ? `/?find=${encodeURIComponent(findBus)}` : "/")}>
-            Open
-          </button>
+        <div>
+          <div className="homefind">
+            <Search size={17} />
+            <input
+              value={findBus}
+              inputMode="numeric"
+              placeholder="Find bus"
+              onChange={(e) => setFindBus(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && findBus) router.push(`/?find=${encodeURIComponent(findBus)}`);
+              }}
+            />
+            <button onClick={() => router.push(findBus ? `/?find=${encodeURIComponent(findBus)}` : "/")}>
+              Open
+            </button>
+          </div>
+          {recentBuses.length > 0 && (
+            <div className="homerecent" aria-label="Recent buses">
+              <span>Recent</span>
+              {recentBuses.map((bus) => (
+                <button type="button" key={bus} onClick={() => router.push(`/?find=${encodeURIComponent(bus)}`)}>
+                  {bus}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -223,12 +245,12 @@ export default function HomeDashboard() {
       <section className="homegrid homegrid--service" aria-label="Service readiness">
         <button className="homecard statcard statcard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
           <CheckCircle2 size={18} />
-          <span className="statcard__value">{stats.ready}</span>
+          <span className="statcard__value">{stat(stats.ready)}</span>
           <span className="statcard__label">Usable</span>
         </button>
         <button className="homecard statcard statcard--notready" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
           <CircleAlert size={18} />
-          <span className="statcard__value">{stats.notReady}</span>
+          <span className="statcard__value">{stat(stats.notReady)}</span>
           <span className="statcard__label">Out of Service</span>
         </button>
       </section>
@@ -236,27 +258,27 @@ export default function HomeDashboard() {
       <section className="homegrid homegrid--stats" aria-label="Daily locations">
         <button className="homecard statcard" onClick={() => setStatusDetail("grid")} aria-haspopup="dialog">
           <Gauge size={18} />
-          <span className="statcard__value">{stats.grid}</span>
+          <span className="statcard__value">{stat(stats.grid)}</span>
           <span className="statcard__label">On grid</span>
         </button>
         <button className="homecard statcard" onClick={() => setStatusDetail("lots")} aria-haspopup="dialog">
           <ClipboardList size={18} />
-          <span className="statcard__value">{stats.lots}</span>
+          <span className="statcard__value">{stat(stats.lots)}</span>
           <span className="statcard__label">In lots</span>
         </button>
         <button className="homecard statcard" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">
           <Wrench size={18} />
-          <span className="statcard__value">{stats.shop}</span>
+          <span className="statcard__value">{stat(stats.shop)}</span>
           <span className="statcard__label">In shop</span>
         </button>
         <button className="homecard statcard statcard--warn" onClick={() => setStatusDetail("missing")} aria-haspopup="dialog">
           <ShieldAlert size={18} />
-          <span className="statcard__value">{stats.missing}</span>
+          <span className="statcard__value">{stat(stats.missing)}</span>
           <span className="statcard__label">Missing</span>
         </button>
         <button className="homecard statcard" onClick={() => setStatusDetail("offProperty")} aria-haspopup="dialog">
           <MapPinOff size={18} />
-          <span className="statcard__value">{stats.offProperty}</span>
+          <span className="statcard__value">{stat(stats.offProperty)}</span>
           <span className="statcard__label">Off property</span>
         </button>
       </section>

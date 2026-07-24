@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  Bus,
   ChevronDown,
   ClipboardList,
   FileText,
@@ -58,6 +59,13 @@ export const DAILY_SHEETS: SheetLink[] = [
     description: "Fuel, DEF, farebox, and lane sheets",
   },
 ];
+
+export const BUS_LOOKUP_LINK: SheetLink = {
+  path: "/buses",
+  label: "Buses",
+  icon: Bus,
+  description: "Any bus — live location, flags, and service",
+};
 
 export const SHOP_SHEETS: SheetLink[] = [
   {
@@ -113,6 +121,7 @@ export const SYSTEM_LINKS: SheetLink[] = [
 
 export const NAV_LINKS: SheetLink[] = [
   ...DAILY_SHEETS,
+  BUS_LOOKUP_LINK,
   ...SHOP_SHEETS,
   ...FORM_SHEETS,
   STAFFING_LINK,
@@ -205,6 +214,15 @@ export default function SheetNav() {
 
         <div className="appnav__section appnav__section--primary">
           {renderLink(HOME_LINK)}
+          <button
+            type="button"
+            className="appnav__link appnav__findbus"
+            onClick={() => window.dispatchEvent(new Event("pace:find-bus"))}
+          >
+            <Search size={18} />
+            <span>Find bus</span>
+            <kbd>/</kbd>
+          </button>
         </div>
         <div className="appnav__section appnav__section--sheets">
           {NAV_LINKS.map(renderLink)}

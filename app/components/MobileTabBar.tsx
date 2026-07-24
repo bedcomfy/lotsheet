@@ -11,6 +11,24 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bus,
+  ClipboardList,
+  Coins,
+  Droplets,
+  FileText,
+  Files,
+  Fuel,
+  Home,
+  Menu,
+  Moon,
+  RefreshCw,
+  SearchCode,
+  Sun,
+  Users,
+  Wrench,
+} from "lucide-react";
 
 const SHEETY = ["/turnover", "/service", "/workorder", "/fuel", "/def", "/farebox"];
 
@@ -43,14 +61,14 @@ export default function MobileTabBar() {
     : t === "sheets" ? SHEETY.some((p) => pathname.startsWith(p))
     : false;
 
-  const tab = (id: string, em: string, label: string, onTap: () => void) => (
+  const tab = (id: string, Icon: LucideIcon, label: string, onTap: () => void) => (
     <button
       type="button"
       key={id}
       className={`mtabbar__btn ${active(id) || hub === id ? "mtabbar__btn--on" : ""}`}
       onClick={onTap}
     >
-      <span className="mtabbar__em" aria-hidden="true">{em}</span>
+      <span className="mtabbar__em" aria-hidden="true"><Icon size={20} strokeWidth={2.1} /></span>
       {label}
     </button>
   );
@@ -58,11 +76,11 @@ export default function MobileTabBar() {
   return (
     <>
       <nav className="mtabbar no-print" aria-label="Mobile navigation">
-        {tab("tonight", "🏠", "Tonight", () => go("/home"))}
-        {tab("lot", "📋", "Lot", () => go("/"))}
-        {tab("sheets", "🗂️", "Sheets", () => setHub(hub === "sheets" ? null : "sheets"))}
-        {tab("buses", "🚌", "Buses", () => go("/buses"))}
-        {tab("more", "≡", "More", () => setHub(hub === "more" ? null : "more"))}
+        {tab("tonight", Home, "Tonight", () => go("/home"))}
+        {tab("lot", ClipboardList, "Lot", () => go("/"))}
+        {tab("sheets", Files, "Sheets", () => setHub(hub === "sheets" ? null : "sheets"))}
+        {tab("buses", Bus, "Buses", () => go("/buses"))}
+        {tab("more", Menu, "More", () => setHub(hub === "more" ? null : "more"))}
       </nav>
 
       {hub === "sheets" && (
@@ -74,27 +92,27 @@ export default function MobileTabBar() {
           </div>
           <div className="mhub__list">
             <button type="button" className="mhub__card" onClick={() => go("/")}>
-              <span className="em">📋</span>
+              <span className="em"><ClipboardList size={22} /></span>
               <span><b>Lot Sheet</b><span>tap cells to edit · pans at actual size</span></span>
               <span className="go">›</span>
             </button>
             <button type="button" className="mhub__card" onClick={() => go("/turnover")}>
-              <span className="em">🔄</span>
+              <span className="em"><RefreshCw size={22} /></span>
               <span><b>Turnover Sheet</b><span>shift handoff · legal size</span></span>
               <span className="go">›</span>
             </button>
             <button type="button" className="mhub__card" onClick={() => go("/service")}>
-              <span className="em">⛽</span>
+              <span className="em"><Fuel size={22} /></span>
               <span><b>Service Sheets</b><span>Fuel · DEF · Farebox</span></span>
               <span className="go">›</span>
             </button>
             <div className="mhub__chips">
-              <button type="button" onClick={() => go("/service?tab=fuel")}>Fuel</button>
-              <button type="button" onClick={() => go("/service?tab=def")}>DEF</button>
-              <button type="button" onClick={() => go("/service?tab=farebox")}>Farebox</button>
+              <button type="button" onClick={() => go("/service?tab=fuel")}><Fuel size={14} /> Fuel</button>
+              <button type="button" onClick={() => go("/service?tab=def")}><Droplets size={14} /> DEF</button>
+              <button type="button" onClick={() => go("/service?tab=farebox")}><Coins size={14} /> Farebox</button>
             </div>
             <button type="button" className="mhub__card" onClick={() => go("/workorder")}>
-              <span className="em">📄</span>
+              <span className="em"><FileText size={22} /></span>
               <span><b>Work Order</b><span>Oracle eAM form</span></span>
               <span className="go">›</span>
             </button>
@@ -111,22 +129,22 @@ export default function MobileTabBar() {
           </div>
           <div className="mhub__list">
             <button type="button" className="mhub__card" onClick={() => go("/shop")}>
-              <span className="em">🔧</span>
+              <span className="em"><Wrench size={22} /></span>
               <span><b>Shop</b><span>apron · bays · cards</span></span>
               <span className="go">›</span>
             </button>
             <button type="button" className="mhub__card" onClick={() => go("/staffing/seniority")}>
-              <span className="em">👥</span>
+              <span className="em"><Users size={22} /></span>
               <span><b>Staffing</b><span>seniority &amp; work pick</span></span>
               <span className="go">›</span>
             </button>
             <button type="button" className="mhub__card" onClick={() => go("/object-codes")}>
-              <span className="em">🔎</span>
+              <span className="em"><SearchCode size={22} /></span>
               <span><b>Object codes</b><span>maintenance reference</span></span>
               <span className="go">›</span>
             </button>
             <button type="button" className="mhub__card" onClick={toggleTheme}>
-              <span className="em">{theme === "dark" ? "☀️" : "🌙"}</span>
+              <span className="em">{theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}</span>
               <span><b>Switch to {theme === "dark" ? "light" : "dark"} mode</b><span>{theme} now</span></span>
             </button>
             <div className="mhub__note">

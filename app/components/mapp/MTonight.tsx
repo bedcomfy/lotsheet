@@ -4,9 +4,12 @@
 // Same numbers as the desktop Home/Lot chips (fleetStats is the one shared
 // definition of the fleet totals).
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Bus, Footprints } from "lucide-react";
 import { useLotSheet, useFlags, useBusMasterList } from "../../lib/queries";
 import { fleetStats } from "../../lib/fleetStats";
+
+const RECENT_KEY = "pace:m:recent";
 
 interface MTonightProps {
   onGo: (tab: string) => void;
@@ -18,6 +21,11 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
   const { data: flags = {} } = useFlags();
   const { data: masterBuses = [] } = useBusMasterList();
   const sheet = sheetData?.sheet || null;
+  const [recent, setRecent] = useState<string[]>([]);
+
+  useEffect(() => {
+    try { setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]")); } catch {}
+  }, []);
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [sheet, flags, masterBuses]);
   const activeCount = useMemo(
@@ -70,12 +78,30 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
       <div className="mapp__sec">Jump in</div>
       <div className="mquick">
         <button type="button" className="mquickbtn mquickbtn--hot" onClick={() => onGo("lot")}>
-          <span className="em">🅿️</span>Walk the lot<small>Two rows at a time</small>
+          <span className="em"><Footprints size={22} /></span>Walk the lot<small>Two rows at a time</small>
         </button>
         <button type="button" className="mquickbtn" onClick={() => onGo("buses")}>
-          <span className="em">🚌</span>Find a bus<small>Flags &amp; location</small>
+          <span className="em"><Bus size={22} /></span>Find a bus<small>Flags &amp; location</small>
         </button>
       </div>
+
+      {recent.length > 0 && (
+        <>
+          <div className="mapp__sec">Recent buses</div>
+          <div className="mbuschips">
+            {recent.map((b) => (
+              <button
+                type="button"
+                key={b}
+                className={`mbuschip ${(flags[b]?.flags || []).length ? "mbuschip--flag" : ""}`}
+                onClick={() => onOpenBus(b)}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 }

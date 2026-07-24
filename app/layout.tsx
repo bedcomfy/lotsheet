@@ -8,6 +8,7 @@ import FlagConfigProvider from "./components/FlagConfigProvider";
 import BusTypeConfigProvider from "./components/BusTypeConfigProvider";
 import { MobileNavProvider } from "./components/MobileNavContext";
 import MobileTabBar from "./components/MobileTabBar";
+import GlobalBusSearch from "./components/GlobalBusSearch";
 
 export const metadata: Metadata = {
   title: "Pace Northwest Sheets",
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                     on <body> makes body children stick to the scrolling body instead. */}
                 <div className="appmain">{children}</div>
                 <MobileTabBar />
+                <GlobalBusSearch />
                 </MobileNavProvider>
               </BusTypeConfigProvider>
             </FlagConfigProvider>

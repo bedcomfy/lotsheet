@@ -10,8 +10,8 @@
      keeps every button visible instead of hidden off-screen.) */
   .toolbar {
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 9px 10px 10px;
+    gap: 7px;
+    padding: 8px 10px 9px;
   }
   .toolbar > * {
     flex: none;
@@ -22,10 +22,10 @@
   .toolbar__saved {
     display: none;
   }
+  /* The mobile top bar already names the page — don't repeat it in the
+     toolbar. Dropping the title usually saves a whole wrap row. */
   .toolbar__title {
-    order: 1;
-    font-size: 14px;
-    min-width: 76px;
+    display: none;
   }
   .toolbar .findbox {
     order: 2;
@@ -52,6 +52,11 @@
   .sheetview__btn {
     flex: 1;
   }
+  .toolbar__date {
+    order: 1;
+    flex: 1 1 128px;
+    min-width: 0;
+  }
   .toolbar__select,
   .toolbar__more {
     order: 5;
@@ -67,6 +72,11 @@
   .toolbar .btn {
     padding: 9px 12px;
     white-space: nowrap;
+  }
+  /* Primary action rides the last row, full width of its share */
+  .toolbar .btn--primary {
+    order: 7;
+    flex: 1 1 132px;
   }
   .toolbar__check {
     white-space: nowrap;
@@ -108,6 +118,12 @@
   }
   .mobile-action svg {
     flex: none;
+  }
+  .mobile-action {
+    transition: background 0.12s, color 0.12s, transform 0.12s;
+  }
+  .mobile-action:active {
+    transform: scale(0.94);
   }
   .mobile-action--primary {
     background: var(--accent);
@@ -455,6 +471,11 @@
     font-size: 13px;
     font-weight: 600;
     text-align: left;
+    transition: background 0.12s, transform 0.12s;
+  }
+  .mchrome__item:active {
+    background: var(--surface-2);
+    transform: scale(0.98);
   }
   .mchrome__item--danger {
     color: var(--danger, #dc2626);

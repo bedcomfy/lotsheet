@@ -144,7 +144,7 @@ body[data-mapp="1"] { overflow: hidden; }
   background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 22%, var(--surface)), var(--surface));
   border-color: color-mix(in srgb, var(--accent) 50%, var(--edge));
 }
-.mquickbtn .em { font-size: 20px; }
+.mquickbtn .em { display: inline-flex; align-items: center; color: var(--accent); }
 
 /* ===== Buses ===== */
 .msearch {
@@ -637,8 +637,12 @@ body[data-mapp="1"] { overflow: hidden; }
     border-radius: 12px;
     cursor: pointer;
     min-height: 44px;
+    transition: color 0.14s, background 0.14s, transform 0.12s;
   }
-  .mtabbar__em { font-size: 18px; line-height: 1; }
+  .mtabbar__btn:active {
+    transform: scale(0.94);
+  }
+  .mtabbar__em { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
   .mtabbar__btn--on { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 }
 
@@ -700,14 +704,29 @@ body[data-mapp="1"] { overflow: hidden; }
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, transform 0.12s;
 }
-.mhub__card .em { font-size: 21px; width: 28px; text-align: center; flex: none; }
+.mhub__card:active {
+  background: var(--surface-2);
+  transform: scale(0.985);
+}
+.mhub__card .em {
+  width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex: none;
+}
 .mhub__card b { display: block; font-size: 15px; }
 .mhub__card > span:nth-child(2) { flex: 1; min-width: 0; }
 .mhub__card > span:nth-child(2) > span { display: block; font-size: 11.5px; color: var(--text-dim); }
 .mhub__card .go { margin-left: auto; color: var(--text-dim); font-size: 17px; flex: none; }
 .mhub__chips { display: flex; gap: 7px; margin: -3px 0 0 54px; flex-wrap: wrap; }
 .mhub__chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--edge);
   background: var(--surface-2);
   color: var(--text-dim);

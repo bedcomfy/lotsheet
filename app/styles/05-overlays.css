@@ -571,3 +571,212 @@
   font-size: 15px;
 }
 
+
+/* ---------- Global "Find bus" palette (press / or Ctrl+K, desktop chrome) ---------- */
+.bfind {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(48px, 14vh, 130px) 16px 16px;
+  background: rgba(10, 14, 21, 0.55);
+  backdrop-filter: blur(3px);
+  animation: overlayBlurIn 0.16s cubic-bezier(.2,.8,.2,1);
+}
+.bfind__panel {
+  width: min(460px, 100%);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+  padding: 12px;
+  animation: bfind-pop 0.18s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes bfind-pop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.bfind__input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.bfind__input:focus-within {
+  border-color: var(--accent);
+}
+.bfind__input svg {
+  color: var(--text-dim);
+  flex: none;
+}
+.bfind__input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+.bfind__input input:focus {
+  outline: none;
+}
+.bfind__input input::placeholder {
+  color: var(--text-dim);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.bfind__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+}
+.bfind__close:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.bfind__hit {
+  padding: 12px 4px 2px;
+}
+.bfind__bus {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.bfind__bus strong {
+  font-size: 24px;
+  letter-spacing: 0.02em;
+}
+.bfind__bus span {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.bfind__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.bfind__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--pill-safety-ed);
+  border-radius: 999px;
+  background: var(--pill-safety-bg);
+  color: var(--pill-safety-tx);
+  font-size: 12px;
+  font-weight: 650;
+}
+.bfind__flag--dim {
+  border-color: var(--edge);
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+.bfind__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 13px;
+}
+.bfind__actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+.bfind__actions kbd {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.bfind__miss {
+  margin: 12px 4px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.bfind__matches {
+  margin-top: 12px;
+  padding: 0 4px;
+}
+.bfind__matchlabel {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bfind__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bfind__chip {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: border-color 0.13s, background 0.13s, transform 0.12s;
+}
+.bfind__chip:hover {
+  border-color: var(--accent);
+}
+.bfind__chip:active {
+  transform: scale(0.96);
+}
+.bfind__chip--flag {
+  border-color: var(--pill-safety-ed);
+  color: var(--pill-safety-tx);
+}
+.bfind__hint {
+  margin: 12px 4px 2px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.bfind__hint kbd,
+.appnav__findbus kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 5px;
+  background: var(--surface-2);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+.appnav__findbus kbd {
+  margin-left: auto;
+  color: var(--text-dim);
+}
+/* Phones have the Buses tab — hide the palette + sidebar shortcut there. */
+@media screen and (max-width: 699px) {
+  .bfind,
+  .appnav__findbus {
+    display: none;
+  }
+}

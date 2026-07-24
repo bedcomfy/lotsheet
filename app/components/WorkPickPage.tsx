@@ -10,6 +10,7 @@ import { useEmployees, useWorkPick } from "../lib/queries";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import AdminUnlockButton from "./AdminUnlockButton";
 import EmployeeInput from "./EmployeeInput";
+import { SkeletonRows } from "./Skeleton";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -121,7 +122,7 @@ export default function WorkPickPage() {
   if (!loaded || !pick) {
     return (
       <section className="adminpanel">
-        <div className="lotlist__empty">Loading…</div>
+        <SkeletonRows rows={5} />
       </section>
     );
   }

@@ -23,16 +23,16 @@
 .homehero h1 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(34px, 5vw, 58px);
-  line-height: 1.05;
+  font-size: clamp(26px, 3vw, 32px);
+  line-height: 1.1;
   font-weight: 650;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 .homehero p {
   max-width: 610px;
-  margin: 13px 0 0;
+  margin: 7px 0 0;
   color: var(--text-dim);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.45;
 }
 .homefind {
@@ -50,6 +50,39 @@
 .homefind:focus-within {
   border-color: var(--text-dim);
   box-shadow: 0 0 0 1px var(--text-dim);
+}
+.homerecent {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.homerecent span {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+.homerecent button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--edge-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: border-color 0.13s, transform 0.12s;
+}
+.homerecent button:hover {
+  border-color: var(--accent);
+}
+.homerecent button:active {
+  transform: scale(0.96);
 }
 .homefind svg {
   color: var(--text-dim);
@@ -256,11 +289,24 @@
   text-align: left;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
+.actionrow,
+.tooltile,
+.statcard,
+.availcard {
+  transition: border-color 0.16s, transform 0.14s, box-shadow 0.16s;
+}
 .actionrow:hover,
 .tooltile:hover,
-.statcard:hover {
+.statcard:hover,
+.availcard:hover {
   border-color: var(--accent);
   transform: translateY(-1px);
+}
+.actionrow:active,
+.tooltile:active,
+.statcard:active,
+.availcard:active {
+  transform: translateY(0) scale(0.99);
 }
 .actionrow__icon {
   display: inline-flex;
@@ -582,7 +628,7 @@
     padding-top: 18px;
   }
   .homehero h1 {
-    font-size: 34px;
+    font-size: 24px;
   }
   .homegrid--stats,
   .homegrid--service,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Overlay from "./Overlay";
 import { Search, X, Trash2 } from "lucide-react";
 import type { HistoryEntry } from "../lib/store";
+import { SkeletonRows } from "./Skeleton";
 
 interface WorkOrderHistoryProps {
   onLoad: (sheet: unknown, id: string) => void;
@@ -114,7 +115,7 @@ export default function WorkOrderHistory({ onLoad, onClose }: WorkOrderHistoryPr
       </div>
 
       <div className="manager__list">
-        {rows === null && <div className="lotlist__empty">Loading…</div>}
+        {rows === null && <SkeletonRows rows={4} />}
         {rows !== null && rows.length === 0 && (
           <div className="lotlist__empty">No saved work orders yet — fill one out and press Save.</div>
         )}
