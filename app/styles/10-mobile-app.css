@@ -610,7 +610,7 @@ body[data-mapp="1"] { overflow: hidden; }
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 350; /* above page content + docks (130/310), below dialogs (400+) */
+    z-index: 350; /* above page content + docks, below dialogs (400+, incl. the Lot "More" sheet) */
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 2px;

@@ -280,7 +280,7 @@
   .mchrome__scrim {
     position: fixed;
     inset: 0;
-    z-index: 310;
+    z-index: 400; /* dialog layer: above the fixed tab bar (350) so the sheet bottom stays reachable */
     display: flex;
     align-items: flex-end;
     justify-content: center;
