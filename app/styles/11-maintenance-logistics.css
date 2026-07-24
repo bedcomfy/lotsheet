@@ -555,7 +555,7 @@ textarea {
 
 .homeoverview {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -637,6 +637,11 @@ textarea {
   color: #7357c7;
 }
 
+.metriccard--offproperty .metriccard__icon {
+  background: color-mix(in srgb, #718096 13%, var(--surface));
+  color: #64748b;
+}
+
 :root[data-theme="dark"] .metriccard--out .metriccard__icon,
 :root[data-theme="dark"] .metriccard--missing .metriccard__icon {
   color: #efb24f;
@@ -644,6 +649,10 @@ textarea {
 
 :root[data-theme="dark"] .metriccard--shop .metriccard__icon {
   color: #ae95ff;
+}
+
+:root[data-theme="dark"] .metriccard--offproperty .metriccard__icon {
+  color: #aebbd0;
 }
 
 .homedashboard {
@@ -1184,7 +1193,8 @@ textarea {
   }
 
   .mstats {
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .mstat {
@@ -1201,7 +1211,8 @@ textarea {
   }
 
   .mstat--ok,
-  .mstat--bad {
+  .mstat--bad,
+  .mstat--off {
     background: var(--surface);
   }
 
@@ -1229,6 +1240,11 @@ textarea {
   .mstat--bad .mstat__icon {
     background: color-mix(in srgb, #d89020 14%, var(--surface));
     color: #c07a16;
+  }
+
+  .mstat--off .mstat__icon {
+    background: color-mix(in srgb, #718096 14%, var(--surface));
+    color: #7d8da6;
   }
 
   .mstat b {

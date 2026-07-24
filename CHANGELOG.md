@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.17.1 - 2026-07-24
+
+- Excluded the JUDI support vehicle from every fleet total, placement group,
+  missing list, off-property count, and flagged-bus summary.
+- Made off-property a separate, mutually exclusive fleet state instead of
+  including it in Out of Service, even when an older grid or lot placement
+  remains on the sheet.
+- Added dedicated Off Property overview cards to the desktop and mobile home
+  pages, with the existing drill-down list available from the desktop card.
+
 ## 0.17.0 - 2026-07-24
 
 - Promoted the Maintenance Logistics redesign from preview: the responsive

@@ -97,12 +97,11 @@ export default function HomeDashboard() {
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [flags, masterBuses, sheet]);
   const locations = useMemo(() => fleetBusLocations(sheet, flags), [flags, sheet]);
-  const activeFleetCount = useMemo(
-    () => masterBuses.filter((bus) => bus.status !== "retired").length,
-    [masterBuses]
-  );
+  const activeFleetCount = fleet.activeFleet.size;
   const stats = useMemo(() => {
-    const flagged = Object.values(flags).filter((e) => (e.flags || []).length || e.note).length;
+    const flagged = Object.entries(flags).filter(([bus, entry]) =>
+      fleet.activeFleet.has(bus) && ((entry.flags || []).length || entry.note)
+    ).length;
     return {
       grid: fleet.onGrid.size,
       lots: fleet.inLots.size,
@@ -126,7 +125,7 @@ export default function HomeDashboard() {
       },
       outOfService: {
         title: "Out of Service buses",
-        description: "Active buses in a lot, shop area, or off property.",
+        description: "Active buses currently in a lot or shop area.",
         buses: sort([...fleet.notReadyForService]),
       },
       grid: {
@@ -219,7 +218,12 @@ export default function HomeDashboard() {
         </button>
         <button className="homecard metriccard metriccard--out" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
           <span className="metriccard__icon"><CircleAlert size={22} /></span>
-          <span className="metriccard__copy"><small>Out of service</small><strong>{stat(stats.notReady)}</strong><em>Lots, shop, or off property</em></span>
+          <span className="metriccard__copy"><small>Out of service</small><strong>{stat(stats.notReady)}</strong><em>Lots and shop</em></span>
+          <ArrowRight size={18} />
+        </button>
+        <button className="homecard metriccard metriccard--offproperty" onClick={() => setStatusDetail("offProperty")} aria-haspopup="dialog">
+          <span className="metriccard__icon"><MapPinOff size={22} /></span>
+          <span className="metriccard__copy"><small>Off property</small><strong>{stat(stats.offProperty)}</strong><em>Tracked away from garage</em></span>
           <ArrowRight size={18} />
         </button>
         <button className="homecard metriccard metriccard--shop" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">

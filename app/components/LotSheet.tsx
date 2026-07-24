@@ -1164,19 +1164,17 @@ export default function LotSheet() {
     });
   }
 
+  const displayFleet = fleetStats(displaySheet, displayFlags, masterBuses);
+
   // "# OF VEHICLES OFF PROPERTY" is auto-counted from the OFF PROPERTY flag.
-  const offPropertyCount = blankPrintMode ? "" : Object.values(displayFlags).filter((e) =>
-    (e.flags || []).includes("offprop")
-  ).length;
+  // Support vehicles such as JUDI never contribute to fleet totals.
+  const offPropertyCount = blankPrintMode ? "" : displayFleet.offProperty.size;
 
   // "# OF VEHICLES IN SHOP" is auto-counted too: everything on the Shop page
   // (Apron + Bays + Cards) plus any bus flagged IN SHOP.
-  const inShopSet = new Set<string>();
-  for (const k of ["apron", "bay", "cards"] as const) {
-    for (const b of displaySheet.lots?.[k] || []) if (b && b !== "X") inShopSet.add(b);
-  }
+  const inShopSet = new Set(displayFleet.inShop);
   for (const [bus, e] of Object.entries(displayFlags)) {
-    if ((e.flags || []).includes("shop")) inShopSet.add(bus);
+    if (displayFleet.activeFleet.has(bus) && (e.flags || []).includes("shop")) inShopSet.add(bus);
   }
   const inShopCount = blankPrintMode ? "" : inShopSet.size;
 
@@ -1387,7 +1385,7 @@ export default function LotSheet() {
           <button
             className="servicechip servicechip--notready"
             onClick={() => setServiceDetail("outOfService")}
-            title="Buses in lots, shop, or off property — tap to see where and why"
+            title="Buses in lots or shop — tap to see where and why"
           >
             {notReadyForServiceCount} Out of Service
           </button>

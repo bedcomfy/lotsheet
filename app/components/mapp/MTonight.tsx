@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Flag,
+  MapPinOff,
   MapPinned,
   Search,
   Warehouse,
@@ -29,8 +30,10 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
 
   const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [sheet, flags, masterBuses]);
   const flaggedCount = useMemo(
-    () => Object.values(flags).filter((entry) => (entry.flags || []).length > 0 || entry.note).length,
-    [flags]
+    () => Object.entries(flags).filter(([bus, entry]) =>
+      fleet.activeFleet.has(bus) && ((entry.flags || []).length > 0 || entry.note)
+    ).length,
+    [flags, fleet.activeFleet]
   );
 
   const locations = [
@@ -58,6 +61,11 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
           <span className="mstat__icon"><AlertTriangle size={20} /></span>
           <b>{fleet.notReadyForService.size}</b>
           <span>Out of service</span>
+        </div>
+        <div className="mstat mstat--off">
+          <span className="mstat__icon"><MapPinOff size={20} /></span>
+          <b>{fleet.offProperty.size}</b>
+          <span>Off property</span>
         </div>
       </section>
 

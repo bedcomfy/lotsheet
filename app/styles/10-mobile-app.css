@@ -90,13 +90,15 @@ body[data-mapp="1"] { overflow: hidden; }
 }
 
 /* ===== Tonight ===== */
-.mstats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .mstat { border-radius: 18px; padding: 14px 15px; background: var(--surface); border: 1px solid var(--edge); }
 .mstat--ok { background: linear-gradient(145deg, color-mix(in srgb, var(--success) 16%, var(--surface)), var(--surface)); }
 .mstat--bad { background: linear-gradient(145deg, color-mix(in srgb, var(--danger) 13%, var(--surface)), var(--surface)); }
+.mstat--off { background: linear-gradient(145deg, color-mix(in srgb, #718096 13%, var(--surface)), var(--surface)); }
 .mstat b { display: block; font-size: 34px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
 .mstat--ok b { color: var(--success); }
 .mstat--bad b { color: var(--danger); }
+.mstat--off b { color: #7d8da6; }
 .mstat span { display: block; margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--text-dim); }
 .mbanner {
   display: flex;

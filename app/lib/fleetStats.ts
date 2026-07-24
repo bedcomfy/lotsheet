@@ -23,6 +23,7 @@ function busesInLocations(sheet: LotSheet | null | undefined, keys: LotKey[]): S
 }
 
 export interface FleetStats {
+  activeFleet: Set<string>;
   onGrid: Set<string>;
   inLots: Set<string>;
   inShop: Set<string>;
@@ -32,6 +33,15 @@ export interface FleetStats {
   accounted: Set<string>;
   missing: string[];
   accountedByFlagOnly: string[];
+}
+
+// JUDI is a support vehicle, not a revenue fleet bus. Keep the number fallback
+// so a CSV import cannot accidentally reintroduce it if the display name is
+// temporarily missing.
+export function countsTowardFleet(bus: MasterBus): boolean {
+  return bus.status !== "retired"
+    && bus.num !== "9690"
+    && (bus.name || "").trim().toUpperCase() !== "JUDI";
 }
 
 const LOT_LOCATION_LABELS: Record<LotKey, string> = {
@@ -84,15 +94,15 @@ export function fleetStats(
   flags: FlagMap | null | undefined,
   masterBuses: MasterBus[] = []
 ): FleetStats {
-  const onGrid = new Set<string>();
+  const rawOnGrid = new Set<string>();
   for (const value of Object.values(sheet?.cells || {})) {
     const bus = cellBus(value);
-    if (bus && bus !== "X") onGrid.add(bus);
+    if (bus && bus !== "X") rawOnGrid.add(bus);
   }
 
-  const inLots = busesInLocations(sheet, LOT_COUNT_KEYS);
-  const inShop = busesInLocations(sheet, SHOP_COUNT_KEYS);
-  const allLocated = busesInLocations(sheet, ALL_LOCATION_KEYS);
+  const rawInLots = busesInLocations(sheet, LOT_COUNT_KEYS);
+  const rawInShop = busesInLocations(sheet, SHOP_COUNT_KEYS);
+  const rawAllLocated = busesInLocations(sheet, ALL_LOCATION_KEYS);
   const offProperty = new Set<string>();
   const inShopByFlag = new Set<string>();
   for (const [bus, entry] of Object.entries(flags || {})) {
@@ -102,20 +112,27 @@ export function fleetStats(
 
   // R/C and lane buses belong to neither displayed category, but they are still
   // at a known location and therefore cannot be Missing.
-  const physicallyPlaced = new Set([...onGrid, ...allLocated]);
-  const active = masterBuses.filter((bus) => bus.status !== "retired").map((bus) => bus.num);
+  const active = masterBuses.filter(countsTowardFleet).map((bus) => bus.num);
   const activeSet = new Set(active);
   const activeOffProperty = new Set([...offProperty].filter((bus) => activeSet.has(bus)));
-  const readyForService = new Set([...onGrid].filter((bus) => activeSet.has(bus)));
+  const isActiveOnProperty = (bus: string) => activeSet.has(bus) && !activeOffProperty.has(bus);
+  const onGrid = new Set([...rawOnGrid].filter(isActiveOnProperty));
+  const inLots = new Set([...rawInLots].filter(isActiveOnProperty));
+  const inShop = new Set([...rawInShop].filter(isActiveOnProperty));
+  const allLocated = new Set([...rawAllLocated].filter((bus) => activeSet.has(bus)));
+  const activeInShopByFlag = new Set([...inShopByFlag].filter(isActiveOnProperty));
+  const physicallyPlaced = new Set([...onGrid, ...allLocated]);
+  const readyForService = new Set(onGrid);
   const notReadyForService = new Set(
-    [...inLots, ...inShop, ...inShopByFlag, ...activeOffProperty].filter(
-      (bus) => activeSet.has(bus) && !readyForService.has(bus)
+    [...inLots, ...inShop, ...activeInShopByFlag].filter(
+      (bus) => !readyForService.has(bus)
     )
   );
-  const accounted = new Set([...physicallyPlaced, ...offProperty, ...inShopByFlag]);
+  const accounted = new Set([...physicallyPlaced, ...activeOffProperty, ...activeInShopByFlag]);
   const sortBuses = (list: string[]) => list.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
   return {
+    activeFleet: activeSet,
     onGrid,
     inLots,
     inShop,
