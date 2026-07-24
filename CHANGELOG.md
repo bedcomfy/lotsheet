@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.1 - 2026-07-24
+
+- Published three mobile redesign mockups in a durable gallery for review
+  across desktop and mobile devices. This branch contains design references
+  only and does not change the live application.
+
 ## 0.17.0 - 2026-07-24
 
 - Promoted the Maintenance Logistics redesign from preview: the responsive
