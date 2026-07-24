@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.1 - 2026-07-24
+
+- Fixed the Lot Sheet's "More" sheet on phones being partly hidden behind the
+  bottom tab bar: the bar sat on top of the sheet's last rows, so Clear Grid
+  and Clear Lots couldn't be tapped. The sheet now layers with the other
+  dialogs, above the tab bar, and the scrim dims the whole screen.
+
 ## 0.15.0 - 2026-07-24
 
 - New phone navigation: a bottom tab bar on every screen — Tonight, Lot,
