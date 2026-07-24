@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.2 - 2026-07-24
+
+- Added a cohesive three-screen mobile design set covering Operations Home,
+  the active Lot Sheet workflow, and Fleet detail. The set combines the
+  strongest functionality and visual patterns from the earlier concepts.
+
 ## 0.17.1 - 2026-07-24
 
 - Published three mobile redesign mockups in a durable gallery for review
