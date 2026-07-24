@@ -13,7 +13,7 @@ interface ToolMenuProps {
 
 // Radix owns positioning, collision handling, keyboard navigation, and the
 // data-state hooks used by the open/close animations.
-export default function ToolMenu({ label = "More", children, triggerClassName = "" }: ToolMenuProps) {
+export default function ToolMenu({ label = "More", children, triggerClassName = "toolbar__more" }: ToolMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (

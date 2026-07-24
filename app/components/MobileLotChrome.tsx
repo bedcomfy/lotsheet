@@ -10,8 +10,8 @@ import {
   LayoutGrid,
   ListChecks,
   ListX,
-  MoreHorizontal,
   Search,
+  SlidersHorizontal,
   Share2,
   Wrench,
   X,
@@ -136,8 +136,8 @@ export default function MobileLotChrome(props: MobileLotChromeProps) {
           onClick={openMore}
           type="button"
         >
-          <MoreHorizontal size={18} />
-          <span>More</span>
+          <SlidersHorizontal size={18} />
+          <span>Tools</span>
         </button>
       </div>
 
@@ -147,13 +147,13 @@ export default function MobileLotChrome(props: MobileLotChromeProps) {
             className="mchrome__sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="More Lot Sheet actions"
+            aria-label="Lot Sheet tools"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mchrome__grab" aria-hidden="true" />
             <header className="mchrome__head">
               <div>
-                <h2>More</h2>
+                <h2>Tools</h2>
                 <p>Find a bus or use a sheet action.</p>
               </div>
               <button type="button" className="mchrome__close" onClick={closeMore} aria-label="Close">

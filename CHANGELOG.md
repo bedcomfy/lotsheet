@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.17.0 - 2026-07-24
+
+- Promoted the Maintenance Logistics redesign from preview: the responsive
+  operations dashboard, navigation, light/dark themes, and mobile hubs now
+  surround the existing live sheets without changing sheet data or print
+  markup.
+- Fixed Fleet search results and other phone bus cards being covered by the
+  bottom navigation. Dialog bodies now scroll within the available viewport
+  while their action footer remains reachable above the tab bar and keyboard.
+- Added Fleet to the main navigation and page switcher, so `/buses` is labeled
+  correctly instead of falling back to "Lot Sheet" on phones.
+- Renamed the Lot Sheet's phone action drawer from "More" to "Tools", tightened
+  redundant mobile sheet toolbars, and centered dashboard icons precisely.
+- Carried forward the remaining useful UI polish from PR #2: intentional
+  loading skeletons and cleaner mobile service-page hierarchy.
+- Verified print readiness for Lot, Turnover, Fuel, DEF, Farebox, Work Order,
+  and blank service sheets; print/PDF layout and `PDF_VERSION` are unchanged.
+
 ## 0.16.0 - 2026-07-24
 
 - Added an alternate Maintenance Logistics interface for preview: a deep navy

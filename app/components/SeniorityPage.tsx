@@ -7,6 +7,7 @@ import { UNAVAILABLE_REASONS } from "../lib/staffing";
 import { useEmployees } from "../lib/queries";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import AdminUnlockButton from "./AdminUnlockButton";
+import { SkeletonRows } from "./Skeleton";
 
 // Normalize a stored record (possibly legacy {name, badge}) into the full shape.
 function normalize(e: Partial<Employee> & { name?: string }): Employee {
@@ -172,7 +173,7 @@ export default function SeniorityPage() {
         <span className="adminflag__count">{rows.length} employees</span>
       </div>
 
-      {!loaded && <div className="lotlist__empty">Loading…</div>}
+      {!loaded && <SkeletonRows rows={6} />}
 
       {loaded && !unlocked && (
         <div className="sentable">

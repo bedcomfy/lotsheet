@@ -1205,15 +1205,25 @@ textarea {
     background: var(--surface);
   }
 
-  .mstat__icon {
+  .mstat > .mstat__icon {
     grid-area: icon;
     display: grid;
     place-items: center;
     width: 34px;
     height: 34px;
+    margin-top: 0;
     border-radius: 7px;
     background: color-mix(in srgb, var(--success) 12%, var(--surface));
     color: var(--success);
+  }
+
+  .mstat__icon svg,
+  .mlocation > span svg,
+  .mnotice > span svg,
+  .mquickbtn__icon svg,
+  .mhub__icon svg,
+  .mtabbar__icon {
+    display: block;
   }
 
   .mstat--bad .mstat__icon {

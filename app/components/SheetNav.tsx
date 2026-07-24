@@ -67,6 +67,12 @@ export const SHOP_SHEETS: SheetLink[] = [
     icon: Wrench,
     description: "Bays, cards, apron, and shop work",
   },
+  {
+    path: "/buses",
+    label: "Fleet",
+    icon: BusFront,
+    description: "Find buses, locations, flags, and service status",
+  },
 ];
 
 export const FORM_SHEETS: SheetLink[] = [

@@ -1516,10 +1516,10 @@ td.turnt__head {
 .servicehero h1 {
   margin: 0;
   color: var(--text);
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.15;
   font-weight: 650;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 .servicetabs {
   display: grid;
@@ -1664,7 +1664,7 @@ td.turnt__head {
     padding: 14px 10px 72px;
   }
   .servicehero h1 {
-    font-size: 24px;
+    font-size: 20px;
   }
   .servicetabs {
     display: flex;
@@ -1690,6 +1690,11 @@ td.turnt__head {
   }
   .servicecontrols__actions .btn {
     flex: 1 1 0;
+  }
+}
+@media screen and (max-width: 699px) {
+  .servicehero {
+    display: none;
   }
 }
 

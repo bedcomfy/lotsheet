@@ -410,7 +410,7 @@ body[data-mapp="1"] { overflow: hidden; }
 .mscrim {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 380;
   background: rgba(6, 9, 14, 0.55);
 }
 .mcard {
@@ -418,7 +418,7 @@ body[data-mapp="1"] { overflow: hidden; }
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 61;
+  z-index: 381;
   max-width: 520px;
   margin: 0 auto;
   background: var(--chrome);
@@ -533,9 +533,10 @@ body[data-mapp="1"] { overflow: hidden; }
 /* the move sheet can outgrow small screens — scroll inside itself, above the keyboard */
 .mcard {
   max-height: calc(
-    100dvh - var(--mkb, 0px) - max(12px, env(safe-area-inset-top, 0px))
+    100dvh - max(var(--mkb, 0px), var(--mtab-h, 0px)) -
+      max(12px, env(safe-area-inset-top, 0px))
   );
-  bottom: var(--mkb, 0px);
+  bottom: max(var(--mkb, 0px), var(--mtab-h, 0px));
 }
 
 /* ===== The Walk's dock — native keyboard edition =====

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Overlay from "./Overlay";
 import type { HistoryEntry } from "../lib/store";
+import { SkeletonRows } from "./Skeleton";
 
 // Count how many buses are recorded on a sheet (grid cells + back-of-sheet lots).
 function busCount(sheet: any): number {
@@ -75,7 +76,7 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
         </div>
 
         <div className="lotlist">
-          {sheets === null && <div className="lotlist__empty">Loading…</div>}
+          {sheets === null && <SkeletonRows rows={4} />}
           {sheets !== null && sheets.length === 0 && (
             <div className="lotlist__empty">
               No saved sheets yet. When you start a new sheet, the old one is kept here.

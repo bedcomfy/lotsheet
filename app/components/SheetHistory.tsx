@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Overlay from "./Overlay";
 import type { HistoryEntry } from "../lib/store";
+import { SkeletonRows } from "./Skeleton";
 
 function savedLabel(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -67,7 +68,7 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
         </div>
 
         <div className="lotlist">
-          {sheets === null && <div className="lotlist__empty">Loading…</div>}
+          {sheets === null && <SkeletonRows rows={4} />}
           {sheets !== null && sheets.length === 0 && (
             <div className="lotlist__empty">
               No saved sheets yet. When you clear the sheet, the old one is kept here.

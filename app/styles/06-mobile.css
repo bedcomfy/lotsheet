@@ -10,8 +10,8 @@
      keeps every button visible instead of hidden off-screen.) */
   .toolbar {
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 9px 10px 10px;
+    gap: 7px;
+    padding: 8px 10px 9px;
   }
   .toolbar > * {
     flex: none;
@@ -22,10 +22,9 @@
   .toolbar__saved {
     display: none;
   }
+  /* The mobile app bar already names the page. */
   .toolbar__title {
-    order: 1;
-    font-size: 14px;
-    min-width: 76px;
+    display: none;
   }
   .toolbar .findbox {
     order: 2;
@@ -52,6 +51,11 @@
   .sheetview__btn {
     flex: 1;
   }
+  .toolbar__date {
+    order: 1;
+    flex: 1 1 128px;
+    min-width: 0;
+  }
   .toolbar__select,
   .toolbar__more {
     order: 5;
@@ -67,6 +71,10 @@
   .toolbar .btn {
     padding: 9px 12px;
     white-space: nowrap;
+  }
+  .toolbar .btn--primary {
+    order: 7;
+    flex: 1 1 132px;
   }
   .toolbar__check {
     white-space: nowrap;

@@ -33,6 +33,7 @@ import {
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import Overlay, { closeOverlayFromEvent } from "./Overlay";
+import { SkeletonStat } from "./Skeleton";
 
 type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
 
@@ -49,7 +50,7 @@ function formatSaved(iso: string | null | undefined): string {
 export default function HomeDashboard() {
   const router = useRouter();
   // Shared, cached, deduplicated server state (TanStack Query).
-  const { data: sheetData } = useLotSheet();
+  const { data: sheetData, isLoading: sheetLoading } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const { data: masterBuses = [] } = useBusMasterList();
   const { data: pick = null } = useWorkPick();
@@ -61,6 +62,7 @@ export default function HomeDashboard() {
 
   const sheet = sheetData?.sheet || null;
   const updatedAt = sheetData?.updatedAt || null;
+  const stat = (value: number) => (sheetLoading ? <SkeletonStat /> : value);
 
   // "Available Now" depends on wall-clock time (it changes at minute boundaries),
   // independent of the data refetch — so tick it on its own timer.
@@ -212,22 +214,22 @@ export default function HomeDashboard() {
       <section className="homeoverview" aria-label="Fleet overview">
         <button className="homecard metriccard metriccard--ready" onClick={() => setStatusDetail("usable")} aria-haspopup="dialog">
           <span className="metriccard__icon"><CheckCircle2 size={22} /></span>
-          <span className="metriccard__copy"><small>Usable fleet</small><strong>{stats.ready}</strong><em>Ready for service</em></span>
+          <span className="metriccard__copy"><small>Usable fleet</small><strong>{stat(stats.ready)}</strong><em>Ready for service</em></span>
           <ArrowRight size={18} />
         </button>
         <button className="homecard metriccard metriccard--out" onClick={() => setStatusDetail("outOfService")} aria-haspopup="dialog">
           <span className="metriccard__icon"><CircleAlert size={22} /></span>
-          <span className="metriccard__copy"><small>Out of service</small><strong>{stats.notReady}</strong><em>Lots, shop, or off property</em></span>
+          <span className="metriccard__copy"><small>Out of service</small><strong>{stat(stats.notReady)}</strong><em>Lots, shop, or off property</em></span>
           <ArrowRight size={18} />
         </button>
         <button className="homecard metriccard metriccard--shop" onClick={() => setStatusDetail("shop")} aria-haspopup="dialog">
           <span className="metriccard__icon"><Wrench size={22} /></span>
-          <span className="metriccard__copy"><small>In shop</small><strong>{stats.shop}</strong><em>Apron, bays, and cards</em></span>
+          <span className="metriccard__copy"><small>In shop</small><strong>{stat(stats.shop)}</strong><em>Apron, bays, and cards</em></span>
           <ArrowRight size={18} />
         </button>
         <button className="homecard metriccard metriccard--missing" onClick={() => setStatusDetail("missing")} aria-haspopup="dialog">
           <span className="metriccard__icon"><ShieldAlert size={22} /></span>
-          <span className="metriccard__copy"><small>Missing</small><strong>{stats.missing}</strong><em>No current placement</em></span>
+          <span className="metriccard__copy"><small>Missing</small><strong>{stat(stats.missing)}</strong><em>No current placement</em></span>
           <ArrowRight size={18} />
         </button>
       </section>
