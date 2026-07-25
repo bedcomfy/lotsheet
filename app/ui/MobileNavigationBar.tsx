@@ -30,6 +30,7 @@ export function MobileNavigationBar({
     <nav
       className={cx(styles.navigation, className)}
       aria-label={label}
+      data-mobile-navigation=""
     >
       {items.map((item) => (
         <AriaButton

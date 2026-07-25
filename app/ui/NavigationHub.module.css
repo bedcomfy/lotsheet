@@ -196,7 +196,7 @@
   padding:
     var(--ui-space-3)
     calc(var(--ui-space-4) + var(--ui-safe-right))
-    calc(var(--ui-space-3) + var(--ui-safe-bottom))
+    calc(var(--ui-space-3) + max(var(--ui-space-2), var(--ui-safe-bottom)))
     calc(var(--ui-space-4) + var(--ui-safe-left));
   border-top: 1px solid var(--ui-border);
   background: var(--ui-surface);

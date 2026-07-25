@@ -39,7 +39,7 @@
 
 @media (max-width: 699px) {
   .page {
-    padding-bottom: calc(4.5rem + var(--ui-safe-bottom));
+    padding-bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-3));
   }
 
   .toolbar {

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.18.3 - 2026-07-24
+
+- Added one shared mobile paper viewer for Fuel, DEF, Farebox, Flag Summary,
+  and legal-size Turnover sheets. Each opens at true 100% paper size with
+  contained two-axis panning and can switch to a complete-page Fit view.
+- Made multi-page Farebox previews fit one full printed page at a time while
+  retaining vertical page-to-page scrolling, like a standard PDF reader.
+- Kept service-sheet tabs, dates, selectors, and viewer frames inside narrow
+  phone viewports, including automatic centering of the selected long tab.
+- Inset the mobile navigation from curved screen edges and the home indicator,
+  reserved matching content space above it, and kept full-screen directory
+  footers reachable.
+- Preserved all desktop paper geometry and print markup. PDF versions and
+  output remain unchanged.
+
 ## 0.18.2 - 2026-07-24
 
 - Expanded the Fuel and DEF tables into 25% of their former left, right, and

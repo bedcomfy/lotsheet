@@ -32,7 +32,7 @@ export default function ServiceFlagSummary({ dateOverride = "", onReady }: Servi
     <div className="app service-summary">
       <PaperViewport
         profile={LETTER_PORTRAIT}
-        fitOnMobile
+        mobileViewer
         label="Service Lane paper preview"
         className="fuelsum-scroll"
       >

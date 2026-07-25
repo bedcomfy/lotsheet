@@ -183,7 +183,7 @@
     padding:
       var(--ui-space-4)
       calc(var(--ui-space-4) + var(--ui-safe-right))
-      calc(var(--ui-space-6) + var(--ui-safe-bottom))
+      calc(var(--ui-mobile-nav-offset) + var(--ui-space-3))
       calc(var(--ui-space-4) + var(--ui-safe-left));
   }
 

@@ -167,7 +167,7 @@ test("Paper Lab preserves Letter and Legal physical geometry", async ({ page }) 
   await expect(page).toHaveScreenshot("paper-lab-legal.png");
 });
 
-test("Paper Lab scales Legal paper into a phone without changing its ratio", async ({
+test("Paper Lab pans at 100% and fits Legal paper without changing its ratio", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -177,10 +177,53 @@ test("Paper Lab scales Legal paper into a phone without changing its ratio", asy
       safeArea: "phone",
     }),
   );
+  const viewport = page.locator("[data-paper-viewport]");
   const paper = page.locator("[data-paper-page]");
-  const box = await paper.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.width).toBeLessThanOrEqual(374);
-  expect(Math.abs(box!.width / box!.height - 8.5 / 14)).toBeLessThan(0.02);
+  const actualBox = await paper.boundingBox();
+  expect(actualBox).not.toBeNull();
+  expect(Math.abs(actualBox!.width - 816)).toBeLessThan(1);
+  expect(Math.abs(actualBox!.height - 1344)).toBeLessThan(1);
+
+  const actualGeometry = await viewport.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    clientWidth: element.clientWidth,
+    scrollHeight: element.scrollHeight,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(actualGeometry.scrollWidth).toBeGreaterThan(actualGeometry.clientWidth);
+  expect(actualGeometry.scrollHeight).toBeGreaterThan(actualGeometry.clientHeight);
+
+  await page.getByRole("button", { name: "Fit whole sheet" }).click();
+  await expect(viewport).toHaveAttribute("data-mobile-view", "fit");
+  await expect
+    .poll(async () => (await paper.boundingBox())?.width ?? 816)
+    .toBeLessThanOrEqual(374);
+  const fitBox = await paper.boundingBox();
+  expect(fitBox).not.toBeNull();
+  expect(fitBox!.height).toBeLessThan(844 - 34);
+  expect(Math.abs(fitBox!.width / fitBox!.height - 8.5 / 14)).toBeLessThan(0.02);
+  await expect(
+    page.getByRole("button", { name: "View sheet at 100%" }),
+  ).toBeVisible();
   await expect(page).toHaveScreenshot("paper-lab-legal-phone-fit.png");
+});
+
+test("mobile navigation remains inset from phone edges", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(
+    storyUrl("patterns-mobile-navigation--phone-bar", {
+      theme: "light",
+      safeArea: "phone",
+    }),
+  );
+
+  const navigation = page.getByRole("navigation", {
+    name: "Mobile navigation",
+  });
+  const box = await navigation.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(8);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(382);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(836);
+  await expect(page).toHaveScreenshot("mobile-navigation-inset-phone.png");
 });

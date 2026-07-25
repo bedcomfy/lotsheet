@@ -73,11 +73,11 @@
 
 @media (max-width: 699px) {
   .list {
-    margin-inline: calc(var(--ui-space-4) * -1);
-    padding-inline: var(--ui-space-4);
-    border-right: 0;
-    border-left: 0;
-    border-radius: 0;
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+    padding-inline: var(--ui-space-2);
+    scroll-padding-inline: var(--ui-space-4);
   }
 
   .tab {

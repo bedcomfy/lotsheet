@@ -551,7 +551,7 @@ export default function TurnoverSheet() {
 
       <PaperViewport
         profile={LEGAL_PORTRAIT}
-        fitOnMobile
+        mobileViewer
         label="Turnover Sheet paper preview"
         style={{ "--tfz": `${fontPx}px` } as CSSProperties}
       >

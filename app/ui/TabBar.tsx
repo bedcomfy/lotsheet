@@ -4,6 +4,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "react-aria-components";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import type { Key } from "react-aria-components";
 import styles from "./TabBar.module.css";
@@ -35,12 +36,36 @@ export function TabBar({
   onSelectionChange,
   isDisabled,
 }: TabBarProps) {
+  const listRef = useRef<HTMLDivElement>(null);
   const selectedKeys =
     selectedKey === undefined ? undefined : new Set<Key>([selectedKey]);
   const defaultSelectedKeys =
     defaultSelectedKey === undefined
       ? undefined
       : new Set<Key>([defaultSelectedKey]);
+
+  useEffect(() => {
+    if (selectedKey === undefined) return;
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const list = listRef.current;
+        const selected = list?.querySelector<HTMLElement>("[data-selected]");
+        if (!list || !selected) return;
+
+        const centeredLeft =
+          selected.offsetLeft - (list.clientWidth - selected.offsetWidth) / 2;
+        list.scrollTo({
+          left: Math.max(0, centeredLeft),
+          behavior: "auto",
+        });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [selectedKey]);
 
   return (
     <ToggleButtonGroup
@@ -56,7 +81,7 @@ export function TabBar({
       }}
       className={cx(styles.tabs, className)}
     >
-      <div className={styles.list}>
+      <div ref={listRef} className={styles.list}>
         {items.map((item) => (
           <ToggleButton
             key={String(item.id)}

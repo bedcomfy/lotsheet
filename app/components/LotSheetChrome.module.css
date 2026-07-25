@@ -191,7 +191,7 @@
     height: calc(100dvh - 3.625rem - var(--ui-safe-top));
     min-height: 0;
     flex-direction: column;
-    padding-bottom: calc(3.625rem + var(--ui-safe-bottom));
+    padding-bottom: var(--ui-mobile-nav-offset);
     overflow: hidden;
   }
 
@@ -212,12 +212,12 @@
   }
 
   .selectBar {
-    bottom: calc(4.5rem + var(--ui-safe-bottom));
+    bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-2));
   }
 
   .toast {
     right: calc(var(--ui-space-3) + var(--ui-safe-right));
-    bottom: calc(5.25rem + var(--ui-safe-bottom));
+    bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-5));
     left: calc(var(--ui-space-3) + var(--ui-safe-left));
     max-width: none;
   }

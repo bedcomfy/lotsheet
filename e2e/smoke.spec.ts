@@ -47,7 +47,16 @@ test("mobile home keeps navigation and status details reachable", async ({
     page.getByRole("heading", { name: "Maintenance Logistics" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Usable" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+  const mobileNavigation = page.getByRole("navigation", {
+    name: "Mobile navigation",
+  });
+  await expect(mobileNavigation).toBeVisible();
+
+  const navigationBox = await mobileNavigation.boundingBox();
+  expect(navigationBox).not.toBeNull();
+  expect(navigationBox!.x).toBeGreaterThanOrEqual(8);
+  expect(navigationBox!.x + navigationBox!.width).toBeLessThanOrEqual(382);
+  expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(836);
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -229,18 +238,149 @@ test("production PDF renderer honors every registered paper profile", async ({
   }
 });
 
-test("mobile Turnover preview fits its Legal paper inside the viewport", async ({
+test("mobile paper previews pan at 100% and fit clear of navigation", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/turnover");
 
-  const paper = page.locator('[data-sheet-id="turnover"][data-paper-page]');
-  await expect(paper).toBeVisible();
-  const box = await paper.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.width).toBeLessThanOrEqual(374);
-  expect(Math.abs(box!.width / box!.height - 8.5 / 14)).toBeLessThan(0.02);
+  for (const fixture of [
+    {
+      path: "/service?tab=fuel",
+      sheetId: "fuel",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/service?tab=def",
+      sheetId: "def",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/service?tab=summary",
+      sheetId: "service-summary",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/turnover",
+      sheetId: "turnover",
+      width: 816,
+      height: 1344,
+      ratio: 8.5 / 14,
+    },
+  ]) {
+    await page.goto(fixture.path);
+    const paper = page.locator(
+      `[data-sheet-id="${fixture.sheetId}"][data-paper-page]`,
+    );
+    const viewport = page.locator("[data-paper-viewport]");
+    await expect(paper).toBeVisible();
+
+    const actual = await paper.boundingBox();
+    expect(actual).not.toBeNull();
+    expect(Math.abs(actual!.width - fixture.width)).toBeLessThan(1);
+    expect(Math.abs(actual!.height - fixture.height)).toBeLessThan(1);
+
+    const panGeometry = await viewport.evaluate((element) => ({
+      clientHeight: element.clientHeight,
+      clientWidth: element.clientWidth,
+      scrollHeight: element.scrollHeight,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(panGeometry.scrollWidth).toBeGreaterThan(panGeometry.clientWidth);
+    expect(panGeometry.scrollHeight).toBeGreaterThan(panGeometry.clientHeight);
+
+    const navigation = await page
+      .getByRole("navigation", { name: "Mobile navigation" })
+      .boundingBox();
+    const actualViewport = await viewport.boundingBox();
+    expect(navigation).not.toBeNull();
+    expect(actualViewport).not.toBeNull();
+    expect(actualViewport!.y + actualViewport!.height).toBeLessThanOrEqual(
+      navigation!.y,
+    );
+
+    await page.getByRole("button", { name: "Fit whole sheet" }).click();
+    await expect(viewport).toHaveAttribute("data-mobile-view", "fit");
+    await expect
+      .poll(async () => (await paper.boundingBox())?.width ?? fixture.width)
+      .toBeLessThanOrEqual(374);
+
+    const fit = await paper.boundingBox();
+    expect(fit).not.toBeNull();
+    expect(Math.abs(fit!.width / fit!.height - fixture.ratio)).toBeLessThan(0.02);
+    expect(fit!.y + fit!.height).toBeLessThanOrEqual(navigation!.y);
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  }
+
+  await page.goto("/service?tab=farebox");
+  const fareboxPage = page
+    .locator('[data-sheet-id="farebox"][data-paper-page]')
+    .first();
+  const fareboxViewport = page.locator("[data-paper-viewport]");
+  await expect(fareboxPage).toBeVisible();
+
+  const fareboxActual = await fareboxPage.boundingBox();
+  expect(fareboxActual).not.toBeNull();
+  expect(Math.abs(fareboxActual!.width - 816)).toBeLessThan(1);
+  expect(Math.abs(fareboxActual!.height - 1056)).toBeLessThan(1);
+
+  await page.getByRole("button", { name: "Fit whole sheet" }).click();
+  await expect(fareboxViewport).toHaveAttribute("data-mobile-view", "fit");
+  await expect
+    .poll(async () => (await fareboxPage.boundingBox())?.width ?? 816)
+    .toBeLessThanOrEqual(374);
+
+  const fareboxFit = await fareboxPage.boundingBox();
+  const navigation = await page
+    .getByRole("navigation", { name: "Mobile navigation" })
+    .boundingBox();
+  const fareboxGeometry = await fareboxViewport.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(fareboxFit).not.toBeNull();
+  expect(navigation).not.toBeNull();
+  expect(Math.abs(fareboxFit!.width / fareboxFit!.height - 8.5 / 11)).toBeLessThan(
+    0.02,
+  );
+  expect(fareboxGeometry.scrollHeight).toBeGreaterThan(
+    fareboxGeometry.clientHeight,
+  );
+  const fareboxViewportBox = await fareboxViewport.boundingBox();
+  expect(fareboxViewportBox).not.toBeNull();
+  expect(fareboxFit!.y + fareboxFit!.height).toBeLessThanOrEqual(
+    fareboxViewportBox!.y + fareboxViewportBox!.height,
+  );
+  expect(fareboxViewportBox!.y + fareboxViewportBox!.height).toBeLessThanOrEqual(
+    navigation!.y,
+  );
+});
+
+test("mobile service controls stay inside the safe viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/service?tab=summary");
+
+  const pageSelector = page.getByRole("button", { name: "Service Sheets" });
+  const selectedTab = page.getByRole("radio", { name: "Flag Summary" });
+  const dateField = page.getByRole("textbox", { name: "Service sheets date" });
+  await expect(selectedTab).toBeVisible();
+  await expect(dateField).toBeVisible();
+
+  for (const control of [pageSelector, selectedTab, dateField]) {
+    const box = await control.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
+  }
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

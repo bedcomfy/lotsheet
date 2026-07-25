@@ -402,7 +402,7 @@ export default function FuelSheet({
 
       <PaperViewport
         profile={LETTER_PORTRAIT}
-        fitOnMobile
+        mobileViewer
         label={`${title} paper preview`}
         style={{ "--ffz": `${fontPx}px` } as CSSProperties}
       >

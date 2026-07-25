@@ -420,7 +420,7 @@ export default function FareboxSheet({
 
       <PaperViewport
         profile={LETTER_PORTRAIT}
-        fitOnMobile
+        mobileViewer
         label="Farebox Checks paper preview"
         className="fbx-scroll"
       >

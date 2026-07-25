@@ -88,7 +88,7 @@ export const PhoneFit: Story = {
   globals: { safeArea: "phone" },
   render: () => (
     <div className={styles.phoneFrame}>
-      <PaperViewport profile={LEGAL_PORTRAIT} fitOnMobile label="Legal paper mobile fit">
+      <PaperViewport profile={LEGAL_PORTRAIT} mobileViewer label="Legal paper mobile viewer">
         <FixturePaper profile={LEGAL_PORTRAIT} title="Turnover profile" rows={30} />
       </PaperViewport>
     </div>

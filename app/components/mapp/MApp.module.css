@@ -108,12 +108,12 @@
 
 @media (max-width: 699px) {
   .page {
-    padding-bottom: calc(4.5rem + var(--ui-safe-bottom));
+    padding-bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-3));
   }
 
   .toast {
     right: calc(var(--ui-space-3) + var(--ui-safe-right));
-    bottom: calc(5.25rem + var(--ui-safe-bottom));
+    bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-5));
     left: calc(var(--ui-space-3) + var(--ui-safe-left));
     max-width: none;
   }

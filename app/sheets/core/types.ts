@@ -55,5 +55,6 @@ export interface PaperViewportProps {
   className?: string;
   style?: React.CSSProperties;
   fitOnMobile?: boolean;
+  mobileViewer?: boolean;
   label?: string;
 }

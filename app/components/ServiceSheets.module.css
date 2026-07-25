@@ -1,7 +1,11 @@
 .page {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
   max-width: 96rem;
   margin: 0 auto;
+  overflow-x: clip;
 }
 
 .preview {
@@ -18,8 +22,14 @@
 }
 
 @media (max-width: 699px) {
-  .page {
-    padding-inline: var(--ui-space-3);
+  .dateField {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dateField > * {
+    width: 100%;
+    max-width: 100%;
   }
 }
 
