@@ -91,7 +91,10 @@ export function ResponsiveDialog({
               <X aria-hidden="true" />
             </IconButton>
           </header>
-          <div className={`${styles.body} ${bodyClassName ?? ""}`.trim()}>
+          <div
+            className={`${styles.body} ${bodyClassName ?? ""}`.trim()}
+            data-dialog-body=""
+          >
             {children}
           </div>
           {footer && (

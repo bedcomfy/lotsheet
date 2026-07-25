@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.4 - 2026-07-24
+
+- Restored vertical touch and wheel scrolling inside the full-screen Fill Rows
+  workflow while keeping its header and Done action fixed and reachable.
+- Added an app regression check that scrolls from the first Fill Rows inputs to
+  the final row on a phone-sized viewport.
+
 ## 0.18.3 - 2026-07-24
 
 - Added one shared mobile paper viewer for Fuel, DEF, Farebox, Flag Summary,

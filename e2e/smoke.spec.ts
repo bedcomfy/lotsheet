@@ -134,6 +134,20 @@ test("mobile fill rows and lot editor keep fixed actions on screen", async ({
   const fillDialog = page.getByRole("dialog", { name: "Fill Rows" });
   await expect(fillDialog).toBeVisible();
   await expect(fillDialog.getByRole("button", { name: "Done" })).toBeVisible();
+  const fillBody = fillDialog.locator("[data-dialog-body]");
+  const fillScroll = await fillBody.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return {
+      max: element.scrollHeight - element.clientHeight,
+      top: element.scrollTop,
+    };
+  });
+  expect(fillScroll.max).toBeGreaterThan(0);
+  expect(fillScroll.top).toBeGreaterThan(0);
+  await expect(
+    fillDialog.getByRole("textbox").last(),
+  ).toBeInViewport();
+  await expect(fillDialog.getByRole("button", { name: "Done" })).toBeVisible();
   await fillDialog.getByRole("button", { name: "Done" }).click();
   await expect(fillDialog).toBeHidden();
 
