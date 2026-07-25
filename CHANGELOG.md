@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.1 - 2026-07-24
+
+- Fixed the GitHub verification runner by installing the Chromium binary used
+  by Storybook interaction tests before the full verification pipeline runs.
+- Updated the checkout and Node setup actions to their Node 24-compatible
+  releases, removing the runner's deprecated Node 20 action warning.
+
 ## 0.18.0 - 2026-07-24
 
 - Rebuilt the application UI on a Pace-owned React Aria foundation with shared
