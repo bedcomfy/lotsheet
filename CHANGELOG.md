@@ -2,13 +2,13 @@
 
 ## 0.18.2 - 2026-07-24
 
-- Added a review-only service-sheet margin proposal that keeps typography and
-  top spacing unchanged while using 25% of the available left, right, and
-  bottom white margins.
-- Added current/proposed Fuel, DEF, and Farebox PDFs with persistent
-  side-by-side comparison images for approval before any production merge.
+- Expanded the Fuel and DEF tables into 25% of their former left, right, and
+  bottom white margins while preserving the existing top spacing and text size.
+- Kept normal Fuel and DEF cell text centered horizontally and vertically, with
+  flagged bus cells continuing to center the flag and bus number as one group
+  so neither value overlaps the other.
 - Updated the affected SheetKit render versions so PDF caching cannot reuse
-  pre-change service-sheet output.
+  pre-change Fuel, DEF, or combined service-sheet output.
 
 ## 0.18.1 - 2026-07-24
 

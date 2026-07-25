@@ -55,7 +55,7 @@ export const SHEET_DEFINITIONS = [
     path: "/farebox",
     stateKey: "farebox",
     dataVersion: 1,
-    renderVersion: 9,
+    renderVersion: 8,
     paper: LETTER_PORTRAIT,
     expectedPages: { min: 1, max: 10 },
     variants: ["current", "blank", "north-south"],
