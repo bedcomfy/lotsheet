@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.2 - 2026-07-24
+
+- Added a review-only service-sheet margin proposal that keeps typography and
+  top spacing unchanged while using 25% of the available left, right, and
+  bottom white margins.
+- Added current/proposed Fuel, DEF, and Farebox PDFs with persistent
+  side-by-side comparison images for approval before any production merge.
+- Updated the affected SheetKit render versions so PDF caching cannot reuse
+  pre-change service-sheet output.
+
 ## 0.18.1 - 2026-07-24
 
 - Fixed the GitHub verification runner by installing the Chromium binary used
