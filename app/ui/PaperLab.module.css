@@ -1,0 +1,95 @@
+.lab {
+  min-height: 100vh;
+  padding: 24px;
+  overflow: auto;
+  background: var(--ui-canvas);
+}
+
+.stack {
+  display: grid;
+  gap: 24px;
+  justify-content: center;
+}
+
+.paper {
+  padding: 0.35in;
+  box-shadow: var(--ui-shadow-lg);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0.45in;
+  border-bottom: 1px solid #111;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.meta {
+  color: #333;
+  font-variant-numeric: tabular-nums;
+}
+
+.table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  height: 28px;
+  padding: 4px 6px;
+  border: 1px solid #111;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table th {
+  font-weight: 600;
+  background: #f2f2f2;
+}
+
+.footer {
+  position: absolute;
+  right: 0.35in;
+  bottom: 0.25in;
+  font-variant-numeric: tabular-nums;
+}
+
+.registry {
+  width: min(100%, 880px);
+  margin: 0 auto;
+  border-collapse: collapse;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.registry th,
+.registry td {
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  text-align: left;
+}
+
+.registry th {
+  font-weight: 600;
+  background: var(--ui-surface-raised);
+}
+
+.phoneFrame {
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-canvas);
+}

@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Bus, Flag } from "lucide-react";
 import AdminGate from "./AdminGate";
+import { AppPage, PageHeader, TabBar } from "../ui";
+import styles from "./SectionShell.module.css";
 
 const TABS = [
   { id: "flags", label: "Flag Editor", icon: Flag, path: "/admin/flags" },
@@ -18,35 +20,38 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <AdminGate>
-      <main className="adminpage">
-        <section className="adminhero">
-          <div>
-            <span className="adminhero__eyebrow">Admin Tools</span>
-            <h1>Sheet Configuration</h1>
-            <p>Protected controls for the data and display rules that affect everyone using the sheets.</p>
-          </div>
-        </section>
+      <AppPage className={styles.page}>
+        <PageHeader
+          eyebrow="Admin Tools"
+          title="Sheet Configuration"
+          description="Protected controls for shared fleet data and display rules."
+        />
 
-        <nav className="admintabs" aria-label="Admin sections">
-          {TABS.map((tab) => {
+        <TabBar
+          label="Admin sections"
+          selectedKey={
+            TABS.find(
+              (tab) =>
+                pathname === tab.path ||
+                (pathname ? pathname.startsWith(`${tab.path}/`) : false),
+            )?.id ?? "flags"
+          }
+          onSelectionChange={(key) => {
+            const next = TABS.find((tab) => tab.id === key);
+            if (next) router.push(next.path);
+          }}
+          items={TABS.map((tab) => {
             const Icon = tab.icon;
-            const active = pathname === tab.path || (pathname ? pathname.startsWith(`${tab.path}/`) : false);
-            return (
-              <button
-                key={tab.id}
-                className={`admintab ${active ? "admintab--active" : ""}`}
-                onClick={() => router.push(tab.path)}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon size={17} />
-                <span>{tab.label}</span>
-              </button>
-            );
+            return {
+              id: tab.id,
+              label: tab.label,
+              icon: <Icon aria-hidden="true" />,
+            };
           })}
-        </nav>
+        />
 
         {children}
-      </main>
+      </AppPage>
     </AdminGate>
   );
 }

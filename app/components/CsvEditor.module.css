@@ -1,0 +1,30 @@
+.body {
+  display: flex;
+  min-height: 24rem;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+}
+
+.area {
+  min-height: 22rem;
+  flex: 1 1 auto;
+}
+
+.area textarea {
+  min-height: 22rem;
+  flex: 1 1 auto;
+  font-family: var(--ui-font-mono);
+  line-height: 1.5;
+}
+
+.error {
+  padding: var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  font-size: var(--ui-font-size-sm);
+}
+
+.spacer {
+  flex: 1;
+}

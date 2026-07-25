@@ -1,21 +1,40 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  AlertTriangle,
   ArrowRight,
   BusFront,
   CheckCircle2,
+  CircleAlert,
   ClipboardList,
   Flag,
+  Fuel,
   MapPinOff,
   MapPinned,
   Search,
   Warehouse,
   Wrench,
 } from "lucide-react";
-import { useLotSheet, useFlags, useBusMasterList } from "../../lib/queries";
-import { fleetStats } from "../../lib/fleetStats";
+import { useBusMasterList, useFlags, useLotSheet } from "../../lib/queries";
+import { fleetBusLocations, fleetStats } from "../../lib/fleetStats";
+import { flagsFullDisplay } from "../../lib/grid";
+import { Button } from "../../ui/Button";
+import { SearchField } from "../../ui/Field";
+import { MetricTile } from "../../ui/MetricTile";
+import { Pressable } from "../../ui/Pressable";
+import { ResponsiveDialog } from "../../ui/ResponsiveDialog";
+import { StatusBadge } from "../../ui/StatusBadge";
+import styles from "./MTonight.module.css";
+
+type DetailId =
+  | "ready"
+  | "notReady"
+  | "offProperty"
+  | "missing"
+  | "grid"
+  | "lots"
+  | "shop"
+  | "flagged";
 
 interface MTonightProps {
   onGo: (tab: string) => void;
@@ -26,100 +45,330 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
   const { data: sheetData } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const { data: masterBuses = [] } = useBusMasterList();
+  const [findBus, setFindBus] = useState("");
+  const [detailId, setDetailId] = useState<DetailId | null>(null);
   const sheet = sheetData?.sheet || null;
 
-  const fleet = useMemo(() => fleetStats(sheet, flags, masterBuses), [sheet, flags, masterBuses]);
-  const flaggedCount = useMemo(
-    () => Object.entries(flags).filter(([bus, entry]) =>
-      fleet.activeFleet.has(bus) && ((entry.flags || []).length > 0 || entry.note)
-    ).length,
-    [flags, fleet.activeFleet]
+  const fleet = useMemo(
+    () => fleetStats(sheet, flags, masterBuses),
+    [sheet, flags, masterBuses],
+  );
+  const locations = useMemo(
+    () => fleetBusLocations(sheet, flags),
+    [sheet, flags],
+  );
+  const flagged = useMemo(
+    () =>
+      Object.entries(flags)
+        .filter(
+          ([bus, entry]) =>
+            fleet.activeFleet.has(bus) &&
+            ((entry.flags || []).length > 0 || entry.note),
+        )
+        .map(([bus]) => bus)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    [flags, fleet.activeFleet],
   );
 
-  const locations = [
-    { label: "On grid", value: fleet.onGrid.size, icon: ClipboardList, tone: "blue" },
-    { label: "In lots", value: fleet.inLots.size, icon: MapPinned, tone: "amber" },
-    { label: "In shop", value: fleet.inShop.size, icon: Wrench, tone: "purple" },
-    { label: "Off property", value: fleet.offProperty.size, icon: Warehouse, tone: "slate" },
+  const detail = useMemo(() => {
+    if (!detailId) return null;
+    const sorted = (buses: Iterable<string>) =>
+      [...buses].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true }),
+      );
+    const details: Record<
+      DetailId,
+      { title: string; description: string; buses: string[] }
+    > = {
+      ready: {
+        title: "Usable buses",
+        description: "Active buses currently placed on the service grid.",
+        buses: sorted(fleet.readyForService),
+      },
+      notReady: {
+        title: "Out of service",
+        description: "Active buses currently in a lot or shop area.",
+        buses: sorted(fleet.notReadyForService),
+      },
+      offProperty: {
+        title: "Off property",
+        description: "Tracked separately from service readiness.",
+        buses: sorted(fleet.offProperty),
+      },
+      missing: {
+        title: "Missing buses",
+        description: "Active buses without a current recorded location.",
+        buses: fleet.missing,
+      },
+      grid: {
+        title: "On the grid",
+        description: "Buses placed on the Lot Sheet service grid.",
+        buses: sorted(fleet.onGrid),
+      },
+      lots: {
+        title: "In the lots",
+        description: "Buses in North Lot, East Lot, or Fence.",
+        buses: sorted(fleet.inLots),
+      },
+      shop: {
+        title: "In the shop",
+        description: "Buses in Apron, Bays, or Cards.",
+        buses: sorted(fleet.inShop),
+      },
+      flagged: {
+        title: "Flagged buses",
+        description: "Active buses with an open maintenance flag or note.",
+        buses: flagged,
+      },
+    };
+    return details[detailId];
+  }, [detailId, flagged, fleet]);
+
+  function openSearchResult() {
+    if (!findBus) return;
+    onOpenBus(findBus);
+  }
+
+  const placement = [
+    {
+      id: "grid" as const,
+      label: "On grid",
+      detail: "Ready",
+      value: fleet.onGrid.size,
+      icon: ClipboardList,
+      tone: "accent" as const,
+    },
+    {
+      id: "lots" as const,
+      label: "In lots",
+      detail: "North, East, Fence",
+      value: fleet.inLots.size,
+      icon: MapPinned,
+      tone: "warning" as const,
+    },
+    {
+      id: "shop" as const,
+      label: "In shop",
+      detail: "Apron, Bays, Cards",
+      value: fleet.inShop.size,
+      icon: Wrench,
+      tone: "info" as const,
+    },
+    {
+      id: "offProperty" as const,
+      label: "Off property",
+      detail: "Away from garage",
+      value: fleet.offProperty.size,
+      icon: Warehouse,
+      tone: "neutral" as const,
+    },
   ];
 
   return (
-    <div className="mtonight">
-      <section className="mtonight__hero">
-        <span className="mtonight__eyebrow"><i /> Live operations</span>
-        <h1>Maintenance Logistics</h1>
-        <p>Fleet readiness and garage placement, updated from the working sheets.</p>
+    <div className={styles.dashboard}>
+      <section className={styles.hero}>
+        <StatusBadge className={styles.liveBadge} tone="success" size="sm">
+          Live operations
+        </StatusBadge>
+        <div className={styles.heroCopy}>
+          <h1>Maintenance Logistics</h1>
+          <p>Tonight&apos;s fleet readiness and garage placement.</p>
+        </div>
       </section>
 
-      <section className="mstats" aria-label="Service readiness">
-        <div className="mstat mstat--ok">
-          <span className="mstat__icon"><CheckCircle2 size={20} /></span>
-          <b>{fleet.readyForService.size}</b>
-          <span>Usable</span>
+      <section className={styles.primaryAction} aria-label="Continue working">
+        <div>
+          <span>Working sheet</span>
+          <strong>Continue Lot Sheet</strong>
+          <small>Place buses, update rows, and manage flags</small>
         </div>
-        <div className="mstat mstat--bad">
-          <span className="mstat__icon"><AlertTriangle size={20} /></span>
-          <b>{fleet.notReadyForService.size}</b>
-          <span>Out of service</span>
+        <Button variant="primary" onPress={() => onGo("lot")}>
+          Open
+          <ArrowRight aria-hidden="true" />
+        </Button>
+      </section>
+
+      <section className={styles.searchPanel} aria-label="Find a bus">
+        <SearchField
+          label="Find a bus"
+          value={findBus}
+          inputMode="numeric"
+          placeholder="Enter bus number"
+          onChange={(value) =>
+            setFindBus(value.replace(/\D/g, "").slice(0, 5))
+          }
+          onKeyDown={(event) => {
+            if (event.key === "Enter") openSearchResult();
+          }}
+        />
+        <Button
+          aria-label="Open bus"
+          isDisabled={!findBus}
+          onPress={openSearchResult}
+        >
+          <Search aria-hidden="true" />
+          Open
+        </Button>
+      </section>
+
+      <div className={styles.sectionHeading}>
+        <div>
+          <span>Service readiness</span>
+          <small>Updated from the live Lot Sheet</small>
         </div>
-        <div className="mstat mstat--off">
-          <span className="mstat__icon"><MapPinOff size={20} /></span>
-          <b>{fleet.offProperty.size}</b>
-          <span>Off property</span>
-        </div>
+      </div>
+      <section className={styles.readiness} aria-label="Service readiness">
+        <MetricTile
+          className={styles.readinessTile}
+          label="Usable"
+          value={fleet.readyForService.size}
+          detail="Ready for service"
+          icon={<CheckCircle2 />}
+          tone="success"
+          onPress={() => setDetailId("ready")}
+          aria-haspopup="dialog"
+        />
+        <MetricTile
+          className={styles.readinessTile}
+          label="Out of service"
+          value={fleet.notReadyForService.size}
+          detail="In lots or shop"
+          icon={<CircleAlert />}
+          tone="warning"
+          onPress={() => setDetailId("notReady")}
+          aria-haspopup="dialog"
+        />
+        <MetricTile
+          className={`${styles.readinessTile} ${styles.offPropertyTile}`}
+          label="Off property"
+          value={fleet.offProperty.size}
+          detail="Tracked outside readiness"
+          icon={<MapPinOff />}
+          tone="info"
+          onPress={() => setDetailId("offProperty")}
+          aria-haspopup="dialog"
+        />
       </section>
 
       {fleet.missing.length > 0 && (
-        <button type="button" className="mbanner" onClick={() => onOpenBus(fleet.missing[0])}>
-          <span className="mbanner__icon"><AlertTriangle size={18} /></span>
-          <span className="mbanner__copy">
-            <b>{fleet.missing.length} missing buses</b>
-            <small>{fleet.missing.slice(0, 4).join(", ")}{fleet.missing.length > 4 ? " and more" : ""}</small>
+        <Pressable
+          className={styles.alert}
+          onPress={() => setDetailId("missing")}
+        >
+          <span className={styles.alertIcon}>
+            <CircleAlert aria-hidden="true" />
           </span>
-          <ArrowRight size={18} />
-        </button>
+          <span>
+            <strong>{fleet.missing.length} missing buses</strong>
+            <small>
+              {fleet.missing.slice(0, 4).join(", ")}
+              {fleet.missing.length > 4 ? " and more" : ""}
+            </small>
+          </span>
+          <ArrowRight aria-hidden="true" />
+        </Pressable>
       )}
 
-      <div className="mapp__sec">Fleet placement</div>
-      <section className="mlocations">
-        {locations.map((item) => {
+      <div className={styles.sectionHeading}>
+        <div>
+          <span>Fleet placement</span>
+          <small>Tap a group to see its buses</small>
+        </div>
+      </div>
+      <section className={styles.placement} aria-label="Fleet placement">
+        {placement.map((item) => {
           const Icon = item.icon;
           return (
-            <div className={`mlocation mlocation--${item.tone}`} key={item.label}>
-              <span><Icon size={17} /></span>
-              <b>{item.value}</b>
-              <small>{item.label}</small>
-            </div>
+            <MetricTile
+              className={styles.placementTile}
+              key={item.id}
+              label={item.label}
+              value={item.value}
+              detail={item.detail}
+              icon={<Icon />}
+              tone={item.tone}
+              onPress={() => setDetailId(item.id)}
+              aria-haspopup="dialog"
+            />
           );
         })}
       </section>
 
-      <section className="mnotice">
-        <span><Flag size={17} /></span>
-        <div><strong>{flaggedCount} flagged buses</strong><small>Open maintenance items</small></div>
-        <ArrowRight size={17} />
+      <Pressable
+        className={styles.flagged}
+        onPress={() => setDetailId("flagged")}
+      >
+        <span className={styles.flaggedIcon}>
+          <Flag aria-hidden="true" />
+        </span>
+        <span>
+          <strong>{flagged.length} flagged buses</strong>
+          <small>Review open maintenance items</small>
+        </span>
+        <ArrowRight aria-hidden="true" />
+      </Pressable>
+
+      <div className={styles.sectionHeading}>
+        <div>
+          <span>Quick actions</span>
+          <small>Common work, one tap away</small>
+        </div>
+      </div>
+      <section className={styles.quickActions} aria-label="Quick actions">
+        <Button fullWidth onPress={() => onGo("buses")}>
+          <BusFront aria-hidden="true" />
+          Find a Bus
+        </Button>
+        <Button fullWidth onPress={() => onGo("service")}>
+          <Fuel aria-hidden="true" />
+          Service Sheets
+        </Button>
       </section>
 
-      <div className="mapp__sec">Quick actions</div>
-      <section className="mquick">
-        <button type="button" className="mquickbtn mquickbtn--hot" onClick={() => onGo("lot")}>
-          <span className="mquickbtn__icon"><ClipboardList size={21} /></span>
-          <strong>Open Lot Sheet</strong>
-          <small>Place buses and update rows</small>
-          <ArrowRight size={16} />
-        </button>
-        <button type="button" className="mquickbtn" onClick={() => onGo("buses")}>
-          <span className="mquickbtn__icon"><Search size={21} /></span>
-          <strong>Find a Bus</strong>
-          <small>Location, model, and flags</small>
-          <ArrowRight size={16} />
-        </button>
-      </section>
+      <footer className={styles.sync}>
+        <span aria-hidden="true" />
+        Connected to the live Pace Northwest sheets
+      </footer>
 
-      <section className="mtonight__sync">
-        <BusFront size={15} />
-        <span>Connected to the live Pace Northwest sheets</span>
-      </section>
+      <ResponsiveDialog
+        isOpen={Boolean(detail)}
+        onOpenChange={(open) => {
+          if (!open) setDetailId(null);
+        }}
+        title={detail?.title || ""}
+        description={detail?.description}
+      >
+        <div className={styles.dialogSummary}>
+          <strong>{detail?.buses.length || 0}</strong>
+          <span>bus{detail?.buses.length === 1 ? "" : "es"}</span>
+        </div>
+        <div className={styles.busList}>
+          {detail?.buses.length === 0 && (
+            <p className={styles.empty}>No buses in this group.</p>
+          )}
+          {detail?.buses.map((bus) => {
+            const flagText = flags[bus] ? flagsFullDisplay(flags[bus]) : "";
+            const where =
+              detailId === "missing"
+                ? "No current location"
+                : (locations[bus] || ["No current location"]).join(" / ");
+            return (
+              <Pressable
+                className={styles.busRow}
+                key={bus}
+                onPress={() => onOpenBus(bus)}
+              >
+                <span>
+                  <strong>{bus}</strong>
+                  <small>{where}</small>
+                  {flagText && <em>{flagText}</em>}
+                </span>
+                <ArrowRight aria-hidden="true" />
+              </Pressable>
+            );
+          })}
+        </div>
+      </ResponsiveDialog>
     </div>
   );
 }

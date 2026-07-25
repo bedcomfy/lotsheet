@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Lock, Plus, RotateCcw, Save, Search, Trash2, X } from "lucide-react";
+import { Check, Lock, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import type { Employee } from "../lib/types";
 import { employeeFullName } from "../lib/types";
 import { DAYS, STAFF_ROLES, type PickBreak, type PickRow, type PickShift, type WorkPick } from "../lib/staffing";
@@ -11,6 +11,18 @@ import { useAdminUnlock } from "../lib/useAdminUnlock";
 import AdminUnlockButton from "./AdminUnlockButton";
 import EmployeeInput from "./EmployeeInput";
 import { SkeletonRows } from "./Skeleton";
+import {
+  Button,
+  Chip,
+  ConfirmDialog,
+  IconButton,
+  Panel,
+  SearchField,
+  SelectField,
+  StatusBadge,
+  TextField,
+} from "../ui";
+import styles from "./WorkPickPage.module.css";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -41,6 +53,7 @@ export default function WorkPickPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [search, setSearch] = useState("");
+  const [resetOpen, setResetOpen] = useState(false);
   const shiftsRef = useRef<HTMLDivElement>(null);
 
   // Employees are read-only here (autocomplete + strike-through), so read them
@@ -66,7 +79,7 @@ export default function WorkPickPage() {
   // Bring the first highlighted spot into view when the search changes.
   useEffect(() => {
     if (!search.trim()) return;
-    const el = shiftsRef.current?.querySelector(".picktable__row--match, .pickedit__row--match");
+    const el = shiftsRef.current?.querySelector('[data-work-pick-match="true"]');
     if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [search]);
 
@@ -114,16 +127,15 @@ export default function WorkPickPage() {
     if (res && res.ok) setSaved(true);
   }
   function resetToSeed() {
-    if (!confirm("Replace the current pick with the built-in schedule? Unsaved changes will be lost.")) return;
     setSaved(false);
     setPick(structuredClone(WORK_PICK_SEED));
   }
 
   if (!loaded || !pick) {
     return (
-      <section className="adminpanel">
+      <Panel bodyClassName={styles.loading}>
         <SkeletonRows rows={5} />
-      </section>
+      </Panel>
     );
   }
 
@@ -155,226 +167,269 @@ export default function WorkPickPage() {
     : 0;
 
   return (
-    <section className="adminpanel">
-      <div className="adminpanel__head">
-        <div>
-          <h2>Work Pick</h2>
-          <p>
-            {unlocked ? (
-              <>Editing the shared work pick. This is what Home reads for “Available Now”.</>
-            ) : (
-              <>Effective <strong>{fmtDate(pick.effective)}</strong>. Highlighted days are worked; “OFF” days are off.</>
-            )}
-          </p>
-        </div>
-        <div className="adminpanel__actions">
-          {unlocked ? (
-            <>
-              {saved && <span className="adminflag__saved"><Check size={15} /> Saved</span>}
-              <button className="btn" onClick={lock} title="Lock editing">
-                <Lock size={15} /> Done
-              </button>
-              <button className="btn" onClick={resetToSeed} title="Reload the built-in schedule">
-                <RotateCcw size={15} /> Reset
-              </button>
-              <button className="btn btn--primary" onClick={save} disabled={saving}>
-                {saving ? "Saving…" : <><Save size={16} /> Save pick</>}
-              </button>
-            </>
-          ) : (
-            <AdminUnlockButton onSubmit={tryUnlock} label="Edit pick" />
-          )}
-        </div>
-      </div>
-
-      <div className="picksearch">
-        <Search size={16} className="picksearch__icon" />
-        <input
-          className="manager__search"
-          placeholder="Find an employee on the pick…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        {search && (
+    <Panel
+      className={styles.panel}
+      bodyClassName={styles.body}
+      title="Work Pick"
+      description={
+        unlocked
+          ? "Editing the shared work pick. Home reads this schedule for Available Now."
+          : `Effective ${fmtDate(pick.effective)}. Highlighted days are worked; OFF days are off.`
+      }
+      actions={
+        unlocked ? (
           <>
-            <span className="picksearch__count">{matchCount} {matchCount === 1 ? "match" : "matches"}</span>
-            <button className="picksearch__clear" onClick={() => setSearch("")} aria-label="Clear search" title="Clear">
-              <X size={15} />
-            </button>
+            {saved && (
+              <StatusBadge tone="success">
+                <Check aria-hidden="true" /> Saved
+              </StatusBadge>
+            )}
+            <Button onPress={lock}>
+              <Lock aria-hidden="true" /> Done
+            </Button>
+            <Button onPress={() => setResetOpen(true)}>
+              <RotateCcw aria-hidden="true" /> Reset
+            </Button>
+            <Button variant="primary" onPress={save} isDisabled={saving}>
+              <Save aria-hidden="true" /> {saving ? "Saving..." : "Save pick"}
+            </Button>
           </>
-        )}
-      </div>
+        ) : (
+          <AdminUnlockButton onSubmit={tryUnlock} label="Edit pick" />
+        )
+      }
+    >
+      <div className={styles.controls}>
+        <SearchField
+          className={styles.search}
+          label="Find an employee"
+          labelHidden
+          placeholder="Find an employee on the pick"
+          value={search}
+          onChange={setSearch}
+          description={
+            search
+              ? `${matchCount} ${matchCount === 1 ? "match" : "matches"}`
+              : "Highlights matching names and badge numbers"
+          }
+        />
 
       {unlocked && (
-        <label className="pickeff">
-          <span>Effective date</span>
-          <input
+          <TextField
+            className={styles.effective}
+            label="Effective date"
             type="date"
             value={pick.effective}
-            onChange={(e) => edit((p) => { p.effective = e.target.value; return p; })}
+            onChange={(value) =>
+              edit((p) => {
+                p.effective = value;
+                return p;
+              })
+            }
           />
-        </label>
       )}
+      </div>
 
-      <div className="pickshifts" ref={shiftsRef}>
+      <div className={styles.shifts} ref={shiftsRef}>
         {pick.shifts.map((shift, si) => (
-          <div className="pickshift" key={shift.id}>
-            <div className="pickshift__head">
+          <section className={styles.shift} key={shift.id}>
+            <div className={styles.shiftHead}>
               {unlocked ? (
-                <div className="pickshift__edithead">
-                  <input
-                    className="pickshift__name"
+                <div className={styles.shiftEditHead}>
+                  <TextField
+                    className={styles.shiftName}
+                    label="Shift name"
+                    labelHidden
                     value={shift.name}
-                    onChange={(e) => editShift(si, (s) => { s.name = e.target.value; })}
+                    onChange={(value) => editShift(si, (s) => { s.name = value; })}
                   />
-                  <span className="pickshift__times">
-                    <input type="time" value={shift.start} onChange={(e) => editShift(si, (s) => { s.start = e.target.value; })} />
+                  <span className={styles.shiftTimes}>
+                    <TextField
+                      className={styles.timeField}
+                      label="Shift start"
+                      labelHidden
+                      type="time"
+                      value={shift.start}
+                      onChange={(value) => editShift(si, (s) => { s.start = value; })}
+                    />
                     <span>–</span>
-                    <input type="time" value={shift.end} onChange={(e) => editShift(si, (s) => { s.end = e.target.value; })} />
+                    <TextField
+                      className={styles.timeField}
+                      label="Shift end"
+                      labelHidden
+                      type="time"
+                      value={shift.end}
+                      onChange={(value) => editShift(si, (s) => { s.end = value; })}
+                    />
                   </span>
-                  <button
-                    className="lotitem__del"
-                    title="Remove shift"
-                    onClick={() => edit((p) => { p.shifts.splice(si, 1); return p; })}
+                  <IconButton
+                    variant="danger"
+                    aria-label={`Remove ${shift.name}`}
+                    onPress={() => edit((p) => { p.shifts.splice(si, 1); return p; })}
                   >
-                    <Trash2 size={15} />
-                  </button>
+                    <Trash2 aria-hidden="true" />
+                  </IconButton>
                 </div>
               ) : (
                 <>
                   <h3>{shift.name}</h3>
-                  <span className="pickshift__times">{shift.start} – {shift.end}</span>
+                  <span className={styles.shiftTimes}>{shift.start} – {shift.end}</span>
                 </>
               )}
             </div>
 
             {!unlocked ? (
-              <div className="picktable" role="table">
-                <div className="picktable__head" role="row">
-                  <span className="picktable__role">Role</span>
-                  <span className="picktable__name">Employee</span>
-                  {DAYS.map((d) => <span className="pickday" key={d.key}>{d.short}</span>)}
-                  <span className="picktable__off">Off days</span>
+              <div className={styles.pickTable} role="table">
+                <div className={styles.tableHead} role="row">
+                  <span className={styles.tableRole}>Role</span>
+                  <span className={styles.tableName}>Employee</span>
+                  {DAYS.map((d) => <span className={styles.pickDay} key={d.key}>{d.short}</span>)}
+                  <span className={styles.tableOff}>Off days</span>
                 </div>
-                {shift.rows.length === 0 && <div className="lotlist__empty">No one on this shift.</div>}
+                {shift.rows.length === 0 && <div className={styles.empty}>No one on this shift.</div>}
                 {shift.rows.map((row) => {
                   const outReason = row.employeeId ? unavailableById.get(row.employeeId) : undefined;
                   return (
-                  <div className={`picktable__row ${rowMatches(row) ? "picktable__row--match" : ""}`} role="row" key={row.id}>
-                    <span className="picktable__role" data-label="Role">{row.role}</span>
-                    <span className="picktable__name" data-label="Employee">
-                      <span className={outReason ? "picktable__name--out" : ""}>{row.name || "—"}</span>
-                      {outReason && <span className="pickout">{outReason}</span>}
+                  <div className={styles.tableRow} data-work-pick-match={rowMatches(row) || undefined} role="row" key={row.id}>
+                    <span className={styles.tableRole} data-label="Role">{row.role}</span>
+                    <span className={styles.tableName} data-label="Employee">
+                      <span className={outReason ? styles.nameOut : undefined}>{row.name || "—"}</span>
+                      {outReason && <StatusBadge tone="warning">{outReason}</StatusBadge>}
                     </span>
                     {DAYS.map((d, idx) => {
                       const off = (row.offDays || []).includes(idx);
                       return (
-                        <span className={`pickday ${off ? "pickday--off" : "pickday--on"}`} key={d.key} title={`${d.long}: ${off ? "Off" : "Working"}`}>
+                        <span className={`${styles.pickDay} ${off ? styles.pickDayOff : styles.pickDayOn}`} key={d.key} title={`${d.long}: ${off ? "Off" : "Working"}`}>
                           {off ? "OFF" : "•"}
                         </span>
                       );
                     })}
-                    <span className="picktable__off" data-label="Off days">{offLabel(row.offDays || [])}</span>
+                    <span className={styles.tableOff} data-label="Off days">{offLabel(row.offDays || [])}</span>
                   </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="pickedit">
+              <div className={styles.pickEdit}>
                 {shift.rows.map((row, ri) => (
-                  <div className={`pickedit__row ${rowMatches(row) ? "pickedit__row--match" : ""}`} key={row.id}>
-                    <select
-                      className="pickedit__role"
-                      value={row.role}
-                      onChange={(e) => editShift(si, (s) => { s.rows[ri].role = e.target.value; })}
-                    >
-                      {STAFF_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                      {!STAFF_ROLES.includes(row.role) && <option value={row.role}>{row.role}</option>}
-                    </select>
+                  <div className={styles.editRow} data-work-pick-match={rowMatches(row) || undefined} key={row.id}>
+                    <SelectField
+                      className={styles.editRole}
+                      label="Role"
+                      selectedKey={row.role}
+                      options={[
+                        ...STAFF_ROLES.map((role) => ({ id: role, label: role })),
+                        ...(!STAFF_ROLES.includes(row.role) ? [{ id: row.role, label: row.role }] : []),
+                      ]}
+                      onSelectionChange={(key) => editShift(si, (s) => { s.rows[ri].role = String(key); })}
+                    />
                     <EmployeeInput
-                      className="pickedit__name"
+                      className={styles.editName}
                       value={row.name}
                       employees={employees}
                       placeholder="Employee"
                       onChange={(v) => setRowName(si, ri, v)}
                     />
-                    <div className="pickedit__days" role="group" aria-label="Working days">
+                    <div className={styles.editDays} role="group" aria-label="Working days">
                       {DAYS.map((d, idx) => {
                         const off = (row.offDays || []).includes(idx);
                         return (
-                          <button
+                          <Chip
                             type="button"
                             key={d.key}
-                            className={`pickdaybtn ${off ? "pickdaybtn--off" : "pickdaybtn--on"}`}
-                            onClick={() => toggleOff(si, ri, idx)}
-                            title={`${d.long}: ${off ? "Off (tap to work)" : "Working (tap for off)"}`}
+                            className={styles.dayChip}
+                            isSelected={!off}
+                            tone={off ? "neutral" : "accent"}
+                            onPress={() => toggleOff(si, ri, idx)}
+                            aria-label={`${d.long}: ${off ? "Off. Set to working." : "Working. Set to off."}`}
                           >
                             {d.short}
-                          </button>
+                          </Chip>
                         );
                       })}
                     </div>
-                    <button
-                      className="lotitem__del"
-                      title="Remove row"
-                      onClick={() => editShift(si, (s) => { s.rows.splice(ri, 1); })}
+                    <IconButton
+                      variant="danger"
+                      aria-label={`Remove ${row.name || "person"}`}
+                      onPress={() => editShift(si, (s) => { s.rows.splice(ri, 1); })}
                     >
-                      <Trash2 size={15} />
-                    </button>
+                      <Trash2 aria-hidden="true" />
+                    </IconButton>
                   </div>
                 ))}
-                <button className="btn btn--small" onClick={() => editShift(si, (s) => { s.rows.push(blankRow()); })}>
-                  <Plus size={14} /> Add person
-                </button>
+                <Button size="sm" onPress={() => editShift(si, (s) => { s.rows.push(blankRow()); })}>
+                  <Plus aria-hidden="true" /> Add person
+                </Button>
               </div>
             )}
 
             {shift.breaks.length > 0 && !unlocked && (
-              <div className="pickbreaks">
+              <div className={styles.breaks}>
                 {shift.breaks.map((b, bi) => (
-                  <span className="pickbreak" key={bi}><strong>{b.label}</strong> {b.time}</span>
+                  <span className={styles.break} key={bi}><strong>{b.label}</strong> {b.time}</span>
                 ))}
               </div>
             )}
 
             {unlocked && (
-              <div className="pickbreaks pickbreaks--edit">
+              <div className={`${styles.breaks} ${styles.breaksEdit}`}>
                 {shift.breaks.map((b, bi) => (
-                  <span className="pickbreak pickbreak--edit" key={bi}>
-                    <input
+                  <span className={styles.breakEdit} key={bi}>
+                    <TextField
+                      className={styles.breakLabel}
+                      label="Break label"
+                      labelHidden
                       value={b.label}
                       placeholder="Break"
-                      onChange={(e) => editShift(si, (s) => { s.breaks[bi].label = e.target.value; })}
+                      onChange={(value) => editShift(si, (s) => { s.breaks[bi].label = value; })}
                     />
-                    <input
+                    <TextField
+                      className={styles.breakTime}
+                      label="Break time"
+                      labelHidden
                       value={b.time}
                       placeholder="00:00 - 00:00"
-                      onChange={(e) => editShift(si, (s) => { s.breaks[bi].time = e.target.value; })}
+                      onChange={(value) => editShift(si, (s) => { s.breaks[bi].time = value; })}
                     />
-                    <button className="lotitem__del" title="Remove break" onClick={() => editShift(si, (s) => { s.breaks.splice(bi, 1); })}>
-                      <Trash2 size={13} />
-                    </button>
+                    <IconButton
+                      size="sm"
+                      variant="danger"
+                      aria-label={`Remove ${b.label || "break"}`}
+                      onPress={() => editShift(si, (s) => { s.breaks.splice(bi, 1); })}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </IconButton>
                   </span>
                 ))}
-                <button
-                  className="btn btn--small"
-                  onClick={() => editShift(si, (s) => { s.breaks.push({ label: "Break", time: "" } as PickBreak); })}
+                <Button
+                  size="sm"
+                  onPress={() => editShift(si, (s) => { s.breaks.push({ label: "Break", time: "" } as PickBreak); })}
                 >
-                  <Plus size={14} /> Add break
-                </button>
+                  <Plus aria-hidden="true" /> Add break
+                </Button>
               </div>
             )}
-          </div>
+          </section>
         ))}
       </div>
 
       {unlocked && (
-        <div className="emplist__foot">
-          <button className="btn" onClick={() => edit((p) => { p.shifts.push(blankShift()); return p; })}>
-            <Plus size={16} /> Add shift
-          </button>
+        <div className={styles.foot}>
+          <Button onPress={() => edit((p) => { p.shifts.push(blankShift()); return p; })}>
+            <Plus aria-hidden="true" /> Add shift
+          </Button>
         </div>
       )}
-    </section>
+
+      <ConfirmDialog
+        isOpen={resetOpen}
+        onOpenChange={setResetOpen}
+        title="Reset the work pick?"
+        description="This replaces the current draft with the built-in schedule. Unsaved changes will be lost."
+        confirmLabel="Reset schedule"
+        tone="danger"
+        onConfirm={resetToSeed}
+      />
+    </Panel>
   );
 }

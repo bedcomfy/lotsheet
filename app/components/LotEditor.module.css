@@ -1,0 +1,233 @@
+.body {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-3);
+}
+
+.addRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--ui-space-2);
+}
+
+.input {
+  min-width: 0;
+}
+
+.warning {
+  display: grid;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-warning-soft);
+  font-size: var(--ui-font-size-sm);
+}
+
+.warningActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.recent {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.recentLabel {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-medium);
+}
+
+.recentChip {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  cursor: pointer;
+}
+
+.recentChip:hover {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+}
+
+.list {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.empty {
+  padding: var(--ui-space-8) var(--ui-space-4);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  min-width: 0;
+  min-height: 3.75rem;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    box-shadow var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.rowDragging {
+  z-index: 2;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-shadow-lg);
+}
+
+.grip,
+.move,
+.remove {
+  display: inline-grid;
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.grip {
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip:hover,
+.move:hover {
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+}
+
+.remove:hover {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.grip:focus-visible,
+.move:focus-visible,
+.remove:focus-visible,
+.flags:focus-visible,
+.recentChip:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.move:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.rowInfo {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.index {
+  min-width: 1.5rem;
+  color: var(--ui-text-subtle);
+  font-size: var(--ui-font-size-xs);
+  text-align: right;
+}
+
+.bus {
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.flags {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 12rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-1);
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flags:hover {
+  background: var(--ui-surface-hover);
+}
+
+.addFlags {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-medium);
+}
+
+.flagPills {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+}
+
+.rowActions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+@media (max-width: 480px) {
+  .addRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .addRow > button {
+    width: 100%;
+  }
+
+  .row {
+    align-items: flex-start;
+  }
+
+  .rowActions {
+    flex-direction: column;
+  }
+
+  .index {
+    display: none;
+  }
+}

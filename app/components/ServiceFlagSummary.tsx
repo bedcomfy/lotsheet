@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { fuelFlagSections } from "../lib/grid";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
+import { PaperViewport } from "../sheets/core";
+import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 
 function param(name: string): string | null {
   if (typeof window === "undefined") return null;
@@ -28,8 +30,18 @@ export default function ServiceFlagSummary({ dateOverride = "", onReady }: Servi
 
   return (
     <div className="app service-summary">
-      <div className="sheet-scroll fuelsum-scroll">
-        <div className="sheet fuel-sheet fuelsum fuel-sheet--flags">
+      <PaperViewport
+        profile={LETTER_PORTRAIT}
+        fitOnMobile
+        label="Service Lane paper preview"
+        className="fuelsum-scroll"
+      >
+        <div
+          className="sheet fuel-sheet fuelsum fuel-sheet--flags"
+          data-paper-page=""
+          data-paper-profile="letter-portrait"
+          data-sheet-id="service-summary"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="sheet-brand-logo" src="/logo.png" alt="Pace" />
           <div className="fuelsum__head">
@@ -56,7 +68,7 @@ export default function ServiceFlagSummary({ dateOverride = "", onReady }: Servi
             <div className="fuelsum__empty">No active service-lane items.</div>
           )}
         </div>
-      </div>
+      </PaperViewport>
     </div>
   );
 }

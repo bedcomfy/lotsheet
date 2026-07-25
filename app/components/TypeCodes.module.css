@@ -1,0 +1,32 @@
+.codes {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-semibold);
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.separator {
+  color: var(--ui-text-subtle);
+  font-weight: var(--ui-weight-regular);
+}
+
+.badge {
+  color: color-mix(
+    in srgb,
+    var(--type-color, var(--ui-accent)) 52%,
+    var(--ui-text)
+  );
+  font: inherit;
+}

@@ -5,9 +5,8 @@ import type { CSSProperties } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator } from "../lib/grid";
-import { Flag, History, Eraser, FileDown, FileText } from "lucide-react";
+import { Flag, History, Eraser, FileDown, FileText, MoreHorizontal } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
-import ToolMenu from "./ToolMenu";
 import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
@@ -15,6 +14,10 @@ import { chicagoDateShort } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap } from "../lib/types";
+import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
+import { PaperViewport } from "../sheets/core";
+import { LETTER_PORTRAIT } from "../sheets/core/profiles";
+import chromeStyles from "./SheetChrome.module.css";
 
 const FONT_DEFAULT = 16;
 const FONT_MIN = 8;
@@ -122,6 +125,7 @@ export default function FuelSheet({
   const qc = useQueryClient();
   const [managerOpen, setManagerOpen] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dataRef = useRef<FuelData>(data);
@@ -245,7 +249,6 @@ export default function FuelSheet({
     }).catch(() => {});
   }
   async function clearAll() {
-    if (!window.confirm("Clear this whole sheet? The current one is saved to Prev Sheets first.")) return;
     await archiveCurrent();
     setData(emptyData());
   }
@@ -359,43 +362,58 @@ export default function FuelSheet({
   }
 
   return (
-    <div className="app">
-      {!embedded && <div className="toolbar no-print">
-        <div className="toolbar__title">{title}</div>
+    <div className={chromeStyles.page}>
+      {!embedded && <Toolbar className={`${chromeStyles.toolbar} no-print`}>
+        <div className={chromeStyles.title}>{title}</div>
         <DatePickerField
-          className="toolbar__date"
+          className={chromeStyles.date}
           value={data.date || displayDate}
           onValueChange={(value) => setField("date", value)}
           shortYear
           ariaLabel={`${title} date`}
+          variant="ui"
         />
-        <div className="toolbar__spacer" />
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-        </span>
-        <button className="btn" onClick={() => setManagerOpen(true)}>
-          <Flag size={16} /> Edit Flags
-        </button>
-        <ToolMenu>
-          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
-            <History size={16} /> Prev Sheets
-          </button>
-          <div className="toolmenu__sep" />
-          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
-            <Eraser size={16} /> Clear sheet
-          </button>
-        </ToolMenu>
-        <button className="btn" onClick={printBlank} title="Print a blank form">
-          <FileText size={16} /> Print Blank
-        </button>
-        <button className="btn btn--primary" onClick={printPdf} title={laneCopies ? "Prints an N-circled copy and an S-circled copy, with flags" : "Prints with flags"}>
-          <FileDown size={16} /> Print PDF
-        </button>
-      </div>}
+        <ToolbarGroup className={chromeStyles.actions}>
+          <span className={chromeStyles.saved}>
+            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
+          </span>
+          <Button onPress={() => setManagerOpen(true)}>
+            <Flag aria-hidden="true" /> Edit Flags
+          </Button>
+          <ActionMenu
+            label={<><MoreHorizontal size={16} /> More</>}
+            items={[
+              { id: "history", label: "Previous sheets", icon: <History size={16} /> },
+              { id: "clear", label: "Clear sheet", icon: <Eraser size={16} />, tone: "danger" },
+            ]}
+            onAction={(key) => {
+              if (key === "history") setPrevOpen(true);
+              if (key === "clear") setClearOpen(true);
+            }}
+          />
+          <Button onPress={printBlank}>
+            <FileText aria-hidden="true" /> Print Blank
+          </Button>
+          <Button variant="primary" onPress={printPdf}>
+            <FileDown aria-hidden="true" /> Print PDF
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>}
 
-      <div className="sheet-scroll" style={{ "--ffz": `${fontPx}px` } as CSSProperties}>
+      <PaperViewport
+        profile={LETTER_PORTRAIT}
+        fitOnMobile
+        label={`${title} paper preview`}
+        style={{ "--ffz": `${fontPx}px` } as CSSProperties}
+      >
         {lanes.map((lane) => (
-          <div className={`sheet fuel-sheet ${flagsEnabled ? "fuel-sheet--flags" : ""}`} key={lane ?? "x"}>
+          <div
+            className={`sheet fuel-sheet ${flagsEnabled ? "fuel-sheet--flags" : ""}`}
+            key={lane ?? "x"}
+            data-paper-page=""
+            data-paper-profile="letter-portrait"
+            data-sheet-id={storageKey}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className="sheet-brand-logo" src="/logo.png" alt="Pace" />
             <table className="fuelt">
@@ -460,7 +478,7 @@ export default function FuelSheet({
             </table>
           </div>
         ))}
-      </div>
+      </PaperViewport>
 
       {managerOpen && (
         <ManagerPanel
@@ -485,6 +503,16 @@ export default function FuelSheet({
           onClose={() => setPrevOpen(false)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={clearOpen}
+        onOpenChange={setClearOpen}
+        title={`Clear the ${title}?`}
+        description="The current sheet is saved to Previous Sheets before it is cleared."
+        confirmLabel="Clear sheet"
+        tone="danger"
+        onConfirm={clearAll}
+      />
 
       {/* Signals the headless PDF renderer that the sheet + bus list have loaded. */}
       {marker && loaded && busReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}

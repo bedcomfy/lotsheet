@@ -1,23 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { masterToCsv, csvToMaster } from "../lib/buses";
-import Overlay from "./Overlay";
+import { csvToMaster, masterToCsv } from "../lib/buses";
+import {
+  Button,
+  ResponsiveDialog,
+  StatusBadge,
+  TextAreaField,
+} from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
+import styles from "./CsvEditor.module.css";
 
 interface CsvEditorProps {
   onClose: () => void;
   onSaved?: () => void;
 }
 
-// Bulk editor for the whole fleet as CSV text — for the rare big changes (new
-// models, type/length corrections, many buses at once). The simple Bus Lists
-// menu covers day-to-day (active/retired, fuel/def).
 export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
   const { master, setMaster } = useBusMaster();
   const [text, setText] = useState(() => masterToCsv(master.buses));
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
+  const [error, setError] = useState("");
 
   const preview = useMemo<number | null>(() => {
     try {
@@ -27,31 +30,40 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
     }
   }, [text]);
 
-  async function save() {
+  async function save(close: () => void) {
     const parsed = csvToMaster(text);
     if (!parsed.buses.length) {
-      setErr("Couldn't read any buses — check the header row and that there's at least a Bus Number column.");
+      setError(
+        "No buses could be read. Check the header row and include a Bus Number column.",
+      );
       return;
     }
-    // Preserve named vehicles (e.g. JUDI) — the CSV has no name column.
+
     const nameByNum: Record<string, string> = {};
-    for (const b of master.buses) if (b.name) nameByNum[b.num] = b.name;
-    const buses = parsed.buses.map((b) => (nameByNum[b.num] ? { ...b, name: nameByNum[b.num] } : b));
+    for (const bus of master.buses) {
+      if (bus.name) nameByNum[bus.num] = bus.name;
+    }
+    const buses = parsed.buses.map((bus) =>
+      nameByNum[bus.num] ? { ...bus, name: nameByNum[bus.num] } : bus,
+    );
 
     setSaving(true);
-    setErr("");
+    setError("");
     try {
-      const res = await fetch("/api/buses", {
+      const response = await fetch("/api/buses", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ master: { buses } }),
       });
-      const d = await res.json().catch(() => ({}));
-      if (d && d.master) {
-        setMaster(d.master);
-        (onSaved || onClose)();
+      const data = await response.json().catch(() => ({}));
+      if (data?.master) {
+        setMaster(data.master);
+        close();
+        if (onSaved) {
+          window.setTimeout(onSaved, 190);
+        }
       } else {
-        setErr("Save failed. Please try again.");
+        setError("Save failed. Please try again.");
       }
     } finally {
       setSaving(false);
@@ -59,41 +71,47 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
   }
 
   return (
-    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--wide modal--tall" label="Edit full list">
-        <div className="modal__head">
-          <div>
-            <div className="modal__title">Edit full list (CSV)</div>
-            <div className="modal__sub">
-              Columns: Bus Number, Bus Length, Bus Model, Model Tag, Wrap, Status, Fuel/DEF. Edit or paste, then Save.
-            </div>
-          </div>
-          <button className="modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <textarea
-          className="csv__area"
-          spellCheck={false}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setErr("");
-          }}
-        />
-
-        {err && <div className="pwgate__err">{err}</div>}
-
-        <div className="modal__actions">
-          <span className="buslist__hint">{preview != null ? `${preview} buses` : "Can't read CSV"}</span>
-          <div className="toolbar__spacer" />
-          <button className="btn" onClick={onClose}>
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Edit full list (CSV)"
+      description="Columns: Bus Number, Bus Length, Bus Model, Model Tag, Wrap, Status, Fuel/DEF."
+      size="lg"
+      bodyClassName={styles.body}
+      footer={(close) => (
+        <>
+          <StatusBadge tone={preview != null ? "neutral" : "danger"}>
+            {preview != null ? `${preview} buses` : "Can't read CSV"}
+          </StatusBadge>
+          <span className={styles.spacer} />
+          <Button variant="quiet" onPress={close}>
             Cancel
-          </button>
-          <button className="btn btn--primary" disabled={saving} onClick={save}>
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
-    </Overlay>
+          </Button>
+          <Button
+            variant="primary"
+            isDisabled={saving}
+            onPress={() => save(close)}
+          >
+            {saving ? "Saving..." : "Save"}
+          </Button>
+        </>
+      )}
+    >
+      <TextAreaField
+        label="Fleet CSV"
+        labelHidden
+        className={styles.area}
+        spellCheck="false"
+        value={text}
+        onChange={(value) => {
+          setText(value);
+          setError("");
+        }}
+        rows={16}
+      />
+      {error && <div className={styles.error}>{error}</div>}
+    </ResponsiveDialog>
   );
 }

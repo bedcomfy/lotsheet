@@ -26,7 +26,7 @@ import {
   departmentGroups,
   flagName,
 } from "../lib/grid";
-import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Search, Share2, ListChecks, X, Ban, Lock, Wrench, Plus } from "lucide-react";
+import { LayoutGrid, Flag, FlagOff, Eraser, ListX, History, FileDown, Share2, ListChecks, Ban, Lock, Wrench, Plus, MoreHorizontal, Check } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import dynamic from "next/dynamic";
@@ -41,21 +41,28 @@ const RowFill = dynamic(() => import("./RowFill"), { ssr: false });
 const PrevSheets = dynamic(() => import("./PrevSheets"), { ssr: false });
 import ShopMenu from "./ShopMenu";
 import { MissingBusesModal, ServiceDetailModal } from "./LotStatusModals";
-import ToolMenu from "./ToolMenu";
-import Overlay from "./Overlay";
 import DatePickerField from "./DatePickerField";
 import MobileLotChrome from "./MobileLotChrome";
 import { useMobileNav } from "./MobileNavContext";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
-import { applyLotSheetOpsToSheet, diffLotSheetOps, type LotSheetOpRecord } from "../lib/lotSheetOps";
+import { diffLotSheetOps, type LotSheetOp, type LotSheetOpRecord } from "../lib/lotSheetOps";
+import {
+  applyOperationPage,
+  createPendingBatch,
+  parsePendingBatch,
+  type LotSheetPendingBatch,
+} from "../lib/syncCore";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
+import { ActionMenu, Button, Chip, ConfirmDialog, ResponsiveDialog, SearchField, Toolbar, ToolbarGroup } from "../ui";
+import chromeStyles from "./LotSheetChrome.module.css";
 
 const STORAGE_KEY = "lotsheet:current";
+const OUTBOX_KEY = "lotsheet:outbox:v1";
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
 // Back-of-sheet ordered lists.
@@ -128,6 +135,7 @@ export default function LotSheet() {
   const [syncReady, setSyncReady] = useState(false);
   const [editing, setEditing] = useState<{ id: string; subLabel: string; seed?: string } | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [syncError, setSyncError] = useState(false);
   // Bus flags come from the shared live cache (TanStack Query) — the /api/live
   // long-poll invalidates ["flags"] within ~1s of any write on any device, so an
   // already-open Lot Sheet reflects a flag changed elsewhere without a reload.
@@ -152,6 +160,7 @@ export default function LotSheet() {
   const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
   const [shopOpen, setShopOpen] = useState(false); // the Shop menu (edit Apron/Bays/Cards from here)
   const [editingBay, setEditingBay] = useState<number | null>(null); // bay slot editor (from the Shop menu)
+  const [confirmClear, setConfirmClear] = useState<"grid" | "lots" | null>(null);
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -235,6 +244,8 @@ export default function LotSheet() {
   const forceNextSaveRef = useRef(false);
   const savingRef = useRef(false); // true while a save PUT is in flight (saves are serialized)
   const saveInFlightRef = useRef<Promise<void> | null>(null);
+  const pendingBatchRef = useRef<LotSheetPendingBatch | null>(null);
+  const pollingRef = useRef(false);
   const sheetRef = useRef<LotSheetData>(sheet); // always-current sheet, for the poll loop
   useEffect(() => {
     sheetRef.current = sheet;
@@ -254,6 +265,13 @@ export default function LotSheet() {
   function writeLocalSheet(json: string) {
     try {
       localStorage.setItem(STORAGE_KEY, json);
+    } catch {}
+  }
+
+  function writeOutbox(batch: LotSheetPendingBatch | null) {
+    try {
+      if (batch) localStorage.setItem(OUTBOX_KEY, JSON.stringify(batch));
+      else localStorage.removeItem(OUTBOX_KEY);
     } catch {}
   }
 
@@ -288,6 +306,15 @@ export default function LotSheet() {
         setSheet(cachedSheet);
         loadBaseJson = cached;
       }
+      const pending = parsePendingBatch(localStorage.getItem(OUTBOX_KEY));
+      if (pending) {
+        pendingBatchRef.current = pending;
+        if (!cached) {
+          sheetRef.current = pending.snapshot;
+          setSheet(pending.snapshot);
+          loadBaseJson = JSON.stringify(pending.snapshot);
+        }
+      }
     } catch {}
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const loadServer = () => {
@@ -300,7 +327,13 @@ export default function LotSheet() {
         if (cancelled) return;
         if (d && d.sheet) {
           const serverJson = JSON.stringify(d.sheet);
-          if (JSON.stringify(sheetRef.current) === loadBaseJson) {
+          if (pendingBatchRef.current) {
+            // Keep acknowledged offline work on screen, then replay the exact
+            // same operation IDs against the latest shared baseline.
+            lastSyncRef.current = serverJson;
+            lastSyncedSheetRef.current = d.sheet;
+            lastRevisionRef.current = Number(d.revision || 0);
+          } else if (JSON.stringify(sheetRef.current) === loadBaseJson) {
             adoptServerSheet(d.sheet, serverJson, d.updatedAt, d.revision);
           } else {
             // The user edited before the initial fetch returned. Do not replace
@@ -356,15 +389,25 @@ export default function LotSheet() {
   function runSave(): Promise<void> {
     if (!syncReady) return Promise.resolve();
     if (savingRef.current) return saveInFlightRef.current || Promise.resolve(); // a save is already in flight
-    const snapshot = sheetRef.current;
+    const restoredBatch = pendingBatchRef.current;
+    const snapshot = restoredBatch?.snapshot || sheetRef.current;
     const json = JSON.stringify(snapshot);
-    if (json === lastSyncRef.current) return Promise.resolve(); // nothing new to push
-    const baseSheet = lastSyncedSheetRef.current;
-    const force = forceNextSaveRef.current;
-    forceNextSaveRef.current = false;
-    const ops = force ? [{ type: "replace_sheet" as const, sheet: snapshot }] : diffLotSheetOps(baseSheet, snapshot);
-    if (!ops.length) return Promise.resolve();
+    if (!restoredBatch && json === lastSyncRef.current) return Promise.resolve(); // nothing new to push
+    let batch = restoredBatch;
+    if (!batch) {
+      const baseSheet = lastSyncedSheetRef.current;
+      const force = forceNextSaveRef.current;
+      forceNextSaveRef.current = false;
+      const ops: LotSheetOp[] = force
+        ? [{ type: "replace_sheet", sheet: snapshot }]
+        : diffLotSheetOps(baseSheet, snapshot);
+      if (!ops.length) return Promise.resolve();
+      batch = createPendingBatch(ops, snapshot, lastRevisionRef.current);
+      pendingBatchRef.current = batch;
+      writeOutbox(batch);
+    }
     savingRef.current = true;
+    setSyncError(false);
     const task = (async () => {
       try {
         writeLocalSheet(json);
@@ -374,8 +417,9 @@ export default function LotSheet() {
           method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ops, actor: getDeviceActor() }),
+          body: JSON.stringify({ ops: batch.entries, actor: getDeviceActor() }),
         });
+        if (!r.ok) throw new Error(`Sheet save failed (${r.status})`);
         const d = await r.json();
         if (d && d.ok) {
           const savedSheet = (d.sheet || snapshot) as LotSheetData;
@@ -397,10 +441,17 @@ export default function LotSheet() {
           lastSyncRef.current = savedJson;
           lastSyncedSheetRef.current = savedSheet;
           lastRevisionRef.current = Number(d.revision || lastRevisionRef.current);
+          if (pendingBatchRef.current === batch) {
+            pendingBatchRef.current = null;
+            writeOutbox(null);
+          }
           setSavedAt(new Date());
+          setSyncError(false);
           schedulePrewarm(); // pre-build the PDF for the saved sheet
         }
-      } catch {}
+      } catch {
+        setSyncError(true);
+      }
       savingRef.current = false;
       saveInFlightRef.current = null;
       // Edits landed while we were saving - flush them right away.
@@ -446,15 +497,22 @@ export default function LotSheet() {
       } catch {}
       if (!syncReady) return;
       try {
-        const ops = forceNextSaveRef.current
-          ? [{ type: "replace_sheet" as const, sheet: sheetRef.current }]
-          : diffLotSheetOps(lastSyncedSheetRef.current, sheetRef.current);
-        if (!ops.length) return;
+        let batch = pendingBatchRef.current;
+        if (!batch) {
+          const ops: LotSheetOp[] = forceNextSaveRef.current
+            ? [{ type: "replace_sheet", sheet: sheetRef.current }]
+            : diffLotSheetOps(lastSyncedSheetRef.current, sheetRef.current);
+          if (!ops.length) return;
+          forceNextSaveRef.current = false;
+          batch = createPendingBatch(ops, sheetRef.current, lastRevisionRef.current);
+          pendingBatchRef.current = batch;
+          writeOutbox(batch);
+        }
         fetch("/api/sheet/ops", {
           method: "POST",
           cache: "no-store",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ops, actor: getDeviceActor() }),
+          body: JSON.stringify({ ops: batch.entries, actor: getDeviceActor() }),
           keepalive: true,
         });
       } catch {}
@@ -474,42 +532,66 @@ export default function LotSheet() {
   // there are no unsaved local edits, so we never clobber in-progress typing.
   useEffect(() => {
     if (!loaded || !syncReady || printMode) return;
-    const iv = setInterval(() => {
-      if (savingRef.current) return; // don't adopt server state mid-save
-      fetch(`/api/sheet/ops?since=${lastRevisionRef.current}`, { cache: "no-store" })
-        .then((r) => r.json())
-        .then((d) => {
-          if (!d || !d.sheet) return;
-          if (savingRef.current) return; // a save started while we were fetching
+    const poll = async () => {
+      if (savingRef.current || pollingRef.current) return;
+      pollingRef.current = true;
+      try {
+        const startingRevision = lastRevisionRef.current;
+        const previousBase = lastSyncedSheetRef.current;
+        let cursor = startingRevision;
+        let nextServerSheet = previousBase;
+        let updatedAt: string | null | undefined;
+        let pages = 0;
+        while (pages < 50) {
+          const response = await fetch(`/api/sheet/ops?since=${cursor}&limit=500`, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Sheet catch-up failed (${response.status})`);
+          const d = await response.json();
+          if (!d || !d.sheet) break;
+          updatedAt = d.updatedAt;
           const records = (Array.isArray(d.ops) ? d.ops : []) as LotSheetOpRecord[];
-          if (!records.length && Number(d.revision || 0) <= lastRevisionRef.current) return;
-          const previousBase = lastSyncedSheetRef.current;
-          const nextServerSheet = records.length
-            ? previousBase
-              ? applyLotSheetOpsToSheet(previousBase, records.map((record) => record.op))
-              : d.sheet
-            : d.sheet;
-          const serverJson = JSON.stringify(nextServerSheet);
-          if (serverJson === lastSyncRef.current) return; // no change
-          const localJson = JSON.stringify(sheetRef.current);
-          if (localJson === lastSyncRef.current) {
-            adoptServerSheet(nextServerSheet, serverJson, d.updatedAt, d.revision);
-            return;
+          if (!nextServerSheet) {
+            nextServerSheet = d.sheet as LotSheetData;
+            cursor = Number(d.revision || cursor);
+            break;
           }
-          const merged = mergeLotSheet(previousBase, sheetRef.current, nextServerSheet);
-          const mergedJson = JSON.stringify(merged);
-          lastSyncRef.current = serverJson;
-          lastSyncedSheetRef.current = nextServerSheet;
-          lastRevisionRef.current = Number(d.revision || lastRevisionRef.current);
-          if (mergedJson !== localJson) {
-            suppressNextSheetMarkRef.current = true;
-            sheetRef.current = merged;
-            setSheet(merged);
-            writeLocalSheet(mergedJson);
+          if (records.length) {
+            const page = applyOperationPage(nextServerSheet, cursor, records);
+            nextServerSheet = page.sheet;
+            cursor = page.revision;
+          } else if (Number(d.revision || 0) > cursor) {
+            // Safe recovery if an old operation page has eventually been
+            // compacted: the API's current snapshot becomes the new baseline.
+            nextServerSheet = d.sheet as LotSheetData;
+            cursor = Number(d.revision || cursor);
           }
-        })
-        .catch(() => {});
-    }, 1200);
+          pages += 1;
+          if (!d.hasMore) break;
+        }
+        if (savingRef.current || cursor <= startingRevision || !nextServerSheet) return;
+        const serverJson = JSON.stringify(nextServerSheet);
+        const localJson = JSON.stringify(sheetRef.current);
+        if (localJson === lastSyncRef.current && !pendingBatchRef.current) {
+          adoptServerSheet(nextServerSheet, serverJson, updatedAt, cursor);
+          return;
+        }
+        const merged = mergeLotSheet(previousBase, sheetRef.current, nextServerSheet);
+        const mergedJson = JSON.stringify(merged);
+        lastSyncRef.current = serverJson;
+        lastSyncedSheetRef.current = nextServerSheet;
+        lastRevisionRef.current = cursor;
+        if (mergedJson !== localJson) {
+          suppressNextSheetMarkRef.current = true;
+          sheetRef.current = merged;
+          setSheet(merged);
+          writeLocalSheet(mergedJson);
+        }
+      } catch {
+        setSyncError(true);
+      } finally {
+        pollingRef.current = false;
+      }
+    };
+    const iv = setInterval(poll, 1200);
     return () => clearInterval(iv);
   }, [loaded, syncReady]);
 
@@ -633,17 +715,8 @@ export default function LotSheet() {
   // "New" resets the daily grid (cells, counters, time/date) but keeps the
   // back-of-sheet lots, which don't change as often.
   async function newSheet() {
-    if (
-      gridHasContent(sheet) &&
-      !window.confirm(
-        "Clear the grid for everyone? The current sheet is saved to Prev Sheets first; the grid clears but the back-of-sheet lots stay."
-      )
-    ) {
-      return;
-    }
     await archiveSheet(sheet);
     offerUndo("Grid cleared");
-    forceNextSaveRef.current = true;
     // Locked buses stay put through the clear (and blocked X spots stay blocked).
     setSheet((s) => {
       const kept: Record<string, string> = {};
@@ -660,19 +733,21 @@ export default function LotSheet() {
 
   // Clears just the back-of-sheet lots (North / East / Fence).
   async function clearLots() {
-    if (
-      lotsHaveContent(sheet) &&
-      !window.confirm(
-        "Clear the back-of-sheet lots (North / East / Fence) for everyone? The current sheet is saved to Prev Sheets first."
-      )
-    ) {
-      return;
-    }
     await archiveSheet(sheet);
     offerUndo("Lots cleared");
     // Clear only the back-of-sheet lots; keep the Turnover-managed lots
     // (R/C, Apron, Lanes, Bay) intact.
     setSheet((s) => ({ ...s, lots: { ...(s.lots || {}), north: [], east: [], fence: [] } }));
+  }
+
+  function requestClearGrid() {
+    if (gridHasContent(sheet)) setConfirmClear("grid");
+    else void newSheet();
+  }
+
+  function requestClearLots() {
+    if (lotsHaveContent(sheet)) setConfirmClear("lots");
+    else void clearLots();
   }
 
   // Bring a previous sheet back as the current shared sheet. The sheet that's up
@@ -1348,141 +1423,140 @@ export default function LotSheet() {
   }
 
   return (
-    <div className="app app--lot">
+    <div className={chromeStyles.page}>
       {/* Toolbar — never printed */}
-      <div className="toolbar no-print">
-        <div className="toolbar__title">Lot Sheet</div>
-        <div className="findbox" title="Type a bus number to jump to it on the sheet">
-          <Search size={15} />
-          <input
-            className="findbox__in"
-            placeholder="Find bus"
-            inputMode="numeric"
-            value={findVal}
-            onChange={(e) => {
-              const v = sanitizeBus(e.target.value);
-              setFindVal(v);
-              if (isKnown(v)) findBus(v);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && findBus()}
-          />
-          {foundBus && <span className="findbox__msg">{foundWhere || "Not on the sheet"}</span>}
-          {findVal && (
-            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        <div className="toolbar__spacer" />
-        <div className="servicechips">
-          <button
-            className="servicechip servicechip--ready"
-            onClick={() => setServiceDetail("usable")}
-            title="Buses on the service grid"
+      <Toolbar className={`${chromeStyles.toolbar} no-print`}>
+        <div className={chromeStyles.title}>Lot Sheet</div>
+        <SearchField
+          className={chromeStyles.search}
+          label="Find a bus"
+          labelHidden
+          placeholder="Find bus"
+          inputMode="numeric"
+          value={findVal}
+          onChange={(value) => {
+            const v = sanitizeBus(value);
+            setFindVal(v);
+            if (isKnown(v)) findBus(v);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && findBus()}
+        />
+        {foundBus && (
+          <span className={chromeStyles.findResult} title={foundWhere || "Not on the sheet"}>
+            {foundWhere || "Not on the sheet"}
+          </span>
+        )}
+        <div className={chromeStyles.serviceCounts}>
+          <Button
+            size="sm"
+            className={chromeStyles.readyButton}
+            onPress={() => setServiceDetail("usable")}
+            aria-label={`${readyForServiceCount} usable buses on the service grid`}
           >
             {readyForServiceCount} Usable
-          </button>
-          <button
-            className="servicechip servicechip--notready"
-            onClick={() => setServiceDetail("outOfService")}
-            title="Buses in lots or shop — tap to see where and why"
+          </Button>
+          <Button
+            size="sm"
+            className={chromeStyles.outButton}
+            onPress={() => setServiceDetail("outOfService")}
+            aria-label={`${notReadyForServiceCount} out of service buses in lots or shop`}
           >
             {notReadyForServiceCount} Out of Service
-          </button>
+          </Button>
         </div>
-        <button
-          className={`statchip ${missingBuses.length ? "statchip--warn" : ""}`}
-          onClick={() => setMissingOpen(true)}
-          title="Tap to see which buses are missing from the sheet"
+        <Button
+          size="sm"
+          className={chromeStyles.summaryButton}
+          data-warning={missingBuses.length ? "true" : undefined}
+          onPress={() => setMissingOpen(true)}
+          aria-label={`${onGridCount} on grid, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
         >
           {onGridCount} on grid · {inLotsCount} in lots · {missingBuses.length} missing
-        </button>
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
+        </Button>
+        <span className={chromeStyles.saved}>
+          {syncError ? "Offline · retrying" : savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
         </span>
-        <div className="sheetview no-print" aria-label="Sheet view mode">
-          <span className="sheetview__label">View</span>
-          <button
-            className={`sheetview__btn ${mobileSheetView === "pan" ? "sheetview__btn--on" : ""}`}
-            onClick={() => setMobileSheetView("pan")}
-            type="button"
+        <div className={chromeStyles.viewToggle} aria-label="Sheet view mode">
+          <span className={chromeStyles.viewLabel}>View</span>
+          <Button
+            size="sm"
+            variant={mobileSheetView === "pan" ? "primary" : "secondary"}
+            onPress={() => setMobileSheetView("pan")}
           >
             Pan
-          </button>
-          <button
-            className={`sheetview__btn ${mobileSheetView === "fit" ? "sheetview__btn--on" : ""}`}
-            onClick={() => setMobileSheetView("fit")}
-            type="button"
+          </Button>
+          <Button
+            size="sm"
+            variant={mobileSheetView === "fit" ? "primary" : "secondary"}
+            onPress={() => setMobileSheetView("fit")}
           >
             Fit
-          </button>
+          </Button>
         </div>
-        <button className="btn btn--primary toolbar__action toolbar__action--primary" onClick={() => setFillOpen(true)}>
-          <LayoutGrid size={16} /> Fill Rows
-        </button>
-        <button className="btn toolbar__action" onClick={() => setManagerOpen(true)}>
-          <Flag size={16} /> Edit Flags
-        </button>
-        <button
-          className={`btn toolbar__select ${selectMode ? "btn--primary" : ""}`}
-          onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-          title="Select several buses, then send or clear them all at once"
-        >
-          <ListChecks size={16} /> Select
-        </button>
-        <button
-          className="btn toolbar__action"
-          onClick={() => setShopOpen(true)}
-          title="Everything inside the shop — Apron, Bays, Cards (screen-only, never printed)"
-        >
-          <Wrench size={16} /> Shop
-        </button>
-        <ToolMenu triggerClassName="toolbar__more">
-          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
-            <History size={16} /> Prev Sheets
-          </button>
-          <button className="toolmenu__item" onClick={shareSheet} title="Share the sheet as text (for a group chat)">
-            <Share2 size={16} /> Share as text
-          </button>
-          <button className="toolmenu__item" onClick={openBlankPdf} title="Open an empty Lot Sheet PDF">
-            <FileDown size={16} /> Print Blank
-          </button>
-          <div className="toolmenu__sep" />
-          <button className="toolmenu__item toolmenu__item--danger" onClick={newSheet}>
-            <Eraser size={16} /> Clear Grid
-          </button>
-          <button className="toolmenu__item toolmenu__item--danger" onClick={clearLots}>
-            <ListX size={16} /> Clear Lots
-          </button>
-          <div className="toolmenu__sep" />
-          <label
-            className="toolmenu__item"
-            onClick={(e) => e.stopPropagation()}
-            title="Include the bus type codes and maintenance flags on the printout"
+        <ToolbarGroup className={chromeStyles.actions}>
+          <Button variant="primary" onPress={() => setFillOpen(true)}>
+            <LayoutGrid aria-hidden="true" /> Fill Rows
+          </Button>
+          <Button onPress={() => setManagerOpen(true)}>
+            <Flag aria-hidden="true" /> Edit Flags
+          </Button>
+          <Button
+            variant={selectMode ? "primary" : "secondary"}
+            onPress={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
           >
-            <input
-              type="checkbox"
-              checked={showMaint}
-              onChange={(e) => setShowMaint(e.target.checked)}
-            />
-            Maintenance info
-          </label>
-        </ToolMenu>
-        <button className="btn btn--primary toolbar__action toolbar__action--print" onClick={openPdf} title="Generate a Letter-size PDF and open the print dialog">
-          <FileDown size={16} /> Print PDF
-        </button>
-      </div>
+            <ListChecks aria-hidden="true" /> Select
+          </Button>
+          <Button onPress={() => setShopOpen(true)}>
+            <Wrench aria-hidden="true" /> Shop
+          </Button>
+          <ActionMenu
+            label={<><MoreHorizontal size={16} /> More</>}
+            items={[
+              { id: "history", label: "Previous sheets", icon: <History size={16} /> },
+              { id: "share", label: "Share as text", icon: <Share2 size={16} /> },
+              { id: "blank", label: "Print blank", icon: <FileDown size={16} /> },
+              {
+                id: "maintenance",
+                label: showMaint ? "Maintenance info: On" : "Maintenance info: Off",
+                icon: showMaint ? <Check size={16} /> : <span aria-hidden="true" />,
+              },
+              { id: "clear-grid", label: "Clear grid", icon: <Eraser size={16} />, tone: "danger" },
+              { id: "clear-lots", label: "Clear lots", icon: <ListX size={16} />, tone: "danger" },
+            ]}
+            onAction={(key) => {
+              if (key === "history") setPrevOpen(true);
+              if (key === "share") shareSheet();
+              if (key === "blank") openBlankPdf();
+              if (key === "maintenance") setShowMaint((current) => !current);
+              if (key === "clear-grid") requestClearGrid();
+              if (key === "clear-lots") requestClearLots();
+            }}
+          />
+          <Button variant="primary" onPress={openPdf}>
+            <FileDown aria-hidden="true" /> Print PDF
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
       {/* The printable sheet */}
       <DndContext id="lot-sheet-dnd" sensors={dndSensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>
       <div
         ref={sheetScrollRef}
         className={`sheet-scroll sheet-scroll--${mobileSheetView}`}
+        data-paper-viewport=""
+        data-paper-profile="letter-portrait"
         style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}
         onDoubleClick={onMobileDoubleClick}
         onTouchEndCapture={onMobileTouchEnd}
       >
-        <div className={`sheet lot-sheet-front ${showMaint ? "sheet--maint" : ""}`} onKeyDown={onSheetKeyDown}>
+        <div
+          className={`sheet lot-sheet-front ${showMaint ? "sheet--maint" : ""}`}
+          onKeyDown={onSheetKeyDown}
+          data-paper-page=""
+          data-paper-profile="letter-portrait"
+          data-sheet-id="lot"
+          data-page-number="1"
+        >
           {/* Header */}
           <div className="head">
             <div className="head__logo">
@@ -1589,7 +1663,13 @@ export default function LotSheet() {
         {!blankPrintMode && (
           <>
             {/* Back of the sheet — ordered lot lists, printed on page 2 */}
-            <div className="back-sheet">
+            <div
+              className="back-sheet"
+              data-paper-page=""
+              data-paper-profile="letter-portrait"
+              data-sheet-id="lot"
+              data-page-number="2"
+            >
               <div className="back__cols">
                 {LOTS.map((lot) => (
                   <BackLotBox
@@ -1651,8 +1731,8 @@ export default function LotSheet() {
       {/* The bus chip that follows the pointer while dragging */}
       <DragOverlay dropAnimation={null}>
         {dragNum ? (
-          <div className="dragchip">
-            <TypeCodes num={dragNum} />
+          <div className={chromeStyles.dragChip}>
+            <TypeCodes num={dragNum} variant="ui" />
             {busLabel(dragNum)}
           </div>
         ) : null}
@@ -1673,8 +1753,8 @@ export default function LotSheet() {
           onPrev={() => setPrevOpen(true)}
           onShare={shareSheet}
           onPrintBlank={openBlankPdf}
-          onClearGrid={newSheet}
-          onClearLots={clearLots}
+          onClearGrid={requestClearGrid}
+          onClearLots={requestClearLots}
           showMaint={showMaint}
           onShowMaint={setShowMaint}
           usableCount={readyForServiceCount}
@@ -1836,74 +1916,73 @@ export default function LotSheet() {
 
       {/* Multi-select action bar: tap buses on the grid, then act on all of them */}
       {selectMode && (
-        <div className="selectbar no-print">
-          <span className="selectbar__count">
+        <div className={`${chromeStyles.selectBar} no-print`}>
+          <span className={chromeStyles.selectCount}>
             {selected.length ? `${selected.length} selected` : "Tap spots to select"}
           </span>
           {LOTS.map((l) => (
-            <button
+            <Button
               key={l.key}
-              className="btn btn--mini"
-              disabled={!selected.length}
-              onClick={() => bulkSendToLot(l.key)}
+              size="sm"
+              isDisabled={!selected.length}
+              onPress={() => bulkSendToLot(l.key)}
             >
               → {LOT_LOCATION_LABELS[l.key] || l.title}
-            </button>
+            </Button>
           ))}
-          <button className="btn btn--mini" disabled={!selected.length} onClick={() => setFlagPick("add")}>
+          <Button size="sm" isDisabled={!selected.length} onPress={() => setFlagPick("add")}>
             <Flag size={14} /> Add flag
-          </button>
-          <button className="btn btn--mini" disabled={!selected.length} onClick={() => setFlagPick("remove")}>
+          </Button>
+          <Button size="sm" isDisabled={!selected.length} onPress={() => setFlagPick("remove")}>
             <FlagOff size={14} /> Remove flag
-          </button>
-          <button
-            className="btn btn--mini"
-            disabled={!selected.length}
-            onClick={bulkLockToggle}
-            title="Locked buses stay put when the grid is cleared"
+          </Button>
+          <Button
+            size="sm"
+            isDisabled={!selected.length}
+            onPress={bulkLockToggle}
+            aria-label="Lock selected buses so they stay put when the grid is cleared"
           >
             <Lock size={14} /> Lock
-          </button>
-          <button
-            className="btn btn--mini"
-            disabled={!selected.length}
-            onClick={bulkBlockToggle}
-            title="Block selected empty spots with an X (reopens selected X spots)"
+          </Button>
+          <Button
+            size="sm"
+            isDisabled={!selected.length}
+            onPress={bulkBlockToggle}
+            aria-label="Block selected empty spots with an X or reopen selected blocked spots"
           >
             <Ban size={14} /> Block
-          </button>
-          <button className="btn btn--mini btn--ghost" disabled={!selected.length} onClick={bulkClearCells}>
+          </Button>
+          <Button size="sm" variant="danger" isDisabled={!selected.length} onPress={bulkClearCells}>
             Clear
-          </button>
-          <button className="btn btn--mini" onClick={exitSelectMode}>
+          </Button>
+          <Button size="sm" onPress={exitSelectMode}>
             Done
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Which flag to add to / remove from every selected bus */}
       {flagPick && (
-        <Overlay
-          onClose={() => setFlagPick(null)}
-          overlayClassName="modal-backdrop no-print"
-          contentClassName="modal modal--tall"
-          label={flagPick === "add" ? "Add a flag" : "Remove a flag"}
+        <ResponsiveDialog
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) setFlagPick(null);
+          }}
+          title={flagPick === "add" ? "Add a flag" : "Remove a flag"}
+          description={
+            <>
+              {flagPick === "add"
+                ? `Applies to all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`
+                : `Removed from all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`}
+              {flagPick === "add"
+                ? " Retorque needs tires and must be set per bus in Edit Flags."
+                : ""}
+            </>
+          }
+          size="md"
+          footer={(close) => <Button onPress={close}>Cancel</Button>}
         >
-          <div className="modal__head">
-            <div>
-              <div className="modal__title">{flagPick === "add" ? "Add a flag" : "Remove a flag"}</div>
-              <div className="modal__sub">
-                {flagPick === "add"
-                  ? `Applies to all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`
-                  : `Removed from all ${selected.length} selected bus${selected.length === 1 ? "" : "es"}.`}
-                {flagPick === "add" ? " (Retorque needs tires — set it per bus in Edit Flags.)" : ""}
-              </div>
-            </div>
-            <button className="modal__close" onClick={() => setFlagPick(null)} aria-label="Close">
-              ×
-            </button>
-          </div>
-          <div className="lotlist">
+          <div className={chromeStyles.flagPickList}>
             {(() => {
               const seen = new Set<string>();
               return departmentGroups().map((dept) => {
@@ -1915,16 +1994,16 @@ export default function LotSheet() {
                 });
                 if (!ids.length) return null;
                 return (
-                  <div className="busedit__dept" key={dept.id}>
-                    <div className={`busedit__depthead busedit__depthead--${dept.id}`}>
-                      <span className="busedit__dot" />
+                  <div className={chromeStyles.flagGroup} key={dept.id}>
+                    <div className={chromeStyles.flagGroupTitle}>
+                      <span className={chromeStyles.flagGroupDot} />
                       {dept.label}
                     </div>
-                    <div className="busedit__chips">
+                    <div className={chromeStyles.flagChips}>
                       {ids.map((id) => (
-                        <button key={id} className="deptchip" onClick={() => bulkFlag(id)}>
+                        <Chip key={id} onPress={() => bulkFlag(id)}>
                           {flagName(id)}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
                   </div>
@@ -1932,23 +2011,33 @@ export default function LotSheet() {
               });
             })()}
           </div>
-          <div className="modal__actions">
-            <div className="toolbar__spacer" />
-            <button className="btn" onClick={() => setFlagPick(null)}>
-              Cancel
-            </button>
-          </div>
-        </Overlay>
+        </ResponsiveDialog>
       )}
+
+      <ConfirmDialog
+        isOpen={confirmClear !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmClear(null);
+        }}
+        title={confirmClear === "lots" ? "Clear North, East, and Fence?" : "Clear the grid?"}
+        description={
+          confirmClear === "lots"
+            ? "The current sheet is saved to Previous Sheets first. This clears only the three printed lots for everyone."
+            : "The current sheet is saved to Previous Sheets first. Locked buses, blocked spots, and the back-of-sheet lots remain."
+        }
+        confirmLabel={confirmClear === "lots" ? "Clear lots" : "Clear grid"}
+        tone="danger"
+        onConfirm={confirmClear === "lots" ? clearLots : newSheet}
+      />
 
       {/* Undo toast for the bigger actions (clears, drags, sends); plain notices reuse it */}
       {undoState && (
-        <div className="toast no-print" role="status">
+        <div className={`${chromeStyles.toast} no-print`} role="status">
           <span>{undoState.label}</span>
           {undoSheetRef.current && (
-            <button className="toast__btn" onClick={undoNow}>
+            <Button size="sm" onPress={undoNow}>
               Undo
-            </button>
+            </Button>
           )}
         </div>
       )}

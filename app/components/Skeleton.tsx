@@ -1,15 +1,17 @@
 // Chrome-only loading placeholders. Paper sheets never render these.
+import { Skeleton } from "../ui";
+import styles from "./Skeleton.module.css";
 
 export function SkeletonRows({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="skeleton-rows" aria-hidden="true">
+    <div className={styles.rows} aria-hidden="true">
       {Array.from({ length: rows }, (_, index) => (
-        <span className="skeleton" key={index} />
+        <Skeleton className={styles.row} key={index} />
       ))}
     </div>
   );
 }
 
 export function SkeletonStat() {
-  return <span className="skeleton skeleton--stat" aria-hidden="true" />;
+  return <Skeleton className={styles.stat} aria-hidden="true" />;
 }

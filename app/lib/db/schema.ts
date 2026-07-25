@@ -42,6 +42,7 @@ export const sheetHistory = pgTable(`sheet_history${TABLE_SUFFIX}`, {
 // Append-only log of lot-sheet operations for concurrency-safe multi-user edits.
 export const lotSheetOps = pgTable(`lot_sheet_ops${TABLE_SUFFIX}`, {
   revision: bigserial("revision", { mode: "number" }).primaryKey(),
+  opId: text("op_id"),
   op: jsonb("op").notNull(),
   actor: text("actor"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

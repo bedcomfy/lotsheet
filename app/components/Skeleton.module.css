@@ -1,0 +1,25 @@
+.rows {
+  display: grid;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+}
+
+.row {
+  width: 100%;
+  min-height: 2.375rem;
+}
+
+.row:nth-child(2) {
+  width: 92%;
+}
+
+.row:nth-child(3) {
+  width: 96%;
+}
+
+.stat {
+  display: inline-block;
+  width: 2ch;
+  height: 1em;
+  vertical-align: baseline;
+}

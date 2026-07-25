@@ -14,6 +14,9 @@ import ManagerPanel from "../ManagerPanelLazy";
 import MMoveSheet from "./MMoveSheet";
 import type { FlagEntry, FlagMap } from "../../lib/types";
 import { useQueryClient } from "@tanstack/react-query";
+import { Flag, MoveRight } from "lucide-react";
+import { Button, ResponsiveDialog, StaticChip } from "../../ui";
+import styles from "./MApp.module.css";
 
 function useServiceTonight(bus: string) {
   const { data } = useQuery({
@@ -60,41 +63,43 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
 
   return (
     <>
-      <div className="mscrim" onClick={onClose} />
-      <div className="mcard" role="dialog" aria-label={`Bus ${bus}`}>
-        <div className="mcard__grab" />
-        <div className="mcard__body">
-        <div className="mcard__top">
-          <span className="mcard__num">{label(bus)}</span>
-          <span className="mcard__where">{where}</span>
-        </div>
-        <div className="mcard__flags">
-          {flagIds.length === 0 && <span className="mfchip mfchip--dim">No flags</span>}
+      <ResponsiveDialog
+        isOpen
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title={`Bus ${label(bus)}`}
+        description={where}
+        size="md"
+        footer={(close) => (
+          <>
+            <Button variant="primary" onPress={() => setFlagOpen(true)}>
+              <Flag aria-hidden="true" /> Flags
+            </Button>
+            <Button onPress={() => setMoveOpen(true)}>
+              <MoveRight aria-hidden="true" /> Move
+            </Button>
+            <Button onPress={close}>Done</Button>
+          </>
+        )}
+      >
+        <div className={styles.cardBody}>
+        <div className={styles.flags}>
+          {flagIds.length === 0 && <StaticChip>No flags</StaticChip>}
           {flagIds.map((id) => (
-            <span className="mfchip mfchip--bad" key={id}>{flagName(id)}</span>
+            <StaticChip tone="danger" key={id}>{flagName(id)}</StaticChip>
           ))}
-          {entry?.note && <span className="mfchip mfchip--dim">“{entry.note}”</span>}
-          {entry?.holdReason && <span className="mfchip mfchip--dim">Hold: {entry.holdReason}</span>}
+          {entry?.note && <StaticChip>{entry.note}</StaticChip>}
+          {entry?.holdReason && <StaticChip tone="warning">Hold: {entry.holdReason}</StaticChip>}
         </div>
-        <div className="mcard__tonight">
-          <span>Tonight:</span>
-          <b className={svc.fueled ? "y" : "n"}>Fueled {svc.fueled ? "✓" : "—"}</b>
-          <b className={svc.defed ? "y" : "n"}>DEF {svc.defed ? "✓" : "—"}</b>
-          <b className={svc.farebox ? "y" : "n"}>Farebox {svc.farebox ? "✓" : "—"}</b>
+        <div className={styles.service}>
+          <span className={styles.serviceLabel}>Tonight&apos;s service</span>
+          <b className={styles.serviceItem} data-complete={svc.fueled}>Fueled {svc.fueled ? "✓" : "—"}</b>
+          <b className={styles.serviceItem} data-complete={svc.defed}>DEF {svc.defed ? "✓" : "—"}</b>
+          <b className={styles.serviceItem} data-complete={svc.farebox}>Farebox {svc.farebox ? "✓" : "—"}</b>
         </div>
         </div>
-        <div className="mcard__acts mcard__acts--three mcard__footer">
-          <button type="button" className="mactb mactb--hot" onClick={() => setFlagOpen(true)}>
-            ⚑ Flags
-          </button>
-          <button type="button" className="mactb" onClick={() => setMoveOpen(true)}>
-            ➜ Move
-          </button>
-          <button type="button" className="mactb" onClick={onClose}>
-            Done
-          </button>
-        </div>
-      </div>
+      </ResponsiveDialog>
 
       {moveOpen && (
         <MMoveSheet

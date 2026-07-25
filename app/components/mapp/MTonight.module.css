@@ -1,0 +1,342 @@
+.dashboard {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-3);
+  width: min(100%, 34rem);
+  margin: 0 auto;
+  padding:
+    var(--ui-space-3)
+    calc(var(--ui-space-3) + var(--ui-safe-right))
+    var(--ui-space-8)
+    calc(var(--ui-space-3) + var(--ui-safe-left));
+  color: var(--ui-text);
+  background: var(--ui-canvas);
+  font-family: var(--ui-font-sans);
+  letter-spacing: 0;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 10.5rem;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: var(--ui-space-4);
+  border-radius: var(--ui-radius-lg);
+  color: #fff;
+  background: url("/maintenance-garage-hero.jpg") center / cover no-repeat;
+}
+
+.hero::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: rgb(9 18 30 / 68%);
+}
+
+.liveBadge {
+  width: fit-content;
+  border-color: rgb(255 255 255 / 22%);
+  color: #dff8ed;
+  background: rgb(10 27 37 / 72%);
+  backdrop-filter: blur(8px);
+}
+
+.heroCopy {
+  display: grid;
+  gap: var(--ui-space-1);
+}
+
+.hero h1,
+.hero p {
+  margin: 0;
+}
+
+.hero h1 {
+  font-size: 1.75rem;
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+}
+
+.hero p {
+  max-width: 19rem;
+  color: #e4e9f1;
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-body);
+}
+
+.primaryAction,
+.searchPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.primaryAction > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.primaryAction span,
+.primaryAction small {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.primaryAction strong {
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.primaryAction button {
+  flex: 0 0 auto;
+}
+
+.searchPanel {
+  align-items: end;
+}
+
+.searchPanel > :first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-1) 0;
+}
+
+.sectionHeading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.sectionHeading span {
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.sectionHeading small {
+  color: var(--ui-text-subtle);
+  font-size: var(--ui-font-size-xs);
+}
+
+.readiness,
+.placement {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+}
+
+.readinessTile,
+.placementTile {
+  min-height: 6.25rem;
+  padding: var(--ui-space-3);
+}
+
+.offPropertyTile {
+  grid-column: 1 / -1;
+  min-height: 5.75rem;
+}
+
+.alert,
+.flagged,
+.busRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-space-3);
+  width: 100%;
+  min-height: var(--ui-touch-target);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  font: inherit;
+  text-align: left;
+  letter-spacing: 0;
+}
+
+.alert {
+  border-color: color-mix(in srgb, var(--ui-danger) 36%, var(--ui-border));
+}
+
+.alertIcon,
+.flaggedIcon {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.alertIcon svg,
+.flaggedIcon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.alert strong,
+.alert small,
+.flagged strong,
+.flagged small {
+  display: block;
+}
+
+.alert strong,
+.flagged strong {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.alert small,
+.flagged small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alert > svg,
+.flagged > svg {
+  width: 1rem;
+  color: var(--ui-text-subtle);
+}
+
+.quickActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+}
+
+.sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3) 0;
+  color: var(--ui-text-subtle);
+  font-size: 0.6875rem;
+}
+
+.sync span {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 999px;
+  background: var(--ui-success);
+  box-shadow: 0 0 0 3px var(--ui-success-soft);
+}
+
+.dialogSummary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-2);
+  padding-bottom: var(--ui-space-3);
+}
+
+.dialogSummary strong {
+  color: var(--ui-accent);
+  font-size: 1.75rem;
+  font-weight: var(--ui-weight-semibold);
+}
+
+.dialogSummary span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.busList {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.busRow {
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface);
+}
+
+.busRow > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.busRow strong {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.busRow small,
+.busRow em {
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.busRow em {
+  color: var(--ui-warning);
+}
+
+.busRow > svg {
+  width: 1rem;
+  color: var(--ui-text-subtle);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--ui-space-5);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+  text-align: center;
+}
+
+@media (max-width: 380px) {
+  .dashboard {
+    padding-inline:
+      calc(var(--ui-space-2) + var(--ui-safe-right))
+      calc(var(--ui-space-2) + var(--ui-safe-left));
+  }
+
+  .primaryAction {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaryAction button {
+    width: 100%;
+  }
+
+  .searchPanel {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: var(--ui-space-3);
+  }
+}
+
+@media print, (min-width: 700px) {
+  .dashboard {
+    display: none;
+  }
+}

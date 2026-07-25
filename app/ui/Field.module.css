@@ -1,0 +1,178 @@
+.field {
+  display: grid;
+  gap: var(--ui-space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.label {
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.control {
+  display: flex;
+  min-height: var(--ui-control-md);
+  align-items: center;
+  gap: var(--ui-space-2);
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    box-shadow var(--ui-motion-fast) var(--ui-ease-standard),
+    background-color var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.field[data-hovered] .control {
+  border-color: var(--ui-accent);
+}
+
+.field[data-focus-within] .control {
+  border-color: var(--ui-focus);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.field[data-invalid] .control {
+  border-color: var(--ui-danger);
+}
+
+.field[data-disabled] {
+  opacity: 0.52;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--ui-control-md) - 2px);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-md);
+  letter-spacing: 0;
+}
+
+.input:focus-visible,
+.textArea:focus-visible {
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ui-text-subtle);
+  opacity: 1;
+}
+
+.description,
+.error {
+  margin: 0;
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-body);
+}
+
+.description {
+  color: var(--ui-text-muted);
+}
+
+.error {
+  color: var(--ui-danger);
+}
+
+.searchIcon {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--ui-text-subtle);
+  stroke-width: 1.8;
+}
+
+.clearButton {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.clearButton[data-hovered] {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+}
+
+.clearButton[data-focus-visible] {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 1px;
+}
+
+.clearButton svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.searchField[data-empty] .clearButton {
+  visibility: hidden;
+}
+
+.textAreaField {
+  min-height: 0;
+}
+
+.textArea {
+  width: 100%;
+  min-height: 8rem;
+  resize: vertical;
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  outline: none;
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-md);
+  line-height: var(--ui-line-height-body);
+  letter-spacing: 0;
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    box-shadow var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.textAreaField[data-hovered] .textArea {
+  border-color: var(--ui-accent);
+}
+
+.textAreaField[data-focus-within] .textArea {
+  border-color: var(--ui-focus);
+  box-shadow: var(--ui-focus-ring);
+}
+
+.textAreaField[data-invalid] .textArea {
+  border-color: var(--ui-danger);
+}

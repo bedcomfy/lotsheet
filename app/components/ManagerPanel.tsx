@@ -16,7 +16,6 @@ import {
   commonFlagIds,
   ASSIGNABLE_FLAGS,
   typeInfo,
-  flagTier,
   flagColorStyle,
   flagObjectCodes,
   flagHasDetail,
@@ -25,23 +24,29 @@ import {
   removeInspection,
   setInspectionOption,
 } from "../lib/grid";
-import { X, Plus, Check, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { X, Plus, Check, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
-import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import { getDeviceActor } from "../lib/deviceActor";
 import { useAutoSaveText } from "../lib/useAutoSaveText";
 import type { FlagEntry, FlagMap } from "../lib/types";
+import {
+  Button,
+  ConfirmDialog,
+  Pressable,
+  ResponsiveDialog,
+  SearchField,
+  TabBar,
+  TextField,
+} from "../ui";
+import styles from "./ManagerPanel.module.css";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 // Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
 const NOTE_FLAG = "__note";
 const requiresDetail = (id: string) => id === NOTE_FLAG || flagRequiresDetail(id);
-// Pill color follows severity, reusing the department pill palettes:
-// high = red (safety palette), med = amber (maintenance), low = blue (service).
-const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
 // Full type name(s) for a bus (e.g. "Pulse", "Pulse · Hybrid"). The master's
 // types() gives category ids or lot codes, so match on either.
 function typeNames(codes: string[]): string {
@@ -58,25 +63,25 @@ function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: s
   // Auto-saves as you type / on blur / on close — no need to press Enter.
   const { text, onChange, flush, saveNow } = useAutoSaveText(value, onSave);
   return (
-    <div className="noterow">
-      <input
-        className="detailbox__text"
+    <div className={styles.noteRow}>
+      <TextField
+        className={styles.detailText}
+        label="Note"
+        labelHidden
         placeholder="Type a note…"
         value={text}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         onBlur={flush}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
       />
       {!!text && (
-        <button
-          type="button"
-          className="noterow__clear"
-          onClick={() => saveNow("")}
+        <Pressable
+          className={styles.noteClear}
+          onPress={() => saveNow("")}
           aria-label="Remove note"
-          title="Remove the note"
         >
           <X size={15} />
-        </button>
+        </Pressable>
       )}
     </div>
   );
@@ -91,29 +96,28 @@ function TirePicker({ tires, onChange }: { tires: string[] | undefined; onChange
   }
   const summary = retorqueTiresDisplay(tires);
   return (
-    <div className="detailbox detailbox--col">
-      <div className="detailbox__label">Which tires?</div>
-      <div className="tirepick">
-        <div className="tirepick__hint">▲ front of bus</div>
+    <div className={`${styles.detailBox} ${styles.detailColumn}`}>
+      <div className={styles.detailLabel}>Which tires?</div>
+      <div className={styles.tirePicker}>
+        <div className={styles.tireHint}>▲ front of bus</div>
         {RETORQUE_TIRES.map((t) => (
-          <button
+          <Pressable
             key={t.id}
-            type="button"
-            className={`tirebtn ${set.has(t.id) ? "tirebtn--on" : ""}`}
-            onClick={() => toggle(t.id)}
+            className={`${styles.tireButton} ${set.has(t.id) ? styles.tireButtonSelected : ""}`}
+            onPress={() => toggle(t.id)}
           >
             {set.has(t.id) ? "✓ " : ""}
             {t.label}
-          </button>
+          </Pressable>
         ))}
-        <div className="tirepick__hint">▼ rear of bus</div>
+        <div className={styles.tireHint}>▼ rear of bus</div>
       </div>
       {summary ? (
-        <div className="detailbox__sum">
+        <div className={styles.detailSummary}>
           Shows as <strong>{summary}</strong>
         </div>
       ) : (
-        <div className="detailbox__warn">Pick at least one tire</div>
+        <div className={styles.detailWarning}>Pick at least one tire</div>
       )}
     </div>
   );
@@ -123,25 +127,26 @@ function HoldReasonPicker({ reason, onChange: onSave }: { reason: string | undef
   // Same auto-save behavior for the free-text "Other reason".
   const { text, onChange, flush, saveNow } = useAutoSaveText(reason, onSave);
   return (
-    <div className="detailbox detailbox--col">
-      <div className="detailbox__label">Hold reason (optional)</div>
-      <div className="reasonpick">
+    <div className={`${styles.detailBox} ${styles.detailColumn}`}>
+      <div className={styles.detailLabel}>Hold reason (optional)</div>
+      <div className={styles.reasonPicker}>
         {HOLD_REASONS.map((r) => (
-          <button
+          <Pressable
             key={r}
-            type="button"
-            className={`deptchip ${reason === r ? "deptchip--on--maintenance" : ""}`}
-            onClick={() => saveNow(r)}
+            className={`${styles.choiceChip} ${reason === r ? styles.choiceMaintenance : ""}`}
+            onPress={() => saveNow(r)}
           >
             {r}
-          </button>
+          </Pressable>
         ))}
       </div>
-      <input
-        className="detailbox__text"
+      <TextField
+        className={styles.detailText}
+        label="Other hold reason"
+        labelHidden
         placeholder="Other reason…"
         value={text}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         onBlur={flush}
         onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
       />
@@ -153,7 +158,7 @@ function HoldReasonPicker({ reason, onChange: onSave }: { reason: string | undef
 function FlagCodeHint({ id }: { id: string }) {
   const codes = flagObjectCodes(id);
   if (!codes.length) return null;
-  return <small className="flagcode">Code {codes.slice(0, 2).join(", ")}</small>;
+  return <small className={styles.flagCode}>Code {codes.slice(0, 2).join(", ")}</small>;
 }
 
 function InspOptionPicker({
@@ -168,27 +173,27 @@ function InspOptionPicker({
   onFollowUpToggle?: () => void;
 }) {
   return (
-    <div className="detailbox detailbox--col">
-      <div className="detailbox__label">Inspection type / follow up</div>
-      <div className="reasonpick">
+    <div className={`${styles.detailBox} ${styles.detailColumn}`}>
+      <div className={styles.detailLabel}>Inspection type / follow up</div>
+      <div className={styles.reasonPicker}>
         {INSPECTION_OPTIONS.map((o) => (
-          <button
+          <Pressable
             key={o.id}
-            type="button"
-            className={`deptchip ${inspectionOptionFromText(option)?.id === o.id ? "deptchip--on--service" : ""}`}
-            onClick={() => onChange(inspectionOptionFromText(option)?.id === o.id ? "" : o.id)}
+            className={`${styles.choiceChip} ${
+              inspectionOptionFromText(option)?.id === o.id ? styles.choiceService : ""
+            }`}
+            onPress={() => onChange(inspectionOptionFromText(option)?.id === o.id ? "" : o.id)}
           >
             {o.label}
-          </button>
+          </Pressable>
         ))}
         {onFollowUpToggle && (
-          <button
-            type="button"
-            className={`deptchip ${followUpActive ? "deptchip--on--service" : ""}`}
-            onClick={onFollowUpToggle}
+          <Pressable
+            className={`${styles.choiceChip} ${followUpActive ? styles.choiceService : ""}`}
+            onPress={onFollowUpToggle}
           >
             Follow up
-          </button>
+          </Pressable>
         )}
       </div>
     </div>
@@ -284,15 +289,23 @@ function FlagPicker({ entry, onChange, searchRef }: {
   const hasNote = !!(entry.note || "").trim();
 
   return (
-    <div className="flagpick">
+    <div className={styles.flagPicker}>
       {active.length > 0 && (
-        <div className="flagpick__active">
+        <div className={styles.activeFlags}>
           {active.map((id) => (
-            <span className={`fpill fpill--${TIER_CLASS[flagTier(id)]} fpill--custom`} style={flagColorStyle(id) as CSSProperties} key={id}>
+            <span
+              className={styles.removableFlag}
+              style={flagColorStyle(id) as CSSProperties}
+              key={id}
+            >
               {pillLabel(id)}
-              <button className="fpill__x" onClick={() => remove(id)} aria-label={`Remove ${flagName(id)}`}>
+              <Pressable
+                className={styles.removeFlag}
+                onPress={() => remove(id)}
+                aria-label={`Remove ${flagName(id)}`}
+              >
                 <X size={14} />
-              </button>
+              </Pressable>
             </span>
           ))}
         </div>
@@ -302,7 +315,7 @@ function FlagPicker({ entry, onChange, searchRef }: {
       {["hold", "inspection", "retorque"]
         .filter((id) => detailShown(id))
         .map((id) => (
-          <div className="flagpick__detail" key={`${id}-detail`}>
+          <div className={styles.flagDetail} key={`${id}-detail`}>
             {id === "retorque" && <TirePicker tires={entry.retorqueTires || []} onChange={setTires} />}
             {id === "hold" && (
               <HoldReasonPicker reason={entry.holdReason || ""} onChange={(r) => onChange({ ...entry, holdReason: r })} />
@@ -323,42 +336,38 @@ function FlagPicker({ entry, onChange, searchRef }: {
           </div>
         ))}
 
-      <div className="flagpick__searchwrap">
-        <Search size={17} className="flagpick__searchic" />
-        <input
-          ref={activeSearchRef}
-          className="flagpick__search"
-          placeholder="Search flags or object codes..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {!!query && (
-          <button className="flagpick__searchx" onClick={() => setQuery("")} aria-label="Clear search">
-            <X size={15} />
-          </button>
-        )}
-      </div>
+      <SearchField
+        className={styles.flagSearch}
+        inputRef={activeSearchRef}
+        label="Search flags or object codes"
+        labelHidden
+        placeholder="Search flags or object codes..."
+        value={query}
+        onChange={setQuery}
+      />
 
       {query ? (
-        <div className="flagpick__results">
-          {results.length === 0 && <div className="flagpick__none">No flags match “{query}”.</div>}
+        <div className={styles.flagResults}>
+          {results.length === 0 && <div className={styles.noResults}>No flags match “{query}”.</div>}
           {results.map((f) => {
             const on = isActive(f.id) || entry.flags.includes(f.id);
             return (
-              <button
+              <Pressable
                 key={f.id}
-                className={`flagresult ${on ? "flagresult--on" : ""}`}
-                onClick={() => {
+                className={`${styles.flagResult} ${on ? styles.flagResultSelected : ""}`}
+                onPress={() => {
                   toggle(f.id);
                   setQuery("");
                 }}
               >
-                <span className="flagresult__ic">{on ? <Check size={16} /> : <Plus size={16} />}</span>
+                <span className={styles.flagResultIcon}>
+                  {on ? <Check size={16} /> : <Plus size={16} />}
+                </span>
                 <span>
                   {flagName(f.id)}
                   <FlagCodeHint id={f.id} />
                 </span>
-              </button>
+              </Pressable>
             );
           })}
         </div>
@@ -366,33 +375,33 @@ function FlagPicker({ entry, onChange, searchRef }: {
         <>
           {common.length > 0 && (
             <div>
-              <div className="flagpick__label">Most used here</div>
-              <div className="flagpick__chips">
+              <div className={styles.sectionLabel}>Most used here</div>
+              <div className={styles.flagChips}>
                 {common.map((id) => (
-                  <button key={id} className="flagchip" onClick={() => add(id)}>
+                  <Pressable key={id} className={styles.flagChip} onPress={() => add(id)}>
                     {flagName(id)}
                     <FlagCodeHint id={id} />
-                  </button>
+                  </Pressable>
                 ))}
               </div>
             </div>
           )}
-          <div className="flagpick__hint">
+          <div className={styles.flagHint}>
             <span>{ASSIGNABLE_FLAGS.length} total flags available. Use the field above for object-code flags.</span>
           </div>
         </>
       )}
 
-      <div className="flagpick__noteblock">
+      <div className={styles.noteBlock}>
         {noteOpen || hasNote ? (
           <>
-            <div className="flagpick__label">Note</div>
+            <div className={styles.sectionLabel}>Note</div>
             <NoteInput value={entry.note} onSave={(n) => onChange({ ...entry, note: n })} />
           </>
         ) : (
-          <button className="flagpick__addnote" onClick={() => setNoteOpen(true)}>
+          <Pressable className={styles.addNote} onPress={() => setNoteOpen(true)}>
             <Plus size={15} /> Add a note
-          </button>
+          </Pressable>
         )}
       </div>
     </div>
@@ -417,6 +426,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   const [busInput, setBusInput] = useState("");
   const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
   const [bulkRemoving, setBulkRemoving] = useState(false);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const flagSearchRef = useRef<HTMLInputElement>(null);
 
   // Typing a full bus number on the By bus tab opens its flag editor.
@@ -491,8 +501,6 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   }
   async function removeFlagFromAll() {
     if (!flagBuses.length || bulkRemoving) return;
-    const name = pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag);
-    if (!window.confirm(`Remove ${name} from all ${flagBuses.length} matching buses?`)) return;
     setBulkRemoving(true);
     let failed = 0;
     try {
@@ -525,64 +533,69 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     : flagBuses;
 
   return (
-    <Overlay
-      onClose={onClose}
-      overlayClassName="modal-backdrop no-print"
-      contentClassName="modal modal--tall modal--flags"
-      label="Edit flags"
-      onOpenFocus={() => flagSearchRef.current?.focus({ preventScroll: true })}
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={tab === "bus" && openBus ? `Bus ${label(openBus)}` : "Edit flags"}
+      description={
+        tab === "bus" && openBus
+          ? typeNames(types(openBus)) || "Add or remove maintenance flags"
+          : "Search by bus or manage every bus carrying a flag."
+      }
+      size="lg"
+      bodyClassName={styles.body}
+      footer={(close) => (
+        <Button variant="primary" onPress={close}>
+          Done
+        </Button>
+      )}
     >
-      <div className={`manager__inner${tab === "bus" && openBus ? " manager__inner--fit" : ""}`}>
-        <div className="manager__bar">
-          {tab === "bus" && openBus ? (
-            <>
-              <button className="busdetail__back" onClick={() => setOpenBus(null)} aria-label="Back to bus list">
-                <ChevronLeft size={20} />
-              </button>
-              <span className="busdetail__num">{label(openBus)}</span>
-              {typeNames(types(openBus)).length > 0 && (
-                <span className="busdetail__type">{typeNames(types(openBus))}</span>
-              )}
-            </>
-          ) : (
-            <div className="manager__title">Edit flags</div>
-          )}
-          <div className="toolbar__spacer" />
-          <button className="btn" onClick={closeOverlayFromEvent}>
-            Done
-          </button>
-        </div>
+      <div className={`${styles.inner} ${tab === "bus" && openBus ? styles.innerFit : ""}`}>
+        {tab === "bus" && openBus && (
+          <div className={styles.detailBar}>
+            <Button variant="quiet" size="sm" onPress={() => setOpenBus(null)}>
+              <ChevronLeft aria-hidden="true" /> All buses
+            </Button>
+          </div>
+        )}
 
         {/* The By bus / By flag tabs are only useful when browsing — hide them
             while editing a single bus so that view stays compact. */}
         {!(tab === "bus" && openBus) && (
-          <div className="tabs">
-            <button className={`tab ${tab === "bus" ? "tab--on" : ""}`} onClick={() => setTab("bus")}>
-              By bus
-            </button>
-            <button className={`tab ${tab === "flag" ? "tab--on" : ""}`} onClick={() => setTab("flag")}>
-              By flag
-            </button>
-          </div>
+          <TabBar
+            className={styles.tabs}
+            label="Flag editor view"
+            selectedKey={tab}
+            onSelectionChange={(key) => setTab(key === "flag" ? "flag" : "bus")}
+            items={[
+              { id: "bus", label: "By bus" },
+              { id: "flag", label: "By flag" },
+            ]}
+          />
         )}
 
         {tab === "bus" &&
           (openBus ? (
-            <div className="manager__list">
+            <div className={styles.list}>
               <FlagPicker key={openBus} entry={getEntry(openBus)} onChange={(e) => save(openBus, e)} searchRef={flagSearchRef} />
             </div>
           ) : (
             <>
-              <input
-                className="manager__search"
+              <SearchField
+                className={styles.search}
+                label="Search bus number"
+                labelHidden
                 placeholder="Search bus number…"
                 value={query}
                 inputMode="numeric"
-                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+                onChange={(value) => setQuery(sanitizeBus(value))}
               />
-              <div className="manager__list">
+              <div className={styles.list}>
                 {busList.length === 0 && (
-                  <div className="lotlist__empty">
+                  <div className={styles.empty}>
                     {q ? "No buses match." : "No flagged buses yet — search a bus number to flag it."}
                   </div>
                 )}
@@ -590,22 +603,22 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                   const e = getEntry(bus);
                   const hasContent = (e.flags || []).length > 0 || !!(e.note || "").trim();
                   return (
-                    <button className="busrow" key={bus} onClick={() => setOpenBus(bus)}>
-                      <div className="busrow__main">
-                        <div className="busrow__top">
-                          <span className="busrow__num">{label(bus)}</span>
-                          <TypeCodes num={bus} />
+                    <Pressable className={styles.busRow} key={bus} onPress={() => setOpenBus(bus)}>
+                      <div className={styles.busRowMain}>
+                        <div className={styles.busRowTop}>
+                          <span className={styles.busNumber}>{label(bus)}</span>
+                          <TypeCodes num={bus} variant="ui" />
                         </div>
-                        <div className="busrow__pills">
+                        <div className={styles.busRowPills}>
                           {hasContent ? (
                             <FlagPills entry={e} />
                           ) : (
-                            <span className="busrow__none">No flags — tap to add</span>
+                            <span className={styles.busRowNone}>No flags — tap to add</span>
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="busrow__chev" size={18} />
-                    </button>
+                      <ChevronRight className={styles.chevron} size={18} />
+                    </Pressable>
                   );
                 })}
               </div>
@@ -613,99 +626,124 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           ))}
 
         {tab === "flag" && (
-          <div className="byflag">
-            <div className="depttabs">
+          <div className={styles.byFlag}>
+            <div className={styles.departmentTabs}>
               {departments.map((d) => (
-                <button
+                <Pressable
                   key={d.id}
-                  className={`depttab depttab--${d.id} ${dept === d.id ? "depttab--on" : ""}`}
-                  onClick={() => {
+                  className={`${styles.departmentTab} ${
+                    dept === d.id ? styles[`departmentTabSelected${d.id[0].toUpperCase()}${d.id.slice(1)}`] : ""
+                  }`}
+                  onPress={() => {
                     setDept(d.id);
                     setPickedFlag(d.flags[0]);
                     setPending([]);
                   }}
                 >
                   {d.label}
-                </button>
+                </Pressable>
               ))}
             </div>
 
-            <div className="flagpicker">
+            <div className={styles.departmentFlags}>
               {deptObj.flags.map((id) => (
-                <button
+                <Pressable
                   key={id}
-                  className={`deptchip ${pickedFlag === id ? `deptchip--on--${dept}` : ""}`}
-                  onClick={() => {
+                  className={`${styles.choiceChip} ${
+                    pickedFlag === id
+                      ? dept === "service"
+                        ? styles.choiceService
+                        : dept === "maintenance"
+                          ? styles.choiceMaintenance
+                          : styles.choiceSafety
+                      : ""
+                  }`}
+                  onPress={() => {
                     setPickedFlag(id);
                     setPending([]);
                   }}
                 >
                   {flagName(id)}
                   <FlagCodeHint id={id} />
-                </button>
+                </Pressable>
               ))}
-              <button
-                className={`deptchip ${pickedFlag === NOTE_FLAG ? `deptchip--on--${dept}` : ""}`}
-                onClick={() => {
+              <Pressable
+                className={`${styles.choiceChip} ${
+                  pickedFlag === NOTE_FLAG
+                    ? dept === "service"
+                      ? styles.choiceService
+                      : dept === "maintenance"
+                        ? styles.choiceMaintenance
+                        : styles.choiceSafety
+                    : ""
+                }`}
+                onPress={() => {
                   setPickedFlag(NOTE_FLAG);
                   setPending([]);
                 }}
               >
                 Other (note)
-              </button>
+              </Pressable>
             </div>
 
-            <div className="byflag__add">
-              <input
-                className="manager__search byflag__input"
+            <div className={styles.addBus}>
+              <TextField
+                className={styles.busInput}
+                label="Add bus number"
+                labelHidden
                 placeholder="Add bus number..."
                 value={busInput}
                 inputMode="numeric"
-                onChange={(e) => {
-                  const v = sanitizeBus(e.target.value);
+                onChange={(value) => {
+                  const v = sanitizeBus(value);
                   if (isKnown(v)) addBusToFlag(v);
                   else setBusInput(v);
                 }}
                 onKeyDown={(e) => e.key === "Enter" && addBusToFlag()}
               />
-              <button className="btn btn--primary" onClick={() => addBusToFlag()}>
+              <Button variant="primary" onPress={() => addBusToFlag()}>
                 Add
-              </button>
+              </Button>
             </div>
             {requiresDetail(pickedFlag) && (
-              <div className="byflag__hint">
+              <div className={styles.byFlagHint}>
                 Add a bus, then {pickedFlag === NOTE_FLAG ? "type its note" : `pick its ${pickedFlag === "retorque" ? "tire(s)" : "reason"}`} below —
                 it won&apos;t save until you do.
               </div>
             )}
 
-            <div className="byflag__bar">
-              <span className="byflag__count">
+            <div className={styles.byFlagBar}>
+              <span className={styles.byFlagCount}>
                 {flagBuses.length} bus{flagBuses.length === 1 ? "" : "es"}{" "}
                 {pickedFlag === NOTE_FLAG ? "with a note" : `flagged ${flagName(pickedFlag)}`}
               </span>
               {flagBuses.length > 0 && (
-                <button className="byflag__bulk" onClick={removeFlagFromAll} disabled={bulkRemoving}>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onPress={() => setBulkConfirmOpen(true)}
+                  isDisabled={bulkRemoving}
+                >
                   <Trash2 size={14} />
                   {bulkRemoving ? "Removing..." : "Remove from all"}
-                </button>
+                </Button>
               )}
             </div>
 
-            <div className="manager__list">
+            <div className={styles.list}>
               {flagRows.map((bus) => {
                 const entry = getEntry(bus);
                 return (
-                  <div className="flagrow" key={bus}>
-                    <div className="flagrow__head">
-                      <span className="busblock__num">{label(bus)}</span>
-                      <span className="busblock__type">
-                        <TypeCodes num={bus} />
+                  <div className={styles.flagRow} key={bus}>
+                    <div className={styles.flagRowHead}>
+                      <span className={styles.busNumber}>{label(bus)}</span>
+                      <span className={styles.busType}>
+                        <TypeCodes num={bus} variant="ui" />
                       </span>
-                      <div className="toolbar__spacer" />
-                      <button className="busrow__clear" onClick={() => removeFromFlag(bus)}>
+                      <div className={styles.spacer} />
+                      <Pressable className={styles.removeBus} onPress={() => removeFromFlag(bus)}>
                         {isPending(bus) ? "Cancel" : "Remove"}
-                      </button>
+                      </Pressable>
                     </div>
                     {pickedFlag === "retorque" && (
                       <TirePicker key={bus} tires={entry.retorqueTires || []} onChange={(t) => setTiresFor(bus, t)} />
@@ -745,6 +783,18 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           </div>
         )}
       </div>
-    </Overlay>
+      <ConfirmDialog
+        isOpen={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        title="Remove this flag from every bus?"
+        description={`This will remove ${
+          pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag)
+        } from ${flagBuses.length} matching bus${flagBuses.length === 1 ? "" : "es"}.`}
+        confirmLabel="Remove from all"
+        tone="danger"
+        isPending={bulkRemoving}
+        onConfirm={removeFlagFromAll}
+      />
+    </ResponsiveDialog>
   );
 }

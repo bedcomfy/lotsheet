@@ -1,9 +1,21 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { FLAGS, flagName } from "../lib/grid";
 import { OBJECT_CODES } from "../lib/objectCodes";
+import {
+  AppPage,
+  Button,
+  DataTableFrame,
+  EmptyState,
+  PageHeader,
+  SearchField,
+  StaticChip,
+  Toolbar,
+  ToolbarGroup,
+} from "../ui";
+import styles from "./ObjectCodesPage.module.css";
 
 const FLAG_BY_CODE = FLAGS.reduce<Record<string, string[]>>((acc, flag) => {
   for (const code of flag.objectCodes || []) {
@@ -14,41 +26,46 @@ const FLAG_BY_CODE = FLAGS.reduce<Record<string, string[]>>((acc, flag) => {
 
 export default function ObjectCodesPage() {
   const [query, setQuery] = useState("");
-  // Deferred: keystrokes repaint instantly; re-rendering ~370 rows follows async.
   const q = useDeferredValue(query).trim().toLowerCase();
   const rows = useMemo(() => {
     if (!q) return OBJECT_CODES;
     return OBJECT_CODES.filter((item) =>
-      `${item.code} ${item.description}`.toLowerCase().includes(q)
+      `${item.code} ${item.description}`.toLowerCase().includes(q),
     );
   }, [q]);
 
   return (
-    <main className="objectcodes">
-      <section className="objectcodes__head">
-        <div>
-          <div className="homehero__eyebrow">Utilities</div>
-          <h1>Object Codes</h1>
-          <p>Search the maintenance object-code reference by number or description. Every code is available as a flag in the flag editor.</p>
-        </div>
-        <div className="objectcodes__search">
-          <Search size={17} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search code or description..."
-            autoComplete="off"
-          />
-        </div>
-      </section>
+    <AppPage className={styles.page}>
+      <PageHeader
+        eyebrow="Utilities"
+        title="Object Codes"
+        description="Search the maintenance reference by number or description. Every code is available in the flag editor."
+      />
 
-      <section className="objectcodes__bar">
-        <span>{rows.length} of {OBJECT_CODES.length} codes</span>
-        {q && <button className="btn" onClick={() => setQuery("")}>Clear</button>}
-      </section>
+      <Toolbar>
+        <SearchField
+          label="Search object codes"
+          labelHidden
+          value={query}
+          onChange={setQuery}
+          placeholder="Search code or description"
+          autoComplete="off"
+          className={styles.search}
+        />
+        <ToolbarGroup>
+          <span className={styles.count}>
+            <strong>{rows.length}</strong> of {OBJECT_CODES.length} codes
+          </span>
+          {q && (
+            <Button variant="quiet" onPress={() => setQuery("")}>
+              <X aria-hidden="true" /> Clear
+            </Button>
+          )}
+        </ToolbarGroup>
+      </Toolbar>
 
-      <section className="objectcodes__table" aria-label="Object codes">
-        <div className="objectcodes__row objectcodes__row--head">
+      <DataTableFrame className={styles.table} aria-label="Object codes">
+        <div className={`${styles.row} ${styles.rowHead}`}>
           <span>Object Code</span>
           <span>Description</span>
           <span>Daily Flag Link</span>
@@ -56,19 +73,36 @@ export default function ObjectCodesPage() {
         {rows.map((item) => {
           const linkedFlags = FLAG_BY_CODE[item.code] || [];
           return (
-            <article className="objectcodes__row" key={item.code}>
-              <strong>{item.code}</strong>
-              <span>{item.description}</span>
-              <span className="objectcodes__flags">
-                {linkedFlags.length
-                  ? linkedFlags.map((id) => <em key={id}>{flagName(id)}</em>)
-                  : <small>Object flag only</small>}
+            <article className={styles.row} key={item.code}>
+              <strong className={styles.code}>{item.code}</strong>
+              <span className={styles.description}>{item.description}</span>
+              <span className={styles.flags}>
+                {linkedFlags.length ? (
+                  linkedFlags.map((id) => (
+                    <StaticChip key={id} tone="accent">
+                      {flagName(id)}
+                    </StaticChip>
+                  ))
+                ) : (
+                  <span className={styles.objectOnly}>Object flag only</span>
+                )}
               </span>
             </article>
           );
         })}
-        {!rows.length && <div className="objectcodes__empty">No object codes match that search.</div>}
-      </section>
-    </main>
+        {!rows.length && (
+          <EmptyState
+            icon={<BookOpen />}
+            title="No matching object codes"
+            description="Try a different code number or a broader description."
+            action={
+              <Button variant="secondary" onPress={() => setQuery("")}>
+                Clear search
+              </Button>
+            }
+          />
+        )}
+      </DataTableFrame>
+    </AppPage>
   );
 }

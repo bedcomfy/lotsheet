@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { Button } from "./ui";
+import styles from "./ErrorPage.module.css";
 
 // Route-level error boundary: if any page/segment throws while rendering, this
 // friendly fallback shows instead of a white screen. "Try again" re-renders the
@@ -18,22 +20,22 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="errpage">
-      <div className="errpage__card">
+    <main className={styles.page}>
+      <div className={styles.card}>
         <h1>Something went wrong</h1>
         <p>
           This screen hit an unexpected error. Your saved sheets and data are safe — try again, or
           head back to the home screen.
         </p>
-        <div className="errpage__actions">
-          <button className="btn btn--primary" onClick={() => reset()}>
+        <div className={styles.actions}>
+          <Button variant="primary" onPress={() => reset()}>
             Try again
-          </button>
-          <a className="btn" href="/home">
+          </Button>
+          <Button onPress={() => window.location.assign("/home")}>
             Go to Home
-          </a>
+          </Button>
         </div>
-        {error?.digest && <p className="errpage__digest">Reference: {error.digest}</p>}
+        {error?.digest && <p className={styles.digest}>Reference: {error.digest}</p>}
       </div>
     </main>
   );

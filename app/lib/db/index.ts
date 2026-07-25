@@ -41,6 +41,8 @@ const DDL: string[] = [
   `CREATE TABLE IF NOT EXISTS ${T("sheet_history")} (id BIGSERIAL PRIMARY KEY, data JSONB, saved_at TIMESTAMPTZ DEFAULT now())`,
   `ALTER TABLE ${T("sheet_history")} ADD COLUMN IF NOT EXISTS sheet_key TEXT`,
   `CREATE TABLE IF NOT EXISTS ${T("lot_sheet_ops")} (revision BIGSERIAL PRIMARY KEY, op JSONB NOT NULL, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
+  `ALTER TABLE ${T("lot_sheet_ops")} ADD COLUMN IF NOT EXISTS op_id TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS ${T("lot_sheet_ops_op_id_unique")} ON ${T("lot_sheet_ops")} (op_id) WHERE op_id IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS ${T("audit_events")} (id BIGSERIAL PRIMARY KEY, kind TEXT NOT NULL, actor TEXT, details JSONB, created_at TIMESTAMPTZ DEFAULT now())`,
 ];
 

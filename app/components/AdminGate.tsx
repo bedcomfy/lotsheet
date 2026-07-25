@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
+import { AppPage, Button, PageHeader, Panel, TextField } from "../ui";
+import styles from "./AdminGate.module.css";
 
 export default function AdminGate({ children }: { children: ReactNode }) {
   const { unlocked, tryUnlock } = useAdminUnlock();
@@ -16,38 +18,39 @@ export default function AdminGate({ children }: { children: ReactNode }) {
   if (unlocked) return <>{children}</>;
 
   return (
-    <main className="adminpage">
-      <section className="adminhero">
-        <div>
-          <span className="adminhero__eyebrow">Admin Tools</span>
-          <h1>Protected Settings</h1>
-          <p>These controls change how the shared sheets behave for everyone.</p>
-        </div>
-      </section>
-      <section className="adminpanel adminpanel--gate">
-        <div>
-          <h2>Unlock Admin Tools</h2>
-          <p>Use the same password as Bus Lists.</p>
-        </div>
-        <div className="admingate">
-          <input
-            className="manager__search"
+    <AppPage className={styles.page}>
+      <PageHeader
+        eyebrow="Admin Tools"
+        title="Protected Settings"
+        description="These controls change how the shared sheets behave for everyone."
+      />
+      <Panel
+        className={styles.panel}
+        title="Unlock Admin Tools"
+        description="Use the same password as Bus Lists."
+      >
+        <div className={styles.form}>
+          <TextField
+            label="Password"
             type="password"
-            placeholder="Password"
+            placeholder="Enter admin password"
             value={password}
             autoFocus
-            onChange={(e) => {
-              setPassword(e.target.value);
+            isInvalid={error}
+            errorMessage={error ? "Wrong password." : undefined}
+            onChange={(value) => {
+              setPassword(value);
               setError(false);
             }}
-            onKeyDown={(e) => e.key === "Enter" && unlock()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") unlock();
+            }}
           />
-          <button className="btn btn--primary" onClick={unlock}>
+          <Button variant="primary" size="lg" onPress={unlock}>
             Unlock
-          </button>
+          </Button>
         </div>
-        {error && <div className="pwgate__err">Wrong password.</div>}
-      </section>
-    </main>
+      </Panel>
+    </AppPage>
   );
 }

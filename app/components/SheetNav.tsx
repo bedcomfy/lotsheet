@@ -1,327 +1,144 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  Activity,
-  BusFront,
   ChevronDown,
-  ClipboardList,
-  FileText,
-  Fuel,
-  Home,
-  RefreshCw,
   Search,
-  SearchCode,
-  ShieldAlert,
-  Users,
-  Wrench,
-  X,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import GlobalBusSearch from "./GlobalBusSearch";
 import { useMobileNav } from "./MobileNavContext";
 import { APP_VERSION } from "../lib/appVersion";
-
-export interface SheetLink {
-  path: string;
-  label: string;
-  icon: LucideIcon;
-  description: string;
-  matchPrefix?: string;
-}
-
-const HOME_LINK: SheetLink = {
-  path: "/home",
-  label: "Home",
-  icon: Home,
-  description: "Fleet status and daily overview",
-};
-
-export const DAILY_SHEETS: SheetLink[] = [
-  {
-    path: "/",
-    label: "Lot Sheet",
-    icon: ClipboardList,
-    description: "Live bus locations, flags, and lots",
-  },
-  {
-    path: "/turnover",
-    label: "Turnover Sheet",
-    icon: RefreshCw,
-    description: "Shift handoff and first-half notes",
-  },
-  {
-    path: "/service",
-    label: "Service Sheets",
-    icon: Fuel,
-    matchPrefix: "/service",
-    description: "Fuel, DEF, farebox, and lane sheets",
-  },
-];
-
-export const SHOP_SHEETS: SheetLink[] = [
-  {
-    path: "/shop",
-    label: "Shop",
-    icon: Wrench,
-    description: "Bays, cards, apron, and shop work",
-  },
-  {
-    path: "/buses",
-    label: "Fleet",
-    icon: BusFront,
-    description: "Find buses, locations, flags, and service status",
-  },
-];
-
-export const FORM_SHEETS: SheetLink[] = [
-  {
-    path: "/workorder",
-    label: "Work Order",
-    icon: FileText,
-    description: "Create and print Oracle eAM work orders",
-  },
-];
-
-export const STAFFING_LINK: SheetLink = {
-  path: "/staffing/seniority",
-  label: "Staffing",
-  icon: Users,
-  matchPrefix: "/staffing",
-  description: "Seniority, employees, and work picks",
-};
-
-export const ADMIN_LINK: SheetLink = {
-  path: "/admin/flags",
-  label: "Admin Tools",
-  icon: ShieldAlert,
-  matchPrefix: "/admin",
-  description: "Manage flags, fleet, and employees",
-};
-
-export const UTILITY_LINKS: SheetLink[] = [
-  {
-    path: "/object-codes",
-    label: "Object Codes",
-    icon: SearchCode,
-    description: "Search maintenance codes and descriptions",
-  },
-];
-
-export const SYSTEM_LINKS: SheetLink[] = [
-  {
-    path: "/audit",
-    label: "Audit Log",
-    icon: Activity,
-    description: "Review changes across every sheet",
-  },
-];
-
-export const NAV_LINKS: SheetLink[] = [
-  ...DAILY_SHEETS,
-  ...SHOP_SHEETS,
-  ...FORM_SHEETS,
-  STAFFING_LINK,
-  ...UTILITY_LINKS,
-];
-export const BOTTOM_LINKS: SheetLink[] = [ADMIN_LINK, ...SYSTEM_LINKS];
-export const SHEETS: SheetLink[] = [HOME_LINK, ...NAV_LINKS, ...BOTTOM_LINKS];
-
-const NAV_GROUPS = [
-  { label: "Workspace", links: [HOME_LINK] },
-  { label: "Operations", links: [...DAILY_SHEETS, ...SHOP_SHEETS, ...FORM_SHEETS] },
-  { label: "Workforce", links: [STAFFING_LINK] },
-  { label: "Reference", links: UTILITY_LINKS },
-  { label: "Administration", links: [ADMIN_LINK, ...SYSTEM_LINKS] },
-];
-
-function isActive(sheet: SheetLink, pathname: string | null): boolean {
-  if (!pathname) return false;
-  if (sheet.matchPrefix) return pathname === sheet.path || pathname.startsWith(sheet.matchPrefix);
-  return pathname === sheet.path;
-}
+import {
+  APP_ROUTES,
+  currentAppRoute,
+  NAVIGATION_GROUPS,
+} from "../lib/navigation";
+import { AppNavigation, type NavigationItem } from "../ui/Navigation";
+import {
+  NavigationHub,
+  type NavigationHubItem,
+} from "../ui/NavigationHub";
+import { Pressable } from "../ui/Pressable";
+import styles from "./SheetNav.module.css";
 
 export default function SheetNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const currentSheet = SHEETS.find((sheet) => isActive(sheet, pathname)) || DAILY_SHEETS[0];
+  const searchParams = useSearchParams();
+  const currentSheet = currentAppRoute(pathname);
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [globalFind, setGlobalFind] = useState("");
   const { lotStatus, openLotSearch, openLotStatus } = useMobileNav();
   const isLotSheet = currentSheet.path === "/";
+  const printMode = searchParams.get("print") === "1";
 
-  useEffect(() => {
-    if (!switcherOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSwitcherOpen(false);
+  if (printMode) return null;
+
+  const navigationItems: NavigationItem[] = NAVIGATION_GROUPS.flatMap(
+    (group) =>
+      group.routes.filter((route) => route.path !== "/buses").map((route) => {
+        const Icon = route.icon;
+        return {
+          id: route.path,
+          label: route.label,
+          href: route.path,
+          section: group.label,
+          icon: <Icon size={18} />,
+        };
+      }),
+  );
+  const switcherItems: NavigationHubItem[] = APP_ROUTES.map((route) => {
+    const Icon = route.icon;
+    return {
+      id: route.path,
+      label: route.label,
+      description: route.description,
+      icon: <Icon />,
     };
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [switcherOpen]);
+  });
 
   function navigate(path: string) {
     setSwitcherOpen(false);
     router.push(path);
   }
 
-  function findBus(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const bus = globalFind.trim();
-    router.push(bus ? `/?find=${encodeURIComponent(bus)}` : "/");
-  }
-
-  function renderLink(sheet: SheetLink) {
-    const Icon = sheet.icon;
-    return (
-      <button
-        key={sheet.path}
-        type="button"
-        className={`appnav__link ${isActive(sheet, pathname) ? "appnav__link--active" : ""}`}
-        onClick={() => navigate(sheet.path)}
-      >
-        <Icon size={18} />
-        <span>{sheet.label}</span>
-      </button>
-    );
-  }
-
   return (
     <>
-      <nav className="appnav no-print" aria-label="Main navigation">
-        <div className="appnav__brand">
-          <span className="appnav__mark">
+      <nav className={`${styles.navigation} no-print`} aria-label="Main navigation">
+        <div className={styles.brand}>
+          <span className={styles.mark}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="appnav__logo" src="/logo.png" alt="" />
+            <img className={styles.logo} src="/logo.png" alt="" />
           </span>
-          <span className="appnav__brandcopy">
-            <span className="appnav__name">Pace Northwest</span>
-            <span className="appnav__sub">Maintenance Logistics</span>
+          <span className={styles.brandCopy}>
+            <span className={styles.name}>Pace Northwest</span>
+            <span className={styles.subtitle}>Maintenance Logistics</span>
           </span>
         </div>
 
-        <div className="appnav__mobilebar">
-          <button
-            type="button"
-            className="appnav__pagetitle"
-            onClick={() => setSwitcherOpen(true)}
+        <div className={styles.mobileBar}>
+          <Pressable
+            className={styles.pageTitle}
+            onPress={() => setSwitcherOpen(true)}
             aria-expanded={switcherOpen}
             aria-haspopup="dialog"
           >
             <span>{currentSheet.label}</span>
             <ChevronDown size={17} />
-          </button>
+          </Pressable>
           {isLotSheet && lotStatus && (
-            <button type="button" className="appnav__status" onClick={openLotStatus}>
+            <Pressable className={styles.mobileStatus} onPress={openLotStatus}>
               <span>{lotStatus.usable} usable</span>
               <span aria-hidden="true">&middot;</span>
               <span>{lotStatus.outOfService} out</span>
-            </button>
+            </Pressable>
           )}
           {isLotSheet && (
-            <button type="button" className="appnav__search" onClick={openLotSearch} aria-label="Find bus">
+            <Pressable className={styles.mobileSearch} onPress={openLotSearch} aria-label="Find bus">
               <Search size={19} />
-            </button>
+            </Pressable>
           )}
         </div>
 
-        <div className="appnav__desktoplinks">
-          {NAV_GROUPS.map((group) => (
-            <div className="appnav__section" key={group.label}>
-              <div className="appnav__sectionlabel">{group.label}</div>
-              {group.links.map(renderLink)}
-            </div>
-          ))}
+        <div className={styles.desktopLinks}>
+          <AppNavigation
+            activeId={currentSheet.path}
+            items={navigationItems}
+            className={styles.desktopNavigation}
+          />
         </div>
-        <div className="appnav__section appnav__section--bottom">
+        <div className={styles.bottom}>
           <ThemeToggle />
-          <div className="appnav__version">
+          <div className={styles.version}>
             <span>Maintenance Logistics</span>
             <strong>v{APP_VERSION}</strong>
           </div>
         </div>
       </nav>
 
-      <header className="appheader no-print">
-        <div className="appheader__page">
+      <header className={`${styles.header} no-print`}>
+        <div className={styles.headerPage}>
           <strong>{currentSheet.label}</strong>
           <span>{currentSheet.description}</span>
         </div>
-        <form className="appheader__search" onSubmit={findBus}>
-          <Search size={18} />
-          <input
-            value={globalFind}
-            inputMode="numeric"
-            aria-label="Search fleet"
-            placeholder="Search fleet by bus number"
-            onChange={(event) => setGlobalFind(event.target.value.replace(/\D/g, "").slice(0, 5))}
-          />
-          <kbd>Enter</kbd>
-        </form>
-        <div className="appheader__status">
-          <span className="appheader__live"><i /> Live</span>
-          <button type="button" className="appheader__fleet" onClick={() => router.push("/buses")}>
-            <BusFront size={17} />
-            Fleet
-          </button>
-        </div>
+        <GlobalBusSearch />
       </header>
 
-      {switcherOpen && (
-        <div
-          className="pageswitch no-print"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Choose a page"
-          onClick={() => setSwitcherOpen(false)}
-        >
-          <div className="pageswitch__panel" onClick={(event) => event.stopPropagation()}>
-            <header className="pageswitch__head">
-              <div>
-                <h2>Pages</h2>
-                <p>Choose where you want to work.</p>
-              </div>
-              <button
-                type="button"
-                className="pageswitch__close"
-                onClick={() => setSwitcherOpen(false)}
-                aria-label="Close page switcher"
-              >
-                <X size={22} />
-              </button>
-            </header>
-            <div className="pageswitch__grid">
-              {SHEETS.map((sheet) => {
-                const Icon = sheet.icon;
-                const active = isActive(sheet, pathname);
-                return (
-                  <button
-                    key={sheet.path}
-                    type="button"
-                    className={`pageswitch__tile ${active ? "pageswitch__tile--active" : ""}`}
-                    onClick={() => navigate(sheet.path)}
-                  >
-                    <span className="pageswitch__icon"><Icon size={21} /></span>
-                    <span className="pageswitch__copy">
-                      <strong>{sheet.label}</strong>
-                      <small>{sheet.description}</small>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <footer className="pageswitch__foot">
-              <ThemeToggle />
-              <span>v{APP_VERSION}</span>
-            </footer>
+      <NavigationHub
+        isOpen={switcherOpen}
+        onOpenChange={setSwitcherOpen}
+        title="Pages"
+        description="Choose where you want to work."
+        items={switcherItems}
+        onAction={navigate}
+        footer={
+          <div className={styles.hubFooter}>
+            <ThemeToggle />
+            <span>v{APP_VERSION}</span>
           </div>
-        </div>
-      )}
+        }
+      />
     </>
   );
 }

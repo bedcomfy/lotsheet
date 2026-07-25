@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import { Lock } from "lucide-react";
+import { Button, ResponsiveDialog, TextField } from "../ui";
 
-// The "Edit" affordance on view-open / edit-gated pages (Seniority, Work Pick).
-// Parent owns the unlock state (via useAdminUnlock) and passes tryUnlock as
-// onSubmit; this only handles the inline password prompt. Rendered only while
-// locked — once unlocked the parent swaps in its own editing toolbar.
 export default function AdminUnlockButton({
   onSubmit,
   label = "Edit",
@@ -18,44 +15,68 @@ export default function AdminUnlockButton({
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
-  if (!open) {
-    return (
-      <button className="btn" onClick={() => setOpen(true)}>
-        <Lock size={15} /> {label}
-      </button>
-    );
+  function close() {
+    setOpen(false);
+    setPassword("");
+    setError(false);
   }
 
-  function submit() {
-    if (onSubmit(password)) {
-      setOpen(false);
-      setPassword("");
-      setError(false);
-    } else {
-      setError(true);
-    }
+  function submit(closeDialog: () => void) {
+    if (onSubmit(password)) closeDialog();
+    else setError(true);
   }
 
   return (
-    <div className="unlockbar">
-      <input
-        className="manager__search"
-        type="password"
-        placeholder="Password"
-        value={password}
-        autoFocus
-        onChange={(e) => {
-          setPassword(e.target.value);
-          setError(false);
+    <>
+      <Button variant="secondary" onPress={() => setOpen(true)}>
+        <Lock aria-hidden="true" /> {label}
+      </Button>
+      <ResponsiveDialog
+        isOpen={open}
+        onOpenChange={(next) => {
+          if (next) setOpen(true);
+          else close();
         }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") submit();
-          if (e.key === "Escape") setOpen(false);
-        }}
-      />
-      <button className="btn btn--primary" onClick={submit}>Unlock</button>
-      <button className="btn" onClick={() => { setOpen(false); setPassword(""); setError(false); }}>Cancel</button>
-      {error && <span className="unlockbar__err">Wrong password.</span>}
-    </div>
+        title="Unlock editing"
+        description="Use the Admin Tools password."
+        size="sm"
+        footer={(closeDialog) => (
+          <>
+            <Button variant="quiet" onPress={closeDialog}>
+              Cancel
+            </Button>
+            <Button
+              data-unlock-submit
+              variant="primary"
+              onPress={() => submit(closeDialog)}
+            >
+              Unlock
+            </Button>
+          </>
+        )}
+      >
+        <TextField
+          label="Password"
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          autoFocus
+          isInvalid={error}
+          errorMessage={error ? "Wrong password." : undefined}
+          onChange={(value) => {
+            setPassword(value);
+            setError(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              const submitButton = event.currentTarget
+                .closest("[role='dialog']")
+                ?.querySelector("[data-unlock-submit]") as HTMLButtonElement | null;
+              submitButton?.click();
+            }
+          }}
+        />
+      </ResponsiveDialog>
+    </>
   );
 }

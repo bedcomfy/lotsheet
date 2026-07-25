@@ -1,0 +1,34 @@
+.pill {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 0.25rem 0.55rem;
+  overflow: hidden;
+  border: 1px solid
+    color-mix(in srgb, var(--flag-color, var(--ui-accent)) 44%, var(--ui-border));
+  border-radius: var(--ui-radius-pill);
+  color: color-mix(
+    in srgb,
+    var(--flag-color, var(--ui-accent)) 52%,
+    var(--ui-text)
+  );
+  background: color-mix(
+    in srgb,
+    var(--flag-color, var(--ui-accent)) 12%,
+    var(--ui-surface)
+  );
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-medium);
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  border-color: var(--ui-border);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+}

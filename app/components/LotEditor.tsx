@@ -6,11 +6,12 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { Flag, GripVertical, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
-import Overlay from "./Overlay";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import TypeCodes from "./TypeCodes";
 import type { FlagEntry, FlagMap } from "../lib/types";
+import { Button, Pressable, ResponsiveDialog, TextField } from "../ui";
+import styles from "./LotEditor.module.css";
 
 interface LotEditorProps {
   title: string;
@@ -49,13 +50,13 @@ function LotRow({ sortId, bus, i, count, entry, sortable, onEditFlags, onMove, o
   return (
     <div
       ref={s.setNodeRef}
-      className={`lotitem ${s.isDragging ? "lotitem--dragging" : ""}`}
+      className={`${styles.row} ${s.isDragging ? styles.rowDragging : ""}`}
       style={{ transform: CSS.Transform.toString(s.transform), transition: s.transition }}
     >
       {sortable && (
         <button
           type="button"
-          className="lotitem__grip"
+          className={styles.grip}
           {...s.attributes}
           {...s.listeners}
           aria-label="Drag to reorder"
@@ -64,35 +65,35 @@ function LotRow({ sortId, bus, i, count, entry, sortable, onEditFlags, onMove, o
           <GripVertical size={15} />
         </button>
       )}
-      <div className="lotitem__info">
-        <span className="lotitem__idx">{i + 1}.</span>
-        <span className="lotitem__bus">{busLabel(bus)}</span>
-        <TypeCodes num={bus} />
+      <div className={styles.rowInfo}>
+        <span className={styles.index}>{i + 1}.</span>
+        <span className={styles.bus}>{busLabel(bus)}</span>
+        <TypeCodes num={bus} variant="ui" />
         {/* Flags as colored pills; the whole area taps into the flag editor
             (an "add flags" hint shows when the bus has none). */}
         {onEditFlags ? (
-          <button className="lotitem__flags" onClick={() => onEditFlags(bus)} title="Edit this bus's flags">
-            {hasFlags ? <FlagPills entry={entry} /> : <span className="lotitem__addflags"><Flag size={12} /> Add flags</span>}
-          </button>
+          <Pressable className={styles.flags} onPress={() => onEditFlags(bus)} aria-label="Edit this bus's flags">
+            {hasFlags ? <FlagPills entry={entry} /> : <span className={styles.addFlags}><Flag size={12} /> Add flags</span>}
+          </Pressable>
         ) : (
-          hasFlags && <span className="lotitem__flagpills"><FlagPills entry={entry} /></span>
+          hasFlags && <span className={styles.flagPills}><FlagPills entry={entry} /></span>
         )}
       </div>
-      <div className="lotitem__actions">
-        <button className="lotitem__move" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label="Move up">
+      <div className={styles.rowActions}>
+        <Pressable className={styles.move} onPress={() => onMove(i, -1)} isDisabled={i === 0} aria-label="Move up">
           <ChevronUp size={17} />
-        </button>
-        <button
-          className="lotitem__move"
-          onClick={() => onMove(i, 1)}
-          disabled={i === count - 1}
+        </Pressable>
+        <Pressable
+          className={styles.move}
+          onPress={() => onMove(i, 1)}
+          isDisabled={i === count - 1}
           aria-label="Move down"
         >
           <ChevronDown size={17} />
-        </button>
-        <button className="lotitem__del" onClick={() => onRemove(i)} aria-label={`Remove ${busLabel(bus)}`} title="Remove">
+        </Pressable>
+        <Pressable className={styles.remove} onPress={() => onRemove(i)} aria-label={`Remove ${busLabel(bus)}`}>
           <Trash2 size={16} />
-        </button>
+        </Pressable>
       </div>
     </div>
   );
@@ -163,73 +164,74 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
   }
 
   return (
-    <Overlay
-      onClose={onClose}
-      overlayClassName="modal-backdrop no-print"
-      contentClassName="modal modal--tall"
-      label={title}
-      onOpenFocus={() => ref.current?.focus({ preventScroll: true })}
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={title}
+      description={subtitle || "Buses print on the back in the order you add them."}
+      size="md"
+      bodyClassName={styles.body}
+      footer={(close) => (
+        <Button variant="primary" onPress={close}>
+          Done
+        </Button>
+      )}
     >
-        <div className="modal__head">
-          <div>
-            <div className="modal__title">{title}</div>
-            <div className="modal__sub">{subtitle || "Buses print on the back in the order you add them."}</div>
-          </div>
-          <button className="modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="lotadd">
-          <input
-            ref={ref}
-            className="modal__input lotadd__input"
+        <div className={styles.addRow}>
+          <TextField
+            className={styles.input}
+            inputRef={ref}
+            label="Bus number"
+            labelHidden
             value={val}
             inputMode="numeric"
             placeholder="Bus number"
-            onChange={(e) => onChange(e.target.value)}
+            autoFocus
+            onChange={onChange}
             onKeyDown={(e) => e.key === "Enter" && add()}
           />
-          <button className="btn btn--primary" onClick={() => add()}>
+          <Button variant="primary" onPress={() => add()}>
             Add
-          </button>
+          </Button>
         </div>
         {dup && (
-          <div className="modal__warn">
-            Bus {busLabel(val)} is currently at <strong>{dup}</strong>.
-            <div className="modal__warnactions">
-              <button className="btn btn--primary btn--mini" onClick={moveHere}>
+          <div className={styles.warning}>
+            <span>Bus {busLabel(val)} is currently at <strong>{dup}</strong>.</span>
+            <div className={styles.warningActions}>
+              <Button variant="primary" size="sm" onPress={moveHere}>
                 Move it here
-              </button>
-              <button className="btn btn--mini" onClick={() => { setDup(""); setVal(""); }}>
+              </Button>
+              <Button size="sm" onPress={() => { setDup(""); setVal(""); }}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
         {showWarn && !dup && (
-          <div className="modal__warn">
+          <div className={styles.warning}>
             {val} isn&apos;t on the bus list — double-check it. Press Add to use it anyway.
           </div>
         )}
 
         {/* Buses recently taken off the sheet — tap to add them here. */}
         {!!recent?.length && (
-          <div className="recentrow">
-            <span className="recentrow__lbl">Recent</span>
+          <div className={styles.recent}>
+            <span className={styles.recentLabel}>Recent</span>
             {recent.map((b) => (
-              <button key={b} type="button" className="recentchip" onClick={() => add(b)}>
+              <Pressable key={b} className={styles.recentChip} onPress={() => add(b)}>
                 {busLabel(b)}
-              </button>
+              </Pressable>
             ))}
           </div>
         )}
 
         <DndContext id="lot-editor-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
           <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
-            <div className="lotlist">
+            <div className={styles.list}>
               {list.length === 0 && (
-                <div className="lotlist__empty">No buses yet — type a number and press Add.</div>
+                <div className={styles.empty}>No buses yet — type a number and press Add.</div>
               )}
               {list.map((bus, i) => (
                 <LotRow
@@ -249,9 +251,6 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
           </SortableContext>
         </DndContext>
 
-        <button className="btn btn--block modal__save" onClick={onClose}>
-          Done
-        </button>
-    </Overlay>
+    </ResponsiveDialog>
   );
 }

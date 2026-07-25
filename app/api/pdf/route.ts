@@ -9,6 +9,16 @@
 import { createHash } from "crypto";
 import { getSheet, getFlags, getState, getPdfCache, setPdfCache } from "../../lib/store";
 import { chicagoMinuteKey } from "../../lib/chicagoTime";
+import { DEFAULT_MASTER } from "../../lib/buses";
+import {
+  editableBusModelRows,
+  editableBusTypeRows,
+  editableFlagRows,
+  normalizeBusTypeConfig,
+  normalizeFlagConfig,
+} from "../../lib/grid";
+import { getSheetDefinitionByPath, isPrintableSheetPath } from "../../sheets/registry";
+import type { PaperProfile } from "../../sheets/core/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "36"; // Letter-accurate Lot Sheet previews and aligned Pace sheet branding
+const PDF_VERSION = "37"; // SheetKit print profiles and deterministic asset readiness
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -43,9 +53,21 @@ function signature(data: unknown, maint: boolean): string {
 // The data a sheet's PDF is built from — used for the cache signature so a
 // cached PDF is reused until the underlying sheet actually changes.
 async function sheetData(path: string, blank: boolean) {
-  if (blank) return { blank: true };
+  if (blank) {
+    const [busMaster, flagConfig, busTypeConfig] = await Promise.all([
+      getState("bus_master"),
+      getState("flag_config"),
+      getState("bus_type_config"),
+    ]);
+    return {
+      blank: true,
+      busMaster: busMaster.value || null,
+      flagConfig: flagConfig.value || null,
+      busTypeConfig: busTypeConfig.value || null,
+    };
+  }
   if (path === "/") {
-    const [{ sheet }, flags, flagConfig, busMaster, busTypeConfig] = await Promise.all([
+    const [{ sheet, revision, updatedAt }, flags, flagConfig, busMaster, busTypeConfig] = await Promise.all([
       getSheet(),
       getFlags(),
       getState("flag_config"),
@@ -54,6 +76,8 @@ async function sheetData(path: string, blank: boolean) {
     ]);
     return {
       sheet,
+      revision,
+      updatedAt,
       flags,
       flagConfig: flagConfig.value || null,
       busMaster: busMaster.value || null,
@@ -82,12 +106,13 @@ async function sheetData(path: string, blank: boolean) {
   }
   // Include the universal flags (R/H/I indicators) AND the bus master (the lane
   // list / types) so either change invalidates the cached PDF.
-  const [{ value }, flags, busMaster, flagConfig, busTypeConfig] = await Promise.all([
+  const [{ value }, flags, busMaster, flagConfig, busTypeConfig, lotSheet] = await Promise.all([
     getState(path.slice(1)),
     getFlags(),
     getState("bus_master"),
     getState("flag_config"),
     getState("bus_type_config"),
+    getSheet(),
   ]);
   return {
     value,
@@ -95,7 +120,56 @@ async function sheetData(path: string, blank: boolean) {
     busMaster: busMaster.value || null,
     flagConfig: flagConfig.value || null,
     busTypeConfig: busTypeConfig.value || null,
+    sheet: lotSheet.sheet,
+    revision: lotSheet.revision,
+    sheetUpdatedAt: lotSheet.updatedAt,
   };
+}
+
+function printSnapshotResponses(path: string, snapshot: unknown): Map<string, unknown> {
+  const data = (snapshot || {}) as Record<string, any>;
+  const responses = new Map<string, unknown>();
+
+  if (data.flags) responses.set("/api/flags", { flags: data.flags });
+  if (data.busMaster) responses.set("/api/buses", { master: data.busMaster });
+  else responses.set("/api/buses", { master: DEFAULT_MASTER });
+
+  const flagConfig = normalizeFlagConfig(data.flagConfig);
+  responses.set("/api/admin/flag-config", {
+    config: flagConfig,
+    flags: editableFlagRows(flagConfig),
+    updatedAt: null,
+  });
+  const busTypeConfig = normalizeBusTypeConfig(data.busTypeConfig);
+  responses.set("/api/admin/bus-type-config", {
+    config: busTypeConfig,
+    types: editableBusTypeRows(busTypeConfig),
+    models: editableBusModelRows(busTypeConfig),
+    updatedAt: null,
+  });
+
+  if (path === "/") {
+    responses.set("/api/sheet", {
+      sheet: data.sheet || null,
+      revision: Number(data.revision || 0),
+      updatedAt: data.updatedAt || null,
+    });
+  } else if (path === "/service/print-all") {
+    responses.set("/api/state/fuel", { value: data.fuel || null, updatedAt: null });
+    responses.set("/api/state/def", { value: data.def || null, updatedAt: null });
+    responses.set("/api/state/farebox", { value: data.farebox || null, updatedAt: null });
+  } else if (path !== "/service/print-blank") {
+    const key = path.slice(1);
+    responses.set(`/api/state/${key}`, { value: data.value || null, updatedAt: null });
+    if (path === "/turnover" && data.sheet) {
+      responses.set("/api/sheet", {
+        sheet: data.sheet,
+        revision: Number(data.revision || 0),
+        updatedAt: data.sheetUpdatedAt || null,
+      });
+    }
+  }
+  return responses;
 }
 
 const PDF_HEADERS = {
@@ -170,19 +244,6 @@ function resetBrowser(): void {
   } catch {}
 }
 
-// Sheets that can be exported to PDF. Each must render its print view at
-// `<path>?print=1` and expose a #print-ready marker when loaded.
-const ALLOWED_PATHS = new Set([
-  "/",
-  "/fuel",
-  "/def",
-  "/farebox",
-  "/service/print-all",
-  "/service/print-blank",
-  "/turnover",
-  "/workorder",
-]);
-
 async function renderPdf(
   req: Request,
   maint: boolean,
@@ -190,6 +251,8 @@ async function renderPdf(
   fz: number | null,
   blank: boolean,
   variant: string,
+  paper: PaperProfile,
+  snapshot: unknown,
   overrides: { timeOverride?: string; dateOverride?: string }
 ): Promise<Buffer> {
   const host = req.headers.get("host");
@@ -213,15 +276,57 @@ async function renderPdf(
     try {
       const browser = await getBrowser();
       page = await browser.newPage();
+      const snapshotResponses = printSnapshotResponses(path, snapshot);
+      if (snapshotResponses.size) {
+        await page.setRequestInterception(true);
+        page.on("request", (request: any) => {
+          if (request.method() !== "GET") {
+            request.continue();
+            return;
+          }
+          const pathname = new URL(request.url()).pathname;
+          if (!snapshotResponses.has(pathname)) {
+            request.continue();
+            return;
+          }
+          request.respond({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(snapshotResponses.get(pathname)),
+          });
+        });
+      }
       // Don't wait for full network idle — a sheet may keep a background request
       // alive. The page exposes #print-ready once its data is loaded, which is the
       // real "safe to snapshot" signal.
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForSelector("#print-ready", { timeout: 20000 });
-      // Ensure @font-face fonts (the barred-I indicator, etc.) are loaded before
-      // snapshotting, since domcontentloaded fires before subresources finish.
-      await page.evaluate(() => (document as any).fonts?.ready).catch(() => {});
-      const pdf = await page.pdf({ format: "letter", printBackground: true, preferCSSPageSize: true });
+      // The SheetKit readiness contract includes fonts and decoded images. A
+      // mounted DOM alone is not enough: otherwise a cold logo/font can produce
+      // a visually incomplete PDF that is then cached.
+      await page
+        .evaluate(async () => {
+          await (document as any).fonts?.ready;
+          const images = Array.from(document.images);
+          await Promise.all(
+            images.map(async (image) => {
+              if (!image.complete) {
+                await new Promise<void>((resolve) => {
+                  image.addEventListener("load", () => resolve(), { once: true });
+                  image.addEventListener("error", () => resolve(), { once: true });
+                });
+              }
+              await image.decode?.().catch(() => {});
+            })
+          );
+        })
+        .catch(() => {});
+      const pdf = await page.pdf({
+        width: `${paper.widthIn}in`,
+        height: `${paper.heightIn}in`,
+        printBackground: true,
+        preferCSSPageSize: true,
+      });
       return Buffer.from(pdf);
     } catch (err: any) {
       lastErr = err;
@@ -251,7 +356,8 @@ export async function GET(req: Request) {
     dateOverride: url.searchParams.get("dateOverride") || undefined,
   };
   let path = url.searchParams.get("path") || "/";
-  if (!ALLOWED_PATHS.has(path)) path = "/";
+  if (!isPrintableSheetPath(path)) path = "/";
+  const definition = getSheetDefinitionByPath(path) || getSheetDefinitionByPath("/")!;
   // Optional render variant: "ns" prints an N-circled copy + an S-circled copy
   // (DEF and Farebox lane sheets).
   const variant = url.searchParams.get("variant") === "ns" ? "ns" : "";
@@ -265,7 +371,24 @@ export async function GET(req: Request) {
   try {
     // Every sheet is cached by a signature of its data (+ font), so a later
     // "Print PDF" (or a background prewarm after edits) returns instantly.
-    const sig = signature({ d: await sheetData(path, blank), fz, blank, variant, overrides, printMinute: blank ? null : chicagoMinuteKey() }, maint);
+    const snapshot = await sheetData(path, blank);
+    const sig = signature({
+      sheet: definition.id,
+      dataVersion: definition.dataVersion,
+      renderVersion: definition.renderVersion,
+      paper: {
+        id: definition.paper.id,
+        version: definition.paper.version,
+        widthIn: definition.paper.widthIn,
+        heightIn: definition.paper.heightIn,
+      },
+      d: snapshot,
+      fz,
+      blank,
+      variant,
+      overrides,
+      printMinute: blank ? null : chicagoMinuteKey(),
+    }, maint);
     const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
       if (prewarm) return Response.json({ ok: true, cached: true });
@@ -273,11 +396,15 @@ export async function GET(req: Request) {
     }
 
     // Cache miss — generate (the slow path) and store for next time.
-    const pdf = await renderPdf(req, maint, path, fz, blank, variant, overrides);
+    const pdf = await renderPdf(req, maint, path, fz, blank, variant, definition.paper, snapshot, overrides);
     await setPdfCache(path, maint, sig, pdf.toString("base64"));
     if (prewarm) return Response.json({ ok: true, cached: false });
     return new Response(pdf as unknown as BodyInit, { status: 200, headers });
   } catch (err: any) {
+    const diagnosticId = createHash("sha1")
+      .update(`${Date.now()}:${path}:${String(err?.message || err)}`)
+      .digest("hex")
+      .slice(0, 10);
     let diag = "";
     try {
       const fs = await import("node:fs");
@@ -287,7 +414,14 @@ export async function GET(req: Request) {
         ` ld=${process.env.LD_LIBRARY_PATH || "-"}` +
         ` al2023nss=${fs.existsSync("/tmp/al2023/lib/libnss3.so")}`;
     } catch {}
-    return new Response(`PDF generation failed [${BUILD}]: ${err?.message || err}${diag}`, {
+    console.error(`[pdf:${diagnosticId}]`, {
+      build: BUILD,
+      sheet: definition.id,
+      path,
+      paper: definition.paper.id,
+      error: String(err?.message || err),
+    });
+    return new Response(`PDF generation failed [${diagnosticId}]: ${err?.message || err}${diag}`, {
       status: 500,
       headers: { "Content-Type": "text/plain" },
     });

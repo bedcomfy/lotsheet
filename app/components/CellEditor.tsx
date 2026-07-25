@@ -4,10 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { typeInfo } from "../lib/grid";
 import { Flag, Ban, Lock, Unlock, Eraser, ChevronRight } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
-import Overlay from "./Overlay";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import type { FlagEntry, FlagMap } from "../lib/types";
+import {
+  Button,
+  ResponsiveDialog,
+  StatusBadge,
+  TextField,
+} from "../ui";
+import styles from "./CellEditor.module.css";
 
 interface CellEditorProps {
   subLabel?: string;
@@ -75,31 +81,36 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
   const hasSecondary = showClear || blockable || showLock;
 
   return (
-    <Overlay
-      onClose={onClose}
-      overlayClassName="modal-backdrop no-print"
-      contentClassName="modal"
-      label="Bus number"
-      onOpenFocus={() => inputRef.current?.focus({ preventScroll: true })}
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Bus number"
+      description={subLabel}
+      size="sm"
+      bodyClassName={styles.body}
+      footer={(close) => (
+        <>
+          <Button variant="quiet" onPress={close}>
+            Cancel
+          </Button>
+          <Button variant="primary" onPress={() => trySave()}>
+            Save
+          </Button>
+        </>
+      )}
     >
-      <div className="modal__head">
-        <div>
-          <div className="modal__title">Bus number</div>
-          {subLabel && <div className="modal__sub">{subLabel}</div>}
-        </div>
-        <button className="modal__close" onClick={onClose} aria-label="Close">
-          ×
-        </button>
-      </div>
-
-      <input
-        ref={inputRef}
-        className="modal__input"
+      <TextField
+        inputRef={inputRef}
+        label="Bus number"
+        labelHidden
         value={num}
         inputMode="numeric"
-        onFocus={(e) => e.target.select()}
-        onChange={(e) => {
-          const v = sanitizeBus(e.target.value);
+        autoFocus
+        onFocus={() => inputRef.current?.select()}
+        onChange={(value) => {
+          const v = sanitizeBus(value);
           setNum(v);
           setDup("");
           // Autocomplete: save & close the moment a valid bus is entered,
@@ -112,89 +123,90 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
         }}
       />
       {dup && (
-        <div className="modal__warn">
-          Bus {busLabel(num)} is currently at <strong>{dup}</strong>.
-          <div className="modal__warnactions">
-            <button className="btn btn--primary btn--mini" onClick={moveHere}>
+        <div className={styles.warning}>
+          <p>
+            Bus {busLabel(num)} is currently at <strong>{dup}</strong>.
+          </p>
+          <div className={styles.warningActions}>
+            <Button size="sm" variant="primary" onPress={moveHere}>
               Move it here
-            </button>
-            <button className="btn btn--mini" onClick={() => setDup("")}>
+            </Button>
+            <Button size="sm" onPress={() => setDup("")}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
       {showWarning && !dup && (
-        <div className="modal__warn">
+        <div className={styles.warning}>
           {num} isn&apos;t on the bus list — double-check it. You can still save it.
         </div>
       )}
 
       {isBus && (
         <>
-          <div className="cellstatus">
-            ✓ On the list{typeLabels ? ` · ${typeLabels}` : ""}
-          </div>
+          <StatusBadge tone="success">
+            On the list{typeLabels ? ` · ${typeLabels}` : ""}
+          </StatusBadge>
           {onEditFlags && (
-            <button className="cellflags" onClick={() => onEditFlags(num)} title="Edit this bus's flags">
+            <Button
+              className={styles.flagButton}
+              variant="quiet"
+              onPress={() => onEditFlags(num)}
+              aria-label={`Edit flags for bus ${busLabel(num)}`}
+            >
               {hasFlagContent ? (
-                <span className="cellflags__pills">
+                <span className={styles.flagPills}>
                   <FlagPills entry={entry} />
                 </span>
               ) : (
-                <span className="cellflags__add">
-                  <Flag size={14} /> Add flags
+                <span className={styles.addFlags}>
+                  <Flag aria-hidden="true" /> Add flags
                 </span>
               )}
-              <ChevronRight size={18} className="cellflags__chev" />
-            </button>
+              <ChevronRight className={styles.chevron} aria-hidden="true" />
+            </Button>
           )}
         </>
       )}
 
       {/* Send the bus that's parked in this cell straight to a lot — no dragging. */}
       {onSendToLot && !!sendTargets?.length && value && value !== "X" && num === value && (
-        <div className="sendrow">
-          <span className="sendrow__lbl">Send to</span>
+        <div className={styles.sendRow}>
+          <span className={styles.actionLabel}>Send to</span>
           {sendTargets.map((t) => (
-            <button key={t.key} className="btn btn--mini" onClick={() => onSendToLot(num, t.key)}>
+            <Button key={t.key} size="sm" onPress={() => onSendToLot(num, t.key)}>
               {t.label}
-            </button>
+            </Button>
           ))}
         </div>
       )}
 
-      <button className="btn btn--primary btn--block modal__save" onClick={() => trySave()}>
-        Save
-      </button>
-
       {hasSecondary && (
-        <div className="cellact-row">
+        <div className={styles.secondary}>
           {showClear && (
-            <button className="cellact cellact--danger" onClick={() => onSave("")}>
-              <Eraser size={16} /> Clear
-            </button>
+            <Button variant="danger" size="sm" onPress={() => onSave("")}>
+              <Eraser aria-hidden="true" /> Clear
+            </Button>
           )}
           {blockable && (
-            <button
-              className="cellact"
-              onClick={() => onSave(value === "X" ? "" : "X")}
-              title={value === "X" ? "Reopen this spot" : "Mark this spot unusable (prints an X, like ROW 10's)"}
+            <Button
+              size="sm"
+              onPress={() => onSave(value === "X" ? "" : "X")}
             >
-              <Ban size={16} /> {value === "X" ? "Unblock" : "Block"}
-            </button>
+              <Ban aria-hidden="true" /> {value === "X" ? "Unblock" : "Block"}
+            </Button>
           )}
           {showLock && (
-            <button
-              className="cellact"
-              onClick={onToggleLock}
-              title={locked ? "Unlock — Clear Grid will remove it again" : "Keep this bus in place through Clear Grid"}
+            <Button
+              size="sm"
+              onPress={onToggleLock}
             >
-              {locked ? <Unlock size={16} /> : <Lock size={16} />} {locked ? "Unlock" : "Lock"}
-            </button>
+              {locked ? <Unlock aria-hidden="true" /> : <Lock aria-hidden="true" />} {locked ? "Unlock" : "Lock"}
+            </Button>
           )}
         </div>
       )}
-    </Overlay>
+    </ResponsiveDialog>
   );
 }

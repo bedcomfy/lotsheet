@@ -1,20 +1,13 @@
-/* The app's styles, split into ordered partials (app/styles/). ORDER IS THE
-   CASCADE — later files override earlier ones, exactly like the sections of
-   the original single file. Add page styles to the matching partial; only
-   append a new @import here (at the end) for a genuinely new area.
+/* Global CSS is the trusted paper layer plus the minimum document and route
+   wrappers it needs. Application chrome lives in app/ui and colocated CSS
+   Modules.
 
-   Print fidelity note: 08-sheets-print.css holds the @media print rules the
-   PDF renderer depends on. The split was verified byte-identical to the old
-   single file, and the built CSS output diffed clean. */
+   Print fidelity note: 08-sheets-print.css owns the PDF renderer's print
+   contract. Keep paper geometry changes isolated and verify PDFs visually. */
 
-@import "./styles/01-base.css";           /* reset, design tokens, themes */
-@import "./styles/02-nav-admin.css";      /* app nav + admin editors */
-@import "./styles/03-home.css";           /* home workspace + flag pickers */
-@import "./styles/04-toolbar-sheet.css";  /* sheet toolbar + paper Lot Sheet */
-@import "./styles/05-overlays.css";       /* modals, manager panel, cell editor */
-@import "./styles/06-mobile.css";         /* phone layouts + Fill Rows */
-@import "./styles/07-lot-widgets.css";    /* dnd, find box, chips, shop, select */
-@import "./styles/08-sheets-print.css";   /* back-of-sheet, fuel/def, PRINT, turnover */
-@import "./styles/09-pages.css";          /* work order, staffing, status lists */
-@import "./styles/10-mobile-app.css";     /* phone shell components (tabs, cards) — desktop untouched */
-@import "./styles/11-maintenance-logistics.css"; /* alternate preview UI shell + dashboard */
+@import "./styles/01-base.css";           /* document reset + paper tokens */
+@import "./styles/04-toolbar-sheet.css";  /* Lot Sheet paper */
+@import "./styles/07-lot-widgets.css";    /* live Lot Sheet interaction states */
+@import "./styles/08-sheets-print.css";   /* remaining sheets + print */
+@import "./styles/09-pages.css";          /* Work Order paper */
+@import "./styles/10-mobile-app.css";     /* route-level responsive swap */

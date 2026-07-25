@@ -167,19 +167,17 @@ have shipped since this spec was written (check `git log` and the CHANGELOG
 first).
 
 - `app/components/LotSheet.tsx` — `mobileSheetView` state, `.sheet-scroll`
-  viewport div, the old `.mobile-actions` bar markup, all the handlers the
-  chrome needs (`setFillOpen`, `setManagerOpen`, `setShopOpen`, `openPdf`,
+  viewport div, and the mobile action handlers (`setFillOpen`,
+  `setManagerOpen`, `setShopOpen`, `openPdf`,
   `openBlankPdf`, `shareSheet`, `newSheet`, `clearLots`, `setSelectMode`,
   `setServiceDetail`, `setMissingOpen`, `findVal`/`findBus`, `showMaint`).
-- `app/components/SheetNav.tsx` — mobile top bar, the `<select>` picker to
-  replace, the `SHEETS` array.
-- `app/components/MobileLotChrome.tsx` — WIP chrome component (if it still
-  exists; untracked). Strip the row chips (Direction B) before use.
-- `app/styles/` — 9 ordered partials; ordering IS the cascade.
-  `02-nav-admin.css` (nav + its ≤899px mobile block), `04-toolbar-sheet.css`
-  (toolbar, `.sheetview`, `.sheet-scroll`, the ≤699px sheet block),
-  `06-mobile.css` (≤480px toolbar wrap + `.mobile-actions` — most of this
-  becomes obsolete when the toolbar hides).
+- `app/components/SheetNav.tsx` — the responsive top bar and page switcher.
+- `app/components/MobileLotChrome.tsx` — the production phone action bar,
+  tools sheet, search sheet, and Fit/100% control.
+- `app/components/*.module.css` and `app/ui/*.module.css` — application
+  chrome and responsive workflow styling.
+- `app/styles/` — the trusted paper and print layer. Do not move screen UI
+  back into this global cascade.
 - Branch: work happened on `mobile-paper-viewer` (may exist locally); it's fine
   to start a fresh branch from current main instead.
 

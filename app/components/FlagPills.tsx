@@ -3,9 +3,8 @@
 import type { CSSProperties } from "react";
 import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay, flagColorStyle } from "../lib/grid";
 import type { FlagEntry } from "../lib/types";
+import styles from "./FlagPills.module.css";
 
-// Pill color by severity — one shared visual language across every menu.
-const TIER_CLASS: Record<string, string> = { high: "safety", med: "maintenance", low: "service" };
 function tierRank(tier: string): number {
   return tier === "high" ? 0 : tier === "med" ? 1 : 2;
 }
@@ -32,11 +31,15 @@ export default function FlagPills({ entry, showNote = true }: { entry?: FlagEntr
   return (
     <>
       {flags.map((id) => (
-        <span key={id} className={`fpill fpill--${TIER_CLASS[flagTier(id)]} fpill--custom`} style={flagColorStyle(id) as CSSProperties}>
+        <span
+          key={id}
+          className={styles.pill}
+          style={flagColorStyle(id) as CSSProperties}
+        >
           {pillText(id, entry)}
         </span>
       ))}
-      {showNote && note && <span className="fpill">“{note}”</span>}
+      {showNote && note && <span className={`${styles.pill} ${styles.note}`}>“{note}”</span>}
     </>
   );
 }

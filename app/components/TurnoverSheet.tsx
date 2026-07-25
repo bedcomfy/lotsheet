@@ -4,10 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { closestFlagMatch, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
-import { History, Eraser, FileDown, Search, X } from "lucide-react";
+import { History, Eraser, FileDown, MoreHorizontal, Check } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
-import ToolMenu from "./ToolMenu";
 import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanelLazy";
@@ -18,6 +17,11 @@ import { getDeviceActor } from "../lib/deviceActor";
 import { useEmployees, useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
+import { ActionMenu, Button, ConfirmDialog, SearchField, Toolbar, ToolbarGroup } from "../ui";
+import { PaperViewport } from "../sheets/core";
+import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
+import toolbarStyles from "./SheetToolbar.module.css";
+import chromeStyles from "./SheetChrome.module.css";
 
 const STORAGE_KEY = "turnover";
 const FONT_DEFAULT = 13;
@@ -62,6 +66,7 @@ export default function TurnoverSheet() {
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
   const [prevOpen, setPrevOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
   const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
 
   const [lots, setLots] = useState<TurnoverLots>({
@@ -355,7 +360,6 @@ export default function TurnoverSheet() {
     }).catch(() => {});
   }
   async function clearAll() {
-    if (!window.confirm("Clear this Turnover sheet? The current one is saved to Prev Sheets first. (Shared lots and bus flags are NOT cleared.)")) return;
     await archiveCurrent();
     setData(emptyData());
   }
@@ -495,57 +499,69 @@ export default function TurnoverSheet() {
   }
 
   return (
-    <div className="app">
+    <div className={chromeStyles.page}>
       <style dangerouslySetInnerHTML={{ __html: "@page { size: legal portrait; margin: 0; }" }} />
 
-      <div className="toolbar no-print">
-        <div className="toolbar__title">Turnover Sheet</div>
+      <Toolbar className={`${chromeStyles.toolbar} no-print`}>
+        <div className={chromeStyles.title}>Turnover Sheet</div>
         <DatePickerField
-          className="toolbar__date"
+          className={chromeStyles.date}
           value={turnoverDate}
           onValueChange={setTurnoverDate}
           shortYear
           ariaLabel="Turnover Sheet date"
+          variant="ui"
         />
-        <div className="findbox" title="Type a bus number to see which lot it's in">
-          <Search size={15} />
-          <input
-            className="findbox__in"
+        <SearchField
+            className={toolbarStyles.search}
+            label="Find a bus"
+            labelHidden
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
+            onChange={(value) => setFindVal(sanitizeBus(value))}
+            description={foundBus ? foundWhere || "Not on this sheet" : undefined}
+        />
+        <ToolbarGroup className={chromeStyles.actions}>
+          <span className={chromeStyles.saved}>
+            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
+          </span>
+          <ActionMenu
+            label={<><MoreHorizontal size={16} /> More</>}
+            items={[
+              { id: "history", label: "Previous sheets", icon: <History size={16} /> },
+              {
+                id: "flags",
+                label: printFlags ? "Print with flags: On" : "Print with flags: Off",
+                icon: printFlags ? <Check size={16} /> : <span aria-hidden="true" />,
+              },
+              { id: "clear", label: "Clear sheet", icon: <Eraser size={16} />, tone: "danger" },
+            ]}
+            onAction={(key) => {
+              if (key === "history") setPrevOpen(true);
+              if (key === "flags") setPrintFlags((current) => !current);
+              if (key === "clear") setClearOpen(true);
+            }}
           />
-          {foundBus && <span className="findbox__msg">{foundWhere || "Not on this sheet"}</span>}
-          {findVal && (
-            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-        <div className="toolbar__spacer" />
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-        </span>
-        <ToolMenu>
-          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
-            <History size={16} /> Prev Sheets
-          </button>
-          <div className="toolmenu__sep" />
-          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
-            <Eraser size={16} /> Clear sheet
-          </button>
-          <div className="toolmenu__sep" />
-          <label className="toolmenu__item" onClick={(e) => e.stopPropagation()} title="Off = print a completely blank form">
-            <input type="checkbox" checked={printFlags} onChange={(e) => setPrintFlags(e.target.checked)} />
-            Print with flags
-          </label>
-        </ToolMenu>
-        <button className="btn btn--primary" onClick={printPdf}><FileDown size={16} /> Print PDF</button>
-      </div>
+          <Button variant="primary" onPress={printPdf}>
+            <FileDown aria-hidden="true" /> Print PDF
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
-      <div className="sheet-scroll" style={{ "--tfz": `${fontPx}px` } as CSSProperties}>
-        <div className={`sheet turn-sheet ${!printFlags ? "turn-sheet--blank" : ""}`}>
+      <PaperViewport
+        profile={LEGAL_PORTRAIT}
+        fitOnMobile
+        label="Turnover Sheet paper preview"
+        style={{ "--tfz": `${fontPx}px` } as CSSProperties}
+      >
+        <div
+          className={`sheet turn-sheet ${!printFlags ? "turn-sheet--blank" : ""}`}
+          data-paper-page=""
+          data-paper-profile="legal-portrait"
+          data-sheet-id="turnover"
+          data-page-number="1"
+        >
           <table className="turnt">
             <colgroup>
               <col style={{ width: "8.2%" }} />
@@ -673,7 +689,7 @@ export default function TurnoverSheet() {
             </tbody>
           </table>
         </div>
-      </div>
+      </PaperViewport>
 
       {editingLot && (
         <LotEditor
@@ -709,6 +725,16 @@ export default function TurnoverSheet() {
           onClose={() => setPrevOpen(false)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Clear the Turnover sheet?"
+        description="The current sheet is saved to Previous Sheets first. Shared lots and bus flags are not cleared."
+        confirmLabel="Clear sheet"
+        tone="danger"
+        onConfirm={clearAll}
+      />
 
       {loaded && lotsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </div>

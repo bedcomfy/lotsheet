@@ -1,0 +1,130 @@
+.button {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--ui-control-md);
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2);
+  margin: 0;
+  padding: 0 var(--ui-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: transparent;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-medium);
+  line-height: 1;
+  letter-spacing: 0;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color var(--ui-motion-fast) var(--ui-ease-standard),
+    background-color var(--ui-motion-fast) var(--ui-ease-standard),
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    box-shadow var(--ui-motion-fast) var(--ui-ease-standard),
+    transform var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.button[data-hovered] {
+  transform: translateY(-1px);
+}
+
+.button[data-pressed] {
+  transform: translateY(0);
+}
+
+.button[data-focus-visible] {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.button[data-disabled] {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primary {
+  color: var(--ui-on-accent);
+  background: var(--ui-accent);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.primary[data-hovered] {
+  background: var(--ui-accent-hover);
+}
+
+.primary[data-pressed] {
+  background: var(--ui-accent-pressed);
+}
+
+.secondary {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.secondary[data-hovered] {
+  border-color: var(--ui-accent);
+  background: var(--ui-surface-hover);
+}
+
+.quiet {
+  color: var(--ui-text-muted);
+}
+
+.quiet[data-hovered] {
+  color: var(--ui-text);
+  background: var(--ui-surface-hover);
+}
+
+.danger {
+  color: #ffffff;
+  background: var(--ui-danger);
+}
+
+.danger[data-hovered] {
+  background: var(--ui-danger-hover);
+}
+
+.sm {
+  min-height: var(--ui-control-sm);
+  padding-inline: var(--ui-space-3);
+  font-size: var(--ui-font-size-sm);
+}
+
+.lg {
+  min-height: var(--ui-control-lg);
+  padding-inline: var(--ui-space-5);
+  font-size: var(--ui-font-size-lg);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.iconOnly {
+  width: var(--ui-control-md);
+  padding: 0;
+}
+
+.iconOnly.sm {
+  width: var(--ui-control-sm);
+}
+
+.iconOnly.lg {
+  width: var(--ui-control-lg);
+}
+
+.button svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  stroke-width: 1.8;
+}

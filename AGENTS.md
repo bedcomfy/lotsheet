@@ -40,6 +40,23 @@ npm exec tsc -- --noEmit
 npm run build
 ```
 
+## UI Foundation
+
+- Build new application controls with the React Aria primitives in `app/ui`.
+- Keep sheet and print styling separate from application chrome. Never import the
+  UI foundation into a printable sheet without verifying both browser and PDF output.
+- Use the namespaced `--ui-*` tokens and CSS Modules for new UI. Do not add
+  feature styles to the legacy global cascade.
+- Add or update Storybook stories for light, dark, long-content, narrow-screen,
+  and safe-area states when a component supports them.
+- React Aria is the sole application interaction layer. Do not add Radix,
+  Mantine, DaisyUI, Magic UI, Ark UI, or native hand-rolled overlays without an
+  explicit architecture decision.
+- Use `ResponsiveDialog` for overlays and `ConfirmDialog` for destructive
+  confirmation. Do not use `window.confirm` in new UI.
+- Run `npm run test:ui` for behavior and accessibility checks. Run
+  `npm run test:visual` when changing shared component visuals.
+
 ## Codespaces
 
 The Codespaces/devcontainer setup runs `npm ci` automatically and forwards port `3000`.

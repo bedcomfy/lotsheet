@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { Pressable } from "../ui/Pressable";
+import styles from "./ThemeToggle.module.css";
 
 // A light/dark switch for the app chrome. The actual theme is applied to
 // <html data-theme> by an inline script in the layout (so there's no flash on
@@ -61,17 +63,16 @@ export default function ThemeToggle() {
   }
 
   return (
-    <button
+    <Pressable
       ref={buttonRef}
-      className={`theme-toggle theme-toggle--${theme}`}
-      onClick={toggle}
+      className={styles.toggle}
+      onPress={toggle}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-      title="Toggle light / dark"
     >
-      <span className="theme-toggle__icon" aria-hidden="true">
+      <span className={styles.icon} aria-hidden="true">
         {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
       </span>
-      <span className="theme-toggle__label">{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
-    </button>
+      <span className={styles.label}>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+    </Pressable>
   );
 }

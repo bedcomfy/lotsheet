@@ -6,6 +6,18 @@ import { cellLocationLabel, flagName } from "../lib/grid";
 import { getDeviceActor, setDeviceActor } from "../lib/deviceActor";
 import type { FlagEntry } from "../lib/types";
 import type { LotSheetOp, LotSheetOpRecord } from "../lib/lotSheetOps";
+import {
+  AppPage,
+  Button,
+  EmptyState,
+  PageHeader,
+  Panel,
+  StaticChip,
+  TextField,
+  Toolbar,
+  ToolbarGroup,
+} from "../ui";
+import styles from "./AuditLog.module.css";
 
 interface AuditEvent {
   id: string;
@@ -174,48 +186,65 @@ export default function AuditLog() {
   }
 
   return (
-    <main className="audit">
-      <section className="audit__head">
-        <div>
-          <div className="homehero__eyebrow">Operations Monitor</div>
-          <h1>Audit Log</h1>
-          <p>Live history of Lot Sheet changes, shop/turnover lot edits, and flag updates.</p>
-        </div>
-        <div className="auditdevice">
-          <label>
-            This device
-            <input value={device} onChange={(e) => setDevice(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveDevice()} />
-          </label>
-          <button className="btn btn--primary" onClick={saveDevice}>
-            <Save size={15} /> {saved ? "Saved" : "Save"}
-          </button>
-        </div>
-      </section>
+    <AppPage className={styles.page}>
+      <PageHeader
+        eyebrow="Operations Monitor"
+        title="Audit Log"
+        description="Live history of Lot Sheet changes, shop and turnover edits, and flag updates."
+        actions={
+          <div className={styles.deviceEditor}>
+            <TextField
+              label="This device"
+              value={device}
+              onChange={setDevice}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") saveDevice();
+              }}
+              className={styles.deviceField}
+            />
+            <Button variant="primary" onPress={saveDevice}>
+              <Save aria-hidden="true" /> {saved ? "Saved" : "Save"}
+            </Button>
+          </div>
+        }
+      />
 
-      <section className="auditbar">
-        <span><Activity size={16} /> {feed.length} latest events</span>
-        <button className="btn" onClick={load}>
-          <RefreshCw size={15} /> Refresh
-        </button>
-      </section>
+      <Toolbar>
+        <ToolbarGroup>
+          <Activity aria-hidden="true" className={styles.toolbarIcon} />
+          <span className={styles.eventCount}>
+            <strong>{feed.length}</strong> latest events
+          </span>
+        </ToolbarGroup>
+        <Button variant="secondary" onPress={load}>
+          <RefreshCw aria-hidden="true" /> Refresh
+        </Button>
+      </Toolbar>
 
-      <section className="auditlist" aria-label="Revision history">
-        {feed.length ? feed.map((item) => (
-          <article className="auditrow" key={item.id}>
-            <span className="auditrow__badge">{item.badge}</span>
-            <div className="auditrow__main">
-              <strong>{item.title}</strong>
-              <span>{item.detail}</span>
-            </div>
-            <div className="auditrow__meta">
-              <span>{item.actor}</span>
-              <time>{timeLabel(item.at)}</time>
-            </div>
-          </article>
-        )) : (
-          <div className="auditempty">No revision history yet.</div>
+      <Panel bodyClassName={styles.feed} aria-label="Revision history">
+        {feed.length ? (
+          feed.map((item) => (
+            <article className={styles.row} key={item.id}>
+              <StaticChip tone={item.badge === "Admin" ? "accent" : "neutral"}>
+                {item.badge}
+              </StaticChip>
+              <div className={styles.main}>
+                <strong>{item.title}</strong>
+                <span>{item.detail}</span>
+              </div>
+              <div className={styles.meta}>
+                <span>{item.actor}</span>
+                <time>{timeLabel(item.at)}</time>
+              </div>
+            </article>
+          ))
+        ) : (
+          <EmptyState
+            title="No revision history yet"
+            description="New sheet, flag, and administrative changes will appear here automatically."
+          />
         )}
-      </section>
-    </main>
+      </Panel>
+    </AppPage>
   );
 }

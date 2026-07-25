@@ -1,0 +1,38 @@
+.viewport {
+  --sheetkit-scale: 1;
+}
+
+.stage,
+.canvas {
+  min-width: 0;
+}
+
+@media screen and (max-width: 699px) {
+  .viewport[data-fit-mobile="true"] {
+    overflow-x: hidden;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .viewport[data-fit-mobile="true"] .stage {
+    position: relative;
+    width: var(--sheetkit-stage-width);
+    height: var(--sheetkit-stage-height);
+    margin: 0 auto;
+  }
+
+  .viewport[data-fit-mobile="true"] .canvas {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: var(--sheetkit-paper-width);
+    transform: scale(var(--sheetkit-scale));
+    transform-origin: top left;
+  }
+}
+
+@media screen and (min-width: 700px), print {
+  .stage,
+  .canvas {
+    display: contents;
+  }
+}

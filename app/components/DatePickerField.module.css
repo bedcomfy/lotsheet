@@ -1,0 +1,21 @@
+.input {
+  min-height: var(--ui-control-md);
+  box-sizing: border-box;
+  padding: 0 var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+}
+
+.input:hover {
+  border-color: var(--ui-accent);
+}
+
+.input:focus-visible {
+  border-color: var(--ui-focus);
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}

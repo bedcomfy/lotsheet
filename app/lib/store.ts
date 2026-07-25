@@ -5,12 +5,17 @@
 // PGlite database in local dev (see ./db). The API surface below is unchanged;
 // callers don't know or care which database is behind it.
 
-import { asc, desc, eq, gt, max, sql } from "drizzle-orm";
+import { asc, desc, eq, gt, inArray, max, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import type { DB } from "./db";
 import { appState, auditEvents, busFlags, lotSheetOps, sheetHistory, TABLE_SUFFIX } from "./db/schema";
 import { mergeLotSheet } from "./lotSheetMerge";
-import { applyLotSheetOpsToSheet, normalizeOps, type LotSheetOp, type LotSheetOpRecord } from "./lotSheetOps";
+import {
+  applyLotSheetOpsToSheet,
+  normalizeOpEnvelopes,
+  type LotSheetOp,
+  type LotSheetOpRecord,
+} from "./lotSheetOps";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
 import { inspectionOptionFromText, setInspectionOption } from "./grid";
 
@@ -171,52 +176,100 @@ export async function mergeSetSheet(
 export async function applySheetOps(
   rawOps: unknown,
   actor = ""
-): Promise<{ sheet: LotSheet; updatedAt: string; revision: number; ops: LotSheetOpRecord[] }> {
-  const ops = normalizeOps(rawOps);
+): Promise<{
+  sheet: LotSheet;
+  updatedAt: string;
+  revision: number;
+  ops: LotSheetOpRecord[];
+  applied: number;
+  duplicateOpIds: string[];
+}> {
+  const envelopes = normalizeOpEnvelopes(rawOps);
   const db = await getDb();
   const result = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SHEET_LOCK}))`);
-    const rows = await tx.select({ value: appState.value }).from(appState).where(eq(appState.key, SHEET_KEY));
+    const rows = await tx
+      .select({ value: appState.value, updatedAt: appState.updatedAt })
+      .from(appState)
+      .where(eq(appState.key, SHEET_KEY));
     const current = (rows[0]?.value || null) as LotSheet | null;
+    const candidateIds = [...new Set(envelopes.map((entry) => entry.opId).filter((id): id is string => !!id))];
+    const existingIds = new Set<string>();
+    if (candidateIds.length) {
+      const existing = await tx
+        .select({ opId: lotSheetOps.opId })
+        .from(lotSheetOps)
+        .where(inArray(lotSheetOps.opId, candidateIds));
+      for (const row of existing) {
+        if (row.opId) existingIds.add(row.opId);
+      }
+    }
+    const batchIds = new Set<string>();
+    const duplicateOpIds: string[] = [];
+    const pending = envelopes.filter((entry) => {
+      if (!entry.opId) return true;
+      if (existingIds.has(entry.opId) || batchIds.has(entry.opId)) {
+        duplicateOpIds.push(entry.opId);
+        return false;
+      }
+      batchIds.add(entry.opId);
+      return true;
+    });
+    const ops = pending.map((entry) => entry.op);
     const next = applyLotSheetOpsToSheet(current, ops);
-    const written = await tx
-      .insert(appState)
-      .values({ key: SHEET_KEY, value: next, updatedAt: sql`now()` })
-      .onConflictDoUpdate({ target: appState.key, set: { value: next, updatedAt: sql`now()` } })
-      .returning({ updatedAt: appState.updatedAt });
+    let updatedAt = isoOrNull(rows[0]?.updatedAt) || new Date().toISOString();
+    if (pending.length) {
+      const written = await tx
+        .insert(appState)
+        .values({ key: SHEET_KEY, value: next, updatedAt: sql`now()` })
+        .onConflictDoUpdate({ target: appState.key, set: { value: next, updatedAt: sql`now()` } })
+        .returning({ updatedAt: appState.updatedAt });
+      updatedAt = isoOrNull(written[0]?.updatedAt) || updatedAt;
+    }
     const records: LotSheetOpRecord[] = [];
-    for (const op of ops) {
-      const inserted = await tx.insert(lotSheetOps).values({ op, actor: actor || null }).returning();
+    for (const entry of pending) {
+      const inserted = await tx
+        .insert(lotSheetOps)
+        .values({ opId: entry.opId || null, op: entry.op, actor: actor || null })
+        .returning();
       const row = inserted[0];
       records.push({
         revision: Number(row.revision),
+        opId: row.opId || undefined,
         op: row.op as LotSheetOp,
         actor: row.actor || undefined,
         createdAt: isoOrNull(row.createdAt),
       });
     }
+    const latest =
+      records[records.length - 1]?.revision ||
+      Number((await tx.select({ revision: max(lotSheetOps.revision) }).from(lotSheetOps))[0]?.revision || 0);
     return {
       sheet: next,
-      updatedAt: isoOrNull(written[0]?.updatedAt) || new Date().toISOString(),
-      revision: records[records.length - 1]?.revision || 0,
+      updatedAt,
+      revision: latest,
       ops: records,
+      applied: pending.length,
+      duplicateOpIds,
     };
   });
-  await bumpPulse(db);
+  if (result.applied) await bumpPulse(db);
   return result;
 }
 
-export async function listSheetOpsSince(since: number): Promise<LotSheetOpRecord[]> {
+export async function listSheetOpsSince(since: number, limit = 500): Promise<LotSheetOpRecord[]> {
   const n = Number.isFinite(since) ? Math.max(0, Math.floor(since)) : 0;
+  const pageSize = Math.max(1, Math.min(500, Math.floor(limit)));
   const db = await getDb();
   const rows = await db
     .select()
     .from(lotSheetOps)
     .where(gt(lotSheetOps.revision, n))
     .orderBy(asc(lotSheetOps.revision))
-    .limit(500);
+    .limit(pageSize);
   return rows.map((row) => ({
     revision: Number(row.revision),
+    opId: row.opId || undefined,
     op: row.op as LotSheetOp,
     actor: row.actor || undefined,
     createdAt: isoOrNull(row.createdAt),
@@ -230,6 +283,7 @@ export async function listLatestSheetOps(limit = 200): Promise<LotSheetOpRecord[
   return rows
     .map((row) => ({
       revision: Number(row.revision),
+      opId: row.opId || undefined,
       op: row.op as LotSheetOp,
       actor: row.actor || undefined,
       createdAt: isoOrNull(row.createdAt),

@@ -1,0 +1,235 @@
+.page {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  align-content: start;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-5);
+  color: var(--ui-text);
+  background: var(--ui-canvas);
+  font-family: var(--ui-font-sans);
+  letter-spacing: 0;
+}
+
+.header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ui-space-5);
+}
+
+.headerCopy,
+.panelCopy {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-1);
+}
+
+.eyebrow {
+  color: var(--ui-accent);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: 1.75rem;
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+  letter-spacing: 0;
+}
+
+.description,
+.panelDescription {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-md);
+  line-height: var(--ui-line-height-body);
+}
+
+.headerActions,
+.panelActions,
+.toolbarGroup {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.panelHeader {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-4);
+  padding: var(--ui-space-4);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-weight-semibold);
+  line-height: var(--ui-line-height-tight);
+  letter-spacing: 0;
+}
+
+.panelBody {
+  min-width: 0;
+  padding: var(--ui-space-4);
+}
+
+.toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.tableFrame {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-sm);
+  overscroll-behavior: contain;
+}
+
+.empty {
+  display: grid;
+  min-height: 12rem;
+  place-items: center;
+  align-content: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-6);
+  color: var(--ui-text);
+  text-align: center;
+}
+
+.empty p {
+  max-width: 30rem;
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.emptyIcon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+}
+
+.empty[data-kind="error"] .emptyIcon {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.emptyIcon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.emptyAction {
+  margin-top: var(--ui-space-2);
+}
+
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+.skeleton {
+  min-height: 1rem;
+  border-radius: var(--ui-radius-sm);
+  background:
+    linear-gradient(
+      90deg,
+      var(--ui-surface-muted) 0%,
+      var(--ui-surface-hover) 50%,
+      var(--ui-surface-muted) 100%
+    );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@media (max-width: 699px) {
+  .page {
+    gap: var(--ui-space-3);
+    padding:
+      var(--ui-space-4)
+      calc(var(--ui-space-4) + var(--ui-safe-right))
+      calc(var(--ui-space-6) + var(--ui-safe-bottom))
+      calc(var(--ui-space-4) + var(--ui-safe-left));
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .header,
+  .panelHeader,
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .headerActions,
+  .panelActions,
+  .toolbarGroup {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .panelHeader,
+  .panelBody {
+    padding: var(--ui-space-3);
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}

@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CalendarClock, ListOrdered } from "lucide-react";
+import { AppPage, PageHeader, TabBar } from "../ui";
+import styles from "./SectionShell.module.css";
 
 const TABS = [
   { id: "seniority", label: "Seniority", icon: ListOrdered, path: "/staffing/seniority" },
@@ -17,34 +19,37 @@ export default function StaffingShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <main className="adminpage">
-      <section className="adminhero">
-        <div>
-          <span className="adminhero__eyebrow">Staffing</span>
-          <h1>Roster &amp; Schedule</h1>
-          <p>The seniority list and the current work pick. Everyone can view; editing is unlocked with the admin password.</p>
-        </div>
-      </section>
+    <AppPage className={styles.page}>
+      <PageHeader
+        eyebrow="Staffing"
+        title="Roster & Schedule"
+        description="View the seniority list and current work pick. Editing requires the admin password."
+      />
 
-      <nav className="admintabs" aria-label="Staffing sections">
-        {TABS.map((tab) => {
+      <TabBar
+        label="Staffing sections"
+        selectedKey={
+          TABS.find(
+            (tab) =>
+              pathname === tab.path ||
+              (pathname ? pathname.startsWith(`${tab.path}/`) : false),
+          )?.id ?? "seniority"
+        }
+        onSelectionChange={(key) => {
+          const next = TABS.find((tab) => tab.id === key);
+          if (next) router.push(next.path);
+        }}
+        items={TABS.map((tab) => {
           const Icon = tab.icon;
-          const active = pathname === tab.path || (pathname ? pathname.startsWith(`${tab.path}/`) : false);
-          return (
-            <button
-              key={tab.id}
-              className={`admintab ${active ? "admintab--active" : ""}`}
-              onClick={() => router.push(tab.path)}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon size={17} />
-              <span>{tab.label}</span>
-            </button>
-          );
+          return {
+            id: tab.id,
+            label: tab.label,
+            icon: <Icon aria-hidden="true" />,
+          };
         })}
-      </nav>
+      />
 
       {children}
-    </main>
+    </AppPage>
   );
 }

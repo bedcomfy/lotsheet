@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { HTMLAttributes, KeyboardEvent } from "react";
 import type { Employee } from "../lib/types";
 import { employeeFullName } from "../lib/types";
+import styles from "./EmployeeInput.module.css";
 
 interface Rect {
   left: number;
@@ -106,21 +107,25 @@ export default function EmployeeInput({
         rect &&
         createPortal(
           <ul
-            className="empac"
+            className={styles.list}
+            role="listbox"
             style={{ position: "fixed", left: rect.left, top: rect.top, minWidth: rect.width }}
           >
             {matches.map((e, i) => (
               <li
                 key={`${e.firstName}|${e.lastName}|${e.badge}|${i}`}
-                className={`empac__item ${i === hi ? "is-hi" : ""}`}
+                className={styles.item}
+                role="option"
+                aria-selected={i === hi}
+                data-highlighted={i === hi || undefined}
                 onMouseDown={(ev) => {
                   ev.preventDefault();
                   pick(e);
                 }}
                 onMouseEnter={() => setHi(i)}
               >
-                <span className="empac__name">{employeeFullName(e) || "(no name)"}</span>
-                {e.badge && <span className="empac__badge">#{e.badge}</span>}
+                <span className={styles.name}>{employeeFullName(e) || "(no name)"}</span>
+                {e.badge && <span className={styles.badge}>#{e.badge}</span>}
               </li>
             ))}
           </ul>,

@@ -1,0 +1,11 @@
+.search {
+  width: 14rem;
+  flex: 0 1 14rem;
+}
+
+@media (max-width: 699px) {
+  .search {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

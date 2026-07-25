@@ -5,15 +5,24 @@
 
 import { useRouter } from "next/navigation";
 import MTonight from "./MTonight";
+import { AppPage } from "../../ui";
+import styles from "./MApp.module.css";
 
 export default function TonightPage() {
   const router = useRouter();
   return (
-    <main className="mpage">
+    <AppPage className={styles.page}>
       <MTonight
-        onGo={(tab) => router.push(tab === "lot" ? "/" : "/buses")}
+        onGo={(tab) => {
+          const paths: Record<string, string> = {
+            lot: "/",
+            buses: "/buses",
+            service: "/service",
+          };
+          router.push(paths[tab] || "/home");
+        }}
         onOpenBus={(bus) => router.push(`/buses?bus=${encodeURIComponent(bus)}`)}
       />
-    </main>
+    </AppPage>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cellLocationLabel, flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -13,6 +13,17 @@ import { getDeviceActor } from "../lib/deviceActor";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
+import {
+  AppPage,
+  PageHeader,
+  Pressable,
+  SearchField,
+  StaticChip,
+  StatusBadge,
+  Toolbar,
+  ToolbarGroup,
+} from "../ui";
+import styles from "./ShopSheet.module.css";
 
 // Everything "inside the shop" in one place: the Apron (buses parked anywhere on
 // it — a simple list), the Bays (10 fixed spots, any of them can be empty), and
@@ -215,29 +226,28 @@ export default function ShopSheet() {
     const rfs = !!entry?.flags?.includes("rfs");
     const found = !!foundBus && bus === foundBus;
     return (
-      <button
+      <Pressable
         key={`bay-${i}`}
-        type="button"
-        className={`shopslot ${bus && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
-          rfs ? "shopslot--rfs" : ""
-        } ${found ? "shopslot--found" : ""}`}
-        onClick={() => setEditingBay(i)}
+        className={`${styles.slot} ${bus && !xed ? styles.slotFilled : ""} ${xed ? styles.slotBlocked : ""} ${
+          rfs ? styles.ready : ""
+        } ${found ? styles.found : ""}`}
+        onPress={() => setEditingBay(i)}
       >
-        <span className="shopslot__label">BAY {i + 1}</span>
+        <span className={styles.slotLabel}>BAY {i + 1}</span>
         {xed ? (
-          <span className="shopslot__x">X</span>
+          <span className={styles.slotX}>X</span>
         ) : bus ? (
           <>
-            <span className="shopslot__bus">{busLabel(bus)}</span>
-            <TypeCodes num={bus} />
-            {disp && <span className="shopslot__flag">{disp}</span>}
+            <span className={styles.slotBus}>{busLabel(bus)}</span>
+            <TypeCodes num={bus} variant="ui" />
+            {disp && <span className={styles.slotFlag}>{disp}</span>}
           </>
         ) : (
-          <span className="shopslot__empty">
+          <span className={styles.slotEmpty}>
             <Plus size={15} />
           </span>
         )}
-      </button>
+      </Pressable>
     );
   }
 
@@ -246,36 +256,44 @@ export default function ShopSheet() {
   ).size;
 
   return (
-    <div className="app">
-      <div className="toolbar no-print">
-        <div className="toolbar__title">Shop</div>
-        <div className="findbox" title="Type a bus number to see where it is">
-          <Search size={15} />
-          <input
-            className="findbox__in"
+    <AppPage className={`${styles.page} no-print`}>
+      <PageHeader
+        title="Shop"
+        description="Manage buses on the apron, in fixed bays, and in cards."
+      />
+      <Toolbar className="no-print" aria-label="Shop controls">
+        <ToolbarGroup>
+          <SearchField
+            className={styles.search}
+            label="Find a bus"
+            labelHidden
             placeholder="Find bus"
             inputMode="numeric"
             value={findVal}
-            onChange={(e) => setFindVal(sanitizeBus(e.target.value))}
+            onChange={(value) => setFindVal(sanitizeBus(value))}
           />
-          {foundBus && <span className="findbox__msg">{foundWhere || "Not placed anywhere"}</span>}
-          {findVal && (
-            <button className="findbox__clear" onClick={() => setFindVal("")} aria-label="Clear search" title="Clear">
-              <X size={14} />
-            </button>
+          {foundBus && (
+            <StatusBadge tone={foundWhere ? "info" : "warning"}>
+              {foundWhere || "Not placed anywhere"}
+            </StatusBadge>
           )}
-        </div>
-        <div className="toolbar__spacer" />
-        <span className="statchip">{inShopCount} in the shop</span>
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-        </span>
-      </div>
+        </ToolbarGroup>
+        <ToolbarGroup>
+          <StaticChip tone="accent">{inShopCount} in the shop</StaticChip>
+          <span className={styles.saved}>
+            {savedAt
+              ? `Saved ${savedAt.toLocaleTimeString()}`
+              : loaded
+                ? "Up to date"
+                : "Loading"}
+          </span>
+        </ToolbarGroup>
+      </Toolbar>
 
       {/* Screen-only — nothing on this page prints. */}
-      <div className="shop no-print">
+      <div className={styles.shop}>
         <section
-          className="shopcard shopcard--btn"
+          className={`${styles.shopCard} ${styles.shopCardInteractive}`}
           role="button"
           tabIndex={0}
           onClick={() => setEditingList("apron")}
@@ -286,34 +304,34 @@ export default function ShopSheet() {
             }
           }}
         >
-          <div className="shopcard__head">
-            APRON <span className="shopcard__count">({apron.length})</span>
-            <span className="backlot__edit"> ✎ edit</span>
+          <div className={styles.cardHead}>
+            APRON <span className={styles.cardCount}>({apron.length})</span>
+            <span className={styles.cardEdit}>Edit</span>
           </div>
-          <div className="shopcard__sub">Buses anywhere on the apron — tap to add or manage.</div>
-          <div className="apronchips">
-            {apron.length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
+          <div className={styles.cardSub}>Buses anywhere on the apron — tap to add or manage.</div>
+          <div className={styles.busChips}>
+            {apron.length === 0 && <span className={styles.empty}>No buses on the apron.</span>}
             {apron.map((bus, i) => {
               const f = flagsFullDisplay(flags[bus]);
               return (
-                <span className={`apronchip ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`} key={`${bus}-${i}`}>
+                <span className={`${styles.busChip} ${!!foundBus && bus === foundBus ? styles.found : ""}`} key={`${bus}-${i}`}>
                   {busLabel(bus)}
-                  <TypeCodes num={bus} />
-                  {f && <span className="apronchip__flags">{f}</span>}
+                  <TypeCodes num={bus} variant="ui" />
+                  {f && <span className={styles.busFlags}>{f}</span>}
                 </span>
               );
             })}
           </div>
         </section>
 
-        <section className="shopcard">
-          <div className="shopcard__head">BAYS</div>
-          <div className="shopcard__sub">Tap a bay to set or change its bus — any bay can be empty.</div>
-          <div className="shopslots">{Array.from({ length: BAY_SPOTS }, (_, i) => slotButton(i))}</div>
+        <section className={styles.shopCard}>
+          <div className={styles.cardHead}>BAYS</div>
+          <div className={styles.cardSub}>Tap a bay to set or change its bus — any bay can be empty.</div>
+          <div className={styles.slots}>{Array.from({ length: BAY_SPOTS }, (_, i) => slotButton(i))}</div>
         </section>
 
         <section
-          className="shopcard shopcard--btn shopcard--wide"
+          className={`${styles.shopCard} ${styles.shopCardInteractive} ${styles.shopCardWide}`}
           role="button"
           tabIndex={0}
           onClick={() => setEditingList("cards")}
@@ -324,29 +342,29 @@ export default function ShopSheet() {
             }
           }}
         >
-          <div className="shopcard__head">
-            CARDS <span className="shopcard__count">({cards.length})</span>
-            <span className="backlot__edit"> ✎ edit</span>
-            <span className="shopcard__legend">
-              <span className="shopcard__legenddot" /> Ready for Service
+          <div className={styles.cardHead}>
+            CARDS <span className={styles.cardCount}>({cards.length})</span>
+            <span className={styles.cardEdit}>Edit</span>
+            <span className={styles.legend}>
+              <span className={styles.legendDot} /> Ready for Service
             </span>
           </div>
-          <div className="shopcard__sub">
+          <div className={styles.cardSub}>
             No fixed spots — screen-only, never printed. Also overflow parking; green = Ready for Service.
           </div>
-          <div className="apronchips">
-            {cards.length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
+          <div className={styles.busChips}>
+            {cards.length === 0 && <span className={styles.empty}>No buses in cards.</span>}
             {cards.map((bus, i) => {
               const rfs = !!flags[bus]?.flags?.includes("rfs");
               const f = flagsFullDisplay(flags[bus]);
               return (
                 <span
-                  className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && bus === foundBus ? "apronchip--found" : ""}`}
+                  className={`${styles.busChip} ${rfs ? styles.ready : ""} ${!!foundBus && bus === foundBus ? styles.found : ""}`}
                   key={`${bus}-${i}`}
                 >
                   {busLabel(bus)}
-                  <TypeCodes num={bus} />
-                  {f && <span className="apronchip__flags">{f}</span>}
+                  <TypeCodes num={bus} variant="ui" />
+                  {f && <span className={styles.busFlags}>{f}</span>}
                 </span>
               );
             })}
@@ -401,6 +419,6 @@ export default function ShopSheet() {
           onClose={() => setFlagBus(null)}
         />
       )}
-    </div>
+    </AppPage>
   );
 }

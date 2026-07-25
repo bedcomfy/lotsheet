@@ -9,11 +9,28 @@ export type LotSheetOp =
   | { type: "set_cell"; id: string; value: string }
   | { type: "set_lot"; key: LotKey; value: string[] }
   | { type: "set_locks"; value: string[] }
+  | { type: "set_lock"; id: string; value: boolean }
+  | {
+      type: "move_bus";
+      bus: string;
+      destination:
+        | { kind: "cell"; id: string }
+        | { kind: "lot"; key: LotKey; index?: number };
+    }
+  | { type: "clear_grid"; preserveLocks?: boolean }
+  | { type: "clear_lots"; keys?: LotKey[] }
   | { type: "remove_bus"; bus: string }
   | { type: "replace_sheet"; sheet: LotSheet };
 
+export interface LotSheetOpEnvelope {
+  opId?: string;
+  baseRevision?: number;
+  op: LotSheetOp;
+}
+
 export interface LotSheetOpRecord {
   revision: number;
+  opId?: string;
   op: LotSheetOp;
   actor?: string;
   createdAt?: string | null;
@@ -65,6 +82,42 @@ function normalizeOp(op: unknown): LotSheetOp | null {
   if (o.type === "set_locks" && Array.isArray(o.value)) {
     return { type: "set_locks", value: o.value.map((v) => String(v || "")).filter(Boolean) };
   }
+  if (o.type === "set_lock" && typeof o.id === "string") {
+    return { type: "set_lock", id: o.id, value: o.value === true };
+  }
+  if (o.type === "move_bus" && typeof o.bus === "string" && o.destination && typeof o.destination === "object") {
+    const destination = o.destination as Record<string, unknown>;
+    if (destination.kind === "cell" && typeof destination.id === "string") {
+      return {
+        type: "move_bus",
+        bus: o.bus,
+        destination: { kind: "cell", id: destination.id },
+      };
+    }
+    if (destination.kind === "lot" && typeof destination.key === "string") {
+      const index = Number(destination.index);
+      return {
+        type: "move_bus",
+        bus: o.bus,
+        destination: {
+          kind: "lot",
+          key: destination.key as LotKey,
+          ...(Number.isInteger(index) && index >= 0 ? { index } : {}),
+        },
+      };
+    }
+  }
+  if (o.type === "clear_grid") {
+    return { type: "clear_grid", preserveLocks: o.preserveLocks !== false };
+  }
+  if (o.type === "clear_lots") {
+    return {
+      type: "clear_lots",
+      ...(Array.isArray(o.keys)
+        ? { keys: o.keys.filter((key): key is LotKey => typeof key === "string") }
+        : {}),
+    };
+  }
   if (o.type === "remove_bus" && typeof o.bus === "string") {
     return { type: "remove_bus", bus: o.bus };
   }
@@ -75,8 +128,26 @@ function normalizeOp(op: unknown): LotSheetOp | null {
 }
 
 export function normalizeOps(ops: unknown): LotSheetOp[] {
+  return normalizeOpEnvelopes(ops).map((entry) => entry.op);
+}
+
+export function normalizeOpEnvelopes(ops: unknown): LotSheetOpEnvelope[] {
   if (!Array.isArray(ops)) return [];
-  return ops.map(normalizeOp).filter((op): op is LotSheetOp => !!op);
+  const normalized: LotSheetOpEnvelope[] = [];
+  for (const raw of ops) {
+    const record = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+    const wrapped = record && record.op && typeof record.op === "object";
+    const op = normalizeOp(wrapped ? record.op : raw);
+    if (!op) continue;
+    const opId = wrapped && typeof record.opId === "string" ? record.opId.trim().slice(0, 160) : "";
+    const revision = wrapped ? Number(record.baseRevision) : Number.NaN;
+    normalized.push({
+      op,
+      ...(opId ? { opId } : {}),
+      ...(Number.isInteger(revision) && revision >= 0 ? { baseRevision: revision } : {}),
+    });
+  }
+  return normalized;
 }
 
 export function applyLotSheetOp(sheet: LotSheet | null | undefined, op: LotSheetOp): LotSheet {
@@ -93,6 +164,44 @@ export function applyLotSheetOp(sheet: LotSheet | null | undefined, op: LotSheet
     next.lots[op.key] = [...op.value];
   } else if (op.type === "set_locks") {
     next.locks = [...op.value];
+  } else if (op.type === "set_lock") {
+    const locks = new Set(next.locks || []);
+    if (op.value) locks.add(op.id);
+    else locks.delete(op.id);
+    next.locks = [...locks];
+  } else if (op.type === "move_bus") {
+    const withoutBus = applyLotSheetOp(next, { type: "remove_bus", bus: op.bus });
+    if (op.destination.kind === "cell") {
+      withoutBus.cells[op.destination.id] = op.bus;
+    } else {
+      const key = op.destination.key;
+      const current = [...(withoutBus.lots[key] || [])];
+      if (key === "bay" && typeof op.destination.index === "number") {
+        while (current.length <= op.destination.index) current.push("");
+        current[op.destination.index] = op.bus;
+      } else {
+        const index =
+          typeof op.destination.index === "number"
+            ? Math.min(op.destination.index, current.length)
+            : current.length;
+        current.splice(index, 0, op.bus);
+      }
+      withoutBus.lots[key] = current;
+    }
+    return withoutBus;
+  } else if (op.type === "clear_grid") {
+    if (op.preserveLocks !== false) {
+      const locked = new Set(next.locks || []);
+      next.cells = Object.fromEntries(Object.entries(next.cells).filter(([id]) => locked.has(id)));
+    } else {
+      next.cells = {};
+      next.locks = [];
+    }
+  } else if (op.type === "clear_lots") {
+    const keys = op.keys || (Object.keys(next.lots) as LotKey[]);
+    for (const key of keys) {
+      next.lots[key] = key === "bay" ? (next.lots[key] || []).map(() => "") : [];
+    }
   } else if (op.type === "remove_bus") {
     for (const [id, value] of Object.entries(next.cells)) {
       if (value === op.bus) delete next.cells[id];
@@ -140,4 +249,16 @@ export function diffLotSheetOps(baseSheet: LotSheet | null | undefined, localShe
   if (!same(local.locks || [], base.locks || [])) ops.push({ type: "set_locks", value: [...(local.locks || [])] });
 
   return ops;
+}
+
+export function createOpEnvelopes(
+  ops: LotSheetOp[],
+  baseRevision: number,
+  createId: () => string
+): LotSheetOpEnvelope[] {
+  return ops.map((op) => ({
+    opId: createId(),
+    baseRevision: Math.max(0, Math.floor(baseRevision || 0)),
+    op,
+  }));
 }

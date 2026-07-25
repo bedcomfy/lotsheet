@@ -1,0 +1,73 @@
+.checkbox {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--ui-touch-target);
+  align-items: center;
+  gap: var(--ui-space-3);
+  color: var(--ui-text);
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-font-size-md);
+  letter-spacing: 0;
+  outline: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.box {
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-on-accent);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    background var(--ui-motion-fast) var(--ui-ease-standard),
+    box-shadow var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.box svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  stroke-width: 2.25;
+}
+
+.checkbox[data-hovered] .box {
+  border-color: var(--ui-accent);
+}
+
+.checkbox[data-selected] .box,
+.checkbox[data-indeterminate] .box {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+}
+
+.checkbox[data-focus-visible] .box {
+  box-shadow: var(--ui-focus-ring);
+}
+
+.checkbox[data-disabled] {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.label {
+  line-height: var(--ui-line-height-tight);
+}
+
+.description {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-body);
+}

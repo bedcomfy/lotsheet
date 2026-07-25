@@ -1,0 +1,120 @@
+.list {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.section {
+  margin-top: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-1) var(--ui-space-1);
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.row,
+.detailRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+}
+
+.rowInfo,
+.detailMain {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.bus {
+  min-width: 3.5rem;
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.flag {
+  min-width: 0;
+  flex: 1 1 12rem;
+  overflow: hidden;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  flex: 0 0 auto;
+}
+
+.edit {
+  display: inline-grid;
+  width: var(--ui-control-sm);
+  height: var(--ui-control-sm);
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.edit:hover {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.edit:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.detailRow {
+  display: grid;
+  align-items: stretch;
+  gap: var(--ui-space-2);
+}
+
+.detailMeta {
+  display: grid;
+  gap: var(--ui-space-1);
+  padding-left: 4.25rem;
+}
+
+.where,
+.why {
+  font-size: var(--ui-font-size-xs);
+}
+
+.where {
+  color: var(--ui-text-muted);
+}
+
+.why {
+  color: var(--ui-warning);
+}
+
+.empty {
+  padding: var(--ui-space-8) var(--ui-space-4);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .detailMeta {
+    padding-left: 0;
+  }
+}

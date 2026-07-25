@@ -1,0 +1,228 @@
+.page {
+  max-width: 88rem;
+  margin: 0 auto;
+}
+
+.search {
+  width: min(28rem, 100%);
+}
+
+.saved {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  white-space: nowrap;
+}
+
+.shop {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-4);
+}
+
+.shopCard {
+  min-width: 0;
+  padding: var(--ui-space-4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.shopCardInteractive {
+  cursor: pointer;
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    background var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.shopCardInteractive:hover {
+  border-color: var(--ui-accent);
+  background: var(--ui-surface);
+}
+
+.shopCardInteractive:focus-visible {
+  border-color: var(--ui-focus);
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.shopCardWide {
+  grid-column: 1 / -1;
+}
+
+.cardHead {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-space-2);
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.cardCount {
+  color: var(--ui-text-muted);
+  font-weight: var(--ui-weight-regular);
+}
+
+.cardEdit {
+  margin-left: auto;
+  color: var(--ui-accent);
+  font-size: var(--ui-font-size-xs);
+}
+
+.cardSub {
+  margin-top: var(--ui-space-1);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-regular);
+}
+
+.legendDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--ui-success);
+}
+
+.busChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  margin-top: var(--ui-space-4);
+}
+
+.busChip {
+  display: inline-flex;
+  min-height: var(--ui-control-sm);
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-1) var(--ui-space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface-muted);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+}
+
+.busFlags {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-regular);
+}
+
+.empty {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+  margin-top: var(--ui-space-4);
+}
+
+.slot {
+  display: grid;
+  min-height: 7rem;
+  place-items: center;
+  align-content: center;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-2);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.slot:hover,
+.slot:focus-visible {
+  border-color: var(--ui-accent);
+  outline: none;
+  background: var(--ui-surface-hover);
+}
+
+.slot:focus-visible {
+  box-shadow: var(--ui-focus-ring);
+}
+
+.slotFilled {
+  border-style: solid;
+}
+
+.slotBlocked {
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+}
+
+.slotLabel {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.slotBus,
+.slotX {
+  font-size: var(--ui-font-size-xl);
+  font-weight: var(--ui-weight-semibold);
+}
+
+.slotFlag {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ui-warning);
+  font-size: var(--ui-font-size-xs);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slotEmpty {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.ready {
+  border-color: var(--ui-success);
+  background: var(--ui-success-soft);
+}
+
+.found {
+  border-color: var(--ui-focus);
+  box-shadow: var(--ui-focus-ring);
+}
+
+@media (max-width: 900px) {
+  .shop {
+    grid-template-columns: 1fr;
+  }
+
+  .shopCardWide {
+    grid-column: auto;
+  }
+
+  .slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .slots {
+    grid-template-columns: 1fr;
+  }
+}

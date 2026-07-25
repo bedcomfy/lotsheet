@@ -2,11 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen } from "lucide-react";
-import ToolMenu from "./ToolMenu";
+import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen, MoreHorizontal } from "lucide-react";
 import WorkOrderHistory from "./WorkOrderHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import { ActionMenu, Button, Chip, ConfirmDialog, IconButton, Toolbar, ToolbarGroup } from "../ui";
+import { PaperViewport } from "../sheets/core";
+import { LETTER_PORTRAIT } from "../sheets/core/profiles";
+import chromeStyles from "./SheetChrome.module.css";
+import workOrderChromeStyles from "./WorkOrderChrome.module.css";
 
 const STORAGE_KEY = "workorder";
 const PRINT_PART_ROWS = 5;
@@ -98,6 +102,8 @@ export default function WorkOrderSheet() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [pendingArchived, setPendingArchived] = useState<WorkOrder | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -240,7 +246,6 @@ export default function WorkOrderSheet() {
     );
 
   async function clearAll() {
-    if (!window.confirm("Clear this Work Order? Save it first if you want to keep it in the lookup.")) return;
     setData(emptyWorkOrder());
   }
   // Save a snapshot into the searchable archive (looked up later by number /
@@ -256,8 +261,7 @@ export default function WorkOrderSheet() {
     setTimeout(() => setSavedFlash(false), 1800);
   }
   function loadArchived(sheet: unknown, _id: string) {
-    if (!window.confirm("Open this saved work order? It replaces the one you're editing (save that first to keep it).")) return;
-    setData({ ...emptyWorkOrder(), ...(sheet as WorkOrder) });
+    setPendingArchived({ ...emptyWorkOrder(), ...(sheet as WorkOrder) });
     setHistOpen(false);
   }
   function printPdf() {
@@ -281,14 +285,26 @@ export default function WorkOrderSheet() {
       : parts;
     const others = data.employees.filter((e) => e.id !== emp.id);
     return (
-      <div className="wo-sheet">
+      <div
+        className="wo-sheet"
+        data-paper-page=""
+        data-paper-profile="letter-portrait"
+        data-sheet-id="workorder"
+        data-page-number={index + 1}
+      >
         {/* screen-only sheet toolbar */}
         {!printMode && data.employees.length > 1 && (
-          <div className="wo-sheet__bar no-print">
-            <span className="wo-sheet__label">Sheet {index + 1}{emp.name ? ` · ${emp.name}` : ""}</span>
-            <button className="wo-iconbtn wo-iconbtn--danger" onClick={() => removeEmployee(emp.id)} title="Remove this employee's sheet">
+          <div className={`${workOrderChromeStyles.sheetBar} no-print`}>
+            <span className={workOrderChromeStyles.sheetLabel}>Sheet {index + 1}{emp.name ? ` · ${emp.name}` : ""}</span>
+            <IconButton
+              className={workOrderChromeStyles.paperIconButton}
+              variant="quiet"
+              size="sm"
+              onPress={() => removeEmployee(emp.id)}
+              aria-label="Remove this employee's sheet"
+            >
               <Trash2 size={15} />
-            </button>
+            </IconButton>
           </div>
         )}
 
@@ -362,9 +378,15 @@ export default function WorkOrderSheet() {
                 <td><input className="wo-in wo-in--c" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} placeholder="__________" /></td>
                 {!printMode && (
                   <td className="wo-opact no-print">
-                    <button className="wo-iconbtn wo-iconbtn--danger" onClick={() => removeOperationFrom(o.id, emp.id)} title="Remove operation from this sheet">
+                    <IconButton
+                      className={workOrderChromeStyles.paperIconButton}
+                      variant="quiet"
+                      size="sm"
+                      onPress={() => removeOperationFrom(o.id, emp.id)}
+                      aria-label="Remove operation from this sheet"
+                    >
                       <Trash2 size={14} />
-                    </button>
+                    </IconButton>
                   </td>
                 )}
               </tr>
@@ -372,19 +394,20 @@ export default function WorkOrderSheet() {
             {/* Assign operations to other employees (screen only). */}
             {!printMode && ops.length > 0 && others.length > 0 && (
               <tr className="no-print">
-                <td colSpan={7} className="wo-share">
-                  <span className="wo-share__lbl">Also on:</span>
+                <td colSpan={7} className={workOrderChromeStyles.shareCell}>
+                  <span className={workOrderChromeStyles.shareLabel}>Also on:</span>
                   {ops.map((o) => (
-                    <span className="wo-share__op" key={o.id}>
-                      <span className="wo-share__opnum">{o.num || "Op"}</span>
+                    <span className={workOrderChromeStyles.shareOperation} key={o.id}>
+                      <span className={workOrderChromeStyles.shareOperationNumber}>{o.num || "Op"}</span>
                       {others.map((e) => (
-                        <button
+                        <Chip
                           key={e.id}
-                          className={`wo-share__chip ${o.assignedTo.includes(e.id) ? "wo-share__chip--on" : ""}`}
-                          onClick={() => toggleAssignee(o.id, e.id)}
+                          className={workOrderChromeStyles.paperChip}
+                          isSelected={o.assignedTo.includes(e.id)}
+                          onPress={() => toggleAssignee(o.id, e.id)}
                         >
                           {e.name || e.badge || `Sheet ${data.employees.findIndex((x) => x.id === e.id) + 1}`}
-                        </button>
+                        </Chip>
                       ))}
                     </span>
                   ))}
@@ -394,9 +417,9 @@ export default function WorkOrderSheet() {
             {!printMode && (
               <tr className="no-print">
                 <td colSpan={7}>
-                  <button className="wo-addrow" onClick={() => addOperation(emp.id)}>
+                  <Button className={workOrderChromeStyles.addRow} variant="quiet" size="sm" onPress={() => addOperation(emp.id)}>
                     <Plus size={14} /> Add operation
-                  </button>
+                  </Button>
                 </td>
               </tr>
             )}
@@ -449,9 +472,16 @@ export default function WorkOrderSheet() {
                 <td><input className="wo-in" value={p.issuedBy} onChange={(e) => setPart(emp.id, p.id, { issuedBy: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
                 {!printMode && i < parts.length && (
                   <td className="wo-opact no-print">
-                    <button className="wo-iconbtn wo-iconbtn--danger" onClick={() => removePart(emp.id, p.id)} title="Remove part" disabled={parts.length <= 1}>
+                    <IconButton
+                      className={workOrderChromeStyles.paperIconButton}
+                      variant="quiet"
+                      size="sm"
+                      onPress={() => removePart(emp.id, p.id)}
+                      aria-label="Remove part"
+                      isDisabled={parts.length <= 1}
+                    >
                       <Trash2 size={14} />
-                    </button>
+                    </IconButton>
                   </td>
                 )}
               </tr>
@@ -459,9 +489,9 @@ export default function WorkOrderSheet() {
             {!printMode && (
               <tr className="no-print">
                 <td colSpan={8}>
-                  <button className="wo-addrow" onClick={() => addPart(emp.id)}>
+                  <Button className={workOrderChromeStyles.addRow} variant="quiet" size="sm" onPress={() => addPart(emp.id)}>
                     <Plus size={14} /> Add part
-                  </button>
+                  </Button>
                 </td>
               </tr>
             )}
@@ -474,46 +504,79 @@ export default function WorkOrderSheet() {
   }
 
   return (
-    <div className="app">
+    <div className={chromeStyles.page}>
       <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.5in 0.55in 0.42in; }" }} />
 
-      <div className="toolbar no-print">
-        <div className="toolbar__title">Work Order</div>
-        <div className="toolbar__spacer" />
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-        </span>
-        <button className="btn" onClick={() => setHistOpen(true)} title="Look up saved work orders">
-          <FolderOpen size={16} /> Saved
-        </button>
-        <button className="btn" onClick={saveToArchive} title="Save a copy you can look up later">
-          <Save size={16} /> {savedFlash ? "Saved ✓" : "Save"}
-        </button>
-        <ToolMenu>
-          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
-            <Eraser size={16} /> Clear work order
-          </button>
-        </ToolMenu>
-        <button className="btn btn--primary" onClick={printPdf}>
-          <FileDown size={16} /> Print PDF
-        </button>
-      </div>
+      <Toolbar className={`${chromeStyles.toolbar} no-print`}>
+        <div className={chromeStyles.title}>Work Order</div>
+        <ToolbarGroup className={chromeStyles.actions}>
+          <span className={chromeStyles.saved}>
+            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
+          </span>
+          <Button onPress={() => setHistOpen(true)}>
+            <FolderOpen aria-hidden="true" /> Saved
+          </Button>
+          <Button onPress={saveToArchive}>
+            <Save aria-hidden="true" /> {savedFlash ? "Saved ✓" : "Save"}
+          </Button>
+          <ActionMenu
+            label={<><MoreHorizontal size={16} /> More</>}
+            items={[
+              {
+                id: "clear",
+                label: "Clear work order",
+                icon: <Eraser size={16} />,
+                tone: "danger",
+              },
+            ]}
+            onAction={(key) => {
+              if (key === "clear") setClearOpen(true);
+            }}
+          />
+          <Button variant="primary" onPress={printPdf}>
+            <FileDown aria-hidden="true" /> Print PDF
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>
 
-      <div className="sheet-scroll">
+      <PaperViewport profile={LETTER_PORTRAIT} fitOnMobile label="Work Order paper preview">
         {data.employees.map((emp, i) => (
           <EmployeeSheet key={emp.id} emp={emp} index={i} />
         ))}
 
         {!printMode && (
-          <div className="wo-addemp no-print">
-            <button className="btn" onClick={addEmployee}>
-              <UserPlus size={16} /> Add employee (new sheet)
-            </button>
+          <div className={`${workOrderChromeStyles.addEmployee} no-print`}>
+            <Button onPress={addEmployee}>
+              <UserPlus aria-hidden="true" /> Add employee (new sheet)
+            </Button>
           </div>
         )}
-      </div>
+      </PaperViewport>
 
       {histOpen && <WorkOrderHistory onLoad={loadArchived} onClose={() => setHistOpen(false)} />}
+
+      <ConfirmDialog
+        isOpen={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Clear this Work Order?"
+        description="Save it first if you want to keep it in the lookup."
+        confirmLabel="Clear work order"
+        tone="danger"
+        onConfirm={clearAll}
+      />
+
+      <ConfirmDialog
+        isOpen={pendingArchived !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingArchived(null);
+        }}
+        title="Open this saved work order?"
+        description="It replaces the work order you are editing. Save the current one first if you want to keep it."
+        confirmLabel="Open saved work order"
+        onConfirm={() => {
+          if (pendingArchived) setData(pendingArchived);
+        }}
+      />
 
       {loaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </div>

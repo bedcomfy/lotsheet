@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Overlay from "./Overlay";
-import { Search, X, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { HistoryEntry } from "../lib/store";
 import { SkeletonRows } from "./Skeleton";
+import {
+  Button,
+  ConfirmDialog,
+  IconButton,
+  Pressable,
+  ResponsiveDialog,
+  SearchField,
+} from "../ui";
+import historyStyles from "./HistoryList.module.css";
 
 interface WorkOrderHistoryProps {
   onLoad: (sheet: unknown, id: string) => void;
@@ -63,6 +71,7 @@ export default function WorkOrderHistory({ onLoad, onClose }: WorkOrderHistoryPr
   const [rows, setRows] = useState<HistoryEntry[] | null>(null); // null = loading
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/state/workorder/history")
@@ -72,7 +81,6 @@ export default function WorkOrderHistory({ onLoad, onClose }: WorkOrderHistoryPr
   }, []);
 
   async function remove(id: string) {
-    if (!window.confirm("Delete this saved work order permanently?")) return;
     setBusy(id);
     try {
       const d = await fetch(`/api/state/workorder/history?id=${encodeURIComponent(id)}`, { method: "DELETE" })
@@ -88,68 +96,74 @@ export default function WorkOrderHistory({ onLoad, onClose }: WorkOrderHistoryPr
   const shown = useMemo(() => (rows || []).filter((r) => matches((r.sheet || {}) as WOLike, q.trim())), [rows, q]);
 
   return (
-    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label="Saved Work Orders">
-      <div className="modal__head">
-        <div>
-          <div className="modal__title">Saved Work Orders</div>
-          <div className="modal__sub">Look up by number, employee, operation, or vehicle.</div>
-        </div>
-        <button className="modal__close" onClick={onClose} aria-label="Close">
-          ×
-        </button>
-      </div>
-
-      <div className="wohist__search">
-        <Search size={16} className="wohist__searchic" />
-        <input
-          className="wohist__searchin"
+    <>
+      <ResponsiveDialog
+        isOpen
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title="Saved Work Orders"
+        description="Look up by number, employee, operation, or vehicle."
+        size="lg"
+        footer={(close) => <Button variant="primary" onPress={close}>Done</Button>}
+      >
+        <SearchField
+          label="Search saved work orders"
+          labelHidden
           placeholder="Search saved work orders…"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={setQ}
         />
-        {q && (
-          <button className="wohist__searchx" onClick={() => setQ("")} aria-label="Clear">
-            <X size={15} />
-          </button>
-        )}
-      </div>
 
-      <div className="manager__list">
+      <div className={historyStyles.list}>
         {rows === null && <SkeletonRows rows={4} />}
         {rows !== null && rows.length === 0 && (
-          <div className="lotlist__empty">No saved work orders yet — fill one out and press Save.</div>
+          <div className={historyStyles.empty}>No saved work orders yet — fill one out and press Save.</div>
         )}
-        {rows !== null && rows.length > 0 && shown.length === 0 && <div className="lotlist__empty">No work orders match “{q}”.</div>}
+        {rows !== null && rows.length > 0 && shown.length === 0 && (
+          <div className={historyStyles.empty}>No work orders match “{q}”.</div>
+        )}
         {shown.map((entry) => {
           const wo = (entry.sheet || {}) as WOLike;
           return (
-            <div className="wohist__row" key={entry.id}>
-              <button className="wohist__main" onClick={() => onLoad(entry.sheet, entry.id)}>
-                <div className="wohist__top">
-                  <span className="wohist__num">WO# {wo.workOrderNumber || "—"}</span>
-                  <span className="wohist__date">{wo.todaysDate || savedLabel(entry.savedAt)}</span>
+            <div className={historyStyles.row} key={entry.id}>
+              <Pressable className={historyStyles.workOrderMain} onPress={() => onLoad(entry.sheet, entry.id)}>
+                <div className={historyStyles.workOrderTop}>
+                  <span className={historyStyles.title}>WO# {wo.workOrderNumber || "—"}</span>
+                  <span className={historyStyles.date}>{wo.todaysDate || savedLabel(entry.savedAt)}</span>
                 </div>
-                <div className="wohist__meta">
+                <div className={historyStyles.meta}>
                   {employeeSummary(wo)} · {opSummary(wo)}
                 </div>
-              </button>
-              <button
-                className="lotitem__del"
-                disabled={busy === entry.id}
-                onClick={() => remove(entry.id)}
+              </Pressable>
+              <IconButton
+                variant="danger"
+                size="sm"
+                isDisabled={busy === entry.id}
+                onPress={() => setDeleteId(entry.id)}
                 aria-label="Delete"
-                title="Delete this saved work order"
               >
-                <Trash2 size={16} />
-              </button>
+                <Trash2 aria-hidden="true" />
+              </IconButton>
             </div>
           );
         })}
       </div>
-
-      <button className="btn btn--block modal__save" onClick={onClose}>
-        Done
-      </button>
-    </Overlay>
+      </ResponsiveDialog>
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+        title="Delete this saved work order?"
+        description="This saved work order will be permanently deleted."
+        confirmLabel="Delete work order"
+        tone="danger"
+        isPending={!!deleteId && busy === deleteId}
+        onConfirm={async () => {
+          if (deleteId) await remove(deleteId);
+        }}
+      />
+    </>
   );
 }

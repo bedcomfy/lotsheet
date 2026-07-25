@@ -8,6 +8,15 @@ import DatePickerField from "./DatePickerField";
 import FareboxSheet from "./FareboxSheet";
 import FuelSheet from "./FuelSheet";
 import ServiceFlagSummary from "./ServiceFlagSummary";
+import {
+  AppPage,
+  Button,
+  PageHeader,
+  TabBar,
+  Toolbar,
+  ToolbarGroup,
+} from "../ui";
+import styles from "./ServiceSheets.module.css";
 
 const TABS = [
   { id: "all", label: "All", icon: Layers },
@@ -74,51 +83,56 @@ export default function ServiceSheets() {
   }
 
   return (
-    <main className="servicepage">
-      <header className="servicehero">
-        <h1>Service Sheets</h1>
-      </header>
+    <AppPage className={styles.page}>
+      <PageHeader
+        title="Service Sheets"
+        description="Preview, update, and print daily fueling and farebox documents."
+        className="no-print"
+      />
 
-      <nav className="servicetabs" aria-label="Service sheets">
-        {TABS.map((item) => {
+      <TabBar
+        label="Service sheets"
+        selectedKey={tab}
+        onSelectionChange={(key) => selectTab(key as TabId)}
+        className="no-print"
+        items={TABS.map((item) => {
           const Icon = item.icon;
-          const active = item.id === tab;
-          return (
-            <button
-              key={item.id}
-              className={`servicetab ${active ? "servicetab--active" : ""}`}
-              onClick={() => selectTab(item.id)}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon size={17} />
-              <span>{item.label}</span>
-            </button>
-          );
+          return {
+            id: item.id,
+            label: item.label,
+            icon: <Icon aria-hidden="true" />,
+          };
         })}
-      </nav>
+      />
 
       {(tab === "all" || tab === "summary") && (
-        <div className="servicecontrols no-print">
-          <label className="servicecontrols__date">
+        <Toolbar className="no-print">
+          <label className={styles.dateField}>
             <span>Date</span>
-            <DatePickerField value={date} onValueChange={setDate} shortYear ariaLabel="Service sheets date" />
+            <DatePickerField
+              value={date}
+              onValueChange={setDate}
+              shortYear
+              ariaLabel="Service sheets date"
+              variant="ui"
+            />
           </label>
 
-          <div className="servicecontrols__actions">
+          <ToolbarGroup>
             {tab === "all" && (
-              <button className="btn" onClick={printBlankAll}>
+              <Button variant="secondary" onPress={printBlankAll}>
                 <FileDown size={16} /> Print Blank
-              </button>
+              </Button>
             )}
-            <button className="btn btn--primary" onClick={printAll}>
+            <Button variant="primary" onPress={printAll}>
               <Printer size={16} /> Print PDF
-            </button>
-          </div>
-        </div>
+            </Button>
+          </ToolbarGroup>
+        </Toolbar>
       )}
 
       {tab === "all" && (
-        <div className="servicepreview" aria-label="Combined print preview">
+        <div className={styles.preview} aria-label="Combined print preview">
           <FuelSheet
             title="PNW FUEL SHEET"
             storageKey="fuel"
@@ -154,6 +168,6 @@ export default function ServiceSheets() {
       {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies />}
       {tab === "farebox" && <FareboxSheet />}
       {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
-    </main>
+    </AppPage>
   );
 }

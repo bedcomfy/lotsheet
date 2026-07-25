@@ -1,0 +1,21 @@
+.page {
+  max-width: 54rem;
+  margin: 0 auto;
+}
+
+.panel {
+  max-width: 32rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--ui-space-3);
+}
+
+@media (max-width: 480px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

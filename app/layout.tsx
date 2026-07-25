@@ -1,6 +1,7 @@
+import "./ui/styles/tokens.css";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import SheetNav from "./components/SheetNav";
 import Providers from "./components/Providers";
 import { BusMasterProvider } from "./components/BusMasterProvider";
@@ -50,12 +51,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <FlagConfigProvider>
               <BusTypeConfigProvider>
                 <MobileNavProvider>
-                <SheetNav />
+                <Suspense fallback={null}>
+                  <SheetNav />
+                </Suspense>
                 {/* The wide sheet is contained here (overflow-x: clip) instead of on
                     <body>, so the sticky mobile nav can pin to the viewport — a clip
                     on <body> makes body children stick to the scrolling body instead. */}
                 <div className="appmain">{children}</div>
-                <MobileTabBar />
+                <Suspense fallback={null}>
+                  <MobileTabBar />
+                </Suspense>
                 </MobileNavProvider>
               </BusTypeConfigProvider>
             </FlagConfigProvider>

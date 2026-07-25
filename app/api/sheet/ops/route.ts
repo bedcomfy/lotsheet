@@ -7,11 +7,21 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const since = parseInt(url.searchParams.get("since") || "0", 10);
   const latest = url.searchParams.get("latest") === "1";
+  const limit = Math.max(1, Math.min(500, parseInt(url.searchParams.get("limit") || "500", 10) || 500));
+  const safeSince = Number.isFinite(since) ? Math.max(0, since) : 0;
   const [ops, { sheet, updatedAt, revision }] = await Promise.all([
-    latest ? listLatestSheetOps(200) : listSheetOpsSince(Number.isFinite(since) ? since : 0),
+    latest ? listLatestSheetOps(Math.min(limit, 200)) : listSheetOpsSince(safeSince, limit),
     getSheet(),
   ]);
-  return NextResponse.json({ ops, sheet, updatedAt, revision });
+  const nextRevision = ops[ops.length - 1]?.revision || safeSince;
+  return NextResponse.json({
+    ops,
+    sheet,
+    updatedAt,
+    revision,
+    nextRevision,
+    hasMore: !latest && nextRevision < revision,
+  });
 }
 
 export async function POST(req: Request) {

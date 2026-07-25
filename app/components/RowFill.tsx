@@ -9,8 +9,9 @@ import {
   row11CellId,
 } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
-import Overlay, { closeOverlayFromEvent } from "./Overlay";
 import { useBusMaster } from "./BusMasterProvider";
+import { Button, Checkbox, Pressable, ResponsiveDialog } from "../ui";
+import styles from "./RowFill.module.css";
 
 // Garage rows are normally walked two at a time. (0-indexed; ROW 11 stands alone.)
 const PAIRS = [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10]];
@@ -112,8 +113,8 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
   // NOTE: rendered inline (not as a <Box> component) so the inputs keep focus
   // across re-renders instead of remounting on every keystroke.
   function renderBox(cell: Cell | undefined) {
-    if (!cell) return <div className="rf__box rf__box--empty" />;
-    if (cell.blocked) return <div className="rf__box rf__box--blocked">X</div>;
+    if (!cell) return <div className={`${styles.box} ${styles.boxEmpty}`} />;
+    if (cell.blocked) return <div className={`${styles.box} ${styles.boxBlocked}`}>X</div>;
     const id = cell.id;
     const isDupHere = !!dup && dup.id === id;
     // Show the rejected duplicate value locally until it's changed; it is NOT
@@ -122,16 +123,16 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
     const invalid = !isDupHere && val.length >= 4 && !isKnownBus(val);
     return (
       <label
-        className={`rf__box ${invalid ? "rf__box--invalid" : ""} ${
-          isDupHere ? "rf__box--dup" : ""
+        className={`${styles.box} ${invalid ? styles.boxInvalid : ""} ${
+          isDupHere ? styles.boxDuplicate : ""
         }`}
       >
-        <span className="rf__label">{cell.label}</span>
+        <span className={styles.boxLabel}>{cell.label}</span>
         <input
           ref={(el) => {
             if (el) inputs.current[id] = el;
           }}
-          className="rf__input"
+          className={styles.boxInput}
           inputMode="numeric"
           enterKeyHint="next"
           value={val}
@@ -158,12 +159,11 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
           }}
         />
         {isDupHere && dup && (
-          <span className="rf__dup">
+          <span className={styles.duplicate}>
             at {dup.where}
-            <button
-              type="button"
-              className="rf__move"
-              onClick={() => {
+            <Pressable
+              className={styles.moveHere}
+              onPress={() => {
                 onRelocate?.(dup.value);
                 saveNum(dup.id, dup.value);
                 setDup(null);
@@ -171,7 +171,7 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
               }}
             >
               move here
-            </button>
+            </Pressable>
           </span>
         )}
       </label>
@@ -198,55 +198,54 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
   }
 
   return (
-    <Overlay
-      onClose={onClose}
-      contentClassName="manager manager--rowfill no-print"
-      label="Fill Rows"
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Fill Rows"
+      description="Enter buses in walking order. Valid bus numbers advance automatically."
+      size="full"
+      bodyClassName={styles.body}
+      footer={(close) => (
+        <Button variant="primary" onPress={close}>
+          Done
+        </Button>
+      )}
     >
-      <div className="manager__inner">
-        <div className="manager__bar">
-          <div className="manager__title">Fill Rows</div>
-          <label className="toolbar__check">
-            <input type="checkbox" checked={berto} onChange={toggleBerto} />
-            Berto
-          </label>
-          <div className="toolbar__spacer" />
-          <button className="btn" onClick={closeOverlayFromEvent}>
-            Done
-          </button>
-        </div>
-
-        <div className="rf__nav">
-          <button className="btn" onClick={() => go(-1)} disabled={step === 0}>
+        <div className={styles.navigation}>
+          <Button onPress={() => go(-1)} isDisabled={step === 0}>
             ‹ Prev
-          </button>
-          <div className="rf__which">
-            {which} <span className="rf__count">{filled}/{order.length}</span>
+          </Button>
+          <div className={styles.which}>
+            {which} <span className={styles.count}>{filled}/{order.length}</span>
           </div>
           {cols.length > 1 && (
-            <button className="btn btn--mini" onClick={() => setSwapped((s) => !s)}>
+            <Button size="sm" onPress={() => setSwapped((s) => !s)}>
               ⇄ Swap
-            </button>
+            </Button>
           )}
-          <button
-            className="btn"
-            onClick={() => go(1)}
-            disabled={step === groups.length - 1}
+          <Button
+            onPress={() => go(1)}
+            isDisabled={step === groups.length - 1}
           >
             Next ›
-          </button>
+          </Button>
         </div>
-        <div className="rf__hint">
+        <Checkbox isSelected={berto} onChange={toggleBerto}>
+          Berto grouping
+        </Checkbox>
+        <div className={styles.hint}>
           Tap a box and type the bus number. The keyboard’s “next” jumps side-to-side
           (outside buses first, then back through the row).
         </div>
 
         <div
-          className={`rf__grid ${cols.length > 2 ? "rf__grid--multi" : ""}`}
+          className={`${styles.grid} ${cols.length > 2 ? styles.gridMulti : ""}`}
           style={{ gridTemplateColumns: cols.map(() => "1fr").join(" ") }}
         >
           {cols.map((c) => (
-            <div className="rf__colhead" key={`h${c}`}>
+            <div className={styles.columnHeader} key={`h${c}`}>
               ROW {c + 1}
             </div>
           ))}
@@ -258,7 +257,6 @@ export default function RowFill({ getNum, saveNum, locate, onRelocate, onClose }
             </Fragment>
           ))}
         </div>
-      </div>
-    </Overlay>
+    </ResponsiveDialog>
   );
 }

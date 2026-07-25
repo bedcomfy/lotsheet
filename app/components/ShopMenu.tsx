@@ -8,7 +8,8 @@ import { Plus } from "lucide-react";
 import { flagsFullDisplay } from "../lib/grid";
 import type { FlagEntry, FlagMap } from "../lib/types";
 import { useBusMaster } from "./BusMasterProvider";
-import Overlay, { closeOverlayFromEvent } from "./Overlay";
+import { Button, Pressable, ResponsiveDialog } from "../ui";
+import styles from "./ShopMenu.module.css";
 
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
@@ -27,49 +28,44 @@ interface ShopMenuProps {
 export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, foundBus, onEditLot, onEditBay, onClose }: ShopMenuProps) {
   const { label: busLabel } = useBusMaster();
   return (
-    <Overlay
-      onClose={onClose}
-      overlayClassName="modal-backdrop no-print"
-      contentClassName="modal modal--tall modal--shop"
-      label="Shop"
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Shop"
+      description={`${inShopCount} bus${inShopCount === 1 ? "" : "es"} inside · shared live with the Shop page`}
+      size="lg"
+      footer={(close) => <Button variant="primary" onPress={close}>Done</Button>}
     >
-      <div className="modal__head">
-        <div>
-          <div className="modal__title">Shop</div>
-          <div className="modal__sub">
-            {inShopCount} bus{inShopCount === 1 ? "" : "es"} inside · shared live with the Shop page
-          </div>
-        </div>
-        <button className="modal__close" onClick={closeOverlayFromEvent} aria-label="Close">
-          ×
-        </button>
-      </div>
-
-      <div className="shopmenu">
-        <div className="shopmenu__sec">
-          <div className="shopmenu__head">
-            Apron <span className="shopcard__count">({lotList("apron").length})</span>
-            <button className="btn btn--mini" onClick={() => onEditLot("apron")}>
+      <div className={styles.menu}>
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span>Apron <span className={styles.count}>({lotList("apron").length})</span></span>
+            <Button size="sm" onPress={() => onEditLot("apron")}>
               Edit
-            </button>
+            </Button>
           </div>
-          <div className="apronchips">
-            {lotList("apron").length === 0 && <span className="apronchips__empty">No buses on the apron.</span>}
+          <div className={styles.busChips}>
+            {lotList("apron").length === 0 && <span className={styles.empty}>No buses on the apron.</span>}
             {lotList("apron").map((b, i) => {
               const f = flagsFullDisplay(flagFor(b));
               return (
-                <span key={`a${i}`} className={`apronchip ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}>
-                  {busLabel(b)}
-                  {f && <span className="apronchip__flags">{f}</span>}
+                <span
+                  key={`a${i}`}
+                  className={`${styles.busChip} ${!!foundBus && b === foundBus ? styles.found : ""}`}
+                >
+                  <strong>{busLabel(b)}</strong>
+                  {f && <span className={styles.flags}>{f}</span>}
                 </span>
               );
             })}
           </div>
-        </div>
+        </section>
 
-        <div className="shopmenu__sec">
-          <div className="shopmenu__head">Bays</div>
-          <div className="shopslots">
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>Bays</div>
+          <div className={styles.slots}>
             {Array.from({ length: BAY_SPOTS }, (_, i) => {
               const b = bays[i] || "";
               const xed = b === "X";
@@ -80,61 +76,62 @@ export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, f
               const rfs = !!entry?.flags?.includes("rfs");
               const isFound = !!foundBus && b === foundBus;
               return (
-                <button
+                <Pressable
                   key={`bay${i}`}
-                  type="button"
-                  className={`shopslot ${b && !xed ? "shopslot--filled" : ""} ${xed ? "shopslot--blocked" : ""} ${
-                    rfs ? "shopslot--rfs" : ""
-                  } ${isFound ? "shopslot--found" : ""}`}
-                  onClick={() => onEditBay(i)}
+                  className={`${styles.slot} ${b && !xed ? styles.slotFilled : ""} ${
+                    xed ? styles.slotBlocked : ""
+                  } ${rfs ? styles.ready : ""} ${isFound ? styles.found : ""}`}
+                  onPress={() => onEditBay(i)}
                 >
-                  <span className="shopslot__label">BAY {i + 1}</span>
+                  <span className={styles.slotLabel}>BAY {i + 1}</span>
                   {xed ? (
-                    <span className="shopslot__x">X</span>
+                    <span className={styles.blocked}>X</span>
                   ) : b ? (
                     <>
-                      <span className="shopslot__bus">{busLabel(b)}</span>
-                      {disp && <span className="shopslot__flag">{disp}</span>}
+                      <span className={styles.slotBus}>{busLabel(b)}</span>
+                      {disp && <span className={styles.slotFlag}>{disp}</span>}
                     </>
                   ) : (
-                    <span className="shopslot__empty">
+                    <span className={styles.add}>
                       <Plus size={15} />
                     </span>
                   )}
-                </button>
+                </Pressable>
               );
             })}
           </div>
-        </div>
+        </section>
 
-        <div className="shopmenu__sec">
-          <div className="shopmenu__head">
-            Cards <span className="shopcard__count">({lotList("cards").length})</span>
-            <button className="btn btn--mini" onClick={() => onEditLot("cards")}>
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <span>Cards <span className={styles.count}>({lotList("cards").length})</span></span>
+            <Button size="sm" onPress={() => onEditLot("cards")}>
               Edit
-            </button>
-            <span className="shopcard__legend">
-              <span className="shopcard__legenddot" /> Ready for Service
+            </Button>
+            <span className={styles.legend}>
+              <span className={styles.legendDot} /> Ready for Service
             </span>
           </div>
-          <div className="apronchips">
-            {lotList("cards").length === 0 && <span className="apronchips__empty">No buses in cards.</span>}
+          <div className={styles.busChips}>
+            {lotList("cards").length === 0 && <span className={styles.empty}>No buses in cards.</span>}
             {lotList("cards").map((b, i) => {
               const rfs = !!flags[b]?.flags?.includes("rfs");
               const f = flagsFullDisplay(flagFor(b));
               return (
                 <span
                   key={`c${i}`}
-                  className={`apronchip ${rfs ? "apronchip--rfs" : ""} ${!!foundBus && b === foundBus ? "apronchip--found" : ""}`}
+                  className={`${styles.busChip} ${rfs ? styles.ready : ""} ${
+                    !!foundBus && b === foundBus ? styles.found : ""
+                  }`}
                 >
-                  {busLabel(b)}
-                  {f && <span className="apronchip__flags">{f}</span>}
+                  <strong>{busLabel(b)}</strong>
+                  {f && <span className={styles.flags}>{f}</span>}
                 </span>
               );
             })}
           </div>
-        </div>
+        </section>
       </div>
-    </Overlay>
+    </ResponsiveDialog>
   );
 }

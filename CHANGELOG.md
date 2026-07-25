@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.18.0 - 2026-07-24
+
+- Rebuilt the application UI on a Pace-owned React Aria foundation with shared
+  buttons, fields, menus, dialogs, navigation, page states, safe-area handling,
+  light/dark themes, and CSS Modules. Storybook now documents and tests these
+  controls independently so feature work no longer depends on fragile global
+  application CSS.
+- Finished the responsive operations shell: desktop content clears the fixed
+  sidebar and header, mobile fleet-placement cards open useful bus lists, long
+  dialogs keep their actions reachable, and global bus search opens live bus
+  details instead of redirecting blindly to the Lot Sheet.
+- Added SheetKit with a typed sheet registry, Zod validation, storage adapters,
+  exact Letter and Legal profiles, reusable paper viewport/page primitives, and
+  `npm run sheet:new` scaffolding for future forms.
+- Added Paper Lab and visual regression coverage for both themes, long phone
+  menus, safe areas, Letter/Legal geometry, and mobile paper fitting. Existing
+  paper content remains on its trusted markup and retains its physical layout.
+- Made PDF generation profile-driven and deterministic: each print captures one
+  immutable data snapshot, waits for fonts and images, uses content-addressed
+  cache versions, and renders the declared physical page. Automated tests now
+  call every registered PDF route and verify page counts and MediaBoxes.
+- Fixed blank Work Orders producing a second empty page, kept blank Lot Sheets
+  to page one, and confirmed Turnover renders as true 8.5 x 14 Legal while the
+  other registered sheets remain 8.5 x 11 Letter.
+- Hardened realtime Lot Sheet collaboration with stable operation ids,
+  idempotent retries, atomic bus moves, granular clear/lock operations, a
+  durable browser outbox, visible offline retry state, and paged catch-up that
+  cannot skip edits beyond the former 500-operation window.
+- Added integration and unit coverage for duplicate delivery, concurrent edits,
+  last-writer behavior, atomic moves, outbox recovery, operation paging,
+  desktop wheel scrolling, mobile sheet access, and print-mode chrome removal.
+
 ## 0.17.1 - 2026-07-24
 
 - Excluded the JUDI support vehicle from every fleet total, placement group,

@@ -1,0 +1,24 @@
+.page {
+  box-sizing: border-box;
+  position: relative;
+  width: calc(var(--paper-width-in) * 1in);
+  min-width: calc(var(--paper-width-in) * 1in);
+  max-width: calc(var(--paper-width-in) * 1in);
+  height: calc(var(--paper-height-in) * 1in);
+  min-height: calc(var(--paper-height-in) * 1in);
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+}
+
+@media print {
+  .page {
+    break-after: page;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .page:last-child {
+    break-after: auto;
+  }
+}

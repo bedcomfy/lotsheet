@@ -1,0 +1,76 @@
+.body {
+  display: grid;
+  gap: var(--ui-space-3);
+}
+
+.warning {
+  display: grid;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-warning-soft);
+  font-size: var(--ui-font-size-sm);
+}
+
+.warning p {
+  margin: 0;
+}
+
+.warningActions,
+.sendRow,
+.secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.flagButton {
+  width: 100%;
+  min-height: 3rem;
+  justify-content: flex-start;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+}
+
+.flagPills,
+.addFlags {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.addFlags svg,
+.chevron {
+  width: 1rem;
+  height: 1rem;
+}
+
+.chevron {
+  margin-left: auto;
+  color: var(--ui-text-muted);
+}
+
+.sendRow,
+.secondary {
+  padding-top: var(--ui-space-3);
+  border-top: 1px solid var(--ui-border);
+}
+
+.actionLabel {
+  width: 100%;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-semibold);
+  text-transform: uppercase;
+}
+
+@media (max-width: 480px) {
+  .secondary > * {
+    flex: 1;
+  }
+}

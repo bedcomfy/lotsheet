@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Overlay from "./Overlay";
 import type { HistoryEntry } from "../lib/store";
 import { SkeletonRows } from "./Skeleton";
+import { Button, ConfirmDialog, ResponsiveDialog } from "../ui";
+import historyStyles from "./HistoryList.module.css";
 
 function savedLabel(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -32,6 +33,7 @@ interface SheetHistoryProps {
 export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }: SheetHistoryProps) {
   const [sheets, setSheets] = useState<HistoryEntry[] | null>(null); // null = loading
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(apiBase)
@@ -41,7 +43,6 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
   }, [apiBase]);
 
   async function remove(id: string) {
-    if (!window.confirm("Delete this saved sheet permanently?")) return;
     setBusy(id);
     try {
       const res = await fetch(`${apiBase}?id=${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -54,59 +55,70 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
   }
 
   return (
-    <Overlay onClose={onClose} overlayClassName="modal-backdrop no-print" contentClassName="modal modal--tall" label={title}>
-        <div className="modal__head">
-          <div>
-            <div className="modal__title">{title}</div>
-            <div className="modal__sub">
-              The last 20 are kept. Import one to continue it, or delete it.
-            </div>
-          </div>
-          <button className="modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-
-        <div className="lotlist">
+    <>
+      <ResponsiveDialog
+        isOpen
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title={title}
+        description="The last 20 are kept. Import one to continue it, or delete it."
+        size="md"
+        footer={(close) => <Button variant="primary" onPress={close}>Done</Button>}
+      >
+        <div className={historyStyles.list}>
           {sheets === null && <SkeletonRows rows={4} />}
           {sheets !== null && sheets.length === 0 && (
-            <div className="lotlist__empty">
+            <div className={historyStyles.empty}>
               No saved sheets yet. When you clear the sheet, the old one is kept here.
             </div>
           )}
           {(sheets || []).map((s) => {
             const d = describe ? describe(s.sheet) : { title: "—", meta: "" };
             return (
-              <div className="prevsheet" key={s.id}>
-                <div className="prevsheet__info">
-                  <div className="prevsheet__when">{d.title || "—"}</div>
-                  <div className="prevsheet__meta">
+              <div className={historyStyles.row} key={s.id}>
+                <div className={historyStyles.info}>
+                  <div className={historyStyles.title}>{d.title || "—"}</div>
+                  <div className={historyStyles.meta}>
                     {d.meta}
                     {d.meta ? " · " : ""}saved {savedLabel(s.savedAt)}
                   </div>
                 </div>
-                <div className="toolbar__spacer" />
-                <button
-                  className="btn btn--primary btn--mini"
-                  disabled={busy === s.id}
-                  onClick={() => onImport(s.sheet, s.id)}
+                <Button
+                  size="sm"
+                  variant="primary"
+                  isDisabled={busy === s.id}
+                  onPress={() => onImport(s.sheet, s.id)}
                 >
                   Import
-                </button>
-                <button className="busrow__clear" disabled={busy === s.id} onClick={() => remove(s.id)}>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  isDisabled={busy === s.id}
+                  onPress={() => setDeleteId(s.id)}
+                >
                   Delete
-                </button>
+                </Button>
               </div>
             );
           })}
         </div>
-
-        <div className="modal__actions">
-          <div className="toolbar__spacer" />
-          <button className="btn btn--primary" onClick={onClose}>
-            Done
-          </button>
-        </div>
-    </Overlay>
+      </ResponsiveDialog>
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteId(null);
+        }}
+        title="Delete this saved sheet?"
+        description="This saved sheet will be permanently deleted."
+        confirmLabel="Delete sheet"
+        tone="danger"
+        isPending={!!deleteId && busy === deleteId}
+        onConfirm={async () => {
+          if (deleteId) await remove(deleteId);
+        }}
+      />
+    </>
   );
 }

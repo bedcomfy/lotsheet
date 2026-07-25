@@ -38,3 +38,10 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/tmp/
+
+*storybook.log
+storybook-static
+
+# Storybook's generated starter examples are not part of the Pace UI system.
+/stories/

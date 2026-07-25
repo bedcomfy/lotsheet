@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
-import { History, Eraser, FileDown, FileText } from "lucide-react";
+import { History, Eraser, FileDown, FileText, MoreHorizontal } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
-import ToolMenu from "./ToolMenu";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
+import { PaperViewport } from "../sheets/core";
+import { LETTER_PORTRAIT } from "../sheets/core/profiles";
+import chromeStyles from "./SheetChrome.module.css";
 
 // Daily Fare Box Checks — one row per service-lane bus: the servicer and a
 // note explaining why the farebox would not probe. The sheet is split into
@@ -87,6 +90,7 @@ export default function FareboxSheet({
   const [blankMode, setBlankMode] = useState(false);
   const [laneCopies, setLaneCopies] = useState(false); // print an N set + an S set
   const [prevOpen, setPrevOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const dataRef = useRef<FareboxData>(data);
@@ -191,7 +195,6 @@ export default function FareboxSheet({
     }).catch(() => {});
   }
   async function clearAll() {
-    if (!window.confirm("Clear this whole sheet? The current one is saved to Prev Sheets first.")) return;
     await archiveCurrent();
     setData(emptyData());
   }
@@ -308,7 +311,14 @@ export default function FareboxSheet({
 
   function paper(lane: "n" | "s" | null, pageBuses: (string | null)[], pageNo: number) {
     return (
-      <div className="sheet fbx-sheet" key={`${lane ?? "x"}-${pageNo}`}>
+      <div
+        className="sheet fbx-sheet"
+        key={`${lane ?? "x"}-${pageNo}`}
+        data-paper-page=""
+        data-paper-profile="letter-portrait"
+        data-sheet-id="farebox"
+        data-page-number={pageNo + 1}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="sheet-brand-logo" src="/logo.png" alt="Pace" />
         <table className="fbx">
@@ -373,40 +383,49 @@ export default function FareboxSheet({
   }
 
   return (
-    <div className="app">
-      {!embedded && <div className="toolbar no-print">
-        <div className="toolbar__title">Farebox Sheet</div>
+    <div className={chromeStyles.page}>
+      {!embedded && <Toolbar className={`${chromeStyles.toolbar} no-print`}>
+        <div className={chromeStyles.title}>Farebox Sheet</div>
         <DatePickerField
-          className="toolbar__date"
+          className={chromeStyles.date}
           value={data.date || displayDate}
           onValueChange={(value) => setData((d) => ({ ...d, date: value }))}
           shortYear
           ariaLabel="Farebox sheet date"
+          variant="ui"
         />
-        <div className="toolbar__spacer" />
-        <span className="toolbar__saved">
-          {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-        </span>
-        <ToolMenu>
-          <button className="toolmenu__item" onClick={() => setPrevOpen(true)}>
-            <History size={16} /> Prev Sheets
-          </button>
-          <div className="toolmenu__sep" />
-          <button className="toolmenu__item toolmenu__item--danger" onClick={clearAll}>
-            <Eraser size={16} /> Clear sheet
-          </button>
-        </ToolMenu>
-        <button className="btn" onClick={printBlank} title="Print a blank Farebox form">
-          <FileText size={16} /> Print Blank
-        </button>
-        <button className="btn btn--primary" onClick={printPdf} title="Prints an N-circled set and an S-circled set">
-          <FileDown size={16} /> Print PDF
-        </button>
-      </div>}
+        <ToolbarGroup className={chromeStyles.actions}>
+          <span className={chromeStyles.saved}>
+            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
+          </span>
+          <ActionMenu
+            label={<><MoreHorizontal size={16} /> More</>}
+            items={[
+              { id: "history", label: "Previous sheets", icon: <History size={16} /> },
+              { id: "clear", label: "Clear sheet", icon: <Eraser size={16} />, tone: "danger" },
+            ]}
+            onAction={(key) => {
+              if (key === "history") setPrevOpen(true);
+              if (key === "clear") setClearOpen(true);
+            }}
+          />
+          <Button onPress={printBlank}>
+            <FileText aria-hidden="true" /> Print Blank
+          </Button>
+          <Button variant="primary" onPress={printPdf}>
+            <FileDown aria-hidden="true" /> Print PDF
+          </Button>
+        </ToolbarGroup>
+      </Toolbar>}
 
-      <div className="sheet-scroll fbx-scroll">
+      <PaperViewport
+        profile={LETTER_PORTRAIT}
+        fitOnMobile
+        label="Farebox Checks paper preview"
+        className="fbx-scroll"
+      >
         {lanes.flatMap((lane) => pages.map((pageBuses, i) => paper(lane, pageBuses, i)))}
-      </div>
+      </PaperViewport>
 
       {prevOpen && (
         <SheetHistory
@@ -423,6 +442,16 @@ export default function FareboxSheet({
           onClose={() => setPrevOpen(false)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Clear the Farebox sheet?"
+        description="The current sheet is saved to Previous Sheets before it is cleared."
+        confirmLabel="Clear sheet"
+        tone="danger"
+        onConfirm={clearAll}
+      />
 
       {/* Signals the headless PDF renderer that the sheet + bus list have loaded. */}
       {marker && loaded && busReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}

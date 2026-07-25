@@ -8,6 +8,8 @@
 import { useEffect, useState } from "react";
 import MBuses, { pushRecent } from "./MBuses";
 import MBusCard from "./MBusCard";
+import { AppPage } from "../../ui";
+import styles from "./MApp.module.css";
 
 export default function BusesPage() {
   const [openBus, setOpenBus] = useState<string | null>(null);
@@ -29,14 +31,14 @@ export default function BusesPage() {
   }
 
   return (
-    <main className="mpage">
+    <AppPage className={styles.page}>
       <MBuses onOpenBus={open} />
       {openBus && <MBusCard bus={openBus} onClose={() => setOpenBus(null)} toast={toast} />}
       {toastMsg && (
-        <div className="mtoast" role="status">
+        <div className={styles.toast} role="status">
           <b>✓</b>&nbsp;{toastMsg}
         </div>
       )}
-    </main>
+    </AppPage>
   );
 }

@@ -1,0 +1,126 @@
+.popover {
+  width: min(20rem, calc(100vw - var(--ui-space-4) * 2));
+  max-height: calc(
+    100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-6)
+  );
+  overflow: auto;
+  padding: var(--ui-space-1);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-lg);
+  font-family: var(--ui-font-sans);
+  letter-spacing: 0;
+  outline: none;
+  transform-origin: var(--trigger-anchor-point);
+}
+
+.popover[data-entering] {
+  animation: menu-in var(--ui-motion-normal) var(--ui-ease-standard);
+}
+
+.popover[data-exiting] {
+  animation: menu-out var(--ui-motion-fast) var(--ui-ease-exit);
+}
+
+.menu {
+  display: grid;
+  gap: 2px;
+  outline: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px var(--ui-space-3);
+  min-height: var(--ui-touch-target);
+  align-items: center;
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  outline: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item[data-focused],
+.item[data-hovered] {
+  background: var(--ui-surface-hover);
+}
+
+.item[data-focus-visible] {
+  box-shadow: inset 0 0 0 2px var(--ui-focus);
+}
+
+.item[data-pressed] {
+  background: var(--ui-accent-soft);
+}
+
+.item[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.item[data-tone="danger"] {
+  color: var(--ui-danger);
+}
+
+.icon {
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  color: var(--ui-text-muted);
+}
+
+.item[data-tone="danger"] .icon {
+  color: currentColor;
+}
+
+.icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  stroke-width: 1.8;
+}
+
+.label {
+  overflow: hidden;
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-height-tight);
+  text-overflow: ellipsis;
+}
+
+.description {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-body);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(-2px) scale(0.985);
+  }
+}

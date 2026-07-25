@@ -1,0 +1,33 @@
+.page {
+  display: grid;
+  max-width: 96rem;
+  margin: 0 auto;
+}
+
+.preview {
+  display: grid;
+  gap: var(--ui-space-5);
+}
+
+.dateField {
+  display: grid;
+  gap: var(--ui-space-1);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-medium);
+}
+
+@media (max-width: 699px) {
+  .page {
+    padding-inline: var(--ui-space-3);
+  }
+}
+
+@media print {
+  .page {
+    display: block;
+    max-width: none;
+    padding: 0;
+    background: white;
+  }
+}

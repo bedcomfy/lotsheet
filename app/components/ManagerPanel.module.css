@@ -1,0 +1,563 @@
+.body {
+  display: flex;
+  min-height: 24rem;
+  padding: 0;
+}
+
+.inner {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+}
+
+.innerFit {
+  flex: none;
+}
+
+.innerFit .list {
+  flex: none;
+  overflow: visible;
+}
+
+.detailBar {
+  display: flex;
+  padding: var(--ui-space-3) var(--ui-space-4) 0;
+}
+
+.tabs {
+  margin: var(--ui-space-4) var(--ui-space-4) 0;
+}
+
+.search {
+  width: auto;
+  margin: var(--ui-space-3) var(--ui-space-4) 0;
+}
+
+.list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-5);
+  scrollbar-color: var(--ui-border-strong) transparent;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.empty {
+  padding: var(--ui-space-8) var(--ui-space-4);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+  text-align: center;
+}
+
+.busInput {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.busRow {
+  display: flex;
+  width: 100%;
+  min-height: 4.25rem;
+  align-items: center;
+  gap: var(--ui-space-3);
+  margin: 0 0 var(--ui-space-2);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    background-color var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.busRow:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-hover);
+}
+
+.busRow:focus-visible,
+.choiceChip:focus-visible,
+.departmentTab:focus-visible,
+.flagChip:focus-visible,
+.flagResult:focus-visible,
+.removeBus:focus-visible,
+.removeFlag:focus-visible,
+.addNote:focus-visible,
+.noteClear:focus-visible,
+.tireButton:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.busRowMain {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.busRowTop,
+.busRowPills,
+.flagRowHead {
+  display: flex;
+  align-items: center;
+}
+
+.busRowTop {
+  gap: var(--ui-space-2);
+}
+
+.busNumber {
+  min-width: 3.5rem;
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.busRowPills {
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+  margin-top: var(--ui-space-2);
+}
+
+.busRowNone {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: var(--ui-text-subtle);
+}
+
+.flagPicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-4);
+}
+
+.activeFlags,
+.flagChips,
+.reasonPicker,
+.departmentFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.removableFlag {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--ui-space-1);
+  padding: 0.4rem 0.4rem 0.4rem 0.75rem;
+  border: 1px solid
+    color-mix(in srgb, var(--flag-color, var(--ui-accent)) 44%, var(--ui-border));
+  border-radius: var(--ui-radius-pill);
+  color: var(--flag-color, var(--ui-accent));
+  background: color-mix(
+    in srgb,
+    var(--flag-color, var(--ui-accent)) 12%,
+    var(--ui-surface)
+  );
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+  line-height: 1.2;
+}
+
+.removeFlag,
+.noteClear {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-pill);
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.removeFlag {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.removeFlag:hover {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.flagDetail {
+  min-width: 0;
+}
+
+.flagSearch {
+  width: 100%;
+}
+
+.flagResults {
+  display: grid;
+  gap: var(--ui-space-1);
+}
+
+.flagResult {
+  display: flex;
+  width: 100%;
+  min-height: var(--ui-control-md);
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.flagResult:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-hover);
+}
+
+.flagResultSelected {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.flagResultIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.noResults {
+  padding: var(--ui-space-3);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.sectionLabel,
+.detailLabel,
+.byFlagCount,
+.byFlagHint,
+.flagHint,
+.flagCode {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.sectionLabel {
+  margin-bottom: var(--ui-space-2);
+  font-weight: var(--ui-weight-medium);
+}
+
+.flagCode {
+  display: block;
+  margin-top: 0.15rem;
+  font-style: normal;
+  font-weight: var(--ui-weight-regular);
+}
+
+.flagChip,
+.choiceChip,
+.departmentTab,
+.tireButton {
+  border: 1px solid var(--ui-border-strong);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-motion-fast) var(--ui-ease-standard),
+    color var(--ui-motion-fast) var(--ui-ease-standard),
+    background-color var(--ui-motion-fast) var(--ui-ease-standard);
+}
+
+.flagChip,
+.choiceChip {
+  min-height: var(--ui-control-sm);
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--ui-radius-pill);
+}
+
+.flagChip:hover,
+.choiceChip:hover,
+.tireButton:hover {
+  border-color: var(--ui-accent);
+}
+
+.choiceService,
+.departmentTabSelectedService,
+.tireButtonSelected {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.choiceMaintenance,
+.departmentTabSelectedMaintenance {
+  border-color: color-mix(in srgb, var(--ui-warning) 52%, var(--ui-border));
+  color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+
+.choiceSafety,
+.departmentTabSelectedSafety {
+  border-color: color-mix(in srgb, var(--ui-danger) 52%, var(--ui-border));
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.flagHint {
+  line-height: var(--ui-line-height-body);
+}
+
+.noteBlock {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.addNote {
+  display: inline-flex;
+  width: max-content;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-1) 0;
+  border: 0;
+  color: var(--ui-text-muted);
+  background: transparent;
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+  cursor: pointer;
+}
+
+.addNote:hover {
+  color: var(--ui-text);
+}
+
+.noteRow {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+
+.detailText {
+  width: 100%;
+}
+
+.noteRow .detailText {
+  padding-right: 2.25rem;
+}
+
+.noteClear {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--ui-text-muted);
+}
+
+.noteClear:hover {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.detailBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface-muted);
+}
+
+.detailColumn {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.detailLabel {
+  font-weight: var(--ui-weight-medium);
+}
+
+.detailSummary {
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-sm);
+}
+
+.detailWarning {
+  color: var(--ui-danger);
+  font-size: var(--ui-font-size-xs);
+}
+
+.tirePicker {
+  display: grid;
+  width: min(100%, 22rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+}
+
+.tireHint {
+  grid-column: 1 / -1;
+  color: var(--ui-text-subtle);
+  font-size: var(--ui-font-size-xs);
+  text-align: center;
+}
+
+.tireButton {
+  min-height: var(--ui-control-md);
+  padding: var(--ui-space-2);
+  border-radius: var(--ui-radius-md);
+}
+
+.byFlag {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: var(--ui-space-4) var(--ui-space-4) 0;
+}
+
+.departmentTabs {
+  display: flex;
+  gap: var(--ui-space-2);
+  margin-bottom: var(--ui-space-3);
+}
+
+.departmentTab {
+  min-height: var(--ui-control-md);
+  flex: 1 1 0;
+  padding: var(--ui-space-2);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+  font-weight: var(--ui-weight-medium);
+}
+
+.departmentFlags {
+  margin-bottom: var(--ui-space-3);
+}
+
+.addBus {
+  display: flex;
+  align-items: end;
+  gap: var(--ui-space-2);
+  margin-bottom: var(--ui-space-2);
+}
+
+.byFlagHint {
+  margin-bottom: var(--ui-space-2);
+  line-height: var(--ui-line-height-body);
+}
+
+.byFlagBar {
+  display: flex;
+  min-height: var(--ui-control-md);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-1) 0 var(--ui-space-2);
+}
+
+.byFlagCount {
+  flex: 1 1 auto;
+}
+
+.flagRow {
+  padding: var(--ui-space-3);
+  margin-bottom: var(--ui-space-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface);
+}
+
+.flagRowHead {
+  gap: var(--ui-space-2);
+}
+
+.busType {
+  min-width: 2rem;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.removeBus {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-3);
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 45%, var(--ui-border));
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-danger);
+  background: transparent;
+  font: inherit;
+  font-size: var(--ui-font-size-xs);
+  cursor: pointer;
+}
+
+.removeBus:hover {
+  background: var(--ui-danger-soft);
+}
+
+@media (max-width: 699px) {
+  .body {
+    min-height: 0;
+  }
+
+  .innerFit {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .innerFit .list {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .tabs,
+  .search {
+    margin-right: var(--ui-space-3);
+    margin-left: var(--ui-space-3);
+  }
+
+  .list,
+  .byFlag {
+    padding-right: var(--ui-space-3);
+    padding-left: var(--ui-space-3);
+  }
+
+  .departmentTabs {
+    overflow-x: auto;
+  }
+
+  .departmentTab {
+    min-width: 7rem;
+  }
+
+  .addBus {
+    align-items: stretch;
+  }
+}

@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { useFlags } from "../../lib/queries";
 import { useBusMaster } from "../BusMasterProvider";
 import { sanitizeBus } from "../../lib/buses";
+import { Chip, SearchField } from "../../ui";
+import styles from "./MApp.module.css";
 
 const RECENT_KEY = "pace:m:recent";
 
@@ -41,40 +43,36 @@ export default function MBuses({ onOpenBus }: { onOpenBus: (bus: string) => void
 
   return (
     <>
-      <label className="msearch">
-        <span aria-hidden="true">⌕</span>
-        <input
-          placeholder="Bus number…"
-          inputMode="numeric"
-          value={q}
-          onChange={(e) => onType(e.target.value)}
-          aria-label="Find bus"
-        />
-        {q && (
-          <button type="button" className="msearch__clear" onClick={() => setQ("")} aria-label="Clear">✕</button>
-        )}
-      </label>
-      {q.length >= 4 && !isKnown(q) && <div className="mhint">“{q}” isn't a known bus number.</div>}
+      <SearchField
+        className={styles.search}
+        label="Find bus"
+        labelHidden
+        placeholder="Bus number…"
+        inputMode="numeric"
+        value={q}
+        onChange={onType}
+        errorMessage={q.length >= 4 && !isKnown(q) ? `“${q}” isn't a known bus number.` : undefined}
+        autoFocus
+      />
 
       {recent.length > 0 && (
         <>
-          <div className="mapp__sec">Recent</div>
-          <div className="mbuschips">
+          <div className={styles.section}>Recent</div>
+          <div className={styles.chips}>
             {recent.map((b) => (
-              <button
-                type="button"
+              <Chip
                 key={b}
-                className={`mbuschip ${hasFlags(b) ? "mbuschip--flag" : ""}`}
-                onClick={() => onOpenBus(b)}
+                tone={hasFlags(b) ? "warning" : "neutral"}
+                onPress={() => onOpenBus(b)}
               >
                 {b}
-              </button>
+              </Chip>
             ))}
           </div>
         </>
       )}
 
-      <div className="mhint">
+      <div className={styles.hint}>
         Type a bus number → its card: where it sits, its flags, tonight's service, and one-tap flagging.
       </div>
     </>

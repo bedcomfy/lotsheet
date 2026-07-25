@@ -1,0 +1,79 @@
+.badge {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-1);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--ui-font-sans);
+  font-weight: var(--ui-weight-medium);
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sm {
+  min-height: 1.375rem;
+  padding: 0 var(--ui-space-2);
+  font-size: var(--ui-font-size-xs);
+}
+
+.md {
+  min-height: 1.75rem;
+  padding: 0 var(--ui-space-3);
+  font-size: var(--ui-font-size-sm);
+}
+
+.neutral {
+  border-color: var(--ui-border);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+}
+
+.accent {
+  border-color: color-mix(in srgb, var(--ui-accent) 32%, transparent);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.success {
+  border-color: color-mix(in srgb, var(--ui-success) 32%, transparent);
+  color: var(--ui-success);
+  background: var(--ui-success-soft);
+}
+
+.warning {
+  border-color: color-mix(in srgb, var(--ui-warning) 32%, transparent);
+  color: var(--ui-warning);
+  background: var(--ui-warning-soft);
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--ui-danger) 32%, transparent);
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+.info {
+  border-color: color-mix(in srgb, var(--ui-info) 32%, transparent);
+  color: var(--ui-info);
+  background: var(--ui-info-soft);
+}
+
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.icon svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  stroke-width: 2;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

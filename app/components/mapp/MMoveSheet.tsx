@@ -15,6 +15,8 @@ import {
 } from "../../lib/grid";
 import { useLotSheet } from "../../lib/queries";
 import { useCellOps, cellNum } from "./useCellOps";
+import { Button, Chip, ResponsiveDialog } from "../../ui";
+import styles from "./MApp.module.css";
 
 const QUICK_LOTS: { key: string; label: string }[] = [
   { key: "apron", label: "Apron" },
@@ -68,80 +70,77 @@ export default function MMoveSheet({ bus, onDone, onClose }: MMoveSheetProps) {
   }
 
   return (
-    <>
-      <div className="mscrim" onClick={onClose} />
-      <div className="mcard" role="dialog" aria-label={`Move bus ${bus}`}>
-        <div className="mcard__grab" />
-        <div className="mcard__body">
-        <div className="mcard__top">
-          <span className="mcard__num">{bus}</span>
-          <span className="mcard__where">move to…</span>
-        </div>
-
-        <div className="mapp__sec">Lots</div>
-        <div className="mbuschips">
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={`Move bus ${bus}`}
+      description="Choose its new garage location."
+      size="md"
+      footer={(close) => <Button onPress={close}>Cancel</Button>}
+    >
+      <div className={styles.moveSections}>
+        <section className={styles.moveSection}>
+        <h3>Lots</h3>
+        <div className={styles.chips}>
           {QUICK_LOTS.map((l) => (
-            <button type="button" key={l.key} className="mbuschip" onClick={() => go({ lotKey: l.key }, l.label)}>
+            <Chip key={l.key} onPress={() => go({ lotKey: l.key }, l.label)}>
               {l.label}
-            </button>
+            </Chip>
           ))}
         </div>
+        </section>
 
-        <div className="mapp__sec">Shop bays</div>
-        <div className="mbuschips">
+        <section className={styles.moveSection}>
+        <h3>Shop bays</h3>
+        <div className={styles.chips}>
           {Array.from({ length: 10 }, (_, i) => {
             const taken = !!bays[i] && bays[i] !== bus;
             const xed = bays[i] === "X";
             if (xed) return null;
             return (
-              <button
-                type="button"
+              <Chip
                 key={i}
-                className="mbuschip"
-                disabled={taken}
-                style={taken ? { opacity: 0.35 } : undefined}
-                onClick={() => go({ lotKey: "bay", lotIndex: i }, `Bay ${i + 1}`)}
+                isDisabled={taken}
+                onPress={() => go({ lotKey: "bay", lotIndex: i }, `Bay ${i + 1}`)}
               >
                 Bay {i + 1}
-              </button>
+              </Chip>
             );
           })}
         </div>
+        </section>
 
-        <div className="mapp__sec">Grid spot</div>
-        <div className="mbuschips">
+        <section className={styles.moveSection}>
+        <h3>Grid spot</h3>
+        <div className={styles.chips}>
           {Array.from({ length: COLUMN_COUNT }, (_, c) => (
-            <button
-              type="button"
+            <Chip
               key={c}
-              className={`mbuschip ${row === c ? "mbuschip--onrow" : ""}`}
-              onClick={() => setRow(row === c ? null : c)}
+              isSelected={row === c}
+              tone={row === c ? "accent" : "neutral"}
+              onPress={() => setRow(row === c ? null : c)}
             >
               R{c + 1}
-            </button>
+            </Chip>
           ))}
         </div>
         {row !== null && (
-          <div className="mbuschips">
-            {emptySpots.length === 0 && <div className="mhint">Row {row + 1} is full.</div>}
+          <div className={styles.chips}>
+            {emptySpots.length === 0 && <div className={styles.hint}>Row {row + 1} is full.</div>}
             {emptySpots.map((s) => (
-              <button
-                type="button"
+              <Chip
                 key={s.id}
-                className="mbuschip"
-                onClick={() => go({ cellId: s.id }, `Row ${row + 1} · ${s.label === "OUT" ? "front" : "#" + s.label}`)}
+                onPress={() => go({ cellId: s.id }, `Row ${row + 1} · ${s.label === "OUT" ? "front" : "#" + s.label}`)}
               >
                 {s.label}
-              </button>
+              </Chip>
             ))}
           </div>
         )}
-
-        </div>
-        <div className="mcard__acts mcard__footer">
-          <button type="button" className="mactb" onClick={onClose}>Cancel</button>
-        </div>
+        </section>
       </div>
-    </>
+    </ResponsiveDialog>
   );
 }
