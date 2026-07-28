@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.5 - 2026-07-28
+
+- Farebox sheet: new "Probed & Dumped" column — a Y / N per bus that servicers
+  circle (tap on screen, pen on paper), so every serviced farebox gets written
+  down. Prints exactly as marked; blank forms print plain letters to circle.
+- Farebox sheet: "Bypassed" checkbox joins No Power / Won't Probe in the
+  "why won't it probe" column.
+- Old saved farebox sheets load unchanged; first print after the update
+  regenerates the cached PDF with the new layout.
+
 ## 0.18.4 - 2026-07-24
 
 - Restored vertical touch and wheel scrolling inside the full-screen Fill Rows

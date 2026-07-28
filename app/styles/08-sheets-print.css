@@ -983,7 +983,8 @@ td.turnt__head {
   table-layout: fixed;
 }
 .fbx__col--bus { width: 10%; }
-.fbx__col--serv { width: 105px; }
+.fbx__col--serv { width: 96px; }
+.fbx__col--pd { width: 92px; }
 .fbx__col--note { width: auto; }
 .fbx td {
   border: 1px solid #000;
@@ -1080,6 +1081,31 @@ td.turnt__head {
 .fbx__ynsep {
   color: #555;
 }
+/* Probed & Dumped column: a Y / N to circle, same look as the header's N/S. */
+.fbx__colhdr td.fbx__colhdr--pd {
+  font-size: 11.5px;
+  line-height: 1.15;
+  padding: 3px 2px;
+}
+.fbx__pd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.fbx__ynbtn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.fbx__pd .fbx__lane {
+  padding: 1px 4px;
+}
 .fbx__in {
   width: 100%;
   border: none;
@@ -1109,9 +1135,9 @@ td.turnt__head {
 }
 .fbx__notes {
   display: grid;
-  grid-template-columns: max-content max-content minmax(70px, 1fr);
+  grid-template-columns: max-content max-content max-content minmax(60px, 1fr);
   align-items: center;
-  gap: 0 8px;
+  gap: 0 7px;
   width: 100%;
   min-width: 0;
 }

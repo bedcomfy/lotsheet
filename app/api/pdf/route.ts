@@ -26,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "37"; // SheetKit print profiles and deterministic asset readiness
+const PDF_VERSION = "38"; // Farebox: Probed & Dumped Y/N column + Bypassed reason
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).

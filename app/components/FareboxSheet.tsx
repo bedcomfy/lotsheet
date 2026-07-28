@@ -21,18 +21,19 @@ import chromeStyles from "./SheetChrome.module.css";
 // set (the two lane clipboards); a blank print is a single plain set.
 
 interface FareboxEntry {
-  yn: "" | "y" | "n";
+  yn: "" | "y" | "n"; // Probed & Dumped — circled Y or N
   serv: string;
   note: string;
   noPower: boolean;
   wontProbe: boolean;
+  bypassed: boolean;
 }
 interface FareboxData {
   date: string;
   entries: Record<string, FareboxEntry>;
 }
 
-const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false };
+const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false, bypassed: false };
 const ROWS_PER_PAGE = 32; // four pages with taller rows and minimal write-in padding
 
 // Same bus list and familiar order as the Fuel/DEF sheets.
@@ -62,6 +63,7 @@ function normalizeEntry(raw: any): FareboxEntry {
     note: raw.note || "",
     noPower: raw.noPower === true,
     wontProbe: raw.wontProbe === true,
+    bypassed: raw.bypassed === true,
   };
 }
 
@@ -178,7 +180,7 @@ export default function FareboxSheet({
     setData((d) => {
       const next = { ...(d.entries[bus] || EMPTY_ENTRY), ...patch };
       const entries = { ...d.entries };
-      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe) delete entries[bus];
+      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe && !next.bypassed) delete entries[bus];
       else entries[bus] = next;
       return { ...d, entries };
     });
@@ -251,7 +253,7 @@ export default function FareboxSheet({
 
   function reasonControl(
     bus: string,
-    field: "noPower" | "wontProbe",
+    field: "noPower" | "wontProbe" | "bypassed",
     label: string,
     forceBlank = false,
   ) {
@@ -275,12 +277,44 @@ export default function FareboxSheet({
     );
   }
 
+  // Probed & Dumped: a Y / N the servicer circles, exactly like the lane N/S
+  // in the header. On screen, tapping a letter circles it (tap again to
+  // un-circle); blank prints show plain letters to circle by hand.
+  function pdCell(bus: string, forceBlank = false) {
+    const yn = forceBlank || blankMode ? "" : (data.entries[bus] || EMPTY_ENTRY).yn;
+    const letter = (value: "y" | "n", text: string) => {
+      const mark = (
+        <span className={`fbx__lane ${yn === value ? "fbx__lane--circled" : ""}`}>{text}</span>
+      );
+      if (blankMode || forceBlank) return mark;
+      return (
+        <button
+          type="button"
+          className="fbx__ynbtn"
+          aria-pressed={yn === value}
+          aria-label={`Bus ${bus} probed and dumped: ${text}`}
+          onClick={() => setEntry(bus, { yn: yn === value ? "" : value })}
+        >
+          {mark}
+        </button>
+      );
+    };
+    return (
+      <span className="fbx__pd">
+        {letter("y", "Y")}
+        <span className="fbx__ynsep">/</span>
+        {letter("n", "N")}
+      </span>
+    );
+  }
+
   function notesCell(bus: string, forceBlank = false) {
     const entry = forceBlank ? EMPTY_ENTRY : data.entries[bus] || EMPTY_ENTRY;
     return (
       <div className="fbx__notes">
         {reasonControl(bus, "noPower", "No Power", forceBlank)}
         {reasonControl(bus, "wontProbe", "Won't Probe", forceBlank)}
+        {reasonControl(bus, "bypassed", "Bypassed", forceBlank)}
         <span className="fbx__other">
           <span>Other:</span>
           {blankMode || forceBlank ? (
@@ -304,6 +338,7 @@ export default function FareboxSheet({
       <tr key={`empty-${key}`}>
         <td className="fbx__bus" />
         <td />
+        <td>{pdCell("", true)}</td>
         <td>{notesCell("", true)}</td>
       </tr>
     );
@@ -325,11 +360,12 @@ export default function FareboxSheet({
           <colgroup>
             <col className="fbx__col--bus" />
             <col className="fbx__col--serv" />
+            <col className="fbx__col--pd" />
             <col className="fbx__col--note" />
           </colgroup>
           <thead>
             <tr className="fbx__hdr">
-              <td colSpan={3}>
+              <td colSpan={4}>
                 <div className="fbx__hdrrow">
                   <span className="fbx__name">DAILY FARE BOX CHECKS</span>
                   <span className="fbx__field">
@@ -346,6 +382,7 @@ export default function FareboxSheet({
             <tr className="fbx__colhdr">
               <td>BUS</td>
               <td>SERV</td>
+              <td className="fbx__colhdr--pd">PROBED &amp; DUMPED</td>
               <td>IF FAREBOX WON&apos;T PROBE, WHY?</td>
             </tr>
           </thead>
@@ -366,6 +403,7 @@ export default function FareboxSheet({
                       />
                     )}
                   </td>
+                  <td>{pdCell(bus)}</td>
                   <td>{notesCell(bus)}</td>
                 </tr>
               );
