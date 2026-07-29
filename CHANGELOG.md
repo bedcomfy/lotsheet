@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.2 - 2026-07-29
+
+- The Lot Sheet bar gains the in-the-shop chip next to Out of Service (tap it
+  to open the Shop overview), and the placement summary now reads
+  "Ready for Use · In Lots · Missing" in proper case.
+
 ## 0.19.1 - 2026-07-29
 
 Cristian's preview-review round on the density pass.

@@ -249,3 +249,8 @@
     display: none;
   }
 }
+
+.shopButton {
+  color: var(--ui-info);
+  background: var(--ui-info-soft);
+}

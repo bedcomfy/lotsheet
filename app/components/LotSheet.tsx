@@ -1317,7 +1317,7 @@ export default function LotSheet() {
     const lines: string[] = [];
     lines.push(`PACE LOT SHEET — ${[headerDate, headerTime].filter(Boolean).join(" ")}`);
     lines.push(
-      `Ready for use: ${onGridCount} · In lots: ${inLotsCount} · Off property: ${offPropertyCount}` +
+      `Ready for Use: ${onGridCount} · In Lots: ${inLotsCount} · Off Property: ${offPropertyCount}` +
         (sheet.inShop ? ` · In shop: ${sheet.inShop}` : "")
     );
     const gridEntries = Object.entries(sheet.cells || {})
@@ -1462,6 +1462,14 @@ export default function LotSheet() {
           >
             {notReadyForServiceCount} Out of Service
           </Button>
+          <Button
+            size="sm"
+            className={chromeStyles.shopButton}
+            onPress={() => setShopOpen(true)}
+            aria-label={`${fleet.inShop.size} buses in the shop. Open the shop overview.`}
+          >
+            {fleet.inShop.size} in the Shop
+          </Button>
         </div>
         <Button
           size="sm"
@@ -1470,7 +1478,7 @@ export default function LotSheet() {
           onPress={() => setMissingOpen(true)}
           aria-label={`${onGridCount} ready for use, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
         >
-          {onGridCount} ready for use · {inLotsCount} in lots · {missingBuses.length} missing
+          {onGridCount} Ready for Use · {inLotsCount} In Lots · {missingBuses.length} Missing
         </Button>
         {syncError && <span className={chromeStyles.saved}>Offline · retrying</span>}
         <div className={chromeStyles.viewToggle} aria-label="Sheet view mode">

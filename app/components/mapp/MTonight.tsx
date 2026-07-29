@@ -101,7 +101,7 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         buses: fleet.missing,
       },
       grid: {
-        title: "Ready for use",
+        title: "Ready for Use",
         description: "Buses placed on the Lot Sheet service grid.",
         buses: sorted(fleet.onGrid),
       },

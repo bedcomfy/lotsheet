@@ -131,7 +131,7 @@ export default function HomeDashboard() {
         buses: sort([...fleet.notReadyForService]),
       },
       grid: {
-        title: "Buses ready for use",
+        title: "Buses Ready for Use",
         description: "Every bus placed on the Lot Sheet grid — ready for drivers to use.",
         buses: sort([...fleet.onGrid]),
       },
