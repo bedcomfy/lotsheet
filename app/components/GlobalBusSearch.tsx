@@ -19,11 +19,8 @@ import { useBusMaster } from "./BusMasterProvider";
 import FlagPills from "./FlagPills";
 import ManagerPanel from "./ManagerPanelLazy";
 import TypeCodes from "./TypeCodes";
-import { pushRecent } from "./mapp/MBuses";
 import type { FlagMap } from "../lib/types";
 import styles from "./GlobalBusSearch.module.css";
-
-const RECENT_KEY = "pace:m:recent";
 
 function isEditable(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -124,7 +121,6 @@ export default function GlobalBusSearch() {
   const [query, setQuery] = useState("");
   const [selectedBus, setSelectedBus] = useState("");
   const [flagOpen, setFlagOpen] = useState(false);
-  const [recent, setRecent] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const sheet = sheetData?.sheet || null;
 
@@ -142,20 +138,6 @@ export default function GlobalBusSearch() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Shares the phone Bus Card's recents so both surfaces remember the same buses.
-  useEffect(() => {
-    if (!selectedBus) return;
-    pushRecent(selectedBus);
-    try {
-      setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"));
-    } catch {}
-  }, [selectedBus]);
-
-  useEffect(() => {
-    try {
-      setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"));
-    } catch {}
-  }, []);
 
   const details = useMemo<GlobalBusDetails | null>(() => {
     if (!selectedBus || !isKnown(selectedBus)) return null;
@@ -239,19 +221,6 @@ export default function GlobalBusSearch() {
               }}
               onEditFlags={() => setFlagOpen(true)}
             />
-            {recent.filter((bus) => bus !== details.bus && isKnown(bus)).length > 0 && (
-              <div className={styles.recent}>
-                <span className={styles.recentLabel}>Recent</span>
-                {recent
-                  .filter((bus) => bus !== details.bus && isKnown(bus))
-                  .slice(0, 6)
-                  .map((bus) => (
-                    <Button key={bus} size="sm" variant="secondary" onPress={() => setSelectedBus(bus)}>
-                      {bus}
-                    </Button>
-                  ))}
-              </div>
-            )}
           </>
         ) : (
           <EmptyState

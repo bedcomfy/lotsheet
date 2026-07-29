@@ -59,14 +59,6 @@ export default function HomeDashboard() {
   const { data: pick = null } = useWorkPick();
   const { data: employees = [] } = useEmployees();
   const [now, setNow] = useState<number>(0);
-  const [recentBuses, setRecentBuses] = useState<string[]>([]);
-
-  // Shared with the Bus Card / global search recents.
-  useEffect(() => {
-    try {
-      setRecentBuses(JSON.parse(localStorage.getItem("pace:m:recent") || "[]"));
-    } catch {}
-  }, []);
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
@@ -139,8 +131,8 @@ export default function HomeDashboard() {
         buses: sort([...fleet.notReadyForService]),
       },
       grid: {
-        title: "Buses on grid",
-        description: "Every bus currently placed on the Lot Sheet grid.",
+        title: "Buses ready for use",
+        description: "Every bus placed on the Lot Sheet grid — ready for drivers to use.",
         buses: sort([...fleet.onGrid]),
       },
       lots: {
@@ -201,23 +193,7 @@ export default function HomeDashboard() {
             <Button onPress={() => router.push("/service")}>
               <Fuel aria-hidden="true" />
               Service Sheets
-            </Button>
-            {recentBuses.length > 0 && (
-              <span className={styles.recentRow}>
-                <span className={styles.recentLabel}>Recent</span>
-                {recentBuses.slice(0, 5).map((bus) => (
-                  <Button
-                    key={bus}
-                    size="sm"
-                    variant="secondary"
-                    onPress={() => router.push(`/?find=${encodeURIComponent(bus)}`)}
-                  >
-                    {bus}
-                  </Button>
-                ))}
-              </span>
-            )}
-          </div>
+            </Button>          </div>
           <div className={styles.saveState}>
             <StatusBadge tone="accent">Live updates</StatusBadge>
             <span>Last saved {formatSaved(updatedAt)}</span>
@@ -284,7 +260,7 @@ export default function HomeDashboard() {
           </header>
           <div className={styles.distribution}>
             {[
-              { label: "On grid", value: stats.grid, detail: "Ready", tone: "blue", status: "grid" as StatusDetail },
+              { label: "Ready for Use", value: stats.grid, detail: "On the Lot Sheet grid", tone: "blue", status: "grid" as StatusDetail },
               { label: "In lots", value: stats.lots, detail: "North, East, Fence", tone: "amber", status: "lots" as StatusDetail },
               { label: "In shop", value: stats.shop, detail: "Apron, Bays, Cards", tone: "info", status: "shop" as StatusDetail },
               { label: "Off property", value: stats.offProperty, detail: "Away from garage", tone: "slate", status: "offProperty" as StatusDetail },

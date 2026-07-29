@@ -509,9 +509,6 @@ export default function WorkOrderSheet() {
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
         <ToolbarGroup className={chromeStyles.actions}>
-          <span className={chromeStyles.saved}>
-            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-          </span>
           <Button onPress={() => setHistOpen(true)}>
             <FolderOpen aria-hidden="true" /> Saved
           </Button>

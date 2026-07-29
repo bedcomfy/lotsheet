@@ -14,7 +14,10 @@ import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 import {
-  AppPage,Pressable,
+  AppPage,
+  Button,
+  Pressable,
+  ResponsiveDialog,
   SearchField,
   StaticChip,
   StatusBadge,
@@ -30,6 +33,19 @@ import styles from "./ShopSheet.module.css";
 const BAY_SPOTS = 10;
 
 type ShopLots = Record<LotKey, string[]>;
+
+// Lists editable from this page. Apron/Bays/Cards are the shop proper; the
+// lane lists and R/C have no on-sheet editor (the Turnover paper manages them),
+// so the Shop page hosts their editors too. Counts stay Apron+Bays+Cards only.
+type EditableList = "apron" | "cards" | "northlane" | "southlane" | "rc";
+
+const LIST_EDITOR_COPY: Record<EditableList, { title: string; subtitle: string }> = {
+  apron: { title: "Apron", subtitle: "Buses anywhere on the apron — the order shows on the Turnover sheet." },
+  cards: { title: "Cards", subtitle: "No fixed spots — screen-only, never printed." },
+  northlane: { title: "North Lane", subtitle: "Service lane list — shows on the Turnover sheet." },
+  southlane: { title: "South Lane", subtitle: "Service lane list — shows on the Turnover sheet." },
+  rc: { title: "R/C", subtitle: "Shared list — shows on the Turnover sheet." },
+};
 
 const EMPTY_LOTS: ShopLots = {
   north: [], east: [], fence: [], rc: [], apron: [],
@@ -48,7 +64,7 @@ function cellToNum(v: unknown): string {
 }
 
 export default function ShopSheet() {
-  const { label: busLabel } = useBusMaster();
+  const { label: busLabel, isKnown } = useBusMaster();
   const [lots, setLots] = useState<ShopLots>(EMPTY_LOTS);
   const [cellsSnap, setCellsSnap] = useState<Record<string, unknown>>({}); // grid cells, read-only (for locate)
   const [loaded, setLoaded] = useState(false);
@@ -57,7 +73,8 @@ export default function ShopSheet() {
   const { data: flags = {} } = useFlags();
   const qc = useQueryClient();
   const [flagBus, setFlagBus] = useState<string | null>(null);
-  const [editingList, setEditingList] = useState<"apron" | "cards" | null>(null); // list editor (Apron / Cards)
+  const [editingList, setEditingList] = useState<EditableList | null>(null); // list editor
+  const [offPropOpen, setOffPropOpen] = useState(false); // Off Property flag-list editor
   const [editingBay, setEditingBay] = useState<number | null>(null); // one fixed bay spot
   const [findVal, setFindVal] = useState("");
 
@@ -185,19 +202,19 @@ export default function ShopSheet() {
   }
 
   // List helpers for the free lots here (Apron and Cards — kept blank-free).
-  const listOf = (key: "apron" | "cards") => (lots[key] || []).filter((b) => b);
-  const addToList = (key: "apron" | "cards", bus: string) =>
+  const listOf = (key: EditableList) => (lots[key] || []).filter((b) => b);
+  const addToList = (key: EditableList, bus: string) =>
     patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []).filter((b) => b), bus] });
-  const removeFromList = (key: "apron" | "cards", i: number) =>
+  const removeFromList = (key: EditableList, i: number) =>
     patchLots({ ...lotsRef.current, [key]: (lotsRef.current[key] || []).filter((b) => b).filter((_, j) => j !== i) });
-  function moveInList(key: "apron" | "cards", i: number, dir: number) {
+  function moveInList(key: EditableList, i: number, dir: number) {
     const arr = (lotsRef.current[key] || []).filter((b) => b);
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
     patchLots({ ...lotsRef.current, [key]: arr });
   }
-  function reorderInList(key: "apron" | "cards", from: number, to: number) {
+  function reorderInList(key: EditableList, from: number, to: number) {
     const arr = (lotsRef.current[key] || []).filter((b) => b);
     if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return;
     const [bus] = arr.splice(from, 1);
@@ -249,6 +266,38 @@ export default function ShopSheet() {
     );
   }
 
+  // Buses carrying the Off property flag (a flag, not a lot list). Sorted for a
+  // stable card; deliberately NOT part of inShopCount.
+  const offPropBuses = Object.entries(flags)
+    .filter(([, entry]) => (entry.flags || []).includes("offprop"))
+    .map(([bus]) => bus)
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  function saveOffProp(bus: string, on: boolean) {
+    const cur: FlagEntry = flags[bus] || { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+    const has = (cur.flags || []).includes("offprop");
+    if (on === has) return;
+    const entry: FlagEntry = {
+      ...cur,
+      flags: on ? [...(cur.flags || []), "offprop"] : (cur.flags || []).filter((f) => f !== "offprop"),
+    };
+    fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bus,
+        flags: entry.flags,
+        note: entry.note,
+        inspMiles: entry.inspMiles ?? null,
+        holdReason: entry.holdReason ?? "",
+        retorqueTires: entry.retorqueTires || [],
+        inspOption: entry.inspOption ?? "",
+        actor: getDeviceActor(),
+      }),
+    }).catch(() => {});
+    onBusFlagsUpdated(bus, entry);
+  }
+
   const inShopCount = new Set(
     [...apron, ...cards, ...(lots.bay || [])].filter((b) => b && b !== "X")
   ).size;
@@ -258,13 +307,6 @@ export default function ShopSheet() {
       <Toolbar className="no-print" aria-label="Shop controls">
         <ToolbarGroup>
           <StaticChip tone="accent">{inShopCount} in the shop</StaticChip>
-          <span className={styles.saved}>
-            {savedAt
-              ? `Saved ${savedAt.toLocaleTimeString()}`
-              : loaded
-                ? "Up to date"
-                : "Loading"}
-          </span>
         </ToolbarGroup>
       </Toolbar>
 
@@ -350,6 +392,83 @@ export default function ShopSheet() {
         </section>
       </div>
 
+      {/* Lists with no on-sheet editor — editable here; NOT counted in "in the
+          shop" (that stays Apron + Bays + Cards). */}
+      <div className={styles.shopSecondary}>
+        {(["northlane", "southlane", "rc"] as const).map((key) => {
+          const list = listOf(key);
+          return (
+            <section
+              key={key}
+              className={`${styles.shopCard} ${styles.shopCardInteractive}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => setEditingList(key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setEditingList(key);
+                }
+              }}
+            >
+              <div className={styles.cardHead}>
+                {LIST_EDITOR_COPY[key].title.toUpperCase()}{" "}
+                <span className={styles.cardCount}>({list.length})</span>
+                <span className={styles.cardEdit}>Edit</span>
+              </div>
+              <div className={styles.busChips}>
+                {list.length === 0 && <span className={styles.empty}>Empty.</span>}
+                {list.map((bus, i) => (
+                  <span className={styles.busChip} key={`${bus}-${i}`}>
+                    {busLabel(bus)}
+                    <TypeCodes num={bus} variant="ui" />
+                  </span>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+
+        <section
+          className={`${styles.shopCard} ${styles.shopCardInteractive}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => setOffPropOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setOffPropOpen(true);
+            }
+          }}
+        >
+          <div className={styles.cardHead}>
+            OFF PROPERTY{" "}
+            <span className={styles.cardCount}>({offPropBuses.length})</span>
+            <span className={styles.cardEdit}>Edit</span>
+          </div>
+          <div className={styles.busChips}>
+            {offPropBuses.length === 0 && <span className={styles.empty}>No buses off property.</span>}
+            {offPropBuses.map((bus) => (
+              <span className={styles.busChip} key={bus}>
+                {busLabel(bus)}
+                <TypeCodes num={bus} variant="ui" />
+              </span>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {offPropOpen && (
+        <OffPropertyEditor
+          buses={offPropBuses}
+          flags={flags}
+          isKnown={isKnown}
+          label={busLabel}
+          onChange={saveOffProp}
+          onClose={() => setOffPropOpen(false)}
+        />
+      )}
+
       {editingBay != null && (
         <CellEditor
           subLabel={`Bay ${editingBay + 1}`}
@@ -370,12 +489,8 @@ export default function ShopSheet() {
 
       {editingList && (
         <LotEditor
-          title={editingList === "apron" ? "Apron" : "Cards"}
-          subtitle={
-            editingList === "apron"
-              ? "Buses anywhere on the apron — the order shows on the Turnover sheet."
-              : "No fixed spots — screen-only, never printed."
-          }
+          title={LIST_EDITOR_COPY[editingList].title}
+          subtitle={LIST_EDITOR_COPY[editingList].subtitle}
           list={listOf(editingList)}
           flags={flags}
           locate={locateBus}
@@ -398,5 +513,77 @@ export default function ShopSheet() {
         />
       )}
     </AppPage>
+  );
+}
+
+// Small editor for the Off property flag list: add a bus by number, remove
+// with one tap. Writes the same /api/flags entries the flag editor writes.
+function OffPropertyEditor({
+  buses,
+  flags,
+  isKnown,
+  label,
+  onChange,
+  onClose,
+}: {
+  buses: string[];
+  flags: FlagMap;
+  isKnown: (bus: string) => boolean;
+  label: (bus: string) => string;
+  onChange: (bus: string, on: boolean) => void;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState("");
+
+  function add() {
+    const bus = sanitizeBus(value);
+    if (!bus || !isKnown(bus)) return;
+    onChange(bus, true);
+    setValue("");
+  }
+
+  return (
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Off Property"
+      description="Buses tracked away from the garage. Adding or removing sets the Off property flag."
+      size="sm"
+      footer={(close) => (
+        <Button variant="primary" onPress={close}>
+          Done
+        </Button>
+      )}
+    >
+      <div className={styles.offPropAdd}>
+        <SearchField
+          label="Add bus"
+          labelHidden
+          placeholder="Bus number…"
+          inputMode="numeric"
+          value={value}
+          onChange={(v) => setValue(sanitizeBus(v))}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          errorMessage={value.length >= 4 && !isKnown(value) ? `“${value}” isn't a known bus.` : undefined}
+        />
+        <Button variant="primary" isDisabled={!isKnown(value)} onPress={add}>
+          Add
+        </Button>
+      </div>
+      <div className={styles.offPropList}>
+        {buses.length === 0 && <span className={styles.empty}>No buses off property.</span>}
+        {buses.map((bus) => (
+          <div className={styles.offPropRow} key={bus}>
+            <span className={styles.slotBus}>{label(bus)}</span>
+            <span className={styles.busFlags}>{flagsFullDisplay(flags[bus])}</span>
+            <Button size="sm" variant="quiet" onPress={() => onChange(bus, false)}>
+              Remove
+            </Button>
+          </div>
+        ))}
+      </div>
+    </ResponsiveDialog>
   );
 }

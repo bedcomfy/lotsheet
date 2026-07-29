@@ -373,9 +373,6 @@ export default function FuelSheet({
           variant="ui"
         />
         <ToolbarGroup className={chromeStyles.actions}>
-          <span className={chromeStyles.saved}>
-            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-          </span>
           <Button onPress={() => setManagerOpen(true)}>
             <Flag aria-hidden="true" /> Edit Flags
           </Button>

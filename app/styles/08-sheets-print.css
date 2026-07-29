@@ -970,7 +970,7 @@ td.turnt__head {
   height: 11in;
   min-height: 11in;
   margin: 0 auto;
-  padding: 0.4in 0.5in 0.32in;
+  padding: 0.4in 0.34in 0.32in; /* slimmer side margins: more room to write */
   aspect-ratio: auto;
   display: flex;
   flex-direction: column;
@@ -983,7 +983,7 @@ td.turnt__head {
   table-layout: fixed;
 }
 .fbx__col--bus { width: 10%; }
-.fbx__col--serv { width: 96px; }
+.fbx__col--serv { width: 64px; }
 .fbx__col--pd { width: 92px; }
 .fbx__col--note { width: auto; }
 .fbx td {
@@ -1091,7 +1091,7 @@ td.turnt__head {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 15px; /* room to circle the letter without widening the column */
 }
 .fbx__ynbtn {
   border: 0;

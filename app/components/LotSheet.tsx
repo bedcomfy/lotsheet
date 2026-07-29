@@ -1317,7 +1317,7 @@ export default function LotSheet() {
     const lines: string[] = [];
     lines.push(`PACE LOT SHEET — ${[headerDate, headerTime].filter(Boolean).join(" ")}`);
     lines.push(
-      `On grid: ${onGridCount} · In lots: ${inLotsCount} · Off property: ${offPropertyCount}` +
+      `Ready for use: ${onGridCount} · In lots: ${inLotsCount} · Off property: ${offPropertyCount}` +
         (sheet.inShop ? ` · In shop: ${sheet.inShop}` : "")
     );
     const gridEntries = Object.entries(sheet.cells || {})
@@ -1468,13 +1468,11 @@ export default function LotSheet() {
           className={chromeStyles.summaryButton}
           data-warning={missingBuses.length ? "true" : undefined}
           onPress={() => setMissingOpen(true)}
-          aria-label={`${onGridCount} on grid, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
+          aria-label={`${onGridCount} ready for use, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
         >
-          {onGridCount} on grid · {inLotsCount} in lots · {missingBuses.length} missing
+          {onGridCount} ready for use · {inLotsCount} in lots · {missingBuses.length} missing
         </Button>
-        <span className={chromeStyles.saved}>
-          {syncError ? "Offline · retrying" : savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
-        </span>
+        {syncError && <span className={chromeStyles.saved}>Offline · retrying</span>}
         <div className={chromeStyles.viewToggle} aria-label="Sheet view mode">
           <span className={chromeStyles.viewLabel}>View</span>
           <Button

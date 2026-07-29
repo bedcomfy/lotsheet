@@ -6,7 +6,7 @@
 // Tonight board's missing-bus banner).
 
 import { useEffect, useState } from "react";
-import MBuses, { pushRecent } from "./MBuses";
+import MBuses from "./MBuses";
 import MBusCard from "./MBusCard";
 import { AppPage } from "../../ui";
 import styles from "./MApp.module.css";
@@ -26,7 +26,6 @@ export default function BusesPage() {
   }
   function open(bus: string) {
     (document.activeElement as HTMLElement | null)?.blur?.(); // keyboard never blocks the card
-    pushRecent(bus);
     setOpenBus(bus);
   }
 

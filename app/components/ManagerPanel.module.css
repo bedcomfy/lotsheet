@@ -561,3 +561,16 @@
     align-items: stretch;
   }
 }
+
+.draftSave {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+  margin-top: var(--ui-space-2);
+}
+
+.draftHint {
+  color: var(--ui-text-subtle);
+  font-size: var(--ui-font-size-xs);
+}
