@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.3 - 2026-07-29
+
+- The Service Lane flag summary page prints noticeably bigger — larger title,
+  section headers, bus numbers, and flag text with roomier rows — so it reads
+  at a glance on the clipboard. First combined-service print regenerates the
+  cached PDF.
+
 ## 0.19.2 - 2026-07-29
 
 - The Lot Sheet bar gains the in-the-shop chip next to Out of Service (tap it

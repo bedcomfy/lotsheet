@@ -389,18 +389,18 @@
 }
 .fuelsum__title {
   font-weight: 700 !important;
-  font-size: calc(var(--ffz, 12px) + 7px);
+  font-size: calc(var(--ffz, 12px) + 10px);
   letter-spacing: 0.06em;
 }
 .fuelsum__date {
-  font-size: calc(var(--ffz, 12px) + 5px);
+  font-size: calc(var(--ffz, 12px) + 7px);
   margin-top: 3px;
 }
 .fuelsum__sections {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 14px 28px;
+  gap: 16px 28px;
   width: 100%;
 }
 .fuelsum__section {
@@ -409,26 +409,27 @@
 }
 .fuelsum__seclabel {
   font-weight: 700 !important;
-  font-size: calc(var(--ffz, 12px) + 2px);
+  font-size: calc(var(--ffz, 12px) + 6px);
   border-bottom: 1px solid #000;
-  padding-bottom: 3px;
-  margin-bottom: 4px;
+  padding-bottom: 4px;
+  margin-bottom: 5px;
 }
 .fuelsum__row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: baseline;
-  padding: 2px 0;
+  padding: 4px 0;
   border-bottom: 1px solid #ddd;
 }
 .fuelsum__bus {
   font-weight: 700 !important;
-  font-size: calc(var(--ffz, 12px) + 1px);
-  min-width: 52px;
+  font-size: calc(var(--ffz, 12px) + 6px);
+  min-width: 64px;
   font-variant-numeric: tabular-nums;
 }
 .fuelsum__flags {
-  font-size: var(--ffz, 12px);
+  font-size: calc(var(--ffz, 12px) + 4px);
+  line-height: 1.35;
 }
 
 /* The Lot Sheet previews use the same Letter page box and internal padding as
