@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.19.0 - 2026-07-29
+
+Desktop density and fewer-clicks pass — chrome only; sheets and print output
+untouched.
+
+- The whole desktop chrome is tighter: compact controls, slimmer sidebar
+  (with a new Collapse toggle that shrinks it to an icon rail), and a 52px
+  header. Phones keep full touch sizing.
+- One search: the header fleet search is now THE bus search — press "/" or
+  Ctrl+K from anywhere, get recents, and act on the result (Open on Lot
+  Sheet now also works while already on the Lot Sheet; new Edit flags
+  button opens the flag editor right from the search result). The duplicate
+  per-page Find bus boxes on the Lot, Turnover, and Shop pages are gone.
+- One title: sheet toolbars and page headers no longer repeat the page name
+  the header already shows — the paper and content start a full band higher
+  on Lot, Turnover, Fuel/DEF, Farebox, Work Order, Service, Shop, Staffing,
+  and Object Codes.
+- Print PDF is a split button: click prints as always, the arrow offers
+  Print blank (and lane copies where they exist) without opening More.
+- Home is a cockpit: the hero banner is gone; one dense action row (Open
+  Lot Sheet, Fill Rows, Work Order, Service Sheets) plus recent-bus chips,
+  with the metrics and panels right below.
+
 ## 0.18.5 - 2026-07-28
 
 - Farebox sheet: new "Probed & Dumped" column — a Y / N per bus that servicers

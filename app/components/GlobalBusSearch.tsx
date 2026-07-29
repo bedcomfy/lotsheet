@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowRight, BusFront, MapPin } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, BusFront, Flag, MapPin } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import { useFlags, useLotSheet } from "../lib/queries";
@@ -16,8 +17,20 @@ import {
 } from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
 import FlagPills from "./FlagPills";
+import ManagerPanel from "./ManagerPanelLazy";
 import TypeCodes from "./TypeCodes";
+import { pushRecent } from "./mapp/MBuses";
+import type { FlagMap } from "../lib/types";
 import styles from "./GlobalBusSearch.module.css";
+
+const RECENT_KEY = "pace:m:recent";
+
+function isEditable(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+}
 
 export interface GlobalBusDetails {
   bus: string;
@@ -42,9 +55,11 @@ const STATUS_COPY: Record<
 export function GlobalBusResult({
   details,
   onOpenLotSheet,
+  onEditFlags,
 }: {
   details: GlobalBusDetails;
   onOpenLotSheet?: () => void;
+  onEditFlags?: () => void;
 }) {
   const status = STATUS_COPY[details.status];
   return (
@@ -80,12 +95,19 @@ export function GlobalBusResult({
         </div>
       </section>
 
-      {onOpenLotSheet && (
+      {(onOpenLotSheet || onEditFlags) && (
         <div className={styles.actions}>
-          <Button variant="primary" onPress={onOpenLotSheet}>
-            Open on Lot Sheet
-            <ArrowRight aria-hidden="true" />
-          </Button>
+          {onOpenLotSheet && (
+            <Button variant="primary" onPress={onOpenLotSheet}>
+              Open on Lot Sheet
+              <ArrowRight aria-hidden="true" />
+            </Button>
+          )}
+          {onEditFlags && (
+            <Button variant="secondary" onPress={onEditFlags}>
+              <Flag aria-hidden="true" /> Edit flags
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -94,12 +116,46 @@ export function GlobalBusResult({
 
 export default function GlobalBusSearch() {
   const router = useRouter();
+  const pathname = usePathname();
+  const qc = useQueryClient();
   const { master, isKnown, label } = useBusMaster();
   const { data: sheetData } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const [query, setQuery] = useState("");
   const [selectedBus, setSelectedBus] = useState("");
+  const [flagOpen, setFlagOpen] = useState(false);
+  const [recent, setRecent] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const sheet = sheetData?.sheet || null;
+
+  // "/" or Ctrl/Cmd+K from anywhere focuses the fleet search.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const slash = event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey && !isEditable(event.target);
+      const combo = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (!slash && !combo) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Shares the phone Bus Card's recents so both surfaces remember the same buses.
+  useEffect(() => {
+    if (!selectedBus) return;
+    pushRecent(selectedBus);
+    try {
+      setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"));
+    } catch {}
+  }, [selectedBus]);
+
+  useEffect(() => {
+    try {
+      setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"));
+    } catch {}
+  }, []);
 
   const details = useMemo<GlobalBusDetails | null>(() => {
     if (!selectedBus || !isKnown(selectedBus)) return null;
@@ -137,6 +193,7 @@ export default function GlobalBusSearch() {
       <form className={styles.form} onSubmit={submit}>
         <SearchField
           className={styles.field}
+          inputRef={inputRef}
           label="Search fleet"
           labelHidden
           placeholder="Search fleet by bus number"
@@ -169,13 +226,33 @@ export default function GlobalBusSearch() {
         )}
       >
         {details ? (
-          <GlobalBusResult
-            details={details}
-            onOpenLotSheet={() => {
-              close();
-              router.push(`/?find=${encodeURIComponent(details.bus)}`);
-            }}
-          />
+          <>
+            <GlobalBusResult
+              details={details}
+              onOpenLotSheet={() => {
+                close();
+                if (pathname === "/") {
+                  window.dispatchEvent(new CustomEvent("pace:lot-find", { detail: details.bus }));
+                } else {
+                  router.push(`/?find=${encodeURIComponent(details.bus)}`);
+                }
+              }}
+              onEditFlags={() => setFlagOpen(true)}
+            />
+            {recent.filter((bus) => bus !== details.bus && isKnown(bus)).length > 0 && (
+              <div className={styles.recent}>
+                <span className={styles.recentLabel}>Recent</span>
+                {recent
+                  .filter((bus) => bus !== details.bus && isKnown(bus))
+                  .slice(0, 6)
+                  .map((bus) => (
+                    <Button key={bus} size="sm" variant="secondary" onPress={() => setSelectedBus(bus)}>
+                      {bus}
+                    </Button>
+                  ))}
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             icon={<BusFront />}
@@ -184,6 +261,17 @@ export default function GlobalBusSearch() {
           />
         )}
       </ResponsiveDialog>
+
+      {flagOpen && selectedBus && (
+        <ManagerPanel
+          flags={flags}
+          initialBus={selectedBus}
+          onBusFlagsUpdated={(bus, entry) =>
+            qc.setQueryData<FlagMap>(["flags"], (prev = {}) => ({ ...prev, [bus]: entry }))
+          }
+          onClose={() => setFlagOpen(false)}
+        />
+      )}
     </>
   );
 }

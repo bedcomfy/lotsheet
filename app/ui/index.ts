@@ -12,6 +12,7 @@ export * from "./Page";
 export * from "./Pressable";
 export * from "./ResponsiveDialog";
 export * from "./SelectField";
+export * from "./SplitButton";
 export * from "./StatusBadge";
 export * from "./TabBar";
 export * from "./Tooltip";

@@ -1,0 +1,20 @@
+.group {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.group .main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.group .chevron {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 1px;
+}
+
+.group[data-variant="primary"] .chevron {
+  margin-left: 0;
+  border-left: 1px solid color-mix(in srgb, var(--ui-on-accent) 28%, transparent);
+}

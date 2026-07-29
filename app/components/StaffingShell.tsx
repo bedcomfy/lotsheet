@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CalendarClock, ListOrdered } from "lucide-react";
-import { AppPage, PageHeader, TabBar } from "../ui";
+import { AppPage,TabBar } from "../ui";
 import styles from "./SectionShell.module.css";
 
 const TABS = [
@@ -20,12 +20,6 @@ export default function StaffingShell({ children }: { children: ReactNode }) {
 
   return (
     <AppPage className={styles.page}>
-      <PageHeader
-        eyebrow="Staffing"
-        title="Roster & Schedule"
-        description="View the seniority list and current work pick. Editing requires the admin password."
-      />
-
       <TabBar
         label="Staffing sections"
         selectedKey={

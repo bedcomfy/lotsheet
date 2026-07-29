@@ -508,7 +508,6 @@ export default function WorkOrderSheet() {
       <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.5in 0.55in 0.42in; }" }} />
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>Work Order</div>
         <ToolbarGroup className={chromeStyles.actions}>
           <span className={chromeStyles.saved}>
             {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}

@@ -133,3 +133,20 @@
     --ui-motion-slow: 1ms;
   }
 }
+
+/* ---- Desktop density -------------------------------------------------
+   Mouse-driven screens get compact controls and tighter surface padding;
+   phones (<700px) keep the full touch sizing above. Component styles read
+   these tokens, so this one block re-scales the entire desktop chrome. */
+@media (min-width: 700px) {
+  :root {
+    --ui-control-sm: 1.75rem;
+    --ui-control-md: 2.125rem;
+    --ui-control-lg: 2.5rem;
+
+    --ui-space-4: 0.875rem;
+    --ui-space-5: 1.0625rem;
+    --ui-space-6: 1.25rem;
+    --ui-space-8: 1.625rem;
+  }
+}

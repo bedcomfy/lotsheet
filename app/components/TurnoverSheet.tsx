@@ -17,10 +17,9 @@ import { getDeviceActor } from "../lib/deviceActor";
 import { useEmployees, useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
-import { ActionMenu, Button, ConfirmDialog, SearchField, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport } from "../sheets/core";
 import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
-import toolbarStyles from "./SheetToolbar.module.css";
 import chromeStyles from "./SheetChrome.module.css";
 
 const STORAGE_KEY = "turnover";
@@ -503,7 +502,6 @@ export default function TurnoverSheet() {
       <style dangerouslySetInnerHTML={{ __html: "@page { size: legal portrait; margin: 0; }" }} />
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>Turnover Sheet</div>
         <DatePickerField
           className={chromeStyles.date}
           value={turnoverDate}
@@ -511,16 +509,6 @@ export default function TurnoverSheet() {
           shortYear
           ariaLabel="Turnover Sheet date"
           variant="ui"
-        />
-        <SearchField
-            className={toolbarStyles.search}
-            label="Find a bus"
-            labelHidden
-            placeholder="Find bus"
-            inputMode="numeric"
-            value={findVal}
-            onChange={(value) => setFindVal(sanitizeBus(value))}
-            description={foundBus ? foundWhere || "Not on this sheet" : undefined}
         />
         <ToolbarGroup className={chromeStyles.actions}>
           <span className={chromeStyles.saved}>

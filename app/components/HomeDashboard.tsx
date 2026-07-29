@@ -32,7 +32,6 @@ import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import { SkeletonStat } from "./Skeleton";
 import { Button } from "../ui/Button";
-import { SearchField } from "../ui/Field";
 import { MetricTile } from "../ui/MetricTile";
 import { Pressable } from "../ui/Pressable";
 import { ResponsiveDialog } from "../ui/ResponsiveDialog";
@@ -60,7 +59,14 @@ export default function HomeDashboard() {
   const { data: pick = null } = useWorkPick();
   const { data: employees = [] } = useEmployees();
   const [now, setNow] = useState<number>(0);
-  const [findBus, setFindBus] = useState("");
+  const [recentBuses, setRecentBuses] = useState<string[]>([]);
+
+  // Shared with the Bus Card / global search recents.
+  useEffect(() => {
+    try {
+      setRecentBuses(JSON.parse(localStorage.getItem("pace:m:recent") || "[]"));
+    } catch {}
+  }, []);
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
@@ -178,31 +184,15 @@ export default function HomeDashboard() {
   return (
     <main className={styles.dashboard}>
       <header className={styles.header}>
-        <div className={styles.heading}>
-          <div className={styles.eyebrow}>
-            <span aria-hidden="true" />
-            Live operations
-          </div>
-          <div className={styles.titleRow}>
-            <div>
-              <h1>Maintenance Logistics</h1>
-              <p>
-                Fleet readiness, garage placement, staffing, and daily sheets
-                in one operational view.
-              </p>
-            </div>
-            <div className={styles.saveState}>
-              <StatusBadge tone="accent">Live updates</StatusBadge>
-              <span>Last saved {formatSaved(updatedAt)}</span>
-            </div>
-          </div>
-        </div>
-
         <div className={styles.workspace}>
           <div className={styles.actions}>
             <Button variant="primary" onPress={() => router.push("/")}>
               <ClipboardList aria-hidden="true" />
               Open Lot Sheet
+            </Button>
+            <Button onPress={() => router.push("/?fill=1")}>
+              <ListChecks aria-hidden="true" />
+              Fill Rows
             </Button>
             <Button onPress={() => router.push("/workorder")}>
               <FileText aria-hidden="true" />
@@ -212,31 +202,25 @@ export default function HomeDashboard() {
               <Fuel aria-hidden="true" />
               Service Sheets
             </Button>
+            {recentBuses.length > 0 && (
+              <span className={styles.recentRow}>
+                <span className={styles.recentLabel}>Recent</span>
+                {recentBuses.slice(0, 5).map((bus) => (
+                  <Button
+                    key={bus}
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => router.push(`/?find=${encodeURIComponent(bus)}`)}
+                  >
+                    {bus}
+                  </Button>
+                ))}
+              </span>
+            )}
           </div>
-          <div className={styles.search}>
-            <SearchField
-              label="Find a bus"
-              value={findBus}
-              inputMode="numeric"
-              placeholder="Enter bus number"
-              onChange={(value) =>
-                setFindBus(value.replace(/\D/g, "").slice(0, 5))
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && findBus) {
-                  router.push(`/?find=${encodeURIComponent(findBus)}`);
-                }
-              }}
-            />
-            <Button
-              onPress={() =>
-                router.push(
-                  findBus ? `/?find=${encodeURIComponent(findBus)}` : "/",
-                )
-              }
-            >
-              Find
-            </Button>
+          <div className={styles.saveState}>
+            <StatusBadge tone="accent">Live updates</StatusBadge>
+            <span>Last saved {formatSaved(updatedAt)}</span>
           </div>
         </div>
       </header>

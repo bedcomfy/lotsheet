@@ -14,9 +14,7 @@ import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 import {
-  AppPage,
-  PageHeader,
-  Pressable,
+  AppPage,Pressable,
   SearchField,
   StaticChip,
   StatusBadge,
@@ -257,27 +255,7 @@ export default function ShopSheet() {
 
   return (
     <AppPage className={`${styles.page} no-print`}>
-      <PageHeader
-        title="Shop"
-        description="Manage buses on the apron, in fixed bays, and in cards."
-      />
       <Toolbar className="no-print" aria-label="Shop controls">
-        <ToolbarGroup>
-          <SearchField
-            className={styles.search}
-            label="Find a bus"
-            labelHidden
-            placeholder="Find bus"
-            inputMode="numeric"
-            value={findVal}
-            onChange={(value) => setFindVal(sanitizeBus(value))}
-          />
-          {foundBus && (
-            <StatusBadge tone={foundWhere ? "info" : "warning"}>
-              {foundWhere || "Not placed anywhere"}
-            </StatusBadge>
-          )}
-        </ToolbarGroup>
         <ToolbarGroup>
           <StaticChip tone="accent">{inShopCount} in the shop</StaticChip>
           <span className={styles.saved}>

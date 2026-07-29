@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
@@ -29,6 +31,22 @@ export default function SheetNav() {
   const searchParams = useSearchParams();
   const currentSheet = currentAppRoute(pathname);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(false);
+
+  // Collapsed icon-rail preference — restored after mount so SSR markup stays
+  // stable; the brief expanded flash matches how the theme restore behaves.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("pace:nav-rail") === "1") setRailCollapsed(true);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.toggleAttribute("data-nav-rail", railCollapsed);
+    try {
+      localStorage.setItem("pace:nav-rail", railCollapsed ? "1" : "0");
+    } catch {}
+  }, [railCollapsed]);
   const { lotStatus, openLotSearch, openLotStatus } = useMobileNav();
   const isLotSheet = currentSheet.path === "/";
   const printMode = searchParams.get("print") === "1";
@@ -65,7 +83,10 @@ export default function SheetNav() {
 
   return (
     <>
-      <nav className={`${styles.navigation} no-print`} aria-label="Main navigation">
+      <nav
+        className={`${styles.navigation} ${railCollapsed ? styles.rail : ""} no-print`}
+        aria-label="Main navigation"
+      >
         <div className={styles.brand}>
           <span className={styles.mark}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -106,14 +127,25 @@ export default function SheetNav() {
             activeId={currentSheet.path}
             items={navigationItems}
             className={styles.desktopNavigation}
+            collapsed={railCollapsed}
           />
         </div>
         <div className={styles.bottom}>
-          <ThemeToggle />
-          <div className={styles.version}>
-            <span>Maintenance Logistics</span>
-            <strong>v{APP_VERSION}</strong>
-          </div>
+          {!railCollapsed && <ThemeToggle />}
+          <Pressable
+            className={styles.railToggle}
+            onPress={() => setRailCollapsed((current) => !current)}
+            aria-label={railCollapsed ? "Expand navigation" : "Collapse navigation"}
+          >
+            {railCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+            {!railCollapsed && <span>Collapse</span>}
+          </Pressable>
+          {!railCollapsed && (
+            <div className={styles.version}>
+              <span>Maintenance Logistics</span>
+              <strong>v{APP_VERSION}</strong>
+            </div>
+          )}
         </div>
       </nav>
 
