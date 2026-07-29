@@ -136,3 +136,21 @@
   width: 1.25rem;
   height: 1.25rem;
 }
+
+/* Icon-rail (collapsed) sidebar: icons only, labels as tooltips. */
+.collapsed .section {
+  display: none;
+}
+
+.collapsed .linkLabel {
+  display: none;
+}
+
+.collapsed .link {
+  justify-content: center;
+  padding: var(--ui-space-2);
+}
+
+.collapsed .group {
+  gap: var(--ui-space-1);
+}

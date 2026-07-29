@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { closestFlagMatch, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
+import { fleetStats } from "../lib/fleetStats";
 import { History, Eraser, FileDown, MoreHorizontal, Check } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -14,13 +15,12 @@ import LotEditor from "./LotEditorLazy";
 import DatePickerField from "./DatePickerField";
 import { chicagoParts } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
-import { useEmployees, useFlags } from "../lib/queries";
+import { useBusMasterList, useEmployees, useFlags, useLotSheet } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
-import { ActionMenu, Button, ConfirmDialog, SearchField, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, ConfirmDialog, StaticChip, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport } from "../sheets/core";
 import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
-import toolbarStyles from "./SheetToolbar.module.css";
 import chromeStyles from "./SheetChrome.module.css";
 
 const STORAGE_KEY = "turnover";
@@ -79,6 +79,13 @@ export default function TurnoverSheet() {
 
   // Universal flags + employee roster from the shared, deduplicated, live cache.
   const { data: flags = {} } = useFlags();
+  // Live fleet counts for the toolbar chips (same math as the Lot Sheet bar).
+  const { data: lotSheetData } = useLotSheet();
+  const { data: masterBuses = [] } = useBusMasterList();
+  const fleet = useMemo(
+    () => fleetStats(lotSheetData?.sheet || null, flags, masterBuses),
+    [lotSheetData, flags, masterBuses],
+  );
   const qc = useQueryClient();
   const [flagBus, setFlagBus] = useState<string | null>(null);
 
@@ -503,7 +510,6 @@ export default function TurnoverSheet() {
       <style dangerouslySetInnerHTML={{ __html: "@page { size: legal portrait; margin: 0; }" }} />
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>Turnover Sheet</div>
         <DatePickerField
           className={chromeStyles.date}
           value={turnoverDate}
@@ -512,20 +518,10 @@ export default function TurnoverSheet() {
           ariaLabel="Turnover Sheet date"
           variant="ui"
         />
-        <SearchField
-            className={toolbarStyles.search}
-            label="Find a bus"
-            labelHidden
-            placeholder="Find bus"
-            inputMode="numeric"
-            value={findVal}
-            onChange={(value) => setFindVal(sanitizeBus(value))}
-            description={foundBus ? foundWhere || "Not on this sheet" : undefined}
-        />
+        <StaticChip tone="success">{fleet.readyForService.size} Usable</StaticChip>
+        <StaticChip tone="warning">{fleet.notReadyForService.size} Out of Service</StaticChip>
+        <StaticChip tone="accent">{fleet.inShop.size} in the shop</StaticChip>
         <ToolbarGroup className={chromeStyles.actions}>
-          <span className={chromeStyles.saved}>
-            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-          </span>
           <ActionMenu
             label={<><MoreHorizontal size={16} /> More</>}
             items={[

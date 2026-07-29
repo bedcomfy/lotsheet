@@ -8,14 +8,7 @@ import DatePickerField from "./DatePickerField";
 import FareboxSheet from "./FareboxSheet";
 import FuelSheet from "./FuelSheet";
 import ServiceFlagSummary from "./ServiceFlagSummary";
-import {
-  AppPage,
-  Button,
-  PageHeader,
-  TabBar,
-  Toolbar,
-  ToolbarGroup,
-} from "../ui";
+import { AppPage, Button, SplitButton, TabBar, Toolbar, ToolbarGroup } from "../ui";
 import styles from "./ServiceSheets.module.css";
 
 const TABS = [
@@ -84,12 +77,6 @@ export default function ServiceSheets() {
 
   return (
     <AppPage className={styles.page}>
-      <PageHeader
-        title="Service Sheets"
-        description="Preview, update, and print daily fueling and farebox documents."
-        className="no-print"
-      />
-
       <TabBar
         label="Service sheets"
         selectedKey={tab}
@@ -119,14 +106,23 @@ export default function ServiceSheets() {
           </label>
 
           <ToolbarGroup>
-            {tab === "all" && (
-              <Button variant="secondary" onPress={printBlankAll}>
-                <FileDown size={16} /> Print Blank
+            {tab === "all" ? (
+              <SplitButton
+                variant="primary"
+                onPress={printAll}
+                menuLabel="Print options"
+                items={[{ id: "blank", label: "Print blank forms", icon: <FileDown size={16} /> }]}
+                onAction={(key) => {
+                  if (key === "blank") printBlankAll();
+                }}
+              >
+                <Printer size={16} /> Print PDF
+              </SplitButton>
+            ) : (
+              <Button variant="primary" onPress={printAll}>
+                <Printer size={16} /> Print PDF
               </Button>
             )}
-            <Button variant="primary" onPress={printAll}>
-              <Printer size={16} /> Print PDF
-            </Button>
           </ToolbarGroup>
         </Toolbar>
       )}

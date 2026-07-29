@@ -242,3 +242,15 @@
     transform: translateY(0);
   }
 }
+
+/* Pan/Fit only matters on phones — the desktop viewport shows the paper as-is. */
+@media (min-width: 700px) {
+  .viewToggle {
+    display: none;
+  }
+}
+
+.shopButton {
+  color: var(--ui-info);
+  background: var(--ui-info-soft);
+}

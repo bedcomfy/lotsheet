@@ -8,7 +8,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
-import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -27,13 +27,14 @@ interface FareboxEntry {
   noPower: boolean;
   wontProbe: boolean;
   bypassed: boolean;
+  other: boolean; // the "Other:" write-in line has its own checkbox
 }
 interface FareboxData {
   date: string;
   entries: Record<string, FareboxEntry>;
 }
 
-const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false, bypassed: false };
+const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false, bypassed: false, other: false };
 const ROWS_PER_PAGE = 32; // four pages with taller rows and minimal write-in padding
 
 // Same bus list and familiar order as the Fuel/DEF sheets.
@@ -64,6 +65,7 @@ function normalizeEntry(raw: any): FareboxEntry {
     noPower: raw.noPower === true,
     wontProbe: raw.wontProbe === true,
     bypassed: raw.bypassed === true,
+    other: raw.other === true || !!(raw.note && String(raw.note).trim()),
   };
 }
 
@@ -180,7 +182,7 @@ export default function FareboxSheet({
     setData((d) => {
       const next = { ...(d.entries[bus] || EMPTY_ENTRY), ...patch };
       const entries = { ...d.entries };
-      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe && !next.bypassed) delete entries[bus];
+      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe && !next.bypassed && !next.other) delete entries[bus];
       else entries[bus] = next;
       return { ...d, entries };
     });
@@ -253,7 +255,7 @@ export default function FareboxSheet({
 
   function reasonControl(
     bus: string,
-    field: "noPower" | "wontProbe" | "bypassed",
+    field: "noPower" | "wontProbe" | "bypassed" | "other",
     label: string,
     forceBlank = false,
   ) {
@@ -316,7 +318,7 @@ export default function FareboxSheet({
         {reasonControl(bus, "wontProbe", "Won't Probe", forceBlank)}
         {reasonControl(bus, "bypassed", "Bypassed", forceBlank)}
         <span className="fbx__other">
-          <span>Other:</span>
+          {reasonControl(bus, "other", "Other:", forceBlank)}
           {blankMode || forceBlank ? (
             <span className="fbx__otherline" />
           ) : (
@@ -324,7 +326,13 @@ export default function FareboxSheet({
               className="fbx__in"
               value={entry.note}
               aria-label={`Other farebox note for bus ${bus}`}
-              onChange={(ev) => setEntry(bus, { note: ev.target.value })}
+              onChange={(ev) =>
+                setEntry(bus, {
+                  note: ev.target.value,
+                  // Writing a reason checks the Other box automatically.
+                  ...(ev.target.value.trim() ? { other: true } : {}),
+                })
+              }
             />
           )}
         </span>
@@ -423,7 +431,6 @@ export default function FareboxSheet({
   return (
     <div className={chromeStyles.page}>
       {!embedded && <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>Farebox Sheet</div>
         <DatePickerField
           className={chromeStyles.date}
           value={data.date || displayDate}
@@ -433,9 +440,6 @@ export default function FareboxSheet({
           variant="ui"
         />
         <ToolbarGroup className={chromeStyles.actions}>
-          <span className={chromeStyles.saved}>
-            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-          </span>
           <ActionMenu
             label={<><MoreHorizontal size={16} /> More</>}
             items={[
@@ -447,12 +451,17 @@ export default function FareboxSheet({
               if (key === "clear") setClearOpen(true);
             }}
           />
-          <Button onPress={printBlank}>
-            <FileText aria-hidden="true" /> Print Blank
-          </Button>
-          <Button variant="primary" onPress={printPdf}>
+          <SplitButton
+            variant="primary"
+            onPress={printPdf}
+            menuLabel="Print options"
+            items={[{ id: "blank", label: "Print blank form", icon: <FileText size={16} /> }]}
+            onAction={(key) => {
+              if (key === "blank") printBlank();
+            }}
+          >
             <FileDown aria-hidden="true" /> Print PDF
-          </Button>
+          </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
 

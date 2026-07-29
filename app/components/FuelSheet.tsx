@@ -14,7 +14,7 @@ import { chicagoDateShort } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap } from "../lib/types";
-import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -364,7 +364,6 @@ export default function FuelSheet({
   return (
     <div className={chromeStyles.page}>
       {!embedded && <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>{title}</div>
         <DatePickerField
           className={chromeStyles.date}
           value={data.date || displayDate}
@@ -374,9 +373,6 @@ export default function FuelSheet({
           variant="ui"
         />
         <ToolbarGroup className={chromeStyles.actions}>
-          <span className={chromeStyles.saved}>
-            {savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : loaded ? "—" : "Loading…"}
-          </span>
           <Button onPress={() => setManagerOpen(true)}>
             <Flag aria-hidden="true" /> Edit Flags
           </Button>
@@ -391,12 +387,17 @@ export default function FuelSheet({
               if (key === "clear") setClearOpen(true);
             }}
           />
-          <Button onPress={printBlank}>
-            <FileText aria-hidden="true" /> Print Blank
-          </Button>
-          <Button variant="primary" onPress={printPdf}>
+          <SplitButton
+            variant="primary"
+            onPress={printPdf}
+            menuLabel="Print options"
+            items={[{ id: "blank", label: "Print blank form", icon: <FileText size={16} /> }]}
+            onAction={(key) => {
+              if (key === "blank") printBlank();
+            }}
+          >
             <FileDown aria-hidden="true" /> Print PDF
-          </Button>
+          </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
 

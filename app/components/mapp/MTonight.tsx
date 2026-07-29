@@ -101,7 +101,7 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         buses: fleet.missing,
       },
       grid: {
-        title: "On the grid",
+        title: "Ready for Use",
         description: "Buses placed on the Lot Sheet service grid.",
         buses: sorted(fleet.onGrid),
       },
@@ -132,8 +132,8 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
   const placement = [
     {
       id: "grid" as const,
-      label: "On grid",
-      detail: "Ready",
+      label: "Ready for Use",
+      detail: "On the Lot Sheet grid",
       value: fleet.onGrid.size,
       icon: ClipboardList,
       tone: "accent" as const,

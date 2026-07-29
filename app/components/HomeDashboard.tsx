@@ -32,7 +32,6 @@ import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import { SkeletonStat } from "./Skeleton";
 import { Button } from "../ui/Button";
-import { SearchField } from "../ui/Field";
 import { MetricTile } from "../ui/MetricTile";
 import { Pressable } from "../ui/Pressable";
 import { ResponsiveDialog } from "../ui/ResponsiveDialog";
@@ -60,7 +59,6 @@ export default function HomeDashboard() {
   const { data: pick = null } = useWorkPick();
   const { data: employees = [] } = useEmployees();
   const [now, setNow] = useState<number>(0);
-  const [findBus, setFindBus] = useState("");
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
@@ -133,8 +131,8 @@ export default function HomeDashboard() {
         buses: sort([...fleet.notReadyForService]),
       },
       grid: {
-        title: "Buses on grid",
-        description: "Every bus currently placed on the Lot Sheet grid.",
+        title: "Buses Ready for Use",
+        description: "Every bus placed on the Lot Sheet grid — ready for drivers to use.",
         buses: sort([...fleet.onGrid]),
       },
       lots: {
@@ -178,31 +176,15 @@ export default function HomeDashboard() {
   return (
     <main className={styles.dashboard}>
       <header className={styles.header}>
-        <div className={styles.heading}>
-          <div className={styles.eyebrow}>
-            <span aria-hidden="true" />
-            Live operations
-          </div>
-          <div className={styles.titleRow}>
-            <div>
-              <h1>Maintenance Logistics</h1>
-              <p>
-                Fleet readiness, garage placement, staffing, and daily sheets
-                in one operational view.
-              </p>
-            </div>
-            <div className={styles.saveState}>
-              <StatusBadge tone="accent">Live updates</StatusBadge>
-              <span>Last saved {formatSaved(updatedAt)}</span>
-            </div>
-          </div>
-        </div>
-
         <div className={styles.workspace}>
           <div className={styles.actions}>
             <Button variant="primary" onPress={() => router.push("/")}>
               <ClipboardList aria-hidden="true" />
               Open Lot Sheet
+            </Button>
+            <Button onPress={() => router.push("/?fill=1")}>
+              <ListChecks aria-hidden="true" />
+              Fill Rows
             </Button>
             <Button onPress={() => router.push("/workorder")}>
               <FileText aria-hidden="true" />
@@ -211,32 +193,10 @@ export default function HomeDashboard() {
             <Button onPress={() => router.push("/service")}>
               <Fuel aria-hidden="true" />
               Service Sheets
-            </Button>
-          </div>
-          <div className={styles.search}>
-            <SearchField
-              label="Find a bus"
-              value={findBus}
-              inputMode="numeric"
-              placeholder="Enter bus number"
-              onChange={(value) =>
-                setFindBus(value.replace(/\D/g, "").slice(0, 5))
-              }
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && findBus) {
-                  router.push(`/?find=${encodeURIComponent(findBus)}`);
-                }
-              }}
-            />
-            <Button
-              onPress={() =>
-                router.push(
-                  findBus ? `/?find=${encodeURIComponent(findBus)}` : "/",
-                )
-              }
-            >
-              Find
-            </Button>
+            </Button>          </div>
+          <div className={styles.saveState}>
+            <StatusBadge tone="accent">Live updates</StatusBadge>
+            <span>Last saved {formatSaved(updatedAt)}</span>
           </div>
         </div>
       </header>
@@ -300,7 +260,7 @@ export default function HomeDashboard() {
           </header>
           <div className={styles.distribution}>
             {[
-              { label: "On grid", value: stats.grid, detail: "Ready", tone: "blue", status: "grid" as StatusDetail },
+              { label: "Ready for Use", value: stats.grid, detail: "On the Lot Sheet grid", tone: "blue", status: "grid" as StatusDetail },
               { label: "In lots", value: stats.lots, detail: "North, East, Fence", tone: "amber", status: "lots" as StatusDetail },
               { label: "In shop", value: stats.shop, detail: "Apron, Bays, Cards", tone: "info", status: "shop" as StatusDetail },
               { label: "Off property", value: stats.offProperty, detail: "Away from garage", tone: "slate", status: "offProperty" as StatusDetail },

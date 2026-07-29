@@ -56,8 +56,8 @@
   --ctl-radius: var(--ui-radius-md);
   --font-sheet: Arial, Helvetica, sans-serif;
   --font-ui: var(--ui-font-sans);
-  --nav-w: 248px;
-  --app-header-h: 64px;
+  --nav-w: 214px;
+  --app-header-h: 52px;
 }
 
 * {
@@ -132,3 +132,8 @@ button {
   }
 }
 
+
+/* Collapsed icon-rail sidebar (toggled from the sidebar footer). */
+:root[data-nav-rail] {
+  --nav-w: 60px;
+}

@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.19.3 - 2026-07-29
+
+- The Service Lane flag summary page prints noticeably bigger — larger title,
+  section headers, bus numbers, and flag text with roomier rows — so it reads
+  at a glance on the clipboard. First combined-service print regenerates the
+  cached PDF.
+
+## 0.19.2 - 2026-07-29
+
+- The Lot Sheet bar gains the in-the-shop chip next to Out of Service (tap it
+  to open the Shop overview), and the placement summary now reads
+  "Ready for Use · In Lots · Missing" in proper case.
+
+## 0.19.1 - 2026-07-29
+
+Cristian's preview-review round on the density pass.
+
+- Pan/Fit no longer shows on desktop (phones keep it), and the "Saved …"
+  timestamps are gone from every sheet bar (the Lot Sheet still warns when
+  it's offline and retrying).
+- Recent-bus chips removed everywhere — Home, the fleet search, and the
+  phone Buses tab.
+- Retorque editing: adding a bus by flag no longer saves on the first tire
+  tap (the row used to re-sort mid-entry and jump away). Pick all the tires,
+  then press Save to add the bus. Tire names are now Left/Right instead of
+  Curbside/Roadside.
+- The Shop page now hosts editors for North Lane, South Lane, R/C, and Off
+  Property — the lists that had no editor of their own. The "in the shop"
+  count still means Apron + Bays + Cards only.
+- The Turnover bar shows live Usable / Out of Service / in-the-shop chips.
+- Farebox sheet: SERV column narrowed with the space given to a longer
+  Other line, Other now has its own checkbox (auto-checks when a reason is
+  written), Y / N spread apart for easier circling, and the side margins
+  slimmed for more writing room. Old saved sheets load unchanged; the
+  first print regenerates the PDF.
+- "On grid" now reads "Ready for Use" across Home, the Lot Sheet bar, and
+  the phone Tonight board.
+
+## 0.19.0 - 2026-07-29
+
+Desktop density and fewer-clicks pass — chrome only; sheets and print output
+untouched.
+
+- The whole desktop chrome is tighter: compact controls, slimmer sidebar
+  (with a new Collapse toggle that shrinks it to an icon rail), and a 52px
+  header. Phones keep full touch sizing.
+- One search: the header fleet search is now THE bus search — press "/" or
+  Ctrl+K from anywhere, get recents, and act on the result (Open on Lot
+  Sheet now also works while already on the Lot Sheet; new Edit flags
+  button opens the flag editor right from the search result). The duplicate
+  per-page Find bus boxes on the Lot, Turnover, and Shop pages are gone.
+- One title: sheet toolbars and page headers no longer repeat the page name
+  the header already shows — the paper and content start a full band higher
+  on Lot, Turnover, Fuel/DEF, Farebox, Work Order, Service, Shop, Staffing,
+  and Object Codes.
+- Print PDF is a split button: click prints as always, the arrow offers
+  Print blank (and lane copies where they exist) without opening More.
+- Home is a cockpit: the hero banner is gone; one dense action row (Open
+  Lot Sheet, Fill Rows, Work Order, Service Sheets) plus recent-bus chips,
+  with the metrics and panels right below.
+
 ## 0.18.5 - 2026-07-28
 
 - Farebox sheet: new "Probed & Dumped" column — a Y / N per bus that servicers

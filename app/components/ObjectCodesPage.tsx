@@ -8,9 +8,7 @@ import {
   AppPage,
   Button,
   DataTableFrame,
-  EmptyState,
-  PageHeader,
-  SearchField,
+  EmptyState,SearchField,
   StaticChip,
   Toolbar,
   ToolbarGroup,
@@ -36,12 +34,6 @@ export default function ObjectCodesPage() {
 
   return (
     <AppPage className={styles.page}>
-      <PageHeader
-        eyebrow="Utilities"
-        title="Object Codes"
-        description="Search the maintenance reference by number or description. Every code is available in the flag editor."
-      />
-
       <Toolbar>
         <SearchField
           label="Search object codes"

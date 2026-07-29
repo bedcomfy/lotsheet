@@ -534,3 +534,24 @@
     border-bottom: 0;
   }
 }
+
+.workspace {
+  align-items: center;
+}
+
+.recentRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin-left: var(--ui-space-3);
+  padding-left: var(--ui-space-3);
+  border-left: 1px solid var(--ui-border);
+}
+
+.recentLabel {
+  color: var(--ui-text-subtle);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-weight-semibold);
+  text-transform: uppercase;
+}

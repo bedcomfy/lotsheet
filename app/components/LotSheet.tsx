@@ -58,7 +58,7 @@ import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import type { FlagEntry, FlagMap, LotKey, Lots, LotSheet as LotSheetData } from "../lib/types";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
-import { ActionMenu, Button, Chip, ConfirmDialog, ResponsiveDialog, SearchField, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, Chip, ConfirmDialog, ResponsiveDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import chromeStyles from "./LotSheetChrome.module.css";
 
 const STORAGE_KEY = "lotsheet:current";
@@ -149,6 +149,7 @@ export default function LotSheet() {
   const [flagBus, setFlagBus] = useState<string | null>(null); // open the flag editor on this bus
   const [dragNum, setDragNum] = useState<string | null>(null); // bus being dragged (for the overlay chip)
   const [findVal, setFindVal] = useState(""); // toolbar "find bus" box
+  const findBusRef = useRef<(value?: string) => void>(undefined);
   const [undoState, setUndoState] = useState<{ label: string } | null>(null); // undo toast
   const undoSheetRef = useRef<LotSheetData | null>(null); // the sheet as it was before the change
   const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -1155,6 +1156,11 @@ export default function LotSheet() {
   // Toolbar "find bus": scroll to the bus and flash it. The message + steady
   // highlight are DERIVED from the search text, so they stay up (and stay
   // correct as the sheet changes) until the search is cleared.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    findBusRef.current = findBus;
+  });
+
   function findBus(raw?: string) {
     const v = sanitizeBus(raw ?? findVal);
     if (v.length < 4) return;
@@ -1311,7 +1317,7 @@ export default function LotSheet() {
     const lines: string[] = [];
     lines.push(`PACE LOT SHEET — ${[headerDate, headerTime].filter(Boolean).join(" ")}`);
     lines.push(
-      `On grid: ${onGridCount} · In lots: ${inLotsCount} · Off property: ${offPropertyCount}` +
+      `Ready for Use: ${onGridCount} · In Lots: ${inLotsCount} · Off Property: ${offPropertyCount}` +
         (sheet.inShop ? ` · In shop: ${sheet.inShop}` : "")
     );
     const gridEntries = Object.entries(sheet.cells || {})
@@ -1416,6 +1422,19 @@ export default function LotSheet() {
     toggleMobileZoomAt(touch.clientX, touch.clientY);
   }
 
+  // Global header search fires this when we're already on the Lot Sheet, so
+  // "Open on Lot Sheet" scrolls + flashes instead of a no-op navigation.
+  useEffect(() => {
+    const onLotFind = (event: Event) => {
+      const bus = sanitizeBus(String((event as CustomEvent).detail || ""));
+      if (!bus) return;
+      setFindVal(bus);
+      findBusRef.current?.(bus);
+    };
+    window.addEventListener("pace:lot-find", onLotFind);
+    return () => window.removeEventListener("pace:lot-find", onLotFind);
+  }, []);
+
   function onMobileFind(value: string) {
     const next = sanitizeBus(value);
     setFindVal(next);
@@ -1426,26 +1445,6 @@ export default function LotSheet() {
     <div className={chromeStyles.page}>
       {/* Toolbar — never printed */}
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <div className={chromeStyles.title}>Lot Sheet</div>
-        <SearchField
-          className={chromeStyles.search}
-          label="Find a bus"
-          labelHidden
-          placeholder="Find bus"
-          inputMode="numeric"
-          value={findVal}
-          onChange={(value) => {
-            const v = sanitizeBus(value);
-            setFindVal(v);
-            if (isKnown(v)) findBus(v);
-          }}
-          onKeyDown={(e) => e.key === "Enter" && findBus()}
-        />
-        {foundBus && (
-          <span className={chromeStyles.findResult} title={foundWhere || "Not on the sheet"}>
-            {foundWhere || "Not on the sheet"}
-          </span>
-        )}
         <div className={chromeStyles.serviceCounts}>
           <Button
             size="sm"
@@ -1463,19 +1462,25 @@ export default function LotSheet() {
           >
             {notReadyForServiceCount} Out of Service
           </Button>
+          <Button
+            size="sm"
+            className={chromeStyles.shopButton}
+            onPress={() => setShopOpen(true)}
+            aria-label={`${fleet.inShop.size} buses in the shop. Open the shop overview.`}
+          >
+            {fleet.inShop.size} in the Shop
+          </Button>
         </div>
         <Button
           size="sm"
           className={chromeStyles.summaryButton}
           data-warning={missingBuses.length ? "true" : undefined}
           onPress={() => setMissingOpen(true)}
-          aria-label={`${onGridCount} on grid, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
+          aria-label={`${onGridCount} ready for use, ${inLotsCount} in lots, ${missingBuses.length} missing. Show missing buses.`}
         >
-          {onGridCount} on grid · {inLotsCount} in lots · {missingBuses.length} missing
+          {onGridCount} Ready for Use · {inLotsCount} In Lots · {missingBuses.length} Missing
         </Button>
-        <span className={chromeStyles.saved}>
-          {syncError ? "Offline · retrying" : savedAt ? `Saved ${savedAt.toLocaleTimeString()}` : "—"}
-        </span>
+        {syncError && <span className={chromeStyles.saved}>Offline · retrying</span>}
         <div className={chromeStyles.viewToggle} aria-label="Sheet view mode">
           <span className={chromeStyles.viewLabel}>View</span>
           <Button
@@ -1514,7 +1519,6 @@ export default function LotSheet() {
             items={[
               { id: "history", label: "Previous sheets", icon: <History size={16} /> },
               { id: "share", label: "Share as text", icon: <Share2 size={16} /> },
-              { id: "blank", label: "Print blank", icon: <FileDown size={16} /> },
               {
                 id: "maintenance",
                 label: showMaint ? "Maintenance info: On" : "Maintenance info: Off",
@@ -1526,15 +1530,21 @@ export default function LotSheet() {
             onAction={(key) => {
               if (key === "history") setPrevOpen(true);
               if (key === "share") shareSheet();
-              if (key === "blank") openBlankPdf();
               if (key === "maintenance") setShowMaint((current) => !current);
               if (key === "clear-grid") requestClearGrid();
               if (key === "clear-lots") requestClearLots();
             }}
           />
-          <Button variant="primary" onPress={openPdf}>
+          <SplitButton
+            variant="primary"
+            onPress={openPdf}
+            menuLabel="Print options"
+            items={[{ id: "blank", label: "Print blank sheet", icon: <FileDown size={16} /> }]}
+            onAction={(key) => {
+            }}
+          >
             <FileDown aria-hidden="true" /> Print PDF
-          </Button>
+          </SplitButton>
         </ToolbarGroup>
       </Toolbar>
 

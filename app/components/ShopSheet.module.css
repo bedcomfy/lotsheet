@@ -226,3 +226,45 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Secondary location lists (lanes, R/C, Off Property) — editors only, not
+   part of the shop count. */
+.shopSecondary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ui-space-3);
+  margin-top: var(--ui-space-3);
+}
+
+@media (max-width: 899px) {
+  .shopSecondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+.offPropAdd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--ui-space-2);
+  margin-bottom: var(--ui-space-3);
+}
+
+.offPropList {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.offPropRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface);
+}
+
+.offPropRow > :last-child {
+  margin-left: auto;
+}

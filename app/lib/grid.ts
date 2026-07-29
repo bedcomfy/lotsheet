@@ -506,13 +506,14 @@ export function departmentGroups(): Department[] {
   return groups;
 }
 
-// Retorque must specify which tire(s). Roadside = traffic side, curbside = door
-// side; fronts on top, rears on the bottom.
+// Retorque must specify which tire(s). Left = door side (curbside), Right =
+// traffic side (roadside); fronts on top, rears on the bottom. The stored ids
+// keep the historical roadside/curbside initials so saved flags still load.
 export const RETORQUE_TIRES = [
-  { id: "rf", label: "Roadside front" },
-  { id: "cf", label: "Curbside front" },
-  { id: "rr", label: "Roadside rear" },
-  { id: "cr", label: "Curbside rear" },
+  { id: "cf", label: "Left front" },
+  { id: "rf", label: "Right front" },
+  { id: "cr", label: "Left rear" },
+  { id: "rr", label: "Right rear" },
 ];
 // Inspection details and their authoritative object codes. Keeping this in one
 // table prevents chip labels, typed recognition, and saved object-code flags

@@ -496,6 +496,16 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     return patch;
   }
   function removeFromFlag(bus: string) {
+    if (isPending(bus)) {
+      // Cancelling a bus that was never saved: just drop it, no server write.
+      setPending((p) => p.filter((b) => b !== bus));
+      setDraftTires((d) => {
+        const next = { ...d };
+        delete next[bus];
+        return next;
+      });
+      return;
+    }
     save(bus, entryWithoutPickedFlag(bus));
     setPending((p) => p.filter((b) => b !== bus));
   }
@@ -514,6 +524,22 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     }
     if (failed) window.alert(`${failed} bus update${failed === 1 ? "" : "s"} could not be saved. Please try again.`);
   }
+  // Tires being picked for a bus that is NOT yet in the flag list. Saving on
+  // every tap re-sorted the list mid-entry and the row jumped away — so a
+  // pending bus keeps its tires in a local draft until Save is pressed.
+  const [draftTires, setDraftTires] = useState<Record<string, string[]>>({});
+
+  function saveDraftTires(bus: string) {
+    const tires = draftTires[bus] || [];
+    if (!tires.length) return;
+    setTiresFor(bus, tires);
+    setDraftTires((d) => {
+      const next = { ...d };
+      delete next[bus];
+      return next;
+    });
+  }
+
   function setTiresFor(bus: string, tires: string[]) {
     const cur = getEntry(bus);
     const flags2 = tires.length
@@ -745,9 +771,29 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                         {isPending(bus) ? "Cancel" : "Remove"}
                       </Pressable>
                     </div>
-                    {pickedFlag === "retorque" && (
-                      <TirePicker key={bus} tires={entry.retorqueTires || []} onChange={(t) => setTiresFor(bus, t)} />
-                    )}
+                    {pickedFlag === "retorque" &&
+                      (isPending(bus) ? (
+                        <>
+                          <TirePicker
+                            key={bus}
+                            tires={draftTires[bus] || []}
+                            onChange={(t) => setDraftTires((d) => ({ ...d, [bus]: t }))}
+                          />
+                          <div className={styles.draftSave}>
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              isDisabled={!(draftTires[bus] || []).length}
+                              onPress={() => saveDraftTires(bus)}
+                            >
+                              <Check aria-hidden="true" /> Save bus {label(bus)}
+                            </Button>
+                            <span className={styles.draftHint}>Pick every tire first — the bus is added when you save.</span>
+                          </div>
+                        </>
+                      ) : (
+                        <TirePicker key={bus} tires={entry.retorqueTires || []} onChange={(t) => setTiresFor(bus, t)} />
+                      ))}
                     {pickedFlag === "hold" && (
                       <HoldReasonPicker key={bus} reason={entry.holdReason || ""} onChange={(r) => setReasonFor(bus, r)} />
                     )}

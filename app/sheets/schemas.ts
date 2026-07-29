@@ -51,6 +51,8 @@ export const fareboxSheetSchema = z
         note: z.string().default(""),
         noPower: z.boolean().default(false),
         wontProbe: z.boolean().default(false),
+        bypassed: z.boolean().default(false),
+        other: z.boolean().default(false),
       }).passthrough()
     ).default({}),
   })

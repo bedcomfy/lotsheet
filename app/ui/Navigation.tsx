@@ -17,6 +17,8 @@ export interface AppNavigationProps {
   className?: string;
   label?: string;
   mode?: "sidebar" | "bottom";
+  /** Icon-rail mode: labels/sections hidden, links centered, titles as tooltips. */
+  collapsed?: boolean;
 }
 
 interface NavigationGroup {
@@ -52,6 +54,7 @@ function NavigationLink({
       href={item.href}
       aria-current={isActive ? "page" : undefined}
       className={styles.link}
+      title={item.label}
     >
       {item.icon && (
         <span className={styles.icon} aria-hidden="true">
@@ -69,13 +72,14 @@ export function AppNavigation({
   className,
   label = "Primary navigation",
   mode = "sidebar",
+  collapsed = false,
 }: AppNavigationProps) {
   const groups = groupNavigationItems(items);
 
   return (
     <nav
       aria-label={label}
-      className={cx(styles.navigation, styles[mode], className)}
+      className={cx(styles.navigation, styles[mode], collapsed && styles.collapsed, className)}
     >
       {groups.map((group) => (
         <div className={styles.group} key={group.label || "primary"}>
