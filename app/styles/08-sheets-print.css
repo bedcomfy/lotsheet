@@ -1,4 +1,19 @@
 /* ---------- Back of sheet (lot lists) ---------- */
+/* Inputs don't inherit text color — browsers paint them FieldText, which the
+   dark theme's color-scheme turns WHITE. Paper always stays white, so every
+   on-paper input must be pinned to ink or its text disappears in dark mode
+   (e.g. the turnover BAY bus numbers). Screen only: print already forces #000. */
+@media screen {
+  .sheet input,
+  .sheet textarea,
+  .back-sheet input,
+  .back-sheet textarea,
+  .wo-sheet input,
+  .wo-sheet textarea {
+    color: var(--ink);
+    caret-color: var(--ink);
+  }
+}
 .back-sheet {
   background: var(--paper);
   color: var(--ink); /* stays dark ink on white paper in dark theme */

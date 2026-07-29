@@ -42,6 +42,44 @@ describe("lot sheet operations", () => {
     expect(moved.lots.bay).toEqual(["", "", ""]);
   });
 
+  it("removes a bus from other locations when a list edit adds it", () => {
+    const start: LotSheet = {
+      ...blank(),
+      cells: { "row-1": "6567" },
+      lots: { north: [], east: [], fence: ["6567"], southlane: ["6620"], bay: ["", "6567", ""] },
+    };
+    const edited = applyLotSheetOp(start, {
+      type: "set_lot",
+      key: "southlane",
+      value: ["6620", "6567"],
+    });
+    expect(edited.lots.southlane).toEqual(["6620", "6567"]);
+    expect(edited.lots.fence).toEqual([]);
+    expect(edited.lots.bay).toEqual(["", "", ""]);
+    expect(edited.cells).toEqual({});
+  });
+
+  it("leaves other locations alone when a list edit only reorders or removes", () => {
+    const start: LotSheet = {
+      ...blank(),
+      lots: { north: [], east: [], fence: ["6567"], southlane: ["6620", "6621"], bay: ["X", "", ""] },
+    };
+    const reordered = applyLotSheetOp(start, {
+      type: "set_lot",
+      key: "southlane",
+      value: ["6621", "6620"],
+    });
+    expect(reordered.lots.fence).toEqual(["6567"]);
+    // The bay's "X" out-of-use marker is not a bus — setting it must not
+    // ripple through other lists.
+    const bayMarked = applyLotSheetOp(start, {
+      type: "set_lot",
+      key: "bay",
+      value: ["X", "X", ""],
+    });
+    expect(bayMarked.lots.southlane).toEqual(["6620", "6621"]);
+  });
+
   it("preserves locked cells during an explicit grid clear", () => {
     const cleared = applyLotSheetOp(
       { ...blank(), cells: { a: "6401", b: "6402" }, locks: ["b"] },

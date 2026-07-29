@@ -161,7 +161,17 @@ export function applyLotSheetOp(sheet: LotSheet | null | undefined, op: LotSheet
     if (op.value) next.cells[op.id] = op.value;
     else delete next.cells[op.id];
   } else if (op.type === "set_lot") {
-    next.lots[op.key] = [...op.value];
+    // A bus lives in exactly one place. move_bus already enforces that, but the
+    // list editors write whole lists with set_lot — a bus newly added here must
+    // leave wherever else it sits (Fence vs North/South Lane, the grid, another
+    // lot), or it shows up in two locations at once. ("X" is the bay's
+    // out-of-use marker, not a bus.)
+    const before = new Set(next.lots[op.key] || []);
+    const added = op.value.filter((bus) => bus && bus !== "X" && !before.has(bus));
+    let cleared = next;
+    for (const bus of added) cleared = applyLotSheetOp(cleared, { type: "remove_bus", bus });
+    cleared.lots[op.key] = [...op.value];
+    return cleared;
   } else if (op.type === "set_locks") {
     next.locks = [...op.value];
   } else if (op.type === "set_lock") {

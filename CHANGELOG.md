@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.19.4 - 2026-07-29
+
+Two production hotfixes.
+
+- Dark mode: bus numbers typed on the sheets (the Turnover BAY column, the
+  bay flag notes, the Lot Sheet header fields) were rendering white-on-white
+  and looked blank. On-paper inputs are now always dark ink, matching the rest
+  of the sheet. Printing is unchanged.
+- A bus can only be in one place at a time: adding a bus to a list (Fence,
+  North/South Lane, R/C, Apron, Bay, Cards, North/East Lot) now removes it
+  from any other list, bay slot, or grid spot it was in — no more
+  "Fence, South Lane" double listings. Buses already double-listed clear up
+  the next time they're added where they belong.
+
 ## 0.19.3 - 2026-07-29
 
 - The Service Lane flag summary page prints noticeably bigger — larger title,
