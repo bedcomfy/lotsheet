@@ -756,8 +756,11 @@ export function closestFlagMatch(input: string): FlagDef | null {
 }
 
 // Flag severity, most → least severe — used to pick which flag to show when a
-// bus has several. A custom note ("Other") is the least severe of all.
+// bus has several. HOLD outranks everything (a held bus files under HOLD on
+// the printed flag summary no matter what else it carries). A custom note
+// ("Other") is the least severe of all.
 export const FLAG_SEVERITY = [
+  "hold",
   "legal",
   "safety",
   "accident",
@@ -768,7 +771,6 @@ export const FLAG_SEVERITY = [
   "oos",
   "inspection",
   "retorque",
-  "hold",
   "split",
   "service",
   "followup",
