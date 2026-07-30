@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.5 - 2026-07-29
+
+- HOLD is now the top-priority flag everywhere. On the Lot Sheet's printed
+  "BUSES WITH FLAGS" summary, any bus carrying a HOLD files under the HOLD
+  section (listed first) no matter what other flags it has, and HOLD leads
+  the bus's spelled-out flag list on every sheet and menu. First print
+  regenerates the cached PDFs.
+
 ## 0.19.4 - 2026-07-29
 
 Two production hotfixes.
