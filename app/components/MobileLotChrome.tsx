@@ -94,6 +94,7 @@ export default function MobileLotChrome(props: MobileLotChromeProps) {
       <nav
         className={`${styles.actionBar} no-print`}
         aria-label="Lot Sheet actions"
+        data-suppressed={props.selectMode ? "true" : undefined}
       >
         {actions.map((item) => {
           const Icon = item.icon;

@@ -26,6 +26,7 @@ interface LotEditorProps {
   onRemove: (i: number) => void;
   onMove: (i: number, dir: number) => void;
   onReorder?: (from: number, to: number) => void; // drag-to-reorder
+  onClearRequest?: () => void;
   onClose: () => void;
 }
 
@@ -99,7 +100,7 @@ function LotRow({ sortId, bus, i, count, entry, sortable, onEditFlags, onMove, o
   );
 }
 
-export default function LotEditor({ title, subtitle, list, flags = {}, locate, onRelocate, onEditFlags, recent, onAdd, onRemove, onMove, onReorder, onClose }: LotEditorProps) {
+export default function LotEditor({ title, subtitle, list, flags = {}, locate, onRelocate, onEditFlags, recent, onAdd, onRemove, onMove, onReorder, onClearRequest, onClose }: LotEditorProps) {
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
@@ -174,9 +175,21 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
       size="md"
       bodyClassName={styles.body}
       footer={(close) => (
-        <Button variant="primary" onPress={close}>
-          Done
-        </Button>
+        <>
+          {onClearRequest && (
+            <Button
+              className={styles.clearButton}
+              variant="danger"
+              isDisabled={!list.some((bus) => bus && bus !== "X")}
+              onPress={onClearRequest}
+            >
+              <Trash2 aria-hidden="true" /> Clear {title}
+            </Button>
+          )}
+          <Button variant="primary" onPress={close}>
+            Done
+          </Button>
+        </>
       )}
     >
         <div className={styles.addRow}>

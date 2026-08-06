@@ -98,7 +98,7 @@ export default function WorkOrderHistory({ onLoad, onClose }: WorkOrderHistoryPr
   return (
     <>
       <ResponsiveDialog
-        isOpen
+        isOpen={!deleteId}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}

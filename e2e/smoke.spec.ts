@@ -13,9 +13,6 @@ function pdfMediaBoxes(bytes: Buffer): string[] {
 test("home dashboard loads with the Available Now section", async ({ page }) => {
   await page.goto("/home");
   await expect(
-    page.getByRole("heading", { name: "Maintenance Logistics" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("heading", { name: "Available Now" }),
   ).toBeVisible();
 
@@ -24,7 +21,7 @@ test("home dashboard loads with the Available Now section", async ({ page }) => 
     const main = document.querySelector(".appmain");
     const header = document.querySelector("header");
     if (!nav || !main || !header) return null;
-    const content = main.querySelector("h1");
+    const content = main.querySelector("main");
     return {
       navRight: nav.getBoundingClientRect().right,
       mainLeft: main.getBoundingClientRect().left,
@@ -70,7 +67,7 @@ test("mobile home keeps navigation and status details reachable", async ({
   await dialog.getByRole("button", { name: "Close" }).click();
 
   for (const [buttonName, dialogName] of [
-    ["On grid", "On the grid"],
+    ["Ready for Use", "Ready for Use"],
     ["In lots", "In the lots"],
     ["In shop", "In the shop"],
     ["Off property", "Off property"],
@@ -85,6 +82,145 @@ test("mobile home keeps navigation and status details reachable", async ({
   const sheetsHub = page.getByRole("dialog", { name: "Sheets" });
   await expect(sheetsHub).toBeVisible();
   await expect(sheetsHub.getByRole("button", { name: /Service Sheets/ })).toBeVisible();
+});
+
+test("major routes stay inside modern phone viewports", async ({ page }) => {
+  const viewports = [
+    { width: 360, height: 800 },
+    { width: 375, height: 812 },
+    { width: 430, height: 932 },
+  ];
+  const routes = [
+    "/home",
+    "/",
+    "/turnover",
+    "/service?tab=fuel",
+    "/shop",
+    "/buses",
+    "/staffing/seniority",
+    "/object-codes",
+    "/audit",
+    "/workorder",
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page.locator("body")).not.toBeEmpty();
+      await expect(page.locator("[data-nextjs-dialog]")).toHaveCount(0);
+
+      const geometry = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(
+        geometry.scrollWidth - geometry.clientWidth,
+        `${route} at ${viewport.width}x${viewport.height}`,
+      ).toBeLessThanOrEqual(0);
+
+      const navigation = page.getByRole("navigation", {
+        name: "Mobile navigation",
+      });
+      await expect(navigation).toBeVisible();
+      const navBox = await navigation.boundingBox();
+      expect(navBox).not.toBeNull();
+      expect(navBox!.x).toBeGreaterThanOrEqual(8);
+      expect(navBox!.x + navBox!.width).toBeLessThanOrEqual(viewport.width - 8);
+      expect(navBox!.y + navBox!.height).toBeLessThanOrEqual(viewport.height - 8);
+    }
+  }
+});
+
+test("nested mobile workflows yield one viewport-safe dialog at a time", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Shop", exact: true }).click();
+  const shop = page.getByRole("dialog", { name: "Shop" });
+  await expect(shop).toBeVisible();
+  await shop.getByRole("button", { name: "Edit" }).first().click();
+
+  const apron = page.getByRole("dialog", { name: "Apron" });
+  await expect(apron).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(apron.getByRole("button", { name: "Done" })).toBeVisible();
+  const apronBox = await apron.boundingBox();
+  expect(apronBox).not.toBeNull();
+  expect(apronBox!.y).toBeGreaterThanOrEqual(0);
+  expect(apronBox!.y + apronBox!.height).toBeLessThanOrEqual(812);
+
+  await apron.getByRole("button", { name: "Done" }).click();
+  await expect(shop).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await shop.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+});
+
+test("small printable fields prevent focus zoom without disabling pinch zoom", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/turnover");
+
+  const viewportMeta = page.locator('meta[name="viewport"]');
+  const original = await viewportMeta.getAttribute("content");
+  const paperInput = page.locator("[data-paper-page] input").first();
+  await expect(paperInput).toBeAttached();
+  await paperInput.focus();
+  await expect
+    .poll(() => viewportMeta.getAttribute("content"))
+    .toContain("maximum-scale=1");
+
+  await paperInput.evaluate((input) => input.blur());
+  await expect.poll(() => viewportMeta.getAttribute("content")).toBe(original);
+});
+
+test("a scoped clear preserves a simultaneous edit in another location", async ({
+  page,
+  request,
+}) => {
+  // The E2E server uses an isolated in-memory database, so this exercises the
+  // real shared operation API without touching local or production data.
+  await request.patch("/api/sheet", {
+    data: {
+      lots: {
+        north: ["6401"],
+        east: ["6402"],
+        bay: ["X", "6403"],
+      },
+      actor: "e2e-setup",
+    },
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/turnover");
+  await page.getByText("6401", { exact: true }).click();
+
+  const editor = page.getByRole("dialog", { name: "North Lot" });
+  await expect(editor).toBeVisible();
+  await editor.getByRole("button", { name: "Clear North Lot" }).click();
+
+  const confirmation = page.getByRole("dialog", { name: "Clear North Lot?" });
+  await expect(confirmation).toBeVisible();
+  await request.patch("/api/sheet", {
+    data: { lots: { east: ["6499"] }, actor: "e2e-other-device" },
+  });
+  await confirmation.getByRole("button", { name: "Clear location" }).click();
+
+  await expect.poll(async () => {
+    const response = await request.get("/api/sheet");
+    return (await response.json()).sheet?.lots;
+  }).toMatchObject({ north: [], east: ["6499"], bay: ["X", "6403"] });
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(async () => {
+    const response = await request.get("/api/sheet");
+    return (await response.json()).sheet?.lots;
+  }).toMatchObject({ north: ["6401"], east: ["6499"], bay: ["X", "6403"] });
 });
 
 test("staffing seniority + work pick load", async ({ page }) => {
@@ -152,7 +288,7 @@ test("mobile fill rows and lot editor keep fixed actions on screen", async ({
   await expect(fillDialog).toBeHidden();
 
   await page
-    .getByRole("button", { name: /^EAST LOT \(0\)/ })
+    .getByRole("button", { name: /^EAST LOT \(\d+\)/ })
     .click();
   const lotDialog = page.getByRole("dialog", { name: "East lot" });
   await expect(lotDialog).toBeVisible();

@@ -71,6 +71,16 @@
   font-size: var(--ui-font-size-xs);
 }
 
+.cardAction,
+.clearButton {
+  margin-left: auto;
+}
+
+.clearButton {
+  margin-right: auto;
+  margin-left: 0;
+}
+
 .cardSub {
   margin-top: var(--ui-space-1);
   color: var(--ui-text-muted);
@@ -267,4 +277,29 @@
 
 .offPropRow > :last-child {
   margin-left: auto;
+}
+
+.toast {
+  position: fixed;
+  z-index: var(--ui-layer-toast, 1300);
+  right: calc(var(--ui-space-4) + var(--ui-safe-right));
+  bottom: calc(var(--ui-space-4) + var(--ui-safe-bottom));
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-lg);
+}
+
+@media (max-width: 699px) {
+  .toast {
+    right: calc(var(--ui-space-3) + var(--ui-safe-right));
+    bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-3));
+    left: calc(var(--ui-space-3) + var(--ui-safe-left));
+    justify-content: space-between;
+  }
 }

@@ -116,13 +116,18 @@ export function PaperViewport({
 
     const frame = window.requestAnimationFrame(measure);
     const observer = new ResizeObserver(measure);
+    const visualViewport = window.visualViewport;
     observer.observe(viewport);
     observer.observe(canvas);
+    visualViewport?.addEventListener("resize", measure);
+    visualViewport?.addEventListener("scroll", measure);
     window.addEventListener("orientationchange", measure);
     window.addEventListener("resize", measure);
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      visualViewport?.removeEventListener("resize", measure);
+      visualViewport?.removeEventListener("scroll", measure);
       window.removeEventListener("orientationchange", measure);
       window.removeEventListener("resize", measure);
     };

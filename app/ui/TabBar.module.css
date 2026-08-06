@@ -38,6 +38,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .tab[data-hovered] {

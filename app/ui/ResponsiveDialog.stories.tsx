@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Button } from "./Button";
 import { TextField } from "./Field";
@@ -13,8 +13,21 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function DialogDemo({ long = false }: { long?: boolean }) {
+function DialogDemo({ long = false, keyboard = false }: { long?: boolean; keyboard?: boolean }) {
   const [isOpen, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!keyboard) return;
+    const root = document.documentElement;
+    const previousHeight = root.style.getPropertyValue("--ui-viewport-height");
+    root.style.setProperty("--ui-viewport-height", "31.25rem");
+    root.setAttribute("data-ui-keyboard-open", "");
+    return () => {
+      if (previousHeight) root.style.setProperty("--ui-viewport-height", previousHeight);
+      else root.style.removeProperty("--ui-viewport-height");
+      root.removeAttribute("data-ui-keyboard-open");
+    };
+  }, [keyboard]);
 
   return (
     <>
@@ -60,12 +73,29 @@ function DialogDemo({ long = false }: { long?: boolean }) {
 export const Desktop: Story = {
   args: {
     long: false,
+    keyboard: false,
   },
 };
 
 export const PhoneWithLongContent: Story = {
   args: {
     long: true,
+    keyboard: false,
+  },
+  parameters: {
+    viewport: {
+      defaultViewport: "phoneSmall",
+    },
+  },
+  globals: {
+    safeArea: "phone",
+  },
+};
+
+export const PhoneWithKeyboardAndLongContent: Story = {
+  args: {
+    long: true,
+    keyboard: true,
   },
   parameters: {
     viewport: {

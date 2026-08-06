@@ -140,15 +140,26 @@
 }
 
 .popover {
+  z-index: var(--ui-layer-popover);
   width: var(--trigger-width);
-  max-height: min(24rem, var(--available-height));
+  max-width: calc(var(--ui-viewport-width) - var(--ui-space-4) * 2);
+  max-height: min(24rem, var(--available-height), calc(var(--ui-viewport-height) - var(--ui-space-6)));
   overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: var(--ui-space-1);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-md);
   background: var(--ui-surface-raised);
   box-shadow: var(--ui-shadow-lg);
   outline: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 699px) {
+  .input {
+    font-size: 1rem;
+  }
 }
 
 .popover[data-entering] {
@@ -173,6 +184,7 @@
   font-family: var(--ui-font-sans);
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .option[data-focused],

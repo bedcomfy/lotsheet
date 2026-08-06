@@ -47,7 +47,7 @@ import { useMobileNav } from "./MobileNavContext";
 import { chicagoLotStamp } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { mergeLotSheet } from "../lib/lotSheetMerge";
-import { diffLotSheetOps, type LotSheetOp, type LotSheetOpRecord } from "../lib/lotSheetOps";
+import { applyLotSheetOp, diffLotSheetOps, type LotSheetOp, type LotSheetOpRecord } from "../lib/lotSheetOps";
 import {
   applyOperationPage,
   createPendingBatch,
@@ -66,7 +66,7 @@ const OUTBOX_KEY = "lotsheet:outbox:v1";
 const BAY_SPOTS = 10; // the shop's fixed bays (shared with the Turnover sheet)
 
 // Back-of-sheet ordered lists.
-const LOTS: { key: string; title: string }[] = [
+const LOTS: { key: LotKey; title: string }[] = [
   { key: "north", title: "NORTH LOT" },
   { key: "east", title: "EAST LOT" },
   { key: "fence", title: "FENCE" },
@@ -79,6 +79,10 @@ const LOT_LOCATION_LABELS: Record<string, string> = {
 };
 
 type LotStringField = "time" | "date" | "offProperty" | "inShop";
+type ClearTarget =
+  | { kind: "grid" }
+  | { kind: "lots" }
+  | { kind: "location"; key: LotKey; label: string; count: number };
 
 const EMPTY_FLAG: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
 
@@ -161,7 +165,7 @@ export default function LotSheet() {
   const [flagPick, setFlagPick] = useState<"add" | "remove" | null>(null); // bulk flag picker for the selection
   const [shopOpen, setShopOpen] = useState(false); // the Shop menu (edit Apron/Bays/Cards from here)
   const [editingBay, setEditingBay] = useState<number | null>(null); // bay slot editor (from the Shop menu)
-  const [confirmClear, setConfirmClear] = useState<"grid" | "lots" | null>(null);
+  const [confirmClear, setConfirmClear] = useState<ClearTarget | null>(null);
   const suppressClickUntil = useRef(0); // swallow the click that follows a drag
   // Mouse: a drag starts after 6px of movement, so plain clicks still open the
   // editor. Touch: a short hold starts the drag, so normal taps and scrolling
@@ -229,7 +233,7 @@ export default function LotSheet() {
     const timer = window.setInterval(syncClock, 15000);
     return () => window.clearInterval(timer);
   }, [printMode, blankPrintMode]);
-  const [editingLot, setEditingLot] = useState<string | null>(null); // which back-of-sheet lot
+  const [editingLot, setEditingLot] = useState<LotKey | null>(null); // which back-of-sheet lot
   const [fillOpen, setFillOpen] = useState(false); // mobile Fill Rows mode
   const [prevOpen, setPrevOpen] = useState(false); // Prev Sheets archive
   const [mobileSheetView, setMobileSheetView] = useState<"pan" | "fit">("pan");
@@ -705,11 +709,9 @@ export default function LotSheet() {
   function gridHasContent(s: LotSheetData | null | undefined): boolean {
     return !!(s && s.cells && Object.values(s.cells).filter(Boolean).length > 0);
   }
-  function lotsHaveContent(s: LotSheetData | null | undefined): boolean {
-    return !!(
-      s &&
-      s.lots &&
-      Object.values(s.lots).some((a) => Array.isArray(a) && a.length > 0)
+  function printedLotsHaveContent(s: LotSheetData | null | undefined): boolean {
+    return ["north", "east", "fence"].some((key) =>
+      (s?.lots?.[key as LotKey] || []).some((value) => value && value !== "X")
     );
   }
 
@@ -734,7 +736,7 @@ export default function LotSheet() {
 
   // Clears just the back-of-sheet lots (North / East / Fence).
   async function clearLots() {
-    await archiveSheet(sheet);
+    await archiveSheet(sheetRef.current);
     offerUndo("Lots cleared");
     // Clear only the back-of-sheet lots; keep the Turnover-managed lots
     // (R/C, Apron, Lanes, Bay) intact.
@@ -742,13 +744,31 @@ export default function LotSheet() {
   }
 
   function requestClearGrid() {
-    if (gridHasContent(sheet)) setConfirmClear("grid");
+    if (gridHasContent(sheet)) setConfirmClear({ kind: "grid" });
     else void newSheet();
   }
 
   function requestClearLots() {
-    if (lotsHaveContent(sheet)) setConfirmClear("lots");
+    if (printedLotsHaveContent(sheet)) setConfirmClear({ kind: "lots" });
     else void clearLots();
+  }
+
+  function requestClearLocation(key: LotKey) {
+    const label = LOT_LOCATION_LABELS[key] || key;
+    const count = (sheetRef.current.lots?.[key] || []).filter((value) => value && value !== "X").length;
+    if (!count) return;
+    // Close the parent editor before confirmation so mobile never has two
+    // full-screen dialogs fighting for the same viewport.
+    setEditingLot(null);
+    setEditingBay(null);
+    setShopOpen(false);
+    setConfirmClear({ kind: "location", key, label, count });
+  }
+
+  async function clearLocation(target: Extract<ClearTarget, { kind: "location" }>) {
+    await archiveSheet(sheetRef.current);
+    offerUndo(`${target.label} cleared`);
+    setSheet((current) => applyLotSheetOp(current, { type: "clear_lots", keys: [target.key] }));
   }
 
   // Bring a previous sheet back as the current shared sheet. The sheet that's up
@@ -1783,7 +1803,7 @@ export default function LotSheet() {
       {/* Signals the headless PDF renderer that the sheet + flags have loaded. */}
       {loaded && flagsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
 
-      {editing && (
+      {editing && !flagBus && (
         <CellEditor
           subLabel={editing.subLabel}
           value={editing.seed != null ? editing.seed : getNum(editing.id)}
@@ -1833,7 +1853,7 @@ export default function LotSheet() {
       )}
 
       {/* Which active buses aren't anywhere on the sheet (tap the stats chip) */}
-      {missingOpen && (
+      {missingOpen && !flagBus && (
         <MissingBusesModal
           missingBuses={missingBuses}
           accountedBuses={accountedBuses}
@@ -1843,7 +1863,7 @@ export default function LotSheet() {
         />
       )}
 
-      {serviceDetail && (
+      {serviceDetail && !flagBus && (
         <ServiceDetailModal
           kind={serviceDetail}
           readyForService={fleet.readyForService}
@@ -1855,7 +1875,7 @@ export default function LotSheet() {
         />
       )}
 
-      {editingLot && (
+      {editingLot && !flagBus && (
         <LotEditor
           title={LOT_LOCATION_LABELS[editingLot] || LOTS.find((l) => l.key === editingLot)?.title || ""}
           subtitle={
@@ -1875,13 +1895,14 @@ export default function LotSheet() {
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
           onReorder={(from, to) => reorderInLot(editingLot, from, to)}
+          onClearRequest={() => requestClearLocation(editingLot)}
           onClose={() => setEditingLot(null)}
         />
       )}
 
       {/* The SHOP menu — edit Apron / Bays / Cards right from the lot sheet.
           Screen-only data flows; the printout is never touched. */}
-      {shopOpen && (
+      {shopOpen && editingLot == null && editingBay == null && !flagBus && (
         <ShopMenu
           inShopCount={inShopCount}
           bays={sheet.lots?.bay || []}
@@ -1889,14 +1910,16 @@ export default function LotSheet() {
           flagFor={flagFor}
           lotList={lotList}
           foundBus={foundBus}
-          onEditLot={setEditingLot}
+          onEditLot={(key) => setEditingLot(key)}
           onEditBay={setEditingBay}
+          onClearLot={requestClearLocation}
+          onClearBays={() => requestClearLocation("bay")}
           onClose={() => setShopOpen(false)}
         />
       )}
 
       {/* One bay's spot, edited from the Shop menu */}
-      {editingBay != null && (
+      {editingBay != null && !flagBus && (
         <CellEditor
           subLabel={`Bay ${editingBay + 1}`}
           value={(sheet.lots?.bay || [])[editingBay] || ""}
@@ -2029,15 +2052,28 @@ export default function LotSheet() {
         onOpenChange={(open) => {
           if (!open) setConfirmClear(null);
         }}
-        title={confirmClear === "lots" ? "Clear North, East, and Fence?" : "Clear the grid?"}
+        title={
+          confirmClear?.kind === "location"
+            ? `Clear ${confirmClear.label}?`
+            : confirmClear?.kind === "lots"
+              ? "Clear North, East, and Fence?"
+              : "Clear the grid?"
+        }
         description={
-          confirmClear === "lots"
+          confirmClear?.kind === "location"
+            ? `This removes ${confirmClear.count} bus${confirmClear.count === 1 ? "" : "es"} from ${confirmClear.label} for everyone. The current sheet is saved first, and blocked bay spots remain blocked.`
+            : confirmClear?.kind === "lots"
             ? "The current sheet is saved to Previous Sheets first. This clears only the three printed lots for everyone."
             : "The current sheet is saved to Previous Sheets first. Locked buses, blocked spots, and the back-of-sheet lots remain."
         }
-        confirmLabel={confirmClear === "lots" ? "Clear lots" : "Clear grid"}
+        confirmLabel={confirmClear?.kind === "grid" ? "Clear grid" : "Clear buses"}
         tone="danger"
-        onConfirm={confirmClear === "lots" ? clearLots : newSheet}
+        onConfirm={async () => {
+          if (!confirmClear) return;
+          if (confirmClear.kind === "grid") await newSheet();
+          else if (confirmClear.kind === "lots") await clearLots();
+          else await clearLocation(confirmClear);
+        }}
       />
 
       {/* Undo toast for the bigger actions (clears, drags, sends); plain notices reuse it */}

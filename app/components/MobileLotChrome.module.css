@@ -8,7 +8,9 @@
     position: absolute;
     z-index: 24;
     right: calc(var(--ui-space-3) + var(--ui-safe-right));
-    bottom: calc(var(--mobile-action-h, 4.4rem) + var(--ui-space-3));
+    bottom: calc(
+      var(--ui-mobile-nav-offset) + var(--mobile-action-h, 4.4rem) + var(--ui-space-3)
+    );
     display: inline-flex;
     box-shadow: var(--ui-shadow-md);
   }
@@ -30,6 +32,10 @@
     background: color-mix(in srgb, var(--ui-surface-raised) 94%, transparent);
     box-shadow: 0 -8px 28px rgb(0 0 0 / 12%);
     backdrop-filter: blur(14px);
+  }
+
+  .actionBar[data-suppressed="true"] {
+    display: none;
   }
 
   .action {

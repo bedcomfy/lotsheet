@@ -210,7 +210,11 @@ export function applyLotSheetOp(sheet: LotSheet | null | undefined, op: LotSheet
   } else if (op.type === "clear_lots") {
     const keys = op.keys || (Object.keys(next.lots) as LotKey[]);
     for (const key of keys) {
-      next.lots[key] = key === "bay" ? (next.lots[key] || []).map(() => "") : [];
+      // A blocked bay is a property of the physical spot, not a bus placement.
+      // Clearing the bay group removes buses while keeping those X markers.
+      next.lots[key] = key === "bay"
+        ? (next.lots[key] || []).map((value) => (value === "X" ? "X" : ""))
+        : [];
     }
   } else if (op.type === "remove_bus") {
     for (const [id, value] of Object.entries(next.cells)) {
@@ -249,12 +253,26 @@ export function diffLotSheetOps(baseSheet: LotSheet | null | undefined, localShe
   }
 
   const lotKeys = new Set([...Object.keys(base.lots || {}), ...Object.keys(local.lots || {})]);
+  const clearedLotKeys: LotKey[] = [];
+  const setLotOps: LotSheetOp[] = [];
   for (const key of lotKeys) {
     const lotKey = key as LotKey;
     const localValue = local.lots[lotKey] || [];
     const baseValue = base.lots[lotKey] || [];
-    if (!same(localValue, baseValue)) ops.push({ type: "set_lot", key: lotKey, value: [...localValue] });
+    if (same(localValue, baseValue)) continue;
+
+    const clearedValue = lotKey === "bay"
+      ? baseValue.map((value) => (value === "X" ? "X" : ""))
+      : [];
+    const hadBus = baseValue.some((value) => value && value !== "X");
+    if (hadBus && same(localValue, clearedValue)) {
+      clearedLotKeys.push(lotKey);
+    } else {
+      setLotOps.push({ type: "set_lot", key: lotKey, value: [...localValue] });
+    }
   }
+  if (clearedLotKeys.length) ops.push({ type: "clear_lots", keys: clearedLotKeys });
+  ops.push(...setLotOps);
 
   if (!same(local.locks || [], base.locks || [])) ops.push({ type: "set_locks", value: [...(local.locks || [])] });
 

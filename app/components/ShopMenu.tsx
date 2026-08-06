@@ -4,9 +4,9 @@
 // page. Extracted from LotSheet.tsx verbatim; all state stays in LotSheet and
 // arrives through props, so behavior is identical.
 
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { flagsFullDisplay } from "../lib/grid";
-import type { FlagEntry, FlagMap } from "../lib/types";
+import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 import { useBusMaster } from "./BusMasterProvider";
 import { Button, Pressable, ResponsiveDialog } from "../ui";
 import styles from "./ShopMenu.module.css";
@@ -20,12 +20,14 @@ interface ShopMenuProps {
   flagFor: (num: string) => FlagEntry;
   lotList: (key: string) => string[];
   foundBus: string;
-  onEditLot: (key: string) => void;
+  onEditLot: (key: "apron" | "cards") => void;
   onEditBay: (index: number) => void;
+  onClearLot: (key: LotKey) => void;
+  onClearBays: () => void;
   onClose: () => void;
 }
 
-export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, foundBus, onEditLot, onEditBay, onClose }: ShopMenuProps) {
+export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, foundBus, onEditLot, onEditBay, onClearLot, onClearBays, onClose }: ShopMenuProps) {
   const { label: busLabel } = useBusMaster();
   return (
     <ResponsiveDialog
@@ -44,6 +46,9 @@ export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, f
             <span>Apron <span className={styles.count}>({lotList("apron").length})</span></span>
             <Button size="sm" onPress={() => onEditLot("apron")}>
               Edit
+            </Button>
+            <Button size="sm" variant="danger" isDisabled={lotList("apron").length === 0} onPress={() => onClearLot("apron")}>
+              <Trash2 aria-hidden="true" /> Clear
             </Button>
           </div>
           <div className={styles.busChips}>
@@ -64,7 +69,12 @@ export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, f
         </section>
 
         <section className={styles.section}>
-          <div className={styles.sectionHeader}>Bays</div>
+          <div className={styles.sectionHeader}>
+            <span>Bays <span className={styles.count}>({bays.filter((bus) => bus && bus !== "X").length})</span></span>
+            <Button size="sm" variant="danger" isDisabled={!bays.some((bus) => bus && bus !== "X")} onPress={onClearBays}>
+              <Trash2 aria-hidden="true" /> Clear buses
+            </Button>
+          </div>
           <div className={styles.slots}>
             {Array.from({ length: BAY_SPOTS }, (_, i) => {
               const b = bays[i] || "";
@@ -107,6 +117,9 @@ export default function ShopMenu({ inShopCount, bays, flags, flagFor, lotList, f
             <span>Cards <span className={styles.count}>({lotList("cards").length})</span></span>
             <Button size="sm" onPress={() => onEditLot("cards")}>
               Edit
+            </Button>
+            <Button size="sm" variant="danger" isDisabled={lotList("cards").length === 0} onPress={() => onClearLot("cards")}>
+              <Trash2 aria-hidden="true" /> Clear
             </Button>
             <span className={styles.legend}>
               <span className={styles.legendDot} /> Ready for Service

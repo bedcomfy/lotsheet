@@ -190,7 +190,7 @@ export default function GlobalBusSearch() {
       </form>
 
       <ResponsiveDialog
-        isOpen={!!selectedBus}
+        isOpen={!!selectedBus && !flagOpen}
         onOpenChange={(open) => {
           if (!open) close();
         }}

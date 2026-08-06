@@ -18,6 +18,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     border-color var(--ui-motion-fast) var(--ui-ease-standard),
     background var(--ui-motion-fast) var(--ui-ease-standard),

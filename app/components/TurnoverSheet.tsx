@@ -22,6 +22,7 @@ import { ActionMenu, Button, ConfirmDialog, StaticChip, Toolbar, ToolbarGroup } 
 import { PaperViewport } from "../sheets/core";
 import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
+import styles from "./TurnoverSheet.module.css";
 
 const STORAGE_KEY = "turnover";
 const FONT_DEFAULT = 13;
@@ -48,6 +49,8 @@ const CALL_HDR = 37;
 const BAY_ROWS = 10;
 
 type TurnoverLots = Record<LotKey, string[]>;
+type TurnoverClearTarget = { key: LotKey; label: string; count: number };
+type TurnoverUndo = { key: LotKey; label: string; value: string[] };
 
 function param(name: string): string | null {
   if (typeof window === "undefined") return null;
@@ -75,7 +78,15 @@ export default function TurnoverSheet() {
   const [lotsLoaded, setLotsLoaded] = useState(false);
   const lotDirty = useRef(false);
   const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lotsRef = useRef<TurnoverLots>(lots);
+  const pendingClear = useRef<string[]>([]);
+  const pendingLotKeys = useRef<Set<LotKey>>(new Set());
+  const pendingClearKeys = useRef<Set<LotKey>>(new Set());
+  const lotWriteVersion = useRef(0);
   const [editingLot, setEditingLot] = useState<LotKey | null>(null);
+  const [clearLotTarget, setClearLotTarget] = useState<TurnoverClearTarget | null>(null);
+  const [undoLot, setUndoLot] = useState<TurnoverUndo | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Universal flags + employee roster from the shared, deduplicated, live cache.
   const { data: flags = {} } = useFlags();
@@ -200,6 +211,17 @@ export default function TurnoverSheet() {
             bay: s.lots?.bay || [],
             cards: s.lots?.cards || [],
           });
+          lotsRef.current = {
+            north: s.lots?.north || [],
+            east: s.lots?.east || [],
+            fence: s.lots?.fence || [],
+            rc: s.lots?.rc || [],
+            apron: s.lots?.apron || [],
+            northlane: s.lots?.northlane || [],
+            southlane: s.lots?.southlane || [],
+            bay: s.lots?.bay || [],
+            cards: s.lots?.cards || [],
+          };
         })
         .catch(() => {})
         .finally(() => alive && setLotsLoaded(true));
@@ -211,58 +233,159 @@ export default function TurnoverSheet() {
     };
   }, []);
 
-  function patchLots(nextLots: TurnoverLots) {
-    setLots(nextLots);
-    lotDirty.current = true;
+  function scheduleLotPatch(delay = 500) {
     clearTimeout(lotTimer.current);
     lotTimer.current = setTimeout(() => {
+      const clearBuses = [...new Set(pendingClear.current)];
+      pendingClear.current = [];
+      const lotKeys = [...pendingLotKeys.current];
+      const groupClears = [...pendingClearKeys.current];
+      pendingLotKeys.current.clear();
+      pendingClearKeys.current.clear();
+      const changedLots = Object.fromEntries(
+        lotKeys.map((key) => [key, lotsRef.current[key] || []]),
+      );
+      const writeVersion = lotWriteVersion.current;
       fetch("/api/sheet", {
         method: "PATCH",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lots: nextLots, actor: getDeviceActor() }),
+        body: JSON.stringify({
+          lots: changedLots,
+          clearKeys: groupClears,
+          clearBuses,
+          actor: getDeviceActor(),
+        }),
       })
-        .then((r) => r.json())
-        .then(() => {
-          lotDirty.current = false;
+        .then((response) => {
+          if (!response.ok) throw new Error(`Sheet save failed (${response.status})`);
+          return response.json();
+        })
+        .then((result) => {
+          if (
+            writeVersion === lotWriteVersion.current
+            && pendingLotKeys.current.size === 0
+            && pendingClearKeys.current.size === 0
+            && pendingClear.current.length === 0
+          ) {
+            lotDirty.current = false;
+          }
+          if (result.updatedAt) setSavedAt(new Date(result.updatedAt));
           schedulePrewarm();
         })
         .catch(() => {
-          lotDirty.current = false;
+          for (const key of new Set([...lotKeys, ...groupClears])) {
+            pendingClearKeys.current.delete(key);
+            pendingLotKeys.current.add(key);
+          }
+          pendingClear.current = [...new Set([...clearBuses, ...pendingClear.current])];
+          lotDirty.current = true;
+          scheduleLotPatch(1200);
         });
-    }, 500);
+    }, delay);
+  }
+
+  // Send only the location groups changed on this page. This prevents a
+  // Turnover edit from replacing a simultaneous Shop or Lot Sheet edit.
+  function patchLots(nextLots: TurnoverLots, changedKeys: LotKey[] = [], clearKeys: LotKey[] = []) {
+    setLots(nextLots);
+    lotsRef.current = nextLots;
+    lotDirty.current = true;
+    lotWriteVersion.current += 1;
+    for (const key of changedKeys) {
+      pendingClearKeys.current.delete(key);
+      pendingLotKeys.current.add(key);
+    }
+    for (const key of clearKeys) {
+      pendingLotKeys.current.delete(key);
+      pendingClearKeys.current.add(key);
+    }
+    scheduleLotPatch();
   }
   // BAY is 10 fixed spots — type the bus into each (no reorder). Stored as a
   // 10-length array so the duplicate guard still finds the bus.
   function setBayBus(i: number, raw: string) {
     const b = sanitizeBus(raw);
-    const arr = Array.from({ length: BAY_ROWS }, (_, j) => (lots.bay || [])[j] || "");
+    const current = lotsRef.current;
+    const arr = Array.from({ length: BAY_ROWS }, (_, j) => (current.bay || [])[j] || "");
     arr[i] = b;
-    patchLots({ ...lots, bay: arr });
+    patchLots({ ...current, bay: arr }, ["bay"]);
   }
   const addToLot = (key: LotKey, bus: string) =>
-    patchLots({ ...lots, [key]: [...(lots[key] || []), bus] } as TurnoverLots);
+    patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []), bus] } as TurnoverLots, [key]);
   const removeFromLot = (key: LotKey, i: number) =>
-    patchLots({ ...lots, [key]: (lots[key] || []).filter((_, j) => j !== i) } as TurnoverLots);
+    patchLots({ ...lotsRef.current, [key]: (lotsRef.current[key] || []).filter((_, j) => j !== i) } as TurnoverLots, [key]);
   function moveInLot(key: LotKey, i: number, dir: number) {
-    const arr = [...(lots[key] || [])];
+    const arr = [...(lotsRef.current[key] || [])];
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
-    patchLots({ ...lots, [key]: arr } as TurnoverLots);
+    patchLots({ ...lotsRef.current, [key]: arr } as TurnoverLots, [key]);
   }
   // Drag-to-reorder inside a lot list: lift the bus at `from` and drop it at `to`.
   function reorderInLot(key: LotKey, from: number, to: number) {
-    const arr = [...(lots[key] || [])];
+    const arr = [...(lotsRef.current[key] || [])];
     if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return;
     const [bus] = arr.splice(from, 1);
     arr.splice(to, 0, bus);
-    patchLots({ ...lots, [key]: arr } as TurnoverLots);
+    patchLots({ ...lotsRef.current, [key]: arr } as TurnoverLots, [key]);
   }
   const LOT_LABELS: Record<LotKey, string> = {
     north: "North Lot", east: "East Lot", fence: "Fence", rc: "R/C", apron: "Apron",
     northlane: "North Lane", southlane: "South Lane", bay: "Bay", cards: "Cards",
   };
+
+  async function archiveCurrentLotSheet() {
+    try {
+      const current = await fetch("/api/sheet", { cache: "no-store" }).then((response) => response.json());
+      if (!current?.sheet) return;
+      await fetch("/api/sheet/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet: current.sheet }),
+      });
+    } catch {}
+  }
+
+  function offerLotUndo(next: TurnoverUndo) {
+    setUndoLot(next);
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndoLot(null), 6000);
+  }
+
+  function requestClearLot(key: LotKey) {
+    const count = (lotsRef.current[key] || []).filter((bus) => bus && bus !== "X").length;
+    if (!count) return;
+    setEditingLot(null);
+    setClearLotTarget({ key, label: LOT_LABELS[key], count });
+  }
+
+  async function confirmLotClear() {
+    if (!clearLotTarget) return;
+    await archiveCurrentLotSheet();
+    const previous = [...(lotsRef.current[clearLotTarget.key] || [])];
+    const value = clearLotTarget.key === "bay"
+      ? previous.map((bus) => (bus === "X" ? "X" : ""))
+      : [];
+    offerLotUndo({
+      key: clearLotTarget.key,
+      label: `${clearLotTarget.label} cleared`,
+      value: previous,
+    });
+    patchLots(
+      { ...lotsRef.current, [clearLotTarget.key]: value },
+      [],
+      [clearLotTarget.key],
+    );
+  }
+
+  function undoLotClear() {
+    if (!undoLot) return;
+    patchLots({ ...lotsRef.current, [undoLot.key]: [...undoLot.value] }, [undoLot.key]);
+    setUndoLot(null);
+    clearTimeout(undoTimer.current);
+  }
+
   function locateLot(bus: string): string {
     for (const k of Object.keys(LOT_LABELS) as LotKey[]) {
       const idx = (lots[k] || []).indexOf(bus);
@@ -291,7 +414,8 @@ export default function TurnoverSheet() {
   // (10 fixed spots) so we blank the slot instead of removing it.
   function relocateBus(bus: string) {
     if (!bus) return;
-    const next = { ...lots } as TurnoverLots;
+    pendingClear.current.push(bus);
+    const next = { ...lotsRef.current } as TurnoverLots;
     let changed = false;
     for (const k of Object.keys(next) as LotKey[]) {
       const arr = next[k] || [];
@@ -302,7 +426,10 @@ export default function TurnoverSheet() {
           : arr.filter((b) => b !== bus);
       changed = true;
     }
-    if (changed) patchLots(next);
+    if (changed) {
+      lotsRef.current = next;
+      setLots(next);
+    }
   }
 
   function schedulePrewarm() {
@@ -687,7 +814,7 @@ export default function TurnoverSheet() {
         </div>
       </PaperViewport>
 
-      {editingLot && (
+      {editingLot && !flagBus && (
         <LotEditor
           title={LOT_LABELS[editingLot] || editingLot}
           list={lots[editingLot] || []}
@@ -699,6 +826,7 @@ export default function TurnoverSheet() {
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
           onReorder={(from, to) => reorderInLot(editingLot, from, to)}
+          onClearRequest={() => requestClearLot(editingLot)}
           onClose={() => setEditingLot(null)}
         />
       )}
@@ -731,6 +859,29 @@ export default function TurnoverSheet() {
         tone="danger"
         onConfirm={clearAll}
       />
+
+      <ConfirmDialog
+        isOpen={clearLotTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setClearLotTarget(null);
+        }}
+        title={`Clear ${clearLotTarget?.label || "location"}?`}
+        description={
+          clearLotTarget
+            ? `This removes ${clearLotTarget.count} bus${clearLotTarget.count === 1 ? "" : "es"} from ${clearLotTarget.label} for everyone. Other locations are not changed.`
+            : ""
+        }
+        confirmLabel="Clear location"
+        tone="danger"
+        onConfirm={confirmLotClear}
+      />
+
+      {undoLot && (
+        <div className={`${styles.toast} no-print`} role="status">
+          <span>{undoLot.label}</span>
+          <Button size="sm" onPress={undoLotClear}>Undo</Button>
+        </div>
+      )}
 
       {loaded && lotsLoaded && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </div>

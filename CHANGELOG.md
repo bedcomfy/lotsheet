@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.20.0 - 2026-08-06
+
+- Added confirmed one-tap clearing for North Lot, East Lot, Fence, R/C,
+  Apron, Cards, Bays, North Lane, South Lane, and Off Property. Each action
+  shows the affected bus count, preserves blocked bay spots, archives the
+  current Lot Sheet when appropriate, and offers Undo.
+- Location updates from the Shop and Turnover pages now send only the group
+  that changed and retry the newest local value after a failed request. A
+  simultaneous edit in another location is preserved instead of being
+  replaced by an older whole-sheet save.
+- Reworked phone overlays around the live visible viewport and safe areas.
+  Long menus scroll inside their body, action rows remain reachable above the
+  keyboard, nested dialogs no longer stack, and the bottom navigation yields
+  until closing animations finish.
+- Prevented iOS focus zoom on small printable fields without changing paper
+  typography, and improved Fill Rows, multi-select, and paper pan/fit spacing.
+- Expanded Storybook and Playwright coverage for long dialogs, safe areas,
+  three phone sizes, nested workflows, simultaneous edits, paper geometry,
+  and production PDF output. Printable sheet layouts and PDF profiles are
+  unchanged.
+
 ## 0.19.5 - 2026-07-29
 
 - HOLD is now the top-priority flag everywhere. On the Lot Sheet's printed

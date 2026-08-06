@@ -13,9 +13,11 @@ import {
   Text,
 } from "react-aria-components";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import type { Key, SelectProps } from "react-aria-components";
 import styles from "./SelectField.module.css";
 import { cx } from "./utils";
+import { useOverlayPresence } from "./useOverlayPresence";
 
 export interface SelectOption {
   id: Key;
@@ -42,11 +44,18 @@ export function SelectField({
   description,
   errorMessage,
   className,
+  onOpenChange,
   ...props
 }: SelectFieldProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  useOverlayPresence(isOpen);
   return (
     <Select<SelectOption>
       {...props}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        onOpenChange?.(open);
+      }}
       className={cx(styles.field, className)}
     >
       <Label className={styles.label}>{label}</Label>

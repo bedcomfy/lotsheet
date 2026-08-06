@@ -559,8 +559,9 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     : flagBuses;
 
   return (
+    <>
     <ResponsiveDialog
-      isOpen
+      isOpen={!bulkConfirmOpen}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -829,18 +830,19 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           </div>
         )}
       </div>
-      <ConfirmDialog
-        isOpen={bulkConfirmOpen}
-        onOpenChange={setBulkConfirmOpen}
-        title="Remove this flag from every bus?"
-        description={`This will remove ${
-          pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag)
-        } from ${flagBuses.length} matching bus${flagBuses.length === 1 ? "" : "es"}.`}
-        confirmLabel="Remove from all"
-        tone="danger"
-        isPending={bulkRemoving}
-        onConfirm={removeFlagFromAll}
-      />
     </ResponsiveDialog>
+    <ConfirmDialog
+      isOpen={bulkConfirmOpen}
+      onOpenChange={setBulkConfirmOpen}
+      title="Remove this flag from every bus?"
+      description={`This will remove ${
+        pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag)
+      } from ${flagBuses.length} matching bus${flagBuses.length === 1 ? "" : "es"}.`}
+      confirmLabel="Remove from all"
+      tone="danger"
+      isPending={bulkRemoving}
+      onConfirm={removeFlagFromAll}
+    />
+    </>
   );
 }

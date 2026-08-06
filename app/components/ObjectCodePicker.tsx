@@ -13,6 +13,7 @@ import {
   Text,
 } from "react-aria-components";
 import { OBJECT_CODES } from "../lib/objectCodes";
+import { useOverlayPresence } from "../ui/useOverlayPresence";
 import styles from "./ObjectCodePicker.module.css";
 
 interface ObjectCodePickerProps {
@@ -29,6 +30,8 @@ export default function ObjectCodePicker({
   onChange,
 }: ObjectCodePickerProps) {
   const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  useOverlayPresence(isOpen);
   const selected = useMemo(() => new Set(value), [value]);
 
   const matches = useMemo(() => {
@@ -79,6 +82,7 @@ export default function ObjectCodePicker({
         selectedKey={null}
         items={matches}
         menuTrigger="focus"
+        onOpenChange={setIsOpen}
         onSelectionChange={(key) => {
           if (key != null) toggle(String(key));
           setQuery("");

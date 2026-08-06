@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyLotSheetOp, applyLotSheetOpsToSheet, createOpEnvelopes, normalizeOpEnvelopes } from "./lotSheetOps";
+import { applyLotSheetOp, applyLotSheetOpsToSheet, createOpEnvelopes, diffLotSheetOps, normalizeOpEnvelopes } from "./lotSheetOps";
 import { applyOperationPage, createPendingBatch, parsePendingBatch } from "./syncCore";
 import type { LotSheet } from "./types";
 
@@ -87,6 +87,37 @@ describe("lot sheet operations", () => {
     );
     expect(cleared.cells).toEqual({ b: "6402" });
     expect(cleared.locks).toEqual(["b"]);
+  });
+
+  it("clears only requested groups and preserves blocked bay spots", () => {
+    const start: LotSheet = {
+      ...blank(),
+      lots: {
+        north: ["6401"],
+        east: ["6402"],
+        fence: ["6403"],
+        bay: ["6404", "X", "6405"],
+      },
+    };
+    const cleared = applyLotSheetOp(start, { type: "clear_lots", keys: ["north", "bay"] });
+    expect(cleared.lots.north).toEqual([]);
+    expect(cleared.lots.east).toEqual(["6402"]);
+    expect(cleared.lots.fence).toEqual(["6403"]);
+    expect(cleared.lots.bay).toEqual(["", "X", ""]);
+  });
+
+  it("emits scoped clear operations instead of whole-list replacements", () => {
+    const start: LotSheet = {
+      ...blank(),
+      lots: { north: ["6401"], east: ["6402"], bay: ["6403", "X", ""] },
+    };
+    const next: LotSheet = {
+      ...start,
+      lots: { ...start.lots, north: [], bay: ["", "X", ""] },
+    };
+    expect(diffLotSheetOps(start, next)).toEqual([
+      { type: "clear_lots", keys: ["north", "bay"] },
+    ]);
   });
 
   it("accepts legacy bare operations and stable envelopes", () => {

@@ -30,6 +30,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .trigger[data-hovered] {
@@ -86,9 +87,14 @@
 }
 
 .popover {
+  z-index: var(--ui-layer-popover);
   width: var(--trigger-width);
-  max-height: min(22rem, var(--available-height));
+  max-width: calc(var(--ui-viewport-width) - var(--ui-space-4) * 2);
+  max-height: min(22rem, var(--available-height), calc(var(--ui-viewport-height) - var(--ui-space-6)));
   overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   padding: var(--ui-space-1);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-md);
@@ -125,6 +131,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .option[data-hovered],

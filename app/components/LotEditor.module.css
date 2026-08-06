@@ -4,6 +4,17 @@
   gap: var(--ui-space-3);
 }
 
+.clearButton {
+  margin-right: auto;
+}
+
+@media (max-width: 480px) {
+  .clearButton {
+    min-width: 0;
+    padding-inline: var(--ui-space-3);
+  }
+}
+
 .addRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useLiveSync } from "../lib/useLiveSync";
 import { useKeyboardInset } from "../lib/useKeyboardInset";
+import { useMobileInputZoomGuard } from "../lib/useMobileInputZoomGuard";
 
 // Runs the real-time long-poll; refreshes queries on any change. Rendered inside
 // the provider so it has access to the query client. Also publishes the phone
@@ -12,6 +13,7 @@ import { useKeyboardInset } from "../lib/useKeyboardInset";
 function LiveSync() {
   useLiveSync();
   useKeyboardInset();
+  useMobileInputZoomGuard();
   return null;
 }
 

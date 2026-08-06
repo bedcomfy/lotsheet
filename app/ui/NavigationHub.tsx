@@ -10,6 +10,7 @@ import {
 } from "react-aria-components";
 import type { ReactNode } from "react";
 import { IconButton } from "./Button";
+import { useOverlayPresence } from "./useOverlayPresence";
 import styles from "./NavigationHub.module.css";
 
 export interface NavigationHubItem {
@@ -38,6 +39,7 @@ export function NavigationHub({
   onOpenChange,
   title,
 }: NavigationHubProps) {
+  useOverlayPresence(isOpen);
   return (
     <ModalOverlay
       isOpen={isOpen}

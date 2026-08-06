@@ -51,7 +51,7 @@
   .viewport[data-mobile-viewer="true"] {
     box-sizing: border-box;
     width: 100%;
-    height: min(68dvh, 42rem, var(--sheetkit-viewport-height));
+    height: min(42rem, var(--sheetkit-viewport-height));
     min-height: 0;
     overflow: auto;
     padding: 8px;
@@ -63,7 +63,6 @@
 
   .viewport[data-mobile-viewer="true"][data-mobile-view="fit"] {
     height: min(
-      68dvh,
       42rem,
       var(--sheetkit-viewport-height),
       calc(var(--sheetkit-stage-height) + 16px)

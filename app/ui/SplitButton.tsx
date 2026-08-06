@@ -13,12 +13,14 @@ import {
 } from "react-aria-components";
 import { ChevronDown } from "lucide-react";
 import type { Key, ReactNode } from "react";
+import { useState } from "react";
 import { Button, IconButton } from "./Button";
 import type { ButtonProps } from "./Button";
 import type { ActionMenuItem } from "./ActionMenu";
 import menuStyles from "./ActionMenu.module.css";
 import styles from "./SplitButton.module.css";
 import { cx } from "./utils";
+import { useOverlayPresence } from "./useOverlayPresence";
 
 export interface SplitButtonProps {
   children: ReactNode;
@@ -43,6 +45,8 @@ export function SplitButton({
   className,
   isDisabled,
 }: SplitButtonProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  useOverlayPresence(isOpen);
   return (
     <div className={cx(styles.group, className)} data-variant={variant}>
       <Button
@@ -54,7 +58,7 @@ export function SplitButton({
       >
         {children}
       </Button>
-      <MenuTrigger>
+      <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
         <IconButton
           variant={variant}
           size={size}

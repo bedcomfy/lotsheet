@@ -1,6 +1,6 @@
 .navigation {
   position: fixed;
-  z-index: 350;
+  z-index: var(--ui-layer-navigation);
   right: max(var(--ui-space-2), var(--ui-safe-right));
   bottom: max(var(--ui-space-2), var(--ui-safe-bottom));
   left: max(var(--ui-space-2), var(--ui-safe-left));
@@ -16,6 +16,15 @@
   backdrop-filter: blur(16px);
   font-family: var(--ui-font-sans);
   letter-spacing: 0;
+  transition:
+    opacity var(--ui-motion-fast) var(--ui-ease-standard),
+    visibility var(--ui-motion-fast) step-end;
+}
+
+:global(html[data-ui-overlay-open]) .navigation {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .item {

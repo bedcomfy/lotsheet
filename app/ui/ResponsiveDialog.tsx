@@ -7,9 +7,9 @@ import {
   Modal,
   ModalOverlay,
 } from "react-aria-components";
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { IconButton } from "./Button";
+import { useOverlayPresence } from "./useOverlayPresence";
 import styles from "./ResponsiveDialog.module.css";
 
 export interface ResponsiveDialogProps {
@@ -35,43 +35,19 @@ export function ResponsiveDialog({
   size = "md",
   bodyClassName,
 }: ResponsiveDialogProps) {
-  const [isClosing, setIsClosing] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (isOpen) setIsClosing(false);
-    return () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-    };
-  }, [isOpen]);
-
-  const requestOpenChange = useCallback(
-    (open: boolean) => {
-      if (open) {
-        onOpenChange(true);
-        return;
-      }
-      if (isClosing) return;
-      setIsClosing(true);
-      closeTimer.current = setTimeout(() => onOpenChange(false), 180);
-    },
-    [isClosing, onOpenChange],
-  );
-
-  const close = useCallback(() => requestOpenChange(false), [requestOpenChange]);
+  useOverlayPresence(isOpen);
+  const close = () => onOpenChange(false);
 
   return (
     <ModalOverlay
       isOpen={isOpen}
-      onOpenChange={requestOpenChange}
+      onOpenChange={onOpenChange}
       isDismissable={isDismissable}
       className={styles.overlay}
-      data-closing={isClosing || undefined}
     >
       <Modal
         className={styles.modal}
         data-size={size}
-        data-closing={isClosing || undefined}
       >
         <Dialog className={styles.dialog}>
           <header className={styles.header}>

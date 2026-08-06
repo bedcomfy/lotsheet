@@ -19,6 +19,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
   white-space: nowrap;
 }
 

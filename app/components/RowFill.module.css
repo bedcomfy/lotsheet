@@ -1,8 +1,13 @@
 .body {
   display: grid;
   min-width: 0;
+  min-height: 0;
   align-content: start;
   gap: var(--ui-space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .navigation {

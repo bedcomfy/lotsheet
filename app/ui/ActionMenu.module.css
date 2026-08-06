@@ -1,9 +1,12 @@
 .popover {
-  width: min(20rem, calc(100vw - var(--ui-space-4) * 2));
+  z-index: var(--ui-layer-popover);
+  width: min(20rem, calc(var(--ui-viewport-width) - var(--ui-space-4) * 2));
   max-height: calc(
-    100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-6)
+    var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-6)
   );
   overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: var(--ui-space-1);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
@@ -13,6 +16,7 @@
   letter-spacing: 0;
   outline: none;
   transform-origin: var(--trigger-anchor-point);
+  -webkit-overflow-scrolling: touch;
 }
 
 .popover[data-entering] {
@@ -40,6 +44,7 @@
   color: var(--ui-text);
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 

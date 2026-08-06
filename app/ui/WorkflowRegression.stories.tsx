@@ -254,9 +254,25 @@ export const PhoneDialogWithLongLocations: Story = {
     await waitFor(async () => {
       await expect(canvas.getByRole("button", { name: "Done" })).toBeVisible();
     });
+    const dialogBody = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      "[data-dialog-body]",
+    );
+    await expect(dialogBody).not.toBeNull();
+    await expect(dialogBody!.scrollHeight).toBeGreaterThan(dialogBody!.clientHeight);
+    await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute(
+      "data-ui-overlay-open",
+    );
     await expect(
       canvas.getByRole("button", { name: /East lot position 34/ }),
     ).toBeInTheDocument();
+    dialogBody!.scrollTop = dialogBody!.scrollHeight;
+    await userEvent.click(canvas.getByRole("button", { name: "Done" }));
+    await waitFor(async () => {
+      await expect(canvas.getByRole("button", { name: "Reopen locations" })).toBeVisible();
+      await expect(canvasElement.ownerDocument.documentElement).not.toHaveAttribute(
+        "data-ui-overlay-open",
+      );
+    });
   },
 };
 

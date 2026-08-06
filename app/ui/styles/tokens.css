@@ -80,6 +80,17 @@
   --ui-mobile-nav-offset: calc(
     3.625rem + max(var(--ui-space-2), var(--ui-safe-bottom))
   );
+  --ui-viewport-height: 100dvh;
+  --ui-viewport-width: 100vw;
+  --ui-viewport-top: 0px;
+  --ui-viewport-left: 0px;
+  --ui-keyboard-inset: 0px;
+
+  --ui-layer-navigation: 350;
+  --ui-layer-popover: 1100;
+  --ui-layer-dialog: 1000;
+  --ui-layer-navigation-hub: 1200;
+  --ui-layer-toast: 1300;
 }
 
 :root[data-theme="dark"],

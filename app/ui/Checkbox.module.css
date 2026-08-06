@@ -10,6 +10,7 @@
   letter-spacing: 0;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 

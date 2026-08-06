@@ -57,7 +57,7 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
   return (
     <>
       <ResponsiveDialog
-        isOpen
+        isOpen={!deleteId}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}

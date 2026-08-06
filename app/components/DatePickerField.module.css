@@ -19,3 +19,9 @@
   outline: none;
   box-shadow: var(--ui-focus-ring);
 }
+
+@media (max-width: 699px) {
+  .input {
+    font-size: 1rem;
+  }
+}

@@ -1,16 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { HTMLAttributes, KeyboardEvent } from "react";
 import type { Employee } from "../lib/types";
 import { employeeFullName } from "../lib/types";
+import { useOverlayPresence } from "../ui/useOverlayPresence";
 import styles from "./EmployeeInput.module.css";
 
 interface Rect {
   left: number;
   top: number;
   width: number;
+  maxHeight: number;
+  above: boolean;
 }
 
 interface EmployeeInputProps {
@@ -53,12 +56,56 @@ export default function EmployeeInput({
         )
         .slice(0, 6)
     : [];
+  const showingSuggestions = open && matches.length > 0 && rect !== null;
+  useOverlayPresence(showingSuggestions);
 
-  function measure() {
+  const measure = useCallback(() => {
     if (!ref.current) return;
     const r = ref.current.getBoundingClientRect();
-    setRect({ left: r.left, top: r.bottom, width: r.width });
-  }
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportTop = viewport?.offsetTop ?? 0;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const inset = 8;
+    const viewportRight = viewportLeft + viewportWidth;
+    const viewportBottom = viewportTop + viewportHeight;
+    const spaceBelow = Math.max(0, viewportBottom - r.bottom - inset);
+    const spaceAbove = Math.max(0, r.top - viewportTop - inset);
+    const above = spaceBelow < 160 && spaceAbove > spaceBelow;
+    const available = above ? spaceAbove : spaceBelow;
+    const maxWidth = Math.max(1, viewportWidth - inset * 2);
+    const width = Math.min(Math.max(r.width, 240), maxWidth);
+    const left = Math.min(
+      Math.max(r.left, viewportLeft + inset),
+      Math.max(viewportLeft + inset, viewportRight - width - inset),
+    );
+    setRect({
+      left,
+      top: above ? r.top - 4 : r.bottom + 4,
+      width,
+      maxHeight: Math.max(44, Math.min(288, available - 4)),
+      above,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!showingSuggestions) return;
+    const viewport = window.visualViewport;
+    const update = () => measure();
+    update();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
+    document.addEventListener("scroll", update, true);
+    return () => {
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.removeEventListener("scroll", update, true);
+    };
+  }, [measure, showingSuggestions]);
+
   function pick(emp: Employee) {
     onChange(employeeFullName(emp) || emp.badge);
     setOpen(false);
@@ -109,7 +156,14 @@ export default function EmployeeInput({
           <ul
             className={styles.list}
             role="listbox"
-            style={{ position: "fixed", left: rect.left, top: rect.top, minWidth: rect.width }}
+            style={{
+              position: "fixed",
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              maxHeight: rect.maxHeight,
+              transform: rect.above ? "translateY(-100%)" : undefined,
+            }}
           >
             {matches.map((e, i) => (
               <li
@@ -118,7 +172,7 @@ export default function EmployeeInput({
                 role="option"
                 aria-selected={i === hi}
                 data-highlighted={i === hi || undefined}
-                onMouseDown={(ev) => {
+                onPointerDown={(ev) => {
                   ev.preventDefault();
                   pick(e);
                 }}

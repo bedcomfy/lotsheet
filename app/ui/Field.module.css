@@ -176,3 +176,12 @@
 .textAreaField[data-invalid] .textArea {
   border-color: var(--ui-danger);
 }
+
+/* iOS zooms the entire page when a focused field computes below 16px. Keep
+   phone fields at the platform-safe size; desktop density remains unchanged. */
+@media (max-width: 699px) {
+  .input,
+  .textArea {
+    font-size: 1rem;
+  }
+}

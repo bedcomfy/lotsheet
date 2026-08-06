@@ -1,7 +1,10 @@
 .overlay {
   position: fixed;
-  z-index: 1200;
-  inset: 0;
+  z-index: var(--ui-layer-navigation-hub);
+  top: var(--ui-viewport-top);
+  left: var(--ui-viewport-left);
+  width: var(--ui-viewport-width);
+  height: var(--ui-viewport-height);
   display: grid;
   place-items: stretch;
   background: rgb(12 13 16 / 58%);
@@ -18,7 +21,7 @@
 
 .modal {
   width: 100%;
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   background: var(--ui-canvas);
   outline: none;
@@ -94,6 +97,7 @@
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   padding:
     var(--ui-space-3)
     calc(var(--ui-space-3) + var(--ui-safe-right))
@@ -126,6 +130,7 @@
   text-align: left;
   letter-spacing: 0;
   outline: none;
+  touch-action: manipulation;
 }
 
 .item[data-hovered] {
@@ -210,7 +215,7 @@
 
   .modal {
     width: min(100%, 42rem);
-    height: min(48rem, calc(100dvh - var(--ui-space-10)));
+    height: min(48rem, calc(var(--ui-viewport-height) - var(--ui-space-10)));
     border: 1px solid var(--ui-border);
     border-radius: var(--ui-radius-lg);
     box-shadow: var(--ui-shadow-lg);

@@ -65,7 +65,7 @@ export default function PrevSheets({ onImport, onClose }: PrevSheetsProps) {
   return (
     <>
       <ResponsiveDialog
-        isOpen
+        isOpen={!deleteId}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}

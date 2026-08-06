@@ -1,5 +1,6 @@
 .pressable {
   font: inherit;
+  touch-action: manipulation;
 }
 
 .pressable[data-focus-visible] {

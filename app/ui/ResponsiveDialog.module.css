@@ -1,7 +1,10 @@
 .overlay {
   position: fixed;
-  z-index: 1000;
-  inset: 0;
+  z-index: var(--ui-layer-dialog);
+  top: var(--ui-viewport-top);
+  left: var(--ui-viewport-left);
+  width: var(--ui-viewport-width);
+  height: var(--ui-viewport-height);
   display: grid;
   place-items: center;
   padding:
@@ -17,8 +20,7 @@
   animation: overlay-in var(--ui-motion-normal) var(--ui-ease-standard);
 }
 
-.overlay[data-exiting],
-.overlay[data-closing] {
+.overlay[data-exiting] {
   animation: overlay-out var(--ui-motion-normal) var(--ui-ease-exit) forwards;
   pointer-events: none;
 }
@@ -27,7 +29,7 @@
   width: min(100%, 38rem);
   max-height: min(
     45rem,
-    calc(100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-8))
+    calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-8))
   );
   overflow: hidden;
   border: 1px solid var(--ui-border);
@@ -48,7 +50,7 @@
 .modal[data-size="full"] {
   width: min(100%, 78rem);
   height: calc(
-    100dvh - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-8)
+    var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-8)
   );
   max-height: none;
 }
@@ -62,8 +64,7 @@
   animation: dialog-in var(--ui-motion-normal) var(--ui-ease-standard);
 }
 
-.modal[data-exiting],
-.modal[data-closing] {
+.modal[data-exiting] {
   animation: dialog-out var(--ui-motion-normal) var(--ui-ease-exit) forwards;
 }
 
@@ -141,7 +142,7 @@
 
   .modal {
     width: 100%;
-    max-height: calc(100dvh - var(--ui-safe-top) - var(--ui-space-3));
+    max-height: calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-space-3));
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
@@ -149,15 +150,14 @@
   }
 
   .modal[data-size="full"] {
-    height: calc(100dvh - var(--ui-safe-top) - var(--ui-space-3));
+    height: calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-space-3));
   }
 
   .modal[data-entering] {
     animation-name: dialog-in-mobile;
   }
 
-  .modal[data-exiting],
-  .modal[data-closing] {
+  .modal[data-exiting] {
     animation-name: dialog-out-mobile;
   }
 

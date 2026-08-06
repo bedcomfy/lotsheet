@@ -44,6 +44,14 @@ export async function PATCH(req: Request) {
       if (typeof bus === "string" && bus) ops.push({ type: "remove_bus", bus });
     }
   }
+  if (Array.isArray(body.clearKeys) && body.clearKeys.length) {
+    const allowed = new Set<LotKey>([
+      "north", "east", "fence", "rc", "apron", "northlane", "southlane", "bay", "cards",
+    ]);
+    const keys = [...new Set(body.clearKeys)]
+      .filter((key): key is LotKey => typeof key === "string" && allowed.has(key as LotKey));
+    if (keys.length) ops.push({ type: "clear_lots", keys });
+  }
   if (body.lots && typeof body.lots === "object") {
     for (const [key, value] of Object.entries(body.lots as Lots)) {
       if (Array.isArray(value)) ops.push({ type: "set_lot", key: key as LotKey, value: value.map((v) => String(v || "")) });

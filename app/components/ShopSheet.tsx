@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cellLocationLabel, flagsFullDisplay } from "../lib/grid";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -16,6 +16,7 @@ import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 import {
   AppPage,
   Button,
+  ConfirmDialog,
   Pressable,
   ResponsiveDialog,
   SearchField,
@@ -38,6 +39,12 @@ type ShopLots = Record<LotKey, string[]>;
 // lane lists and R/C have no on-sheet editor (the Turnover paper manages them),
 // so the Shop page hosts their editors too. Counts stay Apron+Bays+Cards only.
 type EditableList = "apron" | "cards" | "northlane" | "southlane" | "rc";
+type ShopClearTarget =
+  | { kind: "lot"; key: EditableList | "bay"; label: string; count: number }
+  | { kind: "offprop"; label: string; count: number; buses: string[] };
+type ShopUndo =
+  | { kind: "lot"; key: LotKey; value: string[]; label: string }
+  | { kind: "offprop"; buses: string[]; label: string };
 
 const LIST_EDITOR_COPY: Record<EditableList, { title: string; subtitle: string }> = {
   apron: { title: "Apron", subtitle: "Buses anywhere on the apron — the order shows on the Turnover sheet." },
@@ -77,11 +84,17 @@ export default function ShopSheet() {
   const [offPropOpen, setOffPropOpen] = useState(false); // Off Property flag-list editor
   const [editingBay, setEditingBay] = useState<number | null>(null); // one fixed bay spot
   const [findVal, setFindVal] = useState("");
+  const [clearTarget, setClearTarget] = useState<ShopClearTarget | null>(null);
+  const [undoState, setUndoState] = useState<ShopUndo | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const lotDirty = useRef(false);
   const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lotsRef = useRef<ShopLots>(lots); // always-current, so chained edits never work from stale state
   const pendingClear = useRef<string[]>([]); // buses to strip from EVERYWHERE on the next PATCH
+  const pendingLotKeys = useRef<Set<LotKey>>(new Set());
+  const pendingClearKeys = useRef<Set<LotKey>>(new Set());
+  const lotWriteVersion = useRef(0);
 
   // Shared sheet: load + poll (skip adopting while our own edit is in flight).
   useEffect(() => {
@@ -126,31 +139,69 @@ export default function ShopSheet() {
     });
   }
 
-  // Debounced PATCH of the lots (+ any pending "strip this bus from everywhere"
-  // clears, applied server-side BEFORE the merge so moves can't race).
-  function patchLots(next: ShopLots) {
-    setLots(next);
-    lotsRef.current = next;
-    lotDirty.current = true;
+  function scheduleLotPatch(delay = 500) {
     clearTimeout(lotTimer.current);
     lotTimer.current = setTimeout(() => {
-      const clearBuses = pendingClear.current;
+      const clearBuses = [...new Set(pendingClear.current)];
       pendingClear.current = [];
+      const lotKeys = [...pendingLotKeys.current];
+      const groupClears = [...pendingClearKeys.current];
+      pendingLotKeys.current.clear();
+      pendingClearKeys.current.clear();
+      const changedLots = Object.fromEntries(lotKeys.map((key) => [key, lotsRef.current[key] || []]));
+      const writeVersion = lotWriteVersion.current;
       fetch("/api/sheet", {
         method: "PATCH",
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lots: lotsRef.current, clearBuses, actor: getDeviceActor() }),
+        body: JSON.stringify({ lots: changedLots, clearKeys: groupClears, clearBuses, actor: getDeviceActor() }),
       })
-        .then((r) => r.json())
+        .then((response) => {
+          if (!response.ok) throw new Error(`Sheet save failed (${response.status})`);
+          return response.json();
+        })
         .then((d) => {
-          lotDirty.current = false;
+          if (
+            writeVersion === lotWriteVersion.current
+            && pendingLotKeys.current.size === 0
+            && pendingClearKeys.current.size === 0
+            && pendingClear.current.length === 0
+          ) {
+            lotDirty.current = false;
+          }
           if (d.updatedAt) setSavedAt(new Date(d.updatedAt));
         })
         .catch(() => {
-          lotDirty.current = false;
+          // Retry the latest local value for every affected group. This stays
+          // correct even if another edit happened while the failed request was
+          // in flight: the newest value in lotsRef always wins.
+          for (const key of new Set([...lotKeys, ...groupClears])) {
+            pendingClearKeys.current.delete(key);
+            pendingLotKeys.current.add(key);
+          }
+          pendingClear.current = [...new Set([...clearBuses, ...pendingClear.current])];
+          lotDirty.current = true;
+          scheduleLotPatch(1200);
         });
-    }, 500);
+    }, delay);
+  }
+
+  // Debounced PATCH of only the location keys this page changed. Sending the
+  // whole lots object could overwrite a simultaneous edit in another group.
+  function patchLots(next: ShopLots, changedKeys: LotKey[] = [], clearKeys: LotKey[] = []) {
+    setLots(next);
+    lotsRef.current = next;
+    lotDirty.current = true;
+    lotWriteVersion.current += 1;
+    for (const key of changedKeys) {
+      pendingClearKeys.current.delete(key);
+      pendingLotKeys.current.add(key);
+    }
+    for (const key of clearKeys) {
+      pendingLotKeys.current.delete(key);
+      pendingClearKeys.current.add(key);
+    }
+    scheduleLotPatch();
   }
 
   // Where a bus currently sits — grid cell (read-only here) or any lot.
@@ -198,28 +249,28 @@ export default function ShopSheet() {
     const cur = lotsRef.current;
     const arr = Array.from({ length: BAY_SPOTS }, (_, j) => (cur.bay || [])[j] || "");
     arr[i] = num;
-    patchLots({ ...cur, bay: arr });
+    patchLots({ ...cur, bay: arr }, ["bay"]);
   }
 
   // List helpers for the free lots here (Apron and Cards — kept blank-free).
   const listOf = (key: EditableList) => (lots[key] || []).filter((b) => b);
   const addToList = (key: EditableList, bus: string) =>
-    patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []).filter((b) => b), bus] });
+    patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []).filter((b) => b), bus] }, [key]);
   const removeFromList = (key: EditableList, i: number) =>
-    patchLots({ ...lotsRef.current, [key]: (lotsRef.current[key] || []).filter((b) => b).filter((_, j) => j !== i) });
+    patchLots({ ...lotsRef.current, [key]: (lotsRef.current[key] || []).filter((b) => b).filter((_, j) => j !== i) }, [key]);
   function moveInList(key: EditableList, i: number, dir: number) {
     const arr = (lotsRef.current[key] || []).filter((b) => b);
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
-    patchLots({ ...lotsRef.current, [key]: arr });
+    patchLots({ ...lotsRef.current, [key]: arr }, [key]);
   }
   function reorderInList(key: EditableList, from: number, to: number) {
     const arr = (lotsRef.current[key] || []).filter((b) => b);
     if (from < 0 || from >= arr.length || to < 0 || to >= arr.length || from === to) return;
     const [bus] = arr.splice(from, 1);
     arr.splice(to, 0, bus);
-    patchLots({ ...lotsRef.current, [key]: arr });
+    patchLots({ ...lotsRef.current, [key]: arr }, [key]);
   }
   const apron = listOf("apron");
   const cards = listOf("cards");
@@ -273,15 +324,17 @@ export default function ShopSheet() {
     .map(([bus]) => bus)
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  function saveOffProp(bus: string, on: boolean) {
-    const cur: FlagEntry = flags[bus] || { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+  async function saveOffProp(bus: string, on: boolean) {
+    const liveFlags = qc.getQueryData<FlagMap>(["flags"]) || flags;
+    const cur: FlagEntry = liveFlags[bus] || { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
     const has = (cur.flags || []).includes("offprop");
     if (on === has) return;
     const entry: FlagEntry = {
       ...cur,
       flags: on ? [...(cur.flags || []), "offprop"] : (cur.flags || []).filter((f) => f !== "offprop"),
     };
-    fetch("/api/flags", {
+    onBusFlagsUpdated(bus, entry);
+    await fetch("/api/flags", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -295,7 +348,67 @@ export default function ShopSheet() {
         actor: getDeviceActor(),
       }),
     }).catch(() => {});
-    onBusFlagsUpdated(bus, entry);
+  }
+
+  async function archiveCurrentSheet() {
+    try {
+      const current = await fetch("/api/sheet", { cache: "no-store" }).then((response) => response.json());
+      if (!current?.sheet) return;
+      await fetch("/api/sheet/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet: current.sheet }),
+      });
+    } catch {}
+  }
+
+  function offerUndo(next: ShopUndo) {
+    setUndoState(next);
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndoState(null), 6000);
+  }
+
+  function requestClearLot(key: EditableList | "bay") {
+    const label = key === "bay" ? "Bays" : LIST_EDITOR_COPY[key].title;
+    const count = (lotsRef.current[key] || []).filter((bus) => bus && bus !== "X").length;
+    if (!count) return;
+    setEditingList(null);
+    setEditingBay(null);
+    setClearTarget({ kind: "lot", key, label, count });
+  }
+
+  function requestClearOffProperty() {
+    if (!offPropBuses.length) return;
+    setOffPropOpen(false);
+    setClearTarget({ kind: "offprop", label: "Off Property", count: offPropBuses.length, buses: offPropBuses });
+  }
+
+  async function confirmGroupClear() {
+    if (!clearTarget) return;
+    if (clearTarget.kind === "lot") {
+      await archiveCurrentSheet();
+      const previous = [...(lotsRef.current[clearTarget.key] || [])];
+      const value = clearTarget.key === "bay"
+        ? previous.map((bus) => (bus === "X" ? "X" : ""))
+        : [];
+      offerUndo({ kind: "lot", key: clearTarget.key, value: previous, label: `${clearTarget.label} cleared` });
+      patchLots({ ...lotsRef.current, [clearTarget.key]: value }, [], [clearTarget.key]);
+      return;
+    }
+
+    offerUndo({ kind: "offprop", buses: clearTarget.buses, label: "Off Property cleared" });
+    await Promise.all(clearTarget.buses.map((bus) => saveOffProp(bus, false)));
+  }
+
+  async function undoClear() {
+    if (!undoState) return;
+    if (undoState.kind === "lot") {
+      patchLots({ ...lotsRef.current, [undoState.key]: [...undoState.value] }, [undoState.key]);
+    } else {
+      await Promise.all(undoState.buses.map((bus) => saveOffProp(bus, true)));
+    }
+    setUndoState(null);
+    clearTimeout(undoTimer.current);
   }
 
   const inShopCount = new Set(
@@ -345,7 +458,18 @@ export default function ShopSheet() {
         </section>
 
         <section className={styles.shopCard}>
-          <div className={styles.cardHead}>BAYS</div>
+          <div className={styles.cardHead}>
+            BAYS <span className={styles.cardCount}>({(lots.bay || []).filter((bus) => bus && bus !== "X").length})</span>
+            <Button
+              className={styles.cardAction}
+              size="sm"
+              variant="danger"
+              isDisabled={!(lots.bay || []).some((bus) => bus && bus !== "X")}
+              onPress={() => requestClearLot("bay")}
+            >
+              <Trash2 aria-hidden="true" /> Clear buses
+            </Button>
+          </div>
           <div className={styles.cardSub}>Tap a bay to set or change its bus — any bay can be empty.</div>
           <div className={styles.slots}>{Array.from({ length: BAY_SPOTS }, (_, i) => slotButton(i))}</div>
         </section>
@@ -465,11 +589,12 @@ export default function ShopSheet() {
           isKnown={isKnown}
           label={busLabel}
           onChange={saveOffProp}
+          onClearRequest={requestClearOffProperty}
           onClose={() => setOffPropOpen(false)}
         />
       )}
 
-      {editingBay != null && (
+      {editingBay != null && !flagBus && (
         <CellEditor
           subLabel={`Bay ${editingBay + 1}`}
           value={(lots.bay || [])[editingBay] || ""}
@@ -487,7 +612,7 @@ export default function ShopSheet() {
         />
       )}
 
-      {editingList && (
+      {editingList && !flagBus && (
         <LotEditor
           title={LIST_EDITOR_COPY[editingList].title}
           subtitle={LIST_EDITOR_COPY[editingList].subtitle}
@@ -500,6 +625,7 @@ export default function ShopSheet() {
           onRemove={(i) => removeFromList(editingList, i)}
           onMove={(i, dir) => moveInList(editingList, i, dir)}
           onReorder={(from, to) => reorderInList(editingList, from, to)}
+          onClearRequest={() => requestClearLot(editingList)}
           onClose={() => setEditingList(null)}
         />
       )}
@@ -511,6 +637,29 @@ export default function ShopSheet() {
           onBusFlagsUpdated={onBusFlagsUpdated}
           onClose={() => setFlagBus(null)}
         />
+      )}
+
+      <ConfirmDialog
+        isOpen={clearTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setClearTarget(null);
+        }}
+        title={`Clear ${clearTarget?.label || "location"}?`}
+        description={
+          clearTarget
+            ? `This removes ${clearTarget.count} bus${clearTarget.count === 1 ? "" : "es"} from ${clearTarget.label} for everyone. Other locations are not changed${clearTarget.kind === "lot" && clearTarget.key === "bay" ? ", and blocked bay spots remain blocked" : ""}.`
+            : ""
+        }
+        confirmLabel="Clear buses"
+        tone="danger"
+        onConfirm={confirmGroupClear}
+      />
+
+      {undoState && (
+        <div className={styles.toast} role="status">
+          <span>{undoState.label}</span>
+          <Button size="sm" onPress={undoClear}>Undo</Button>
+        </div>
       )}
     </AppPage>
   );
@@ -524,13 +673,15 @@ function OffPropertyEditor({
   isKnown,
   label,
   onChange,
+  onClearRequest,
   onClose,
 }: {
   buses: string[];
   flags: FlagMap;
   isKnown: (bus: string) => boolean;
   label: (bus: string) => string;
-  onChange: (bus: string, on: boolean) => void;
+  onChange: (bus: string, on: boolean) => void | Promise<void>;
+  onClearRequest: () => void;
   onClose: () => void;
 }) {
   const [value, setValue] = useState("");
@@ -552,9 +703,19 @@ function OffPropertyEditor({
       description="Buses tracked away from the garage. Adding or removing sets the Off property flag."
       size="sm"
       footer={(close) => (
-        <Button variant="primary" onPress={close}>
-          Done
-        </Button>
+        <>
+          <Button
+            className={styles.clearButton}
+            variant="danger"
+            isDisabled={buses.length === 0}
+            onPress={onClearRequest}
+          >
+            <Trash2 aria-hidden="true" /> Clear Off Property
+          </Button>
+          <Button variant="primary" onPress={close}>
+            Done
+          </Button>
+        </>
       )}
     >
       <div className={styles.offPropAdd}>

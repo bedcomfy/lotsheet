@@ -8,8 +8,10 @@ import {
   Text,
 } from "react-aria-components";
 import type { Key, ReactNode } from "react";
+import { useState } from "react";
 import { Button } from "./Button";
 import type { ButtonProps } from "./Button";
+import { useOverlayPresence } from "./useOverlayPresence";
 import styles from "./ActionMenu.module.css";
 
 export interface ActionMenuItem {
@@ -38,8 +40,10 @@ export function ActionMenu({
   buttonVariant = "secondary",
   buttonSize = "md",
 }: ActionMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  useOverlayPresence(isOpen);
   return (
-    <MenuTrigger>
+    <MenuTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button variant={buttonVariant} size={buttonSize}>
         {label}
       </Button>

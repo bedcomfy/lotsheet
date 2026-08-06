@@ -64,7 +64,7 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
   return (
     <>
       <ResponsiveDialog
-        isOpen
+        isOpen={!flagOpen && !moveOpen}
         onOpenChange={(open) => {
           if (!open) onClose();
         }}
