@@ -260,6 +260,30 @@ test("mobile lot tools keep every action and the footer reachable", async ({
   await expect(dialog).toBeHidden();
 });
 
+test("mobile Lot Sheet actions meet the bottom navigation without a safe-area gap", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(() => {
+    document.documentElement.dataset.uiSafeArea = "phone";
+  });
+
+  const actions = page.getByRole("navigation", { name: "Lot Sheet actions" });
+  const navigation = page.getByRole("navigation", { name: "Mobile navigation" });
+  await expect(actions).toBeVisible();
+  await expect(navigation).toBeVisible();
+
+  await expect
+    .poll(async () => {
+      const actionsBox = await actions.boundingBox();
+      const navigationBox = await navigation.boundingBox();
+      if (!actionsBox || !navigationBox) return Number.POSITIVE_INFINITY;
+      return Math.abs(navigationBox.y - (actionsBox.y + actionsBox.height));
+    })
+    .toBeLessThanOrEqual(2);
+});
+
 test("mobile selection actions do not cover the paper or zoom control", async ({
   page,
 }) => {

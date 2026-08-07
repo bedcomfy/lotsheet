@@ -30,7 +30,7 @@
     padding:
       var(--ui-space-1)
       calc(var(--ui-space-1) + var(--ui-safe-right))
-      calc(var(--ui-space-1) + var(--ui-safe-bottom))
+      var(--ui-space-1)
       calc(var(--ui-space-1) + var(--ui-safe-left));
     border-top: 1px solid var(--ui-border);
     background: color-mix(in srgb, var(--ui-surface-raised) 94%, transparent);

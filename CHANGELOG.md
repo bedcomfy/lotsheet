@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.20.2 - 2026-08-07
+
+- Removed the duplicate iPhone safe-area padding between the Lot Sheet action
+  bar and the main mobile navigation. Fill, Flags, Shop, Print, and Tools now
+  sit directly above the Home/Lot/Sheets/Fleet/More bar without covering the
+  sheet or changing print output.
+- Added a mobile geometry regression using the full iPhone safe-area inset so
+  the gap cannot return unnoticed. Sheet data and realtime behavior are
+  unchanged.
+
 ## 0.20.1 - 2026-08-06
 
 - Removed double-tap zoom from the Lot Sheet and every SheetKit paper viewer.
