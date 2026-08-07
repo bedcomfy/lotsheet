@@ -423,6 +423,71 @@ test("mobile flag editor scrolls above a reduced keyboard viewport", async ({
   await expect(dialog.getByRole("button", { name: "Done" })).toBeVisible();
 });
 
+test("custom notes become independent removable flag chips", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/flags", {
+    data: {
+      bus: "6427",
+      flags: [],
+      note: "",
+      holdReason: "",
+      retorqueTires: [],
+      inspOption: "",
+      actor: "e2e-custom-notes",
+    },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Edit Flags", exact: true }).click();
+  let dialog = page.getByRole("dialog", { name: "Edit flags" });
+  await dialog.getByPlaceholder("Search bus number…").fill("6427");
+
+  dialog = page.getByRole("dialog", { name: "Bus 6427" });
+  await expect(dialog).toBeVisible();
+  const noteInput = dialog.getByPlaceholder("Type a note and press Enter...");
+
+  await noteInput.fill("Door will not close");
+  await Promise.all([
+    page.waitForResponse((response) => response.url().endsWith("/api/flags") && response.request().method() === "POST"),
+    noteInput.press("Enter"),
+  ]);
+  await expect(noteInput).toHaveValue("");
+  await expect(dialog.getByRole("button", { name: "Remove Door will not close" })).toBeVisible();
+
+  await noteInput.fill("Farebox won't probe");
+  await Promise.all([
+    page.waitForResponse((response) => response.url().endsWith("/api/flags") && response.request().method() === "POST"),
+    noteInput.press("Enter"),
+  ]);
+  await expect(dialog.getByRole("button", { name: "Remove Farebox won't probe" })).toBeVisible();
+
+  await Promise.all([
+    page.waitForResponse((response) => response.url().endsWith("/api/flags") && response.request().method() === "POST"),
+    dialog.getByRole("button", { name: "Remove Door will not close" }).click(),
+  ]);
+  await expect(dialog.getByRole("button", { name: "Remove Door will not close" })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Remove Farebox won't probe" })).toBeVisible();
+
+  const saved = await request.get("/api/flags").then((response) => response.json());
+  const customNotes = saved.flags["6427"].flags.filter((id: string) => id.startsWith("custom-note:"));
+  expect(customNotes).toHaveLength(1);
+  expect(decodeURIComponent(customNotes[0].slice("custom-note:".length))).toBe("Farebox won't probe");
+
+  await request.post("/api/flags", {
+    data: {
+      bus: "6427",
+      flags: [],
+      note: "",
+      holdReason: "",
+      retorqueTires: [],
+      inspOption: "",
+      actor: "e2e-custom-notes-cleanup",
+    },
+  });
+});
+
 test("print mode excludes application chrome", async ({ page }) => {
   await page.goto("/?print=1");
 

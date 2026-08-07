@@ -8,8 +8,9 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLotSheet, useFlags } from "../../lib/queries";
 import { fleetBusLocations } from "../../lib/fleetStats";
-import { flagName } from "../../lib/grid";
+import { entryHasContent } from "../../lib/grid";
 import { useBusMaster } from "../BusMasterProvider";
+import FlagPills from "../FlagPills";
 import ManagerPanel from "../ManagerPanelLazy";
 import MMoveSheet from "./MMoveSheet";
 import type { FlagEntry, FlagMap } from "../../lib/types";
@@ -54,7 +55,6 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
   }, [sheet, flags, bus]);
 
   const entry = flags[bus];
-  const flagIds = entry?.flags || [];
   const svc = useServiceTonight(bus);
 
   function onBusFlagsUpdated(b: string, e: FlagEntry) {
@@ -85,12 +85,7 @@ export default function MBusCard({ bus, onClose, toast }: { bus: string; onClose
       >
         <div className={styles.cardBody}>
         <div className={styles.flags}>
-          {flagIds.length === 0 && <StaticChip>No flags</StaticChip>}
-          {flagIds.map((id) => (
-            <StaticChip tone="danger" key={id}>{flagName(id)}</StaticChip>
-          ))}
-          {entry?.note && <StaticChip>{entry.note}</StaticChip>}
-          {entry?.holdReason && <StaticChip tone="warning">Hold: {entry.holdReason}</StaticChip>}
+          {entryHasContent(entry) ? <FlagPills entry={entry} /> : <StaticChip>No flags</StaticChip>}
         </div>
         <div className={styles.service}>
           <span className={styles.serviceLabel}>Tonight&apos;s service</span>

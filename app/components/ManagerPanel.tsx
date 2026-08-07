@@ -33,6 +33,15 @@ import { getDeviceActor } from "../lib/deviceActor";
 import { useAutoSaveText } from "../lib/useAutoSaveText";
 import type { FlagEntry, FlagMap } from "../lib/types";
 import {
+  LEGACY_CUSTOM_NOTE_ID,
+  addCustomNote,
+  customNoteItems,
+  hasCustomNotes,
+  isCustomNoteFlag,
+  removeAllCustomNotes,
+  removeCustomNote,
+} from "../lib/customNoteFlags";
+import {
   Button,
   ConfirmDialog,
   Pressable,
@@ -44,7 +53,7 @@ import {
 import styles from "./ManagerPanel.module.css";
 
 const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
-// Pseudo-flag for the By flag tab: "Other" = buses with a free-text note.
+// Pseudo-flag for the By flag tab: every freeform custom-note flag.
 const NOTE_FLAG = "__note";
 const requiresDetail = (id: string) => id === NOTE_FLAG || flagRequiresDetail(id);
 // Full type name(s) for a bus (e.g. "Pulse", "Pulse · Hybrid"). The master's
@@ -58,31 +67,36 @@ function typeNames(codes: string[]): string {
     .join(" · ");
 }
 
-// ---- detail pickers (shown inline under an active detail flag) ----
-function NoteInput({ value, onSave }: { value: string | undefined; onSave: (v: string) => void }) {
-  // Auto-saves as you type / on blur / on close — no need to press Enter.
-  const { text, onChange, flush, saveNow } = useAutoSaveText(value, onSave);
+// A custom note behaves like a flag: Enter/Add commits one removable chip and
+// clears the field so another note can be added immediately.
+function CustomNoteComposer({ onAdd }: { onAdd: (value: string) => void }) {
+  const [draft, setDraft] = useState("");
+
+  function submit() {
+    const value = draft.trim();
+    if (!value) return;
+    onAdd(value);
+    setDraft("");
+  }
+
   return (
-    <div className={styles.noteRow}>
+    <div className={styles.noteComposer}>
       <TextField
-        className={styles.detailText}
-        label="Note"
+        className={styles.noteInput}
+        label="Custom flag or note"
         labelHidden
-        placeholder="Type a note…"
-        value={text}
-        onChange={onChange}
-        onBlur={flush}
-        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        placeholder="Type a note and press Enter..."
+        value={draft}
+        onChange={setDraft}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          submit();
+        }}
       />
-      {!!text && (
-        <Pressable
-          className={styles.noteClear}
-          onPress={() => saveNow("")}
-          aria-label="Remove note"
-        >
-          <X size={15} />
-        </Pressable>
-      )}
+      <Button size="sm" onPress={submit} isDisabled={!draft.trim()}>
+        <Plus aria-hidden="true" /> Add
+      </Button>
     </div>
   );
 }
@@ -215,7 +229,6 @@ function FlagPicker({ entry, onChange, searchRef }: {
   // Detail flags whose picker is open but not yet satisfied — really only
   // retorque, which isn't "on" until a tire is picked.
   const [openDetails, setOpenDetails] = useState<Set<string>>(new Set());
-  const [noteOpen, setNoteOpen] = useState(false);
 
   useEffect(() => {
     activeSearchRef.current?.focus({ preventScroll: true });
@@ -242,6 +255,10 @@ function FlagPicker({ entry, onChange, searchRef }: {
     if (flagHasDetail(id)) openDetail(id);
   }
   function remove(id: string) {
+    if (isCustomNoteFlag(id)) {
+      onChange(removeCustomNote(entry, id));
+      return;
+    }
     const linkedInspectionFlag = inspectionOptionFromText(entry.inspOption);
     if (id === "inspection") {
       onChange(removeInspection(entry));
@@ -283,14 +300,17 @@ function FlagPicker({ entry, onChange, searchRef }: {
   }
 
   // Active flags as pills, most-severe first (severity == FLAGS order here).
-  const active = entry.flags.slice().sort((a, b) => flagLabel(a).localeCompare(flagLabel(b)));
+  const active = entry.flags.slice().sort((a, b) => {
+    const noteOrder = Number(isCustomNoteFlag(a)) - Number(isCustomNoteFlag(b));
+    return noteOrder || flagLabel(a).localeCompare(flagLabel(b));
+  });
   const results = searchFlags(query);
   const common = commonFlagIds().filter((id) => !entry.flags.includes(id) && !isActive(id));
-  const hasNote = !!(entry.note || "").trim();
+  const legacyNote = (entry.note || "").trim();
 
   return (
     <div className={styles.flagPicker}>
-      {active.length > 0 && (
+      {(active.length > 0 || legacyNote) && (
         <div className={styles.activeFlags}>
           {active.map((id) => (
             <span
@@ -308,6 +328,21 @@ function FlagPicker({ entry, onChange, searchRef }: {
               </Pressable>
             </span>
           ))}
+          {legacyNote && (
+            <span
+              className={styles.removableFlag}
+              style={flagColorStyle(null) as CSSProperties}
+            >
+              {legacyNote}
+              <Pressable
+                className={styles.removeFlag}
+                onPress={() => onChange(removeCustomNote(entry, LEGACY_CUSTOM_NOTE_ID))}
+                aria-label={`Remove ${legacyNote}`}
+              >
+                <X size={14} />
+              </Pressable>
+            </span>
+          )}
         </div>
       )}
 
@@ -393,16 +428,9 @@ function FlagPicker({ entry, onChange, searchRef }: {
       )}
 
       <div className={styles.noteBlock}>
-        {noteOpen || hasNote ? (
-          <>
-            <div className={styles.sectionLabel}>Note</div>
-            <NoteInput value={entry.note} onSave={(n) => onChange({ ...entry, note: n })} />
-          </>
-        ) : (
-          <Pressable className={styles.addNote} onPress={() => setNoteOpen(true)}>
-            <Plus size={15} /> Add a note
-          </Pressable>
-        )}
+        <div className={styles.sectionLabel}>Custom flags</div>
+        <CustomNoteComposer onAdd={(value) => onChange(addCustomNote(entry, value))} />
+        <div className={styles.flagHint}>Each entry becomes its own removable flag chip.</div>
       </div>
     </div>
   );
@@ -464,11 +492,12 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
         .filter((b) => entryHasContent(flags[b]))
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-  // By flag: buses carrying the picked flag ("Other" = buses with a note).
+  // By flag: buses carrying the picked flag (Custom notes includes legacy
+  // single-note records as well as the new independently removable notes).
   const deptObj = departments.find((d) => d.id === dept) || departments[0];
   const flagBuses = Object.keys(flags)
     .filter((b) =>
-      pickedFlag === NOTE_FLAG ? !!(flags[b].note || "").trim() : (flags[b].flags || []).includes(pickedFlag)
+      pickedFlag === NOTE_FLAG ? hasCustomNotes(flags[b]) : (flags[b].flags || []).includes(pickedFlag)
     )
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
@@ -486,7 +515,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   function entryWithoutPickedFlag(bus: string): FlagEntry {
     const cur = getEntry(bus);
     if (pickedFlag === NOTE_FLAG) {
-      return { ...cur, note: "" };
+      return removeAllCustomNotes(cur);
     }
     const patch: FlagEntry = pickedFlag === "inspection"
       ? removeInspection(cur)
@@ -552,6 +581,15 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   }
   function setReasonFor(bus: string, reason: string) {
     save(bus, { ...getEntry(bus), holdReason: reason });
+  }
+  function addNoteFor(bus: string, value: string) {
+    const current = getEntry(bus);
+    const next = addCustomNote(current, value);
+    if (next !== current) save(bus, next);
+    if (hasCustomNotes(next)) setPending((items) => items.filter((item) => item !== bus));
+  }
+  function removeNoteFor(bus: string, id: string) {
+    save(bus, removeCustomNote(getEntry(bus), id));
   }
   const isPending = (bus: string) => pending.includes(bus) && !flagBuses.includes(bus);
   const flagRows = requiresDetail(pickedFlag)
@@ -710,7 +748,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                   setPending([]);
                 }}
               >
-                Other (note)
+                Custom notes
               </Pressable>
             </div>
 
@@ -735,7 +773,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
             </div>
             {requiresDetail(pickedFlag) && (
               <div className={styles.byFlagHint}>
-                Add a bus, then {pickedFlag === NOTE_FLAG ? "type its note" : `pick its ${pickedFlag === "retorque" ? "tire(s)" : "reason"}`} below —
+                Add a bus, then {pickedFlag === NOTE_FLAG ? "add its custom flag" : `pick its ${pickedFlag === "retorque" ? "tire(s)" : "reason"}`} below —
                 it won&apos;t save until you do.
               </div>
             )}
@@ -743,7 +781,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
             <div className={styles.byFlagBar}>
               <span className={styles.byFlagCount}>
                 {flagBuses.length} bus{flagBuses.length === 1 ? "" : "es"}{" "}
-                {pickedFlag === NOTE_FLAG ? "with a note" : `flagged ${flagName(pickedFlag)}`}
+                {pickedFlag === NOTE_FLAG ? "with custom notes" : `flagged ${flagName(pickedFlag)}`}
               </span>
               {flagBuses.length > 0 && (
                 <Button
@@ -770,7 +808,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                       </span>
                       <div className={styles.spacer} />
                       <Pressable className={styles.removeBus} onPress={() => removeFromFlag(bus)}>
-                        {isPending(bus) ? "Cancel" : "Remove"}
+                        {isPending(bus) ? "Cancel" : pickedFlag === NOTE_FLAG ? "Remove all" : "Remove"}
                       </Pressable>
                     </div>
                     {pickedFlag === "retorque" &&
@@ -815,14 +853,29 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                       />
                     )}
                     {pickedFlag === NOTE_FLAG && (
-                      <NoteInput
-                        key={bus}
-                        value={entry.note}
-                        onSave={(n) => {
-                          save(bus, { ...getEntry(bus), note: n });
-                          if (n.trim()) setPending((p) => p.filter((b) => b !== bus));
-                        }}
-                      />
+                      <div className={styles.customNoteEditor} key={bus}>
+                        {customNoteItems(entry).length > 0 && (
+                          <div className={styles.activeFlags}>
+                            {customNoteItems(entry).map((item) => (
+                              <span
+                                className={styles.removableFlag}
+                                style={flagColorStyle(null) as CSSProperties}
+                                key={item.id}
+                              >
+                                {item.text}
+                                <Pressable
+                                  className={styles.removeFlag}
+                                  onPress={() => removeNoteFor(bus, item.id)}
+                                  aria-label={`Remove ${item.text}`}
+                                >
+                                  <X size={14} />
+                                </Pressable>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <CustomNoteComposer onAdd={(value) => addNoteFor(bus, value)} />
+                      </div>
                     )}
                   </div>
                 );
@@ -837,7 +890,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
       onOpenChange={setBulkConfirmOpen}
       title="Remove this flag from every bus?"
       description={`This will remove ${
-        pickedFlag === NOTE_FLAG ? "all notes" : flagName(pickedFlag)
+        pickedFlag === NOTE_FLAG ? "all custom notes" : flagName(pickedFlag)
       } from ${flagBuses.length} matching bus${flagBuses.length === 1 ? "" : "es"}.`}
       confirmLabel="Remove from all"
       tone="danger"

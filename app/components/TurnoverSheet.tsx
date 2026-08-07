@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { closestFlagMatch, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
+import { addCustomNote } from "../lib/customNoteFlags";
 import { fleetStats } from "../lib/fleetStats";
 import { History, Eraser, FileDown, MoreHorizontal, Check } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
@@ -175,12 +176,7 @@ export default function TurnoverSheet() {
       ? setInspectionOption(current, inspection.id)
       : matched
       ? { ...current, flags: Array.from(new Set([...(current.flags || []), matched.id])) }
-      : {
-          ...current,
-          note: current.note.trim() && current.note.trim() !== typed
-            ? `${current.note.trim()}; ${typed}`
-            : typed,
-        };
+      : addCustomNote(current, typed);
 
     const saved = await fetch("/api/flags", {
       method: "POST",

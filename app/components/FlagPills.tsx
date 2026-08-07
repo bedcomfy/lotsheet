@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { flagTier, flagName, retorqueTiresDisplay, inspMilesDisplay, flagColorStyle } from "../lib/grid";
+import { customNoteItems, operationalFlagIds } from "../lib/customNoteFlags";
 import type { FlagEntry } from "../lib/types";
 import styles from "./FlagPills.module.css";
 
@@ -22,12 +23,15 @@ function pillText(id: string, entry: FlagEntry): string {
 }
 
 // A bus's flags as severity-colored pills (most-serious first), optionally with
-// its free-text note as a plain pill. Renders nothing if there's nothing to show.
+// every custom note as its own neutral pill. Legacy single-note records are
+// folded into the same list so old and new data look identical.
 export default function FlagPills({ entry, showNote = true }: { entry?: FlagEntry | null; showNote?: boolean }) {
   if (!entry) return null;
-  const flags = (entry.flags || []).slice().sort((a, b) => tierRank(flagTier(a)) - tierRank(flagTier(b)));
-  const note = (entry.note || "").trim();
-  if (flags.length === 0 && !(showNote && note)) return null;
+  const flags = operationalFlagIds(entry.flags)
+    .slice()
+    .sort((a, b) => tierRank(flagTier(a)) - tierRank(flagTier(b)));
+  const notes = showNote ? customNoteItems(entry) : [];
+  if (flags.length === 0 && notes.length === 0) return null;
   return (
     <>
       {flags.map((id) => (
@@ -39,7 +43,11 @@ export default function FlagPills({ entry, showNote = true }: { entry?: FlagEntr
           {pillText(id, entry)}
         </span>
       ))}
-      {showNote && note && <span className={`${styles.pill} ${styles.note}`}>“{note}”</span>}
+      {notes.map((note) => (
+        <span className={`${styles.pill} ${styles.note}`} key={note.id}>
+          “{note.text}”
+        </span>
+      ))}
     </>
   );
 }

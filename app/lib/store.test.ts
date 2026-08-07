@@ -9,6 +9,7 @@ import {
   setBusFlags,
   setState,
 } from "./store";
+import { customNoteFlagId, customNoteText } from "./customNoteFlags";
 
 // Runs against an in-memory PGlite database (PGLITE_DATA="memory" in
 // vitest.config.ts) — the same Drizzle queries production runs on Neon.
@@ -28,6 +29,24 @@ describe("store (PGlite in-memory)", () => {
 
     await setBusFlags("6510", { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" });
     expect((await getFlags())["6510"]).toBeUndefined();
+  });
+
+  it("round-trips multiple custom note flags with punctuation", async () => {
+    const notes = [
+      customNoteFlagId("No power, won't probe"),
+      customNoteFlagId("Door / ramp sensor"),
+    ];
+    await setBusFlags("6511", {
+      flags: notes,
+      note: "",
+      inspMiles: null,
+      holdReason: "",
+      retorqueTires: [],
+      inspOption: "",
+    });
+
+    const saved = (await getFlags())["6511"];
+    expect(saved.flags.map(customNoteText)).toEqual(["No power, won't probe", "Door / ramp sensor"]);
   });
 
   it("round-trips keyed state", async () => {

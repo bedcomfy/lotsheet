@@ -42,8 +42,8 @@ export interface LotSheet {
 // A bus's flags double as its "reason" on the Turnover sheet. Flags persist
 // independently of where a bus is placed and are only cleared by a user.
 export interface FlagEntry {
-  flags: string[]; // flag ids (e.g. "hold", "inspection", "retorque")
-  note: string; // free-text "Other" note
+  flags: string[]; // operational ids plus encoded, independently removable custom notes
+  note: string; // legacy single-note field; kept readable while old records remain
   inspMiles: number | null; // legacy inspection mileage detail
   holdReason: string; // detail for the Hold flag
   retorqueTires: string[]; // tire ids for the Retorque flag (rf/cf/rr/cr)

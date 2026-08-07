@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { BusMasterProvider } from "../components/BusMasterProvider";
 import FlagPills from "../components/FlagPills";
+import { customNoteFlagId } from "../lib/customNoteFlags";
 import {
   GlobalBusResult,
   type GlobalBusDetails,
@@ -56,8 +57,14 @@ export const BusWithLongFlags: Story = {
       location: "Bay 10",
       status: "notReady",
       entry: {
-        flags: ["hold", "inspection", "retorque"],
-        note: "Verify curbside door before pull-out",
+        flags: [
+          "hold",
+          "inspection",
+          "retorque",
+          customNoteFlagId("Verify curbside door before pull-out"),
+          customNoteFlagId("Radio cuts out intermittently"),
+        ],
+        note: "",
         inspMiles: 300,
         holdReason: "Parts",
         retorqueTires: ["lf", "rf"],
@@ -76,8 +83,14 @@ export const FlagPillStates: Story = {
         <div className="ui-story-row">
           <FlagPills
             entry={{
-              flags: ["hold", "inspection", "retorque"],
-              note: "No power after road call",
+              flags: [
+                "hold",
+                "inspection",
+                "retorque",
+                customNoteFlagId("No power after road call"),
+                customNoteFlagId("Won't probe"),
+              ],
+              note: "Legacy note remains readable",
               inspMiles: 300,
               holdReason: "Parts",
               retorqueTires: ["lf", "rf"],

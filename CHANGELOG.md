@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.20.3 - 2026-08-07
+
+- Freeform bus notes now save as independent custom flag chips. Pressing Enter
+  or Add commits the note, clears the field for the next entry, and lets each
+  note be removed without disturbing the bus's other notes or maintenance
+  flags.
+- Turnover fast entry uses the same behavior: recognized text still selects its
+  matching flag or inspection code, while unmatched text becomes a removable
+  custom flag instead of being merged into one long note.
+- Existing single-note records remain readable and removable. Custom notes stay
+  concise on Lot Sheet grid cells, appear in full-detail sheet and fleet views,
+  sync through the existing realtime flag channel, and require no production
+  database migration.
+- Added data-layer, Storybook, and browser regressions for multiple notes,
+  punctuation-safe persistence, legacy compatibility, individual removal, and
+  bulk custom-note clearing.
+
 ## 0.20.2 - 2026-08-07
 
 - Removed the duplicate iPhone safe-area padding between the Lot Sheet action

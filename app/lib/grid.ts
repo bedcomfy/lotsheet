@@ -10,6 +10,13 @@
 
 import type { FlagEntry, FlagMap } from "./types";
 import { OBJECT_CODE_FLAGS, objectCodeFlagId, objectCodeFromFlagId } from "./objectCodes";
+import {
+  customNoteItems,
+  customNoteText,
+  hasCustomNotes,
+  isCustomNoteFlag,
+  operationalFlagIds,
+} from "./customNoteFlags";
 
 export const SLOTS: (number | string | null)[][] = [
   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, null],
@@ -404,6 +411,7 @@ export const ALL_FLAGS: FlagDef[] = [...FLAGS, ...OBJECT_CODE_FLAGS];
 // always a hold, so it's now a hold reason.)
 export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
 export function flagLabel(id: string | null | undefined): string {
+  if (isCustomNoteFlag(id)) return customNoteText(id);
   const override = flagConfigEntry(id);
   if (override?.label) return override.label;
   const objectCode = objectCodeFromFlagId(id);
@@ -421,6 +429,7 @@ const FLAG_NAMES: Record<string, string> = {
   cleaning: "Needs cleaning", rfs: "Ready for service",
 };
 export function flagName(id: string): string {
+  if (isCustomNoteFlag(id)) return customNoteText(id);
   const override = flagConfigEntry(id);
   if (override?.name) return override.name;
   const objectCode = objectCodeFromFlagId(id);
@@ -623,6 +632,7 @@ export const ASSIGNABLE_FLAGS = ALL_FLAGS.filter((f) => f.id !== "none");
 //   med (amber) — needs attention or in progress
 //   low (blue)  — routine service
 export function flagTier(id: string): FlagTier {
+  if (isCustomNoteFlag(id)) return "low";
   const override = flagConfigEntry(id);
   if (override?.tier) return override.tier;
   if (objectCodeFromFlagId(id)) return "low";
@@ -640,6 +650,7 @@ export function defaultFlagColor(id: string): string {
 }
 
 export function flagColor(id: string | null | undefined): string {
+  if (isCustomNoteFlag(id)) return "#6B7280";
   const override = flagConfigEntry(id);
   return override?.color || (id ? defaultFlagColor(id) : "#6B7280");
 }
@@ -810,24 +821,26 @@ export function pinnedFlagText(entry: FlagEntry | null | undefined): string {
 export function mostSevereFlag(ids: string[] | null | undefined): string | null {
   let best: string | null = null;
   let rank = Infinity;
-  for (const f of ids || []) {
+  const operational = operationalFlagIds(ids);
+  for (const f of operational) {
     const r = flagSeverityRank(f);
     if (r < rank) {
       rank = r;
       best = f;
     }
   }
-  return best || (ids && ids[0]) || null;
+  return best || operational[0] || null;
 }
 
-// A bus entry is { flags: [ids], note: "custom text" }.
-// Shows the most-severe flag + a count of the rest, with a trailing "*" when a
-// custom note exists. e.g. "INSPECTION +2", "NEEDS CLEANING +1*", "OTHER*".
+// Shows the most-severe operational flag + a count of the rest, with a trailing
+// "*" when custom-note flags exist. Custom text never spills into the compact
+// Lot Sheet cells; a note-only bus reads "OTHER*".
 export function flagDisplay(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
-  const flags = entry.flags || [];
-  const hasNote = !!(entry.note && entry.note.trim());
-  const count = flags.length + (hasNote ? 1 : 0);
+  const flags = operationalFlagIds(entry.flags);
+  const noteCount = customNoteItems(entry).length;
+  const hasNote = noteCount > 0;
+  const count = flags.length + noteCount;
   if (count === 0) return "";
   const topLabel = flags.length > 0 ? flagLabel(mostSevereFlag(flags)) : "OTHER";
   const extra = count - 1;
@@ -835,7 +848,7 @@ export function flagDisplay(entry: FlagEntry | null | undefined): string {
 }
 
 export function entryHasContent(entry: FlagEntry | null | undefined): boolean {
-  return !!(entry && ((entry.flags && entry.flags.length) || (entry.note && entry.note.trim())));
+  return !!(entry && (operationalFlagIds(entry.flags).length || hasCustomNotes(entry)));
 }
 
 // Whether a bus is flagged for inspection.
@@ -879,9 +892,8 @@ export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
 // "*"), e.g. "INSPECTION, NEEDS CLEANING, A/C, broken mirror". Empty if none.
 export function flagsAndNote(entry: FlagEntry | null | undefined): string {
   if (!entry) return "";
-  const parts = flagListLabels(entry);
-  const note = entry.note && entry.note.trim();
-  if (note) parts.push(note);
+  const parts = flagListLabels({ ...entry, flags: operationalFlagIds(entry.flags) });
+  parts.push(...customNoteItems(entry).map((item) => item.text));
   return parts.join(", ");
 }
 
@@ -906,10 +918,11 @@ export interface FlagGroup {
 export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGroup[] {
   const groups: Record<string, string[]> = {};
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
-    const hasFlags = entry && entry.flags && entry.flags.length;
-    const hasNote = entry && entry.note && entry.note.trim();
+    const operational = operationalFlagIds(entry?.flags);
+    const hasFlags = operational.length > 0;
+    const hasNote = hasCustomNotes(entry);
     if (!hasFlags && !hasNote) continue;
-    const cat = (hasFlags ? mostSevereFlag(entry.flags) : "other") || "other";
+    const cat = (hasFlags ? mostSevereFlag(operational) : "other") || "other";
     (groups[cat] = groups[cat] || []).push(bus);
   }
   const order = [...FLAG_SEVERITY, "other"];
