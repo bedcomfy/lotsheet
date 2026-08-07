@@ -3,18 +3,12 @@
 import { Maximize2, Minimize2 } from "lucide-react";
 import { Button as AriaButton } from "react-aria-components";
 import { useEffect, useRef, useState } from "react";
-import type {
-  CSSProperties,
-  MouseEvent as ReactMouseEvent,
-  TouchEvent as ReactTouchEvent,
-} from "react";
+import type { CSSProperties } from "react";
 import type { PaperViewportProps } from "./types";
 import styles from "./PaperViewport.module.css";
 
 const CSS_PIXELS_PER_INCH = 96;
 const MOBILE_QUERY = "(max-width: 699px)";
-const DOUBLE_TAP_DELAY_MS = 320;
-const DOUBLE_TAP_DISTANCE_PX = 28;
 
 type MobilePaperView = "actual" | "fit";
 
@@ -38,7 +32,6 @@ export function PaperViewport({
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const pendingFocusRef = useRef<PendingFocus | null>(null);
-  const lastTapRef = useRef({ at: 0, x: 0, y: 0 });
   const [mobileView, setMobileView] = useState<MobilePaperView>("actual");
   const [geometry, setGeometry] = useState({
     scale: 1,
@@ -154,11 +147,6 @@ export function PaperViewport({
     };
   }, [geometry.scale, mobileView]);
 
-  function isInteractiveTarget(target: EventTarget | null) {
-    return target instanceof Element
-      && Boolean(target.closest("button, input, select, textarea, [role='button'], [contenteditable='true']"));
-  }
-
   function setMobileZoom(
     next: MobilePaperView,
     clientX?: number,
@@ -196,29 +184,6 @@ export function PaperViewport({
     setMobileZoom(mobileView === "actual" ? "fit" : "actual", clientX, clientY);
   }
 
-  function handleDoubleClick(event: ReactMouseEvent<HTMLDivElement>) {
-    if (isInteractiveTarget(event.target)) return;
-    event.preventDefault();
-    toggleMobileZoom(event.clientX, event.clientY);
-  }
-
-  function handleTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
-    if (!mobileViewer || isInteractiveTarget(event.target)) return;
-    const touch = event.changedTouches[0];
-    if (!touch) return;
-
-    const now = Date.now();
-    const last = lastTapRef.current;
-    const distance = Math.hypot(touch.clientX - last.x, touch.clientY - last.y);
-    if (now - last.at <= DOUBLE_TAP_DELAY_MS && distance <= DOUBLE_TAP_DISTANCE_PX) {
-      event.preventDefault();
-      lastTapRef.current = { at: 0, x: 0, y: 0 };
-      toggleMobileZoom(touch.clientX, touch.clientY);
-      return;
-    }
-    lastTapRef.current = { at: now, x: touch.clientX, y: touch.clientY };
-  }
-
   const sheetKitStyle = {
     "--sheetkit-scale": geometry.scale,
     "--sheetkit-paper-width": `${geometry.width}px`,
@@ -243,8 +208,6 @@ export function PaperViewport({
         data-mobile-view={mobileView}
         aria-label={label}
         style={sheetKitStyle}
-        onDoubleClick={mobileViewer ? handleDoubleClick : undefined}
-        onTouchEnd={mobileViewer ? handleTouchEnd : undefined}
       >
         <div ref={stageRef} className={styles.stage}>
           <div ref={canvasRef} className={styles.canvas}>

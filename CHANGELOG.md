@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.20.1 - 2026-08-06
+
+- Removed double-tap zoom from the Lot Sheet and every SheetKit paper viewer.
+  Fit and 100% remain available through the explicit on-screen control, so
+  normal taps, scrolling, selection, and drag gestures no longer compete with
+  a hidden zoom gesture.
+- Rebuilt long mobile editors as bounded dialog frames with one intentional
+  scroll region. Flag lists and lot lists now scroll independently while their
+  search controls, titles, and Done buttons remain reachable above the iPhone
+  keyboard.
+- Removed duplicated bottom safe-area spacing while the keyboard is visible,
+  contained overlay overscroll so swipes cannot leak into the sheet behind a
+  menu, and kept the mobile multi-select bar in the page layout instead of over
+  the paper. The Fit control now hides during selection rather than colliding
+  with bulk actions.
+- Added Storybook and Playwright regressions for keyboard-reduced viewports,
+  long flag and lot lists, single-owner scrolling, explicit zoom controls, and
+  selection-mode geometry. Sheet data, realtime synchronization, printable
+  layouts, and PDF output are unchanged.
+
 ## 0.20.0 - 2026-08-06
 
 - Added confirmed one-tap clearing for North Lot, East Lot, Fence, R/C,

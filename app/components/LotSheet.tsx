@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
+import type { CSSProperties } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -239,7 +239,6 @@ export default function LotSheet() {
   const [mobileSheetView, setMobileSheetView] = useState<"pan" | "fit">("pan");
   const [mobileSearchRequest, setMobileSearchRequest] = useState(0);
   const sheetScrollRef = useRef<HTMLDivElement>(null);
-  const lastTouchTapRef = useRef<{ at: number; x: number; y: number } | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const prewarmTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); // debounce for background PDF pre-build
   const lastSyncRef = useRef<string | null>(null); // JSON of the sheet known to match the server
@@ -1381,65 +1380,17 @@ export default function LotSheet() {
     }
   }
 
-  function setMobileZoom(next: "pan" | "fit", clientX?: number, clientY?: number) {
+  function setMobileZoom(next: "pan" | "fit") {
     const viewport = sheetScrollRef.current;
     if (!viewport || next === mobileSheetView) return;
 
-    if (next === "fit" || clientX == null || clientY == null) {
-      setMobileSheetView(next);
-      if (next === "fit") {
-        requestAnimationFrame(() => {
-          viewport.scrollLeft = 0;
-          viewport.scrollTop = 0;
-        });
-      }
-      return;
-    }
-
-    const paper = viewport.querySelector<HTMLElement>(".lot-sheet-front");
-    if (!paper) {
-      setMobileSheetView(next);
-      return;
-    }
-    const paperRect = paper.getBoundingClientRect();
-    const xRatio = Math.max(0, Math.min(1, (clientX - paperRect.left) / paperRect.width));
-    const yRatio = Math.max(0, Math.min(1, (clientY - paperRect.top) / paperRect.height));
     setMobileSheetView(next);
-
-    requestAnimationFrame(() => {
+    if (next === "fit") {
       requestAnimationFrame(() => {
-        void viewport.scrollWidth;
-        const expandedPaper = viewport.querySelector<HTMLElement>(".lot-sheet-front");
-        if (!expandedPaper) return;
-        viewport.scrollLeft =
-          expandedPaper.offsetLeft + expandedPaper.offsetWidth * xRatio - viewport.clientWidth / 2;
-        viewport.scrollTop =
-          expandedPaper.offsetTop + expandedPaper.offsetHeight * yRatio - viewport.clientHeight / 2;
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
       });
-    });
-  }
-
-  function toggleMobileZoomAt(clientX: number, clientY: number) {
-    setMobileZoom(mobileSheetView === "fit" ? "pan" : "fit", clientX, clientY);
-  }
-
-  function onMobileDoubleClick(event: ReactMouseEvent<HTMLDivElement>) {
-    if ((event.target as HTMLElement).closest("input, button, select, textarea")) return;
-    toggleMobileZoomAt(event.clientX, event.clientY);
-  }
-
-  function onMobileTouchEnd(event: ReactTouchEvent<HTMLDivElement>) {
-    if (event.changedTouches.length !== 1) return;
-    const touch = event.changedTouches[0];
-    const now = Date.now();
-    const previous = lastTouchTapRef.current;
-    lastTouchTapRef.current = { at: now, x: touch.clientX, y: touch.clientY };
-    if (!previous) return;
-    const distance = Math.hypot(touch.clientX - previous.x, touch.clientY - previous.y);
-    if (now - previous.at > 300 || distance > 28) return;
-    event.preventDefault();
-    lastTouchTapRef.current = null;
-    toggleMobileZoomAt(touch.clientX, touch.clientY);
+    }
   }
 
   // Global header search fires this when we're already on the Lot Sheet, so
@@ -1576,8 +1527,6 @@ export default function LotSheet() {
         data-paper-viewport=""
         data-paper-profile="letter-portrait"
         style={{ "--fz": `${FONT_BASE}px` } as CSSProperties}
-        onDoubleClick={onMobileDoubleClick}
-        onTouchEndCapture={onMobileTouchEnd}
       >
         <div
           className={`sheet lot-sheet-front ${showMaint ? "sheet--maint" : ""}`}
@@ -1949,7 +1898,11 @@ export default function LotSheet() {
 
       {/* Multi-select action bar: tap buses on the grid, then act on all of them */}
       {selectMode && (
-        <div className={`${chromeStyles.selectBar} no-print`}>
+        <div
+          className={`${chromeStyles.selectBar} no-print`}
+          role="toolbar"
+          aria-label="Selected bus actions"
+        >
           <span className={chromeStyles.selectCount}>
             {selected.length ? `${selected.length} selected` : "Tap spots to select"}
           </span>

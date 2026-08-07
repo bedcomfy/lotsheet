@@ -173,6 +173,7 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
       title={title}
       description={subtitle || "Buses print on the back in the order you add them."}
       size="md"
+      scrollMode="contained"
       bodyClassName={styles.body}
       footer={(close) => (
         <>
@@ -242,7 +243,7 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
 
         <DndContext id="lot-editor-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
           <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
-            <div className={styles.list}>
+            <div className={styles.list} data-dialog-scroll-region="">
               {list.length === 0 && (
                 <div className={styles.empty}>No buses yet — type a number and press Add.</div>
               )}

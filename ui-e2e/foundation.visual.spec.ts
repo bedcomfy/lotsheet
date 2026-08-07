@@ -92,6 +92,51 @@ test("long dialogs keep their actions visible on phones", async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test("contained phone dialogs keep one scroll owner above the keyboard", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(
+    storyUrl("patterns-workflow-regressions--phone-dialog-with-long-locations", {
+      theme: "dark",
+      safeArea: "phone",
+    }),
+  );
+
+  await page.evaluate(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--ui-viewport-height", "500px");
+    root.style.setProperty("--ui-viewport-top", "0px");
+    root.setAttribute("data-ui-keyboard-open", "");
+  });
+
+  const dialog = page.getByRole("dialog");
+  const body = dialog.locator("[data-dialog-body]");
+  const scrollRegion = dialog.locator("[data-dialog-scroll-region]");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Done" })).toBeVisible();
+
+  const dialogBox = await dialog.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(500);
+
+  const bodyGeometry = await body.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(bodyGeometry.scrollHeight - bodyGeometry.clientHeight).toBeLessThanOrEqual(1);
+
+  const scrollGeometry = await scrollRegion.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return {
+      max: element.scrollHeight - element.clientHeight,
+      top: element.scrollTop,
+    };
+  });
+  expect(scrollGeometry.max).toBeGreaterThan(0);
+  expect(scrollGeometry.top).toBeGreaterThan(0);
+});
+
 test("mobile navigation directories keep their footer reachable", async ({
   page,
 }) => {
@@ -192,6 +237,9 @@ test("Paper Lab pans at 100% and fits Legal paper without changing its ratio", a
   }));
   expect(actualGeometry.scrollWidth).toBeGreaterThan(actualGeometry.clientWidth);
   expect(actualGeometry.scrollHeight).toBeGreaterThan(actualGeometry.clientHeight);
+
+  await viewport.dispatchEvent("dblclick");
+  await expect(viewport).toHaveAttribute("data-mobile-view", "actual");
 
   await page.getByRole("button", { name: "Fit whole sheet" }).click();
   await expect(viewport).toHaveAttribute("data-mobile-view", "fit");

@@ -16,12 +16,14 @@
 }
 
 .innerFit {
-  flex: none;
+  min-height: 0;
+  flex: 1 1 auto;
 }
 
 .innerFit .list {
-  flex: none;
-  overflow: visible;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
 }
 
 .detailBar {
@@ -47,6 +49,7 @@
   scrollbar-color: var(--ui-border-strong) transparent;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
 }
 
 .empty {
@@ -524,17 +527,6 @@
 @media (max-width: 699px) {
   .body {
     min-height: 0;
-  }
-
-  .innerFit {
-    min-height: 0;
-    flex: 1 1 auto;
-  }
-
-  .innerFit .list {
-    min-height: 0;
-    flex: 1 1 auto;
-    overflow-y: auto;
   }
 
   .tabs,

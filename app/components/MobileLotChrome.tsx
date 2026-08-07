@@ -82,6 +82,7 @@ export default function MobileLotChrome(props: MobileLotChromeProps) {
       <Chip
         className={`${styles.zoom} no-print`}
         onPress={() => props.onZoom(props.zoom === "fit" ? "pan" : "fit")}
+        data-suppressed={props.selectMode ? "true" : undefined}
         aria-label={
           props.zoom === "fit"
             ? "View sheet at 100 percent"

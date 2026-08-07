@@ -213,7 +213,9 @@
   }
 
   .selectBar {
-    bottom: calc(var(--ui-mobile-nav-offset) + var(--ui-space-2));
+    position: relative;
+    bottom: auto;
+    flex: 0 0 auto;
     max-height: min(45vh, calc(var(--ui-viewport-height) - 8rem));
     overflow-y: auto;
     overscroll-behavior: contain;

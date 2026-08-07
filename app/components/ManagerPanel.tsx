@@ -572,6 +572,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           : "Search by bus or manage every bus carrying a flag."
       }
       size="lg"
+      scrollMode="contained"
       bodyClassName={styles.body}
       footer={(close) => (
         <Button variant="primary" onPress={close}>
@@ -605,7 +606,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
 
         {tab === "bus" &&
           (openBus ? (
-            <div className={styles.list}>
+            <div className={styles.list} data-dialog-scroll-region="">
               <FlagPicker key={openBus} entry={getEntry(openBus)} onChange={(e) => save(openBus, e)} searchRef={flagSearchRef} />
             </div>
           ) : (
@@ -620,7 +621,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
                 autoFocus
                 onChange={(value) => setQuery(sanitizeBus(value))}
               />
-              <div className={styles.list}>
+              <div className={styles.list} data-dialog-scroll-region="">
                 {busList.length === 0 && (
                   <div className={styles.empty}>
                     {q ? "No buses match." : "No flagged buses yet — search a bus number to flag it."}
@@ -757,7 +758,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
               )}
             </div>
 
-            <div className={styles.list}>
+            <div className={styles.list} data-dialog-scroll-region="">
               {flagRows.map((bus) => {
                 const entry = getEntry(bus);
                 return (

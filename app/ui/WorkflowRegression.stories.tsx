@@ -103,13 +103,15 @@ function PhoneLongDialogFixture() {
         onOpenChange={setOpen}
         title="Move bus 6427"
         description="Choose a location. The list scrolls while Done stays reachable."
+        scrollMode="contained"
+        bodyClassName={styles.containedDialogBody}
         footer={(close) => (
           <Button variant="primary" onPress={close}>
             Done
           </Button>
         )}
       >
-        <div className={styles.list}>
+        <div className={styles.dialogList} data-dialog-scroll-region="">
           {Array.from({ length: 34 }, (_, index) => (
             <Pressable className={styles.row} key={index}>
               <MapPin aria-hidden="true" />
@@ -254,18 +256,19 @@ export const PhoneDialogWithLongLocations: Story = {
     await waitFor(async () => {
       await expect(canvas.getByRole("button", { name: "Done" })).toBeVisible();
     });
-    const dialogBody = canvasElement.ownerDocument.querySelector<HTMLElement>(
-      "[data-dialog-body]",
+    const scrollRegion = canvasElement.ownerDocument.querySelector<HTMLElement>(
+      "[data-dialog-scroll-region]",
     );
-    await expect(dialogBody).not.toBeNull();
-    await expect(dialogBody!.scrollHeight).toBeGreaterThan(dialogBody!.clientHeight);
+    await expect(scrollRegion).not.toBeNull();
+    await expect(scrollRegion!.scrollHeight).toBeGreaterThan(scrollRegion!.clientHeight);
     await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute(
       "data-ui-overlay-open",
     );
     await expect(
       canvas.getByRole("button", { name: /East lot position 34/ }),
     ).toBeInTheDocument();
-    dialogBody!.scrollTop = dialogBody!.scrollHeight;
+    scrollRegion!.scrollTop = scrollRegion!.scrollHeight;
+    await expect(scrollRegion!.scrollTop).toBeGreaterThan(0);
     await userEvent.click(canvas.getByRole("button", { name: "Done" }));
     await waitFor(async () => {
       await expect(canvas.getByRole("button", { name: "Reopen locations" })).toBeVisible();

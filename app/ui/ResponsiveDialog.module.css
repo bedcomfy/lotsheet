@@ -14,6 +14,8 @@
     calc(var(--ui-space-4) + var(--ui-safe-left));
   background: rgb(5 15 28 / 52%);
   backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .overlay[data-entering] {
@@ -56,6 +58,18 @@
 }
 
 .modal[data-size="full"] .dialog {
+  height: 100%;
+  max-height: none;
+}
+
+.modal[data-scroll-mode="contained"] {
+  height: min(
+    45rem,
+    calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-safe-bottom) - var(--ui-space-8))
+  );
+}
+
+.modal[data-scroll-mode="contained"] .dialog {
   height: 100%;
   max-height: none;
 }
@@ -119,6 +133,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.body[data-scroll-mode="contained"] {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .footer {
   display: flex;
   flex: 0 0 auto;
@@ -136,7 +155,7 @@
     padding:
       calc(var(--ui-space-3) + var(--ui-safe-top))
       var(--ui-safe-right)
-      var(--ui-safe-bottom)
+      0
       var(--ui-safe-left);
   }
 
@@ -150,6 +169,10 @@
   }
 
   .modal[data-size="full"] {
+    height: calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-space-3));
+  }
+
+  .modal[data-scroll-mode="contained"] {
     height: calc(var(--ui-viewport-height) - var(--ui-safe-top) - var(--ui-space-3));
   }
 
@@ -169,6 +192,10 @@
   .footer {
     padding: var(--ui-space-3) var(--ui-space-4)
       calc(var(--ui-space-3) + var(--ui-safe-bottom));
+  }
+
+  :global(html[data-ui-keyboard-open]) .footer {
+    padding-bottom: var(--ui-space-3);
   }
 }
 

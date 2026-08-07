@@ -21,6 +21,7 @@ export interface ResponsiveDialogProps {
   footer?: ReactNode | ((close: () => void) => ReactNode);
   isDismissable?: boolean;
   size?: "sm" | "md" | "lg" | "full";
+  scrollMode?: "body" | "contained";
   bodyClassName?: string;
 }
 
@@ -33,6 +34,7 @@ export function ResponsiveDialog({
   footer,
   isDismissable = true,
   size = "md",
+  scrollMode = "body",
   bodyClassName,
 }: ResponsiveDialogProps) {
   useOverlayPresence(isOpen);
@@ -48,6 +50,7 @@ export function ResponsiveDialog({
       <Modal
         className={styles.modal}
         data-size={size}
+        data-scroll-mode={scrollMode}
       >
         <Dialog className={styles.dialog}>
           <header className={styles.header}>
@@ -70,6 +73,7 @@ export function ResponsiveDialog({
           <div
             className={`${styles.body} ${bodyClassName ?? ""}`.trim()}
             data-dialog-body=""
+            data-scroll-mode={scrollMode}
           >
             {children}
           </div>

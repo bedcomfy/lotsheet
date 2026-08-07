@@ -260,9 +260,42 @@ test("mobile lot tools keep every action and the footer reachable", async ({
   await expect(dialog).toBeHidden();
 });
 
-test("mobile fill rows and lot editor keep fixed actions on screen", async ({
+test("mobile selection actions do not cover the paper or zoom control", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Tools", exact: true }).click();
+  await page.getByRole("button", { name: "Select buses" }).click();
+
+  const viewport = page.locator("[data-paper-viewport]");
+  const actions = page.getByRole("toolbar", { name: "Selected bus actions" });
+  await expect(actions).toBeVisible();
+  await expect(page.getByRole("button", { name: "Fit whole sheet" })).toBeHidden();
+
+  const viewportBox = await viewport.boundingBox();
+  const actionsBox = await actions.boundingBox();
+  expect(viewportBox).not.toBeNull();
+  expect(actionsBox).not.toBeNull();
+  expect(viewportBox!.y + viewportBox!.height).toBeLessThanOrEqual(actionsBox!.y);
+
+  await actions.getByRole("button", { name: "Done" }).click();
+  await expect(actions).toBeHidden();
+  await expect(page.getByRole("button", { name: "Fit whole sheet" })).toBeVisible();
+});
+
+test("mobile fill rows and lot editor keep fixed actions on screen", async ({
+  page,
+  request,
+}) => {
+  await request.patch("/api/sheet", {
+    data: {
+      lots: {
+        east: Array.from({ length: 24 }, (_, index) => String(7000 + index)),
+      },
+      actor: "e2e-long-lot",
+    },
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
@@ -294,10 +327,76 @@ test("mobile fill rows and lot editor keep fixed actions on screen", async ({
   await expect(lotDialog).toBeVisible();
   await expect(lotDialog.getByRole("button", { name: "Done" })).toBeVisible();
 
+  const lotScrollRegion = lotDialog.locator("[data-dialog-scroll-region]");
+  const lotScroll = await lotScrollRegion.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return {
+      max: element.scrollHeight - element.clientHeight,
+      top: element.scrollTop,
+    };
+  });
+  expect(lotScroll.max).toBeGreaterThan(0);
+  expect(lotScroll.top).toBeGreaterThan(0);
+
   const box = await lotDialog.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y + box!.height).toBeLessThanOrEqual(844);
+});
+
+test("mobile flag editor scrolls above a reduced keyboard viewport", async ({
+  page,
+  request,
+}) => {
+  for (let index = 0; index < 18; index += 1) {
+    await request.post("/api/flags", {
+      data: {
+        bus: String(7100 + index),
+        flags: ["hold"],
+        note: `Flag editor scroll fixture ${index + 1}`,
+        holdReason: "",
+        retorqueTires: [],
+        inspOption: "",
+        actor: "e2e-flag-scroll",
+      },
+    });
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Flags", exact: true }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Edit flags" });
+  await expect(dialog).toBeVisible();
+  await page.evaluate(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--ui-viewport-height", "500px");
+    root.style.setProperty("--ui-viewport-top", "0px");
+    root.setAttribute("data-ui-keyboard-open", "");
+  });
+
+  const body = dialog.locator("[data-dialog-body]");
+  const scrollRegion = dialog.locator("[data-dialog-scroll-region]");
+  const bodyGeometry = await body.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(bodyGeometry.scrollHeight - bodyGeometry.clientHeight).toBeLessThanOrEqual(1);
+
+  const scrollGeometry = await scrollRegion.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    return {
+      max: element.scrollHeight - element.clientHeight,
+      top: element.scrollTop,
+    };
+  });
+  expect(scrollGeometry.max).toBeGreaterThan(0);
+  expect(scrollGeometry.top).toBeGreaterThan(0);
+
+  const dialogBox = await dialog.boundingBox();
+  expect(dialogBox).not.toBeNull();
+  expect(dialogBox!.y + dialogBox!.height).toBeLessThanOrEqual(500);
+  await expect(dialog.getByRole("button", { name: "Done" })).toBeVisible();
 });
 
 test("print mode excludes application chrome", async ({ page }) => {
@@ -443,6 +542,9 @@ test("mobile paper previews pan at 100% and fit clear of navigation", async ({
     }));
     expect(panGeometry.scrollWidth).toBeGreaterThan(panGeometry.clientWidth);
     expect(panGeometry.scrollHeight).toBeGreaterThan(panGeometry.clientHeight);
+
+    await viewport.dispatchEvent("dblclick");
+    await expect(viewport).toHaveAttribute("data-mobile-view", "actual");
 
     const navigation = await page
       .getByRole("navigation", { name: "Mobile navigation" })

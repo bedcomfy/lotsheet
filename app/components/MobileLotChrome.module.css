@@ -15,6 +15,10 @@
     box-shadow: var(--ui-shadow-md);
   }
 
+  .zoom[data-suppressed="true"] {
+    display: none;
+  }
+
   .actionBar {
     position: relative;
     z-index: 35;
