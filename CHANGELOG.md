@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.20.6 - 2026-08-12
+
+- Restored the Turnover Sheet bay layout with separate `1ST HALF` and
+  `HOLDS / NOTES` fields. The notes area has no second vehicle-number column,
+  and existing second-half text is preserved as holds/notes.
+- Replaced the unsupported centered service asterisk with a PDF-safe ASCII
+  marker. Multiple service flags now print as `*` on Fuel, DEF, and the Service
+  Lane summary instead of a missing-glyph box.
+
 ## 0.20.5 - 2026-08-12
 
 - Restored the asterisk beside bus numbers on the Service Lane flag summary

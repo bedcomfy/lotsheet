@@ -947,7 +947,7 @@ export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGro
 // ---- Fuel / DEF flag display ----
 // The fuel/DEF sheets show ONE letter to the left of the bus number: R / H / I
 // for a single retorque / hold / inspection flag, or "*" when the bus has more
-// than one of those three.
+// than one service-lane flag.
 const FUEL_LETTERS: [string, string][] = [
   ["retorque", "R"],
   ["hold", "H"],
@@ -959,9 +959,9 @@ export function fuelIndicator(entry: FlagEntry | null | undefined): string {
   if (!entry || !entry.flags) return "";
   const hits = FUEL_LETTERS.filter(([id]) => entry.flags.includes(id));
   if (hits.length === 0) return "";
-  // U+2217 (∗) is the vertically-centered asterisk, so it lines up with the
-  // bus number instead of riding high like a normal "*".
-  if (hits.length > 1) return "∗";
+  // Keep this as ASCII. The previously centered Unicode glyph was not present
+  // in the PDF font and rendered as a missing-character box in Chromium PDFs.
+  if (hits.length > 1) return "*";
   return hits[0][1];
 }
 

@@ -374,6 +374,10 @@
   transform: translateY(-1px);
   /* Barred capital I (bold top + bottom slab bars) so I isn't read as l. */
 }
+.fuelt__indl--asterisk {
+  font-family: Arial, Helvetica, sans-serif;
+  transform: translateY(1px);
+}
 .fuelt__in {
   width: 100%;
   border: none;
@@ -875,7 +879,7 @@ td.turnt__head {
 .turnt__bayno {
   flex: 0 0 auto;
 }
-/* The bay bus's flags under REASON — auto from the flag system, tap to edit.
+/* The bay bus's flags under 1ST HALF — auto from the flag system, tap to edit.
    The input next to it stays free for extra hand-typed notes. */
 .turnt__bayflag {
   flex: 0 1 auto;

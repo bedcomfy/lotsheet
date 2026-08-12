@@ -179,16 +179,19 @@ test("small printable fields prevent focus zoom without disabling pinch zoom", a
   await expect.poll(() => viewportMeta.getAttribute("content")).toBe(original);
 });
 
-test("turnover bay reasons span the remaining sheet width", async ({ page }) => {
+test("turnover bays keep first-half and holds/notes fields", async ({ page }) => {
   await page.goto("/turnover");
 
   const bayHeader = page.locator("tr.turnt__head--plain");
   await expect(bayHeader).toContainText("BAY");
-  await expect(bayHeader).toContainText("REASON");
-  await expect(bayHeader).not.toContainText("1ST HALF");
+  await expect(bayHeader).toContainText("1ST HALF");
+  await expect(bayHeader).toContainText("HOLDS / NOTES");
+  await expect(bayHeader).not.toContainText("REASON");
   await expect(bayHeader).not.toContainText("2ND HALF");
-  await expect(bayHeader.locator("td")).toHaveCount(3);
-  await expect(bayHeader.locator("td").last()).toHaveAttribute("colspan", "7");
+  await expect(bayHeader).not.toContainText("VEH #");
+  await expect(bayHeader.locator("td")).toHaveCount(4);
+  await expect(bayHeader.locator("td").nth(2)).toHaveAttribute("colspan", "3");
+  await expect(bayHeader.locator("td").last()).toHaveAttribute("colspan", "4");
 });
 
 test("a scoped clear preserves a simultaneous edit in another location", async ({
@@ -763,6 +766,7 @@ test("service flag summary prints a multiple-flag asterisk", async ({
   await expect(row).toBeVisible();
   await expect(row.locator(".fuelsum__asterisk")).toHaveText("*");
   await expect(row).toContainText("CARDS, INSPECTION");
+  await expect(page.locator(".fuelt__buscontent", { hasText: "6467" }).first().locator(".fuelt__indl")).toHaveText("*");
 });
 
 test("object codes utility loads", async ({ page }) => {

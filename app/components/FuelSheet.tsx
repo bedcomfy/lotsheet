@@ -312,7 +312,7 @@ export default function FuelSheet({
         <span className="fuelt__buscontent">
           {ind && (
             <span className="fuelt__ind">
-              <span className="fuelt__indl">{ind}</span>
+              <span className={`fuelt__indl ${ind === "*" ? "fuelt__indl--asterisk" : ""}`}>{ind}</span>
             </span>
           )}
           <span className="fuelt__busnum">{bus}</span>

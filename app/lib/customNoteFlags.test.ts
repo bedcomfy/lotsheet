@@ -83,7 +83,7 @@ describe("custom note flags", () => {
     expect(section.rows).toEqual([
       {
         bus: "6467",
-        indicator: "∗",
+        indicator: "*",
         items: [
           { id: "cards", label: "CARDS", detail: "" },
           { id: "inspection", label: "INSPECTION", detail: "" },
