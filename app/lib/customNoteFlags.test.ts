@@ -8,7 +8,7 @@ import {
   removeAllCustomNotes,
   removeCustomNote,
 } from "./customNoteFlags";
-import { flagDisplay, flagsAndNote, groupFlaggedBuses } from "./grid";
+import { flagDisplay, flagsAndNote, fuelFlagSections, groupFlaggedBuses } from "./grid";
 import type { FlagEntry } from "./types";
 
 function entry(patch: Partial<FlagEntry> = {}): FlagEntry {
@@ -73,5 +73,22 @@ describe("custom note flags", () => {
     expect(groups.find((group) => group.cat === "other")?.buses).toEqual(["6401"]);
     expect(groups.find((group) => group.cat === "hold")?.buses).toEqual(["6402"]);
     expect(removeAllCustomNotes(mixed)).toEqual(entry({ flags: ["hold"] }));
+  });
+
+  it("marks service summary rows that carry multiple service flags", () => {
+    const [section] = fuelFlagSections({
+      "6467": entry({ flags: ["cards", "inspection"] }),
+    });
+
+    expect(section.rows).toEqual([
+      {
+        bus: "6467",
+        indicator: "∗",
+        items: [
+          { id: "cards", label: "CARDS", detail: "" },
+          { id: "inspection", label: "INSPECTION", detail: "" },
+        ],
+      },
+    ]);
   });
 });

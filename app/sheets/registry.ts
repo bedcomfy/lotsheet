@@ -67,7 +67,7 @@ export const SHEET_DEFINITIONS = [
     title: "All Service Sheets",
     path: "/service/print-all",
     dataVersion: 1,
-    renderVersion: 6,
+    renderVersion: 7,
     paper: LETTER_PORTRAIT,
     expectedPages: { min: 3, max: 16 },
     variants: ["current", "flags"],

@@ -973,6 +973,7 @@ export interface FlagItem {
 export interface FlagRow {
   bus: string;
   items: FlagItem[];
+  indicator: string;
 }
 export interface FuelSection {
   id: string;
@@ -997,7 +998,7 @@ export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[]
       else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       items.push({ id, label: flagLabel(id), detail });
     }
-    if (items.length) rows.push({ bus, items });
+    if (items.length) rows.push({ bus, items, indicator: fuelIndicator(entry) });
   }
   rows.sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true }));
   return rows;
@@ -1025,7 +1026,7 @@ export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSect
       else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
       return { id: f, label: flagLabel(f), detail };
     });
-    out[idx].rows.push({ bus, items });
+    out[idx].rows.push({ bus, items, indicator: fuelIndicator(entry) });
   }
   out.forEach((s) => s.rows.sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true })));
   return out.filter((s) => s.rows.length);

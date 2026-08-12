@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.5 - 2026-08-12
+
+- Restored the asterisk beside bus numbers on the Service Lane flag summary
+  when a bus carries multiple service flags. The marker now uses a plain,
+  PDF-safe glyph and appears consistently in the preview and generated PDF.
+
 ## 0.20.4 - 2026-08-11
 
 - Simplified the Turnover Sheet bay section to `BAY | REASON`. Removed the

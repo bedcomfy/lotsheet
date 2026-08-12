@@ -741,6 +741,30 @@ test("mobile service controls stay inside the safe viewport", async ({ page }) =
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
+test("service flag summary prints a multiple-flag asterisk", async ({
+  page,
+  request,
+}) => {
+  await request.post("/api/flags", {
+    data: {
+      bus: "6467",
+      flags: ["cards", "inspection"],
+      note: "",
+      holdReason: "",
+      retorqueTires: [],
+      inspOption: "",
+      inspMiles: null,
+      actor: "e2e-service-summary",
+    },
+  });
+
+  await page.goto("/service/print-all?print=1&maint=1");
+  const row = page.locator(".fuelsum__row", { hasText: "6467" });
+  await expect(row).toBeVisible();
+  await expect(row.locator(".fuelsum__asterisk")).toHaveText("*");
+  await expect(row).toContainText("CARDS, INSPECTION");
+});
+
 test("object codes utility loads", async ({ page }) => {
   await page.goto("/object-codes");
   await expect(page.getByText(/of\s+\d+\s+codes/)).toBeVisible();

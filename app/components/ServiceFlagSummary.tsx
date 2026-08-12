@@ -55,7 +55,12 @@ export default function ServiceFlagSummary({ dateOverride = "", onReady }: Servi
                   <div className="fuelsum__seclabel">{section.label}</div>
                   {section.rows.map((row) => (
                     <div className="fuelsum__row" key={row.bus}>
-                      <span className="fuelsum__bus">{row.bus}</span>
+                      <span className="fuelsum__bus">
+                        {row.indicator === "∗" && (
+                          <span className="fuelsum__asterisk" aria-label="Multiple service flags">*</span>
+                        )}
+                        {row.bus}
+                      </span>
                       <span className="fuelsum__flags">
                         {row.items.map((item) => `${item.label}${item.detail ? ` (${item.detail})` : ""}`).join(", ")}
                       </span>

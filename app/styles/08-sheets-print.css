@@ -437,10 +437,19 @@
   border-bottom: 1px solid #ddd;
 }
 .fuelsum__bus {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
   font-weight: 700 !important;
   font-size: calc(var(--ffz, 12px) + 6px);
   min-width: 64px;
   font-variant-numeric: tabular-nums;
+}
+.fuelsum__asterisk {
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9em;
+  line-height: 1;
 }
 .fuelsum__flags {
   font-size: calc(var(--ffz, 12px) + 4px);
