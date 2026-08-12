@@ -753,8 +753,7 @@ export default function TurnoverSheet() {
               <tr className="turnt__head turnt__head--plain">
                 <td />
                 <td>BAY</td>
-                <td colSpan={3}>1ST HALF</td>
-                <td colSpan={4}>2ND HALF</td>
+                <td colSpan={7}>REASON</td>
               </tr>
               {Array.from({ length: BAY_ROWS }, (_, i) => {
                 const n = i + 1;
@@ -771,7 +770,7 @@ export default function TurnoverSheet() {
                         onChange={(e) => setBayBus(i, e.target.value)}
                       />
                     </td>
-                    <td colSpan={3}>
+                    <td colSpan={7}>
                       <div className="turnt__fline">
                         <span className="turnt__bayno">{n})</span>
                         {/* The bay bus's flags (auto, tap to edit) — the typed
@@ -801,7 +800,6 @@ export default function TurnoverSheet() {
                         />
                       </div>
                     </td>
-                    <td colSpan={4}>{E(`bay2h-${n}`)}</td>
                   </tr>
                 );
               })}

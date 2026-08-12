@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.20.4 - 2026-08-11
+
+- Simplified the Turnover Sheet bay section to `BAY | REASON`. Removed the
+  unused second-half column and expanded each reason field through the
+  remaining width of the legal-size sheet on screen and in new PDFs.
+
 ## 0.20.3 - 2026-08-07
 
 - Freeform bus notes now save as independent custom flag chips. Pressing Enter

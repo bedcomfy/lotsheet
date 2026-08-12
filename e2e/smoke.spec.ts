@@ -179,6 +179,18 @@ test("small printable fields prevent focus zoom without disabling pinch zoom", a
   await expect.poll(() => viewportMeta.getAttribute("content")).toBe(original);
 });
 
+test("turnover bay reasons span the remaining sheet width", async ({ page }) => {
+  await page.goto("/turnover");
+
+  const bayHeader = page.locator("tr.turnt__head--plain");
+  await expect(bayHeader).toContainText("BAY");
+  await expect(bayHeader).toContainText("REASON");
+  await expect(bayHeader).not.toContainText("1ST HALF");
+  await expect(bayHeader).not.toContainText("2ND HALF");
+  await expect(bayHeader.locator("td")).toHaveCount(3);
+  await expect(bayHeader.locator("td").last()).toHaveAttribute("colspan", "7");
+});
+
 test("a scoped clear preserves a simultaneous edit in another location", async ({
   page,
   request,
