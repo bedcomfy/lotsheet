@@ -192,6 +192,88 @@ test("turnover bays keep first-half and holds/notes fields", async ({ page }) =>
   await expect(bayHeader.locator("td")).toHaveCount(4);
   await expect(bayHeader.locator("td").nth(2)).toHaveAttribute("colspan", "3");
   await expect(bayHeader.locator("td").last()).toHaveAttribute("colspan", "4");
+
+  const paperSpacing = await page.locator(".turn-sheet").evaluate((sheet) => {
+    const table = sheet.querySelector(".turnt");
+    if (!table) return null;
+    const sheetBox = sheet.getBoundingClientRect();
+    const tableBox = table.getBoundingClientRect();
+    return {
+      top: tableBox.top - sheetBox.top,
+      bottom: sheetBox.bottom - tableBox.bottom,
+      alignment: getComputedStyle(sheet).justifyContent,
+    };
+  });
+  expect(paperSpacing).not.toBeNull();
+  expect(paperSpacing!.alignment).toBe("flex-end");
+  expect(paperSpacing!.top).toBeGreaterThan(paperSpacing!.bottom + 20);
+});
+
+test("clearing a grid bus's flags preserves its sheet location", async ({
+  page,
+  request,
+}) => {
+  const originalResponse = await request.get("/api/sheet");
+  const original = (await originalResponse.json()).sheet;
+  const seeded = {
+    ...original,
+    cells: { ...(original?.cells || {}), s1: "6427" },
+  };
+
+  await request.put("/api/sheet", {
+    data: {
+      sheet: seeded,
+      baseSheet: original,
+      actor: "e2e-clear-flags-setup",
+    },
+  });
+  await request.post("/api/flags", {
+    data: {
+      bus: "6427",
+      flags: ["hold", "inspection"],
+      note: "",
+      inspMiles: null,
+      holdReason: "Parts",
+      retorqueTires: [],
+      inspOption: "A-3",
+      actor: "e2e-clear-flags-setup",
+    },
+  });
+
+  await page.goto("/");
+  await page.locator('[data-cellid="s1"]').click();
+  const editor = page.getByRole("dialog", { name: "Bus number" });
+  await expect(editor.getByRole("button", { name: "Clear flags" })).toBeVisible();
+  await editor.getByRole("button", { name: "Clear flags" }).click();
+
+  const confirmation = page.getByRole("dialog", {
+    name: "Clear every flag from bus 6427?",
+  });
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().endsWith("/api/flags") && response.request().method() === "POST",
+    ),
+    confirmation.getByRole("button", { name: "Clear flags" }).click(),
+  ]);
+
+  await expect(editor.getByRole("button", { name: "Clear flags" })).toHaveCount(0);
+  const flags = await request.get("/api/flags").then((response) => response.json());
+  expect(flags.flags["6427"]).toBeUndefined();
+  const current = await request.get("/api/sheet").then((response) => response.json());
+  expect(current.sheet.cells.s1).toBe("6427");
+
+  const restoredCells = { ...(current.sheet.cells || {}) };
+  if (original?.cells?.s1) restoredCells.s1 = original.cells.s1;
+  else delete restoredCells.s1;
+
+  await request.put("/api/sheet", {
+    data: {
+      sheet: { ...current.sheet, cells: restoredCells },
+      baseSheet: current.sheet,
+      actor: "e2e-clear-flags-cleanup",
+    },
+  });
 });
 
 test("a scoped clear preserves a simultaneous edit in another location", async ({
@@ -490,17 +572,20 @@ test("custom notes become independent removable flag chips", async ({
   expect(customNotes).toHaveLength(1);
   expect(decodeURIComponent(customNotes[0].slice("custom-note:".length))).toBe("Farebox won't probe");
 
-  await request.post("/api/flags", {
-    data: {
-      bus: "6427",
-      flags: [],
-      note: "",
-      holdReason: "",
-      retorqueTires: [],
-      inspOption: "",
-      actor: "e2e-custom-notes-cleanup",
-    },
+  await dialog.getByRole("button", { name: "Clear flags" }).click();
+  const confirmation = page.getByRole("dialog", {
+    name: "Clear every flag from bus 6427?",
   });
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().endsWith("/api/flags") && response.request().method() === "POST",
+    ),
+    confirmation.getByRole("button", { name: "Clear flags" }).click(),
+  ]);
+  await expect(dialog.getByRole("button", { name: "Clear flags" })).toBeDisabled();
+  const cleared = await request.get("/api/flags").then((response) => response.json());
+  expect(cleared.flags["6427"]).toBeUndefined();
 });
 
 test("print mode excludes application chrome", async ({ page }) => {

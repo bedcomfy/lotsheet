@@ -895,6 +895,11 @@ export default function LotSheet() {
     }).catch(() => {});
     onBusFlagsUpdated(bus, entry);
   }
+
+  function clearBusFlags(bus: string) {
+    postFlagEntry(bus, { ...EMPTY_FLAG, flags: [], retorqueTires: [] });
+    showNotice(`Flags cleared from bus ${bus}`);
+  }
   // Add/remove one flag on EVERY selected bus at once.
   function bulkFlag(flagId: string) {
     const action = flagPick;
@@ -1766,6 +1771,7 @@ export default function LotSheet() {
           sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
           onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
           onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
+          onClearFlags={clearBusFlags}
           onSave={(num) => {
             const id = editing.id;
             saveNum(id, num);
@@ -1878,6 +1884,7 @@ export default function LotSheet() {
           onRelocate={relocateBus}
           blockable
           onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
+          onClearFlags={clearBusFlags}
           onSave={(num) => {
             setBaySlot(editingBay, num);
             setEditingBay(null);

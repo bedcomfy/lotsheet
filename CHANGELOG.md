@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.20.7 - 2026-08-18
+
+- Added a dedicated `Clear flags` action when editing a bus in a Lot Sheet or
+  Shop spot and in the shared flag manager used across the site. Clearing flags
+  preserves the bus's current location and continues through the audited live
+  flag endpoint.
+- Bottom-aligned the Turnover Sheet table within its Legal page so its spare
+  vertical paper space appears above the form while the bottom margin remains
+  consistent.
+
 ## 0.20.6 - 2026-08-12
 
 - Restored the Turnover Sheet bay layout with separate `1ST HALF` and

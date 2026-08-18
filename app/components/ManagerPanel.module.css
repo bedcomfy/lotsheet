@@ -28,6 +28,9 @@
 
 .detailBar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-2);
   padding: var(--ui-space-3) var(--ui-space-4) 0;
 }
 

@@ -738,6 +738,7 @@
   max-width: 820px;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   padding: 20px 24px;
   font-size: var(--tfz, 13px);
 }

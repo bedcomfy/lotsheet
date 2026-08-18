@@ -455,6 +455,8 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   const [pending, setPending] = useState<string[]>([]); // by-flag: buses awaiting a tire/reason
   const [bulkRemoving, setBulkRemoving] = useState(false);
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [clearBusTarget, setClearBusTarget] = useState<string | null>(null);
+  const [clearingBus, setClearingBus] = useState(false);
   const flagSearchRef = useRef<HTMLInputElement>(null);
 
   // Typing a full bus number on the By bus tab opens its flag editor.
@@ -482,6 +484,16 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
     }).catch(() => null);
     onBusFlagsUpdated(bus, entry);
     return request;
+  }
+
+  async function clearBusFlags() {
+    if (!clearBusTarget || clearingBus) return;
+    setClearingBus(true);
+    try {
+      await save(clearBusTarget, { ...EMPTY, flags: [], retorqueTires: [] });
+    } finally {
+      setClearingBus(false);
+    }
   }
 
   // By bus: the list to show — matches when searching, else flagged buses.
@@ -599,7 +611,7 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
   return (
     <>
     <ResponsiveDialog
-      isOpen={!bulkConfirmOpen}
+      isOpen={!bulkConfirmOpen && !clearBusTarget}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
@@ -623,6 +635,14 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
           <div className={styles.detailBar}>
             <Button variant="quiet" size="sm" onPress={() => setOpenBus(null)}>
               <ChevronLeft aria-hidden="true" /> All buses
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              isDisabled={!entryHasContent(getEntry(openBus))}
+              onPress={() => setClearBusTarget(openBus)}
+            >
+              <Trash2 aria-hidden="true" /> Clear flags
             </Button>
           </div>
         )}
@@ -896,6 +916,18 @@ export default function ManagerPanel({ flags, onClose, onBusFlagsUpdated, initia
       tone="danger"
       isPending={bulkRemoving}
       onConfirm={removeFlagFromAll}
+    />
+    <ConfirmDialog
+      isOpen={clearBusTarget !== null}
+      onOpenChange={(open) => {
+        if (!open) setClearBusTarget(null);
+      }}
+      title={`Clear every flag from bus ${clearBusTarget ? label(clearBusTarget) : ""}?`}
+      description="This removes all flags, flag details, and custom notes from this bus. Its location on the sheets will not change."
+      confirmLabel="Clear flags"
+      tone="danger"
+      isPending={clearingBus}
+      onConfirm={clearBusFlags}
     />
     </>
   );

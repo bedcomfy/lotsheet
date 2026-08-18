@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { typeInfo } from "../lib/grid";
-import { Flag, Ban, Lock, Unlock, Eraser, ChevronRight } from "lucide-react";
+import { Flag, Ban, Lock, Unlock, Eraser, ChevronRight, Trash2 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import FlagPills from "./FlagPills";
 import { useBusMaster } from "./BusMasterProvider";
 import type { FlagEntry, FlagMap } from "../lib/types";
 import {
   Button,
+  ConfirmDialog,
   ResponsiveDialog,
   StatusBadge,
   TextField,
@@ -23,6 +24,7 @@ interface CellEditorProps {
   locate?: (bus: string, exceptId: string | null) => string;
   onRelocate?: (bus: string) => void; // remove the bus from wherever it currently sits
   onEditFlags?: (bus: string) => void; // jump straight into this bus's flag editor
+  onClearFlags?: (bus: string) => void | Promise<void>; // clear flags without moving the bus
   sendTargets?: { key: string; label: string }[]; // lots this bus can be sent to
   onSendToLot?: (bus: string, lotKey: string) => void;
   blockable?: boolean; // allow marking the spot unusable (an "X", like ROW 10's)
@@ -32,10 +34,12 @@ interface CellEditorProps {
   onClose: () => void;
 }
 
-export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, sendTargets, onSendToLot, blockable, locked, onToggleLock, onSave, onClose }: CellEditorProps) {
+export default function CellEditor({ subLabel, value, flags, cellId, locate, onRelocate, onEditFlags, onClearFlags, sendTargets, onSendToLot, blockable, locked, onToggleLock, onSave, onClose }: CellEditorProps) {
   const { isKnown: isKnownBus, types: busTypes, label: busLabel } = useBusMaster();
   const [num, setNum] = useState(value || "");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
+  const [clearFlagsOpen, setClearFlagsOpen] = useState(false);
+  const [clearingFlags, setClearingFlags] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Save unless the bus is already placed elsewhere on the sheet.
@@ -78,29 +82,41 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
   // Quiet secondary actions only when they apply to this spot.
   const showClear = !!value && value !== "X";
   const showLock = !!onToggleLock && !!value && value !== "X" && num === value;
-  const hasSecondary = showClear || blockable || showLock;
+  const canClearFlags = isBus && hasFlagContent && !!onClearFlags;
+  const hasSecondary = showClear || canClearFlags || blockable || showLock;
+
+  async function clearFlags() {
+    if (!onClearFlags || !num || clearingFlags) return;
+    setClearingFlags(true);
+    try {
+      await onClearFlags(num);
+    } finally {
+      setClearingFlags(false);
+    }
+  }
 
   return (
-    <ResponsiveDialog
-      isOpen
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title="Bus number"
-      description={subLabel}
-      size="sm"
-      bodyClassName={styles.body}
-      footer={(close) => (
-        <>
-          <Button variant="quiet" onPress={close}>
-            Cancel
-          </Button>
-          <Button variant="primary" onPress={() => trySave()}>
-            Save
-          </Button>
-        </>
-      )}
-    >
+    <>
+      <ResponsiveDialog
+        isOpen={!clearFlagsOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title="Bus number"
+        description={subLabel}
+        size="sm"
+        bodyClassName={styles.body}
+        footer={(close) => (
+          <>
+            <Button variant="quiet" onPress={close}>
+              Cancel
+            </Button>
+            <Button variant="primary" onPress={() => trySave()}>
+              Save
+            </Button>
+          </>
+        )}
+      >
       <TextField
         inputRef={inputRef}
         label="Bus number"
@@ -186,7 +202,12 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
         <div className={styles.secondary}>
           {showClear && (
             <Button variant="danger" size="sm" onPress={() => onSave("")}>
-              <Eraser aria-hidden="true" /> Clear
+              <Eraser aria-hidden="true" /> Clear spot
+            </Button>
+          )}
+          {canClearFlags && (
+            <Button variant="danger" size="sm" onPress={() => setClearFlagsOpen(true)}>
+              <Trash2 aria-hidden="true" /> Clear flags
             </Button>
           )}
           {blockable && (
@@ -207,6 +228,17 @@ export default function CellEditor({ subLabel, value, flags, cellId, locate, onR
           )}
         </div>
       )}
-    </ResponsiveDialog>
+      </ResponsiveDialog>
+      <ConfirmDialog
+        isOpen={clearFlagsOpen}
+        onOpenChange={setClearFlagsOpen}
+        title={`Clear every flag from bus ${busLabel(num)}?`}
+        description="This removes all flags, flag details, and custom notes from this bus. Its location on the sheets will not change."
+        confirmLabel="Clear flags"
+        tone="danger"
+        isPending={clearingFlags}
+        onConfirm={clearFlags}
+      />
+    </>
   );
 }

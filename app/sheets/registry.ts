@@ -88,7 +88,7 @@ export const SHEET_DEFINITIONS = [
     path: "/turnover",
     stateKey: "turnover",
     dataVersion: 1,
-    renderVersion: 9,
+    renderVersion: 10,
     paper: LEGAL_PORTRAIT,
     expectedPages: { min: 1, max: 1 },
     variants: ["current", "blank", "flags"],

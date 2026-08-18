@@ -350,6 +350,23 @@ export default function ShopSheet() {
     }).catch(() => {});
   }
 
+  async function clearBusFlags(bus: string) {
+    const entry: FlagEntry = {
+      flags: [],
+      note: "",
+      inspMiles: null,
+      holdReason: "",
+      retorqueTires: [],
+      inspOption: "",
+    };
+    onBusFlagsUpdated(bus, entry);
+    await fetch("/api/flags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...entry, bus, actor: getDeviceActor() }),
+    }).catch(() => null);
+  }
+
   async function archiveCurrentSheet() {
     try {
       const current = await fetch("/api/sheet", { cache: "no-store" }).then((response) => response.json());
@@ -604,6 +621,7 @@ export default function ShopSheet() {
           onRelocate={relocateBus}
           blockable
           onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
+          onClearFlags={clearBusFlags}
           onSave={(num) => {
             setBaySlot(editingBay, num);
             setEditingBay(null);
