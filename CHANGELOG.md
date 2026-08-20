@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.21.2 - 2026-08-20
+
+- Enlarged the Fuel and DEF grids with equal margins on all four sides while
+  keeping the Pace logo in its original position and the header text clear of
+  it. The Flag Summary and other printable sheets remain unchanged.
+- Matched the Farebox preview and PDF margins, lowered the form slightly, and
+  moved its Pace mark inward so the logo no longer crowds the page corner.
+
 ## 0.21.1 - 2026-08-20
 
 - Reordered Service Sheets to Fuel, DEF, Meter Readings, Bus Errors, Flag

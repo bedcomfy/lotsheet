@@ -409,7 +409,7 @@ export default function FuelSheet({
       >
         {lanes.map((lane) => (
           <div
-            className={`sheet fuel-sheet ${flagsEnabled ? "fuel-sheet--flags" : ""}`}
+            className={`sheet fuel-sheet fuel-sheet--service ${flagsEnabled ? "fuel-sheet--flags" : ""}`}
             key={lane ?? "x"}
             data-paper-page=""
             data-paper-profile="letter-portrait"

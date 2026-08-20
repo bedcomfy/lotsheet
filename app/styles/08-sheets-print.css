@@ -213,6 +213,12 @@
   z-index: 1;
   pointer-events: none;
 }
+.fuel-sheet--service {
+  padding: 0.3375in;
+}
+.fuel-sheet--service .fuelt__hdr td:first-child {
+  padding-left: 22px;
+}
 .fuelt {
   width: 100%;
   border-collapse: collapse;
@@ -690,6 +696,9 @@
     width: 100%;
     padding: 0.5in 0.4125in 0.3375in;
   }
+  .fuel-sheet--service {
+    padding: 0.3375in;
+  }
   .fuelt {
     flex: 1 1 auto;
     height: 100%;
@@ -1007,16 +1016,16 @@ td.turnt__head {
   height: 11in;
   min-height: 11in;
   margin: 0 auto;
-  /* Keep the form height fixed while shifting it slightly down. The side and
-     bottom margins match; the extra top space keeps the Pace mark clear. */
-  padding: 0.44in 0.28in 0.28in;
+  /* Side and bottom margins match. The larger top inset lowers the form and
+     leaves a protected band for the Pace mark. */
+  padding: 0.5in 0.28in 0.28in;
   aspect-ratio: auto;
   display: flex;
   flex-direction: column;
 }
 .fbx-sheet > .sheet-brand-logo {
-  top: 8px;
-  left: 12px;
+  top: 14px;
+  left: 18px;
 }
 .fbx {
   width: 100%;
@@ -1268,7 +1277,7 @@ button.fbx__reason {
     width: 100%;
     min-width: 0;
     max-width: none;
-    padding: 0.4in 0.5in 0.32in;
+    padding: 0.5in 0.28in 0.28in;
   }
   .fbx-sheet:last-child {
     break-after: auto;
