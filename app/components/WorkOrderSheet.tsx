@@ -7,7 +7,7 @@ import WorkOrderHistory from "./WorkOrderHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { ActionMenu, Button, Chip, ConfirmDialog, IconButton, Toolbar, ToolbarGroup } from "../ui";
-import { PaperViewport } from "../sheets/core";
+import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
 import workOrderChromeStyles from "./WorkOrderChrome.module.css";
@@ -499,6 +499,7 @@ export default function WorkOrderSheet() {
         </table>
 
         <div className="wo-pagefoot">Page {index + 1} of {data.employees.length}</div>
+        <SheetRevision sheetId="workorder" />
       </div>
     );
   }

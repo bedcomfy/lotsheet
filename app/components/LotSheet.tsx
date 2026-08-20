@@ -31,6 +31,7 @@ import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
 import dynamic from "next/dynamic";
 import { GridCell, FrontCell, BackLotBox } from "./LotGridCells";
+import { SheetRevision } from "../sheets/core";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanelLazy";
 import TypeCodes from "./TypeCodes";
@@ -1642,6 +1643,7 @@ export default function LotSheet() {
               <div key={`e${i}`} className="eastlot__cell" />
             ))}
           </div>
+          <SheetRevision sheetId="lot" />
         </div>
 
         {!blankPrintMode && (
@@ -1707,6 +1709,7 @@ export default function LotSheet() {
                   ))}
                 </div>
               )}
+              <SheetRevision sheetId="lot" />
             </div>
           </>
         )}

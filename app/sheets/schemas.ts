@@ -43,6 +43,7 @@ export const fuelSheetSchema = z
 export const fareboxSheetSchema = z
   .object({
     date: z.string().default(""),
+    probeSerial: z.string().default(""),
     entries: z.record(
       z.string(),
       z.object({

@@ -15,6 +15,7 @@
   }
 }
 .back-sheet {
+  position: relative;
   background: var(--paper);
   color: var(--ink); /* stays dark ink on white paper in dark theme */
   width: 100%;
@@ -721,10 +722,10 @@
     visibility: visible;
   }
   /* The flagged-buses summary prints (its own page) only with flags on. */
-  .fuelsum {
+  .service-print-all .fuelsum {
     display: none;
   }
-  .fuelsum.fuel-sheet--flags {
+  .service-print-all .fuelsum.fuel-sheet--flags {
     display: flex;
     page-break-before: always;
   }
@@ -732,6 +733,7 @@
 
 /* ---------- Turnover sheet (LEGAL size, 8.5 x 14) — fixed 1:1 grid ---------- */
 .turn-sheet {
+  position: relative;
   background: var(--paper);
   color: var(--ink); /* white paper, dark ink — even in dark theme */
   min-width: 740px; /* stays readable; scrolls horizontally on phones */
@@ -756,6 +758,11 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+}
+.turnt__revision {
+  top: 0.18in;
+  right: 0.34in;
+  bottom: auto;
 }
 /* Thin GRAY grid (matches the Google-Sheets original; not heavy black). */
 .turnt td {
@@ -1000,7 +1007,7 @@ td.turnt__head {
   height: 11in;
   min-height: 11in;
   margin: 0 auto;
-  padding: 0.4in 0.34in 0.32in; /* slimmer side margins: more room to write */
+  padding: 0.4in 0.5in 0.32in;
   aspect-ratio: auto;
   display: flex;
   flex-direction: column;
@@ -1034,9 +1041,10 @@ td.turnt__head {
   padding: 4px 4px 6px;
 }
 .fbx__hdrrow {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content max-content max-content minmax(145px, 1fr);
   align-items: center;
-  gap: 0 12px;
+  gap: 0 16px;
   width: 100%;
   font-size: 16px;
 }
@@ -1047,7 +1055,6 @@ td.turnt__head {
 }
 .fbx__field {
   flex: 0 0 auto;
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1068,9 +1075,33 @@ td.turnt__head {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-left: 60px;
-  margin-right: 48px;
+  margin: 0;
   letter-spacing: 0.02em;
+}
+.fbx__probe {
+  display: grid;
+  grid-template-columns: max-content minmax(70px, 1fr);
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.fbx__probe input,
+.fbx__probe-line {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 1em;
+  border: 0;
+  border-bottom: 1px solid #000;
+  border-radius: 0;
+  outline: 0;
+  padding: 0 2px;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  text-align: center;
 }
 .fbx__lane {
   display: inline-block;

@@ -1,0 +1,126 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  padding: 0.7in 0.5in 0.34in;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.12;
+}
+
+.logo {
+  position: absolute;
+  top: 0.24in;
+  left: 0.28in;
+  width: 0.34in;
+  height: auto;
+}
+
+.table {
+  width: 100%;
+  flex: 1 1 auto;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.busColumn {
+  width: 14%;
+}
+
+.smallColumn {
+  width: 11%;
+}
+
+.descriptionColumn {
+  width: 52%;
+}
+
+.servicerColumn {
+  width: 12%;
+}
+
+.table th,
+.table td {
+  border: 1px solid #111;
+  vertical-align: middle;
+}
+
+.table th {
+  height: 0.3in;
+  padding: 2px 5px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.05;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.instructionsRow th {
+  height: 0.72in;
+}
+
+.instructionsRow .busBeing {
+  padding: 5px 6px;
+  vertical-align: bottom;
+  line-height: 1.45;
+}
+
+.instructionsRow .openHeader {
+  border: 0;
+}
+
+.instructions {
+  display: table-cell;
+  padding: 4px 7px !important;
+  vertical-align: top !important;
+  line-height: 1.55 !important;
+  text-transform: none !important;
+}
+
+.instructions span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.instructions strong,
+.instructions b {
+  font-weight: 400;
+}
+
+.blackedOut {
+  background: #808080 !important;
+}
+
+.table td {
+  height: 0.31in;
+  padding: 0;
+}
+
+.table input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  padding: 1px 4px;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+}
+
+.table td:nth-child(4) input {
+  text-align: left;
+}
+
+@media print {
+  .page {
+    padding: 0.7in 0.5in 0.34in;
+  }
+}

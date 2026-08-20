@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import FareboxSheet from "./FareboxSheet";
 import FuelSheet from "./FuelSheet";
 import ServiceFlagSummary from "./ServiceFlagSummary";
+import BusErrorsSheet from "../sheets/bus-errors/BusErrorsSheet";
+import MeterReadingsSheet from "../sheets/meter-readings/MeterReadingsSheet";
 
 function param(name: string): string {
   if (typeof window === "undefined") return "";
@@ -11,10 +13,18 @@ function param(name: string): string {
 }
 
 // Composite print target. Its order is also the All-tab preview order:
-// Fuel, DEF North/South, Farebox North/South sets, then one flag summary.
+// Fuel, DEF North/South, Farebox North/South, meter readings, bus errors,
+// then the optional flag summary.
 export default function PrintAllServiceSheets() {
   const [options, setOptions] = useState({ loaded: false, includeFlags: false, dateOverride: "" });
-  const [ready, setReady] = useState({ fuel: false, def: false, farebox: false, summary: false });
+  const [ready, setReady] = useState({
+    fuel: false,
+    def: false,
+    farebox: false,
+    meters: false,
+    errors: false,
+    summary: false,
+  });
 
   useEffect(() => {
     setOptions({ loaded: true, includeFlags: param("maint") === "1", dateOverride: param("dateOverride") });
@@ -23,11 +33,19 @@ export default function PrintAllServiceSheets() {
   const fuelReady = useCallback((value: boolean) => setReady((current) => ({ ...current, fuel: value })), []);
   const defReady = useCallback((value: boolean) => setReady((current) => ({ ...current, def: value })), []);
   const fareboxReady = useCallback((value: boolean) => setReady((current) => ({ ...current, farebox: value })), []);
+  const metersReady = useCallback((value: boolean) => setReady((current) => ({ ...current, meters: value })), []);
+  const errorsReady = useCallback((value: boolean) => setReady((current) => ({ ...current, errors: value })), []);
   const summaryReady = useCallback((value: boolean) => setReady((current) => ({ ...current, summary: value })), []);
 
   if (!options.loaded) return null;
 
-  const allReady = ready.fuel && ready.def && ready.farebox && (!options.includeFlags || ready.summary);
+  const allReady =
+    ready.fuel
+    && ready.def
+    && ready.farebox
+    && ready.meters
+    && ready.errors
+    && (!options.includeFlags || ready.summary);
 
   return (
     <main className="service-print-all">
@@ -58,7 +76,20 @@ export default function PrintAllServiceSheets() {
         dateOverride={options.dateOverride}
         onReady={fareboxReady}
       />
-      {options.includeFlags && <ServiceFlagSummary dateOverride={options.dateOverride} onReady={summaryReady} />}
+      <MeterReadingsSheet
+        embedded
+        marker={false}
+        dateOverride={options.dateOverride}
+        onReady={metersReady}
+      />
+      <BusErrorsSheet embedded marker={false} onReady={errorsReady} />
+      {options.includeFlags && (
+        <ServiceFlagSummary
+          dateOverride={options.dateOverride}
+          onReady={summaryReady}
+          marker={false}
+        />
+      )}
       {allReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </main>
   );

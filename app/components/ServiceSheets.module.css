@@ -13,6 +13,10 @@
   gap: var(--ui-space-5);
 }
 
+.preview :global([data-sheet-id="def"] + [data-sheet-id="def"]) {
+  margin-top: var(--ui-space-5);
+}
+
 .dateField {
   display: grid;
   gap: var(--ui-space-1);

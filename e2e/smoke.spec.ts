@@ -95,6 +95,9 @@ test("major routes stay inside modern phone viewports", async ({ page }) => {
     "/",
     "/turnover",
     "/service?tab=fuel",
+    "/service?tab=meters",
+    "/service?tab=errors",
+    "/other",
     "/shop",
     "/buses",
     "/staffing/seniority",
@@ -630,6 +633,10 @@ test("registered sheet previews retain their physical paper geometry", async ({
     { path: "/fuel", width: 816, height: 1056 },
     { path: "/def", width: 816, height: 1056 },
     { path: "/farebox", width: 816, height: 1056 },
+    { path: "/service/summary", width: 816, height: 1056 },
+    { path: "/meter-readings", width: 816, height: 1056 },
+    { path: "/bus-errors", width: 816, height: 1056 },
+    { path: "/interior-cleaning", width: 816, height: 1056 },
     { path: "/turnover", width: 816, height: 1344 },
     { path: "/workorder", width: 816, height: 1056 },
   ];
@@ -656,8 +663,12 @@ test("production PDF renderer honors every registered paper profile", async ({
     { path: "/fuel", mediaBox: "0 0 612 792", min: 1, max: 2 },
     { path: "/def", mediaBox: "0 0 612 792", min: 1, max: 3 },
     { path: "/farebox", mediaBox: "0 0 612 792", min: 1, max: 10 },
-    { path: "/service/print-all", mediaBox: "0 0 612 792", min: 3, max: 16 },
-    { path: "/service/print-blank", mediaBox: "0 0 612 792", min: 3, max: 16 },
+    { path: "/service/summary", mediaBox: "0 0 612 792", min: 1, max: 1 },
+    { path: "/meter-readings", mediaBox: "0 0 612 792", min: 1, max: 1 },
+    { path: "/bus-errors", mediaBox: "0 0 612 792", min: 1, max: 1 },
+    { path: "/interior-cleaning", mediaBox: "0 0 612 792", min: 1, max: 1 },
+    { path: "/service/print-all", mediaBox: "0 0 612 792", min: 5, max: 18 },
+    { path: "/service/print-blank", mediaBox: "0 0 612 792", min: 5, max: 18 },
     { path: "/turnover", mediaBox: "0 0 612 1008", min: 1, max: 1 },
     { path: "/workorder", mediaBox: "0 0 612 792", min: 1, max: 1 },
   ];
@@ -699,6 +710,27 @@ test("mobile paper previews pan at 100% and fit clear of navigation", async ({
     {
       path: "/service?tab=summary",
       sheetId: "service-summary",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/service?tab=meters",
+      sheetId: "meter-readings",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/service?tab=errors",
+      sheetId: "bus-errors",
+      width: 816,
+      height: 1056,
+      ratio: 8.5 / 11,
+    },
+    {
+      path: "/other",
+      sheetId: "interior-cleaning",
       width: 816,
       height: 1056,
       ratio: 8.5 / 11,
@@ -829,6 +861,29 @@ test("mobile service controls stay inside the safe viewport", async ({ page }) =
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
+test("all service sheets expose flag editing and separate lane previews", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/service");
+
+  await expect(page.getByRole("button", { name: "Edit Flags", exact: true })).toBeVisible();
+  await expect.poll(async () => page.locator('[data-sheet-id="def"]').count()).toBe(2);
+
+  const gap = await page.locator('[data-sheet-id="def"]').evaluateAll((papers) => {
+    const first = papers[0]?.getBoundingClientRect();
+    const second = papers[1]?.getBoundingClientRect();
+    return first && second ? second.top - first.bottom : 0;
+  });
+  expect(gap).toBeGreaterThanOrEqual(16);
+
+  const leftEdges = await page.locator('[aria-label="Combined print preview"] [data-paper-page]').evaluateAll(
+    (papers) => papers.map((paper) => Math.round(paper.getBoundingClientRect().left)),
+  );
+  expect(leftEdges.length).toBeGreaterThan(5);
+  expect(Math.max(...leftEdges) - Math.min(...leftEdges)).toBeLessThanOrEqual(2);
+});
+
 test("service flag summary prints a multiple-flag asterisk", async ({
   page,
   request,
@@ -846,12 +901,51 @@ test("service flag summary prints a multiple-flag asterisk", async ({
     },
   });
 
-  await page.goto("/service/print-all?print=1&maint=1");
+  await page.goto("/service/summary?print=1&maint=1");
   const row = page.locator(".fuelsum__row", { hasText: "6467" });
   await expect(row).toBeVisible();
   await expect(row.locator(".fuelsum__asterisk")).toHaveText("*");
   await expect(row).toContainText("CARDS, INSPECTION");
+
+  await page.goto("/service/print-all?print=1&maint=1");
   await expect(page.locator(".fuelt__buscontent", { hasText: "6467" }).first().locator(".fuelt__indl")).toHaveText("*");
+});
+
+test("Farebox records probe serials and structured issue choices", async ({
+  page,
+}) => {
+  await page.goto("/farebox");
+  await expect(
+    page.getByRole("textbox", { name: "Probe serial number" }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText("PLEASE NOTE ANY FAREBOX ISSUES").first(),
+  ).toBeVisible();
+  for (const label of ["No Power", "Won't Probe", "Bypassed", "Other:"]) {
+    await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
+  }
+  await expect(page.getByText("Coin Offline / Bill Feed")).toHaveCount(0);
+});
+
+test("printable sheets expose consistent structural revision marks", async ({
+  page,
+}) => {
+  for (const fixture of [
+    { path: "/?print=1&blank=1", sheetId: "lot", revision: "7/15/26" },
+    { path: "/fuel?print=1&blank=1", sheetId: "fuel", revision: "8/12/26" },
+    { path: "/def?print=1&blank=1", sheetId: "def", revision: "8/12/26" },
+    { path: "/farebox?print=1&blank=1", sheetId: "farebox", revision: "8/20/26" },
+    { path: "/service/summary?print=1", sheetId: "service-summary", revision: "8/12/26" },
+    { path: "/turnover?print=1", sheetId: "turnover", revision: "8/12/26" },
+    { path: "/workorder?print=1&blank=1", sheetId: "workorder", revision: "7/7/26" },
+    { path: "/interior-cleaning?print=1&blank=1", sheetId: "interior-cleaning", revision: "8/20/26" },
+    { path: "/meter-readings?print=1&blank=1", sheetId: "meter-readings", revision: "8/20/26" },
+    { path: "/bus-errors?print=1&blank=1", sheetId: "bus-errors", revision: "8/20/26" },
+  ]) {
+    await page.goto(fixture.path);
+    const mark = page.locator(`[data-sheet-revision="${fixture.sheetId}"]`).first();
+    await expect(mark).toHaveText(`Revised ${fixture.revision}`);
+  }
 });
 
 test("object codes utility loads", async ({ page }) => {

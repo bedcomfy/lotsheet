@@ -9,7 +9,7 @@ import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
-import { PaperViewport } from "../sheets/core";
+import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
 
@@ -31,10 +31,19 @@ interface FareboxEntry {
 }
 interface FareboxData {
   date: string;
+  probeSerial: string;
   entries: Record<string, FareboxEntry>;
 }
 
-const EMPTY_ENTRY: FareboxEntry = { yn: "", serv: "", note: "", noPower: false, wontProbe: false, bypassed: false, other: false };
+const EMPTY_ENTRY: FareboxEntry = {
+  yn: "",
+  serv: "",
+  note: "",
+  noPower: false,
+  wontProbe: false,
+  bypassed: false,
+  other: false,
+};
 const ROWS_PER_PAGE = 32; // four pages with taller rows and minimal write-in padding
 
 // Same bus list and familiar order as the Fuel/DEF sheets.
@@ -51,7 +60,7 @@ function param(name: string): string | null {
 }
 
 function emptyData(): FareboxData {
-  return { date: "", entries: {} };
+  return { date: "", probeSerial: "", entries: {} };
 }
 
 // Tolerate the first release's { pd: boolean } entry shape.
@@ -143,7 +152,11 @@ export default function FareboxSheet({
         if (alive && d && d.value) {
           const entries: Record<string, FareboxEntry> = {};
           for (const [bus, e] of Object.entries(d.value.entries || {})) entries[bus] = normalizeEntry(e);
-          setData({ date: d.value.date || "", entries });
+          setData({
+            date: d.value.date || "",
+            probeSerial: d.value.probeSerial || "",
+            entries,
+          });
         }
       })
       .catch(() => {})
@@ -182,13 +195,24 @@ export default function FareboxSheet({
     setData((d) => {
       const next = { ...(d.entries[bus] || EMPTY_ENTRY), ...patch };
       const entries = { ...d.entries };
-      if (!next.yn && !next.serv && !next.note && !next.noPower && !next.wontProbe && !next.bypassed && !next.other) delete entries[bus];
+      if (
+        !next.yn
+        && !next.serv
+        && !next.note
+        && !next.noPower
+        && !next.wontProbe
+        && !next.bypassed
+        && !next.other
+      ) delete entries[bus];
       else entries[bus] = next;
       return { ...d, entries };
     });
   }
   function hasContent(d: FareboxData | null | undefined): boolean {
-    return !!(d && (Object.keys(d.entries || {}).length || d.date));
+    return !!(
+      d
+      && (Object.keys(d.entries || {}).length || d.date || d.probeSerial)
+    );
   }
   async function archiveCurrent() {
     if (!hasContent(data)) return;
@@ -207,7 +231,11 @@ export default function FareboxSheet({
     await archiveCurrent();
     const entries: Record<string, FareboxEntry> = {};
     for (const [bus, e] of Object.entries(imported.entries || {})) entries[bus] = normalizeEntry(e);
-    setData({ date: imported.date || "", entries });
+    setData({
+      date: imported.date || "",
+      probeSerial: imported.probeSerial || "",
+      entries,
+    });
     if (id) {
       fetch(`/api/state/farebox/history?id=${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {});
     }
@@ -255,7 +283,11 @@ export default function FareboxSheet({
 
   function reasonControl(
     bus: string,
-    field: "noPower" | "wontProbe" | "bypassed" | "other",
+    field:
+      | "noPower"
+      | "wontProbe"
+      | "bypassed"
+      | "other",
     label: string,
     forceBlank = false,
   ) {
@@ -384,6 +416,23 @@ export default function FareboxSheet({
                     <span className="fbx__ynsep">/</span>
                     <span className={lane === "s" ? "fbx__lane fbx__lane--circled" : "fbx__lane"}>S</span>
                   </span>
+                  <label className="fbx__probe">
+                    <span>Probe Serial #</span>
+                    {blankMode ? (
+                      <span className="fbx__probe-line" />
+                    ) : (
+                      <input
+                        aria-label="Probe serial number"
+                        value={data.probeSerial}
+                        onChange={(event) =>
+                          setData((current) => ({
+                            ...current,
+                            probeSerial: event.target.value,
+                          }))
+                        }
+                      />
+                    )}
+                  </label>
                 </div>
               </td>
             </tr>
@@ -391,7 +440,7 @@ export default function FareboxSheet({
               <td>BUS</td>
               <td>SERV</td>
               <td className="fbx__colhdr--pd">PROBED &amp; DUMPED</td>
-              <td>IF FAREBOX WON&apos;T PROBE, WHY?</td>
+              <td>PLEASE NOTE ANY FAREBOX ISSUES</td>
             </tr>
           </thead>
           <tbody>
@@ -422,7 +471,11 @@ export default function FareboxSheet({
           {pageNo === pages.length - 1 ? (
             <span className="fbx__footer-total">Total: {buses.length}</span>
           ) : null}
-          <span className="fbx__footer-page">Page {pageNo + 1} of {pages.length}</span>
+          <span className="fbx__footer-page">
+            <SheetRevision sheetId="farebox" inline />
+            <span aria-hidden="true"> · </span>
+            Page {pageNo + 1} of {pages.length}
+          </span>
         </div>
       </div>
     );

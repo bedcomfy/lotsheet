@@ -20,7 +20,7 @@ import { useBusMasterList, useEmployees, useFlags, useLotSheet } from "../lib/qu
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
 import { ActionMenu, Button, ConfirmDialog, StaticChip, Toolbar, ToolbarGroup } from "../ui";
-import { PaperViewport } from "../sheets/core";
+import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
 import styles from "./TurnoverSheet.module.css";
@@ -807,6 +807,7 @@ export default function TurnoverSheet() {
               })}
             </tbody>
           </table>
+          <SheetRevision sheetId="turnover" className="turnt__revision" />
         </div>
       </PaperViewport>
 

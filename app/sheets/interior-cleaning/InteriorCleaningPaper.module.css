@@ -1,0 +1,170 @@
+.page {
+  padding: 0.5in 0.8in 0.38in;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.23;
+}
+
+.logo {
+  position: absolute;
+  top: 0.28in;
+  left: 0.32in;
+  width: 0.34in;
+  height: auto;
+}
+
+.header {
+  display: grid;
+  justify-items: center;
+  gap: 0.12in;
+  margin: 0 0 0.5in;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.24in 0.85in;
+  margin-bottom: 0.24in;
+}
+
+.details label,
+.foreman label {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.details span,
+.foreman span {
+  flex: 0 0 auto;
+  font-weight: 400;
+}
+
+.details input,
+.foreman input,
+.initials input,
+.defects input {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid #111;
+  border-radius: 0;
+  outline: 0;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.details input {
+  width: 100%;
+}
+
+.dateFields,
+.datePart {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.dateFields {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.datePart {
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 7px;
+}
+
+.datePart input {
+  width: 0.55in;
+  text-align: center;
+}
+
+.datePart:last-child input {
+  width: 0.76in;
+}
+
+.workOrder {
+  grid-column: 1 / 2;
+}
+
+.section {
+  margin-top: 0.14in;
+}
+
+.section h2,
+.defects h2 {
+  margin: 0 0 0.16in;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.tasks {
+  display: grid;
+}
+
+.task {
+  display: grid;
+  min-height: 0.44in;
+  align-content: start;
+}
+
+.taskLabel {
+  display: block;
+}
+
+.initials {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 16px;
+}
+
+.initials input {
+  width: 0.62in;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.foreman {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.2in 0 0.22in;
+}
+
+.foreman input {
+  width: 0.78in;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.defects {
+  display: grid;
+  gap: 0.12in;
+}
+
+.defects input {
+  width: 100%;
+  height: 0.26in;
+}
+
+@media print {
+  .page {
+    padding: 0.5in 0.8in 0.38in;
+  }
+}

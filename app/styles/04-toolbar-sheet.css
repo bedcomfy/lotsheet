@@ -14,6 +14,7 @@
   touch-action: pan-x pan-y;
 }
 .sheet {
+  position: relative;
   background: var(--paper);
   color: var(--ink); /* always dark ink on white paper, even in dark theme */
   width: 100%;

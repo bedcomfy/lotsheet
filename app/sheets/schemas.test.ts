@@ -27,6 +27,16 @@ describe("existing SheetKit data schemas", () => {
 
   it("validates Fuel and Farebox fixture shapes", () => {
     expect(fuelSheetSchema.parse({ entries: {} }).entries).toEqual({});
-    expect(fareboxSheetSchema.parse({ entries: {} }).entries).toEqual({});
+    expect(fareboxSheetSchema.parse({ entries: {} })).toMatchObject({
+      probeSerial: "",
+      entries: {},
+    });
+    expect(
+      fareboxSheetSchema.parse({ entries: { "6427": {} } }).entries["6427"],
+    ).toMatchObject({
+      noPower: false,
+      wontProbe: false,
+      bypassed: false,
+    });
   });
 });

@@ -15,7 +15,7 @@ import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap } from "../lib/types";
 import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
-import { PaperViewport } from "../sheets/core";
+import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
 
@@ -477,6 +477,7 @@ export default function FuelSheet({
                 ))}
               </tbody>
             </table>
+            <SheetRevision sheetId={storageKey === "def" ? "def" : "fuel"} />
           </div>
         ))}
       </PaperViewport>

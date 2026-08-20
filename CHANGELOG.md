@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.21.0 - 2026-08-20
+
+- Added an `Other Sheets` workspace with a source-faithful Interior Bus
+  Cleaning form, and added Fuel Meter Readings and Bus Errors to Service
+  Sheets. The new forms support live saved state, history, blank printing,
+  Letter-size PDF output, and Paper Lab/Storybook coverage.
+- Expanded the Service Sheets `All` preview and print bundle with the new
+  service forms, consistent page alignment, separate North/South DEF pages,
+  and direct access to Edit Flags. The Service Flag Summary can now be printed
+  independently.
+- Added Pace marks and structural revision dates to printable sheets while
+  keeping them clear of form content. The Turnover revision is placed in its
+  open Legal-page header area, and Bus Errors uses an ink-saving gray marker
+  cell with protected logo spacing.
+- Added a Probe Serial field and clearer structured issue reporting to the
+  Farebox sheet. Restored its original issue-control size, four choices, and
+  print margins after the final layout review.
+- Added a third handwriting line for bus-wash explanations on Fuel Meter
+  Readings and strengthened PDF cache/version checks and browser coverage for
+  registered paper profiles, revision marks, and combined previews.
+
 ## 0.20.7 - 2026-08-18
 
 - Added a dedicated `Clear flags` action when editing a bus in a Lot Sheet or

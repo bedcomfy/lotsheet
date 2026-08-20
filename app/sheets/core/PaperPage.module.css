@@ -6,6 +6,7 @@
   max-width: calc(var(--paper-width-in) * 1in);
   height: calc(var(--paper-height-in) * 1in);
   min-height: calc(var(--paper-height-in) * 1in);
+  margin: 0 auto;
   overflow: hidden;
   background: #fff;
   color: #000;

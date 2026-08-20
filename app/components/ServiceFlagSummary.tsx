@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { fuelFlagSections } from "../lib/grid";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
-import { PaperViewport } from "../sheets/core";
+import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 
 function param(name: string): string | null {
@@ -15,11 +15,16 @@ function param(name: string): string | null {
 interface ServiceFlagSummaryProps {
   dateOverride?: string;
   onReady?: (ready: boolean) => void;
+  marker?: boolean;
 }
 
 // The service-lane flag list is intentionally its own page. Fuel and DEF PDFs
 // stay one-purpose documents; Print All appends this page exactly once.
-export default function ServiceFlagSummary({ dateOverride = "", onReady }: ServiceFlagSummaryProps) {
+export default function ServiceFlagSummary({
+  dateOverride = "",
+  onReady,
+  marker = true,
+}: ServiceFlagSummaryProps) {
   const { data: flags = {}, isSuccess } = useFlags();
   const sections = fuelFlagSections(flags);
   const displayDate = dateOverride || param("dateOverride") || chicagoDateShort();
@@ -72,8 +77,12 @@ export default function ServiceFlagSummary({ dateOverride = "", onReady }: Servi
           ) : (
             <div className="fuelsum__empty">No active service-lane items.</div>
           )}
+          <SheetRevision sheetId="service-summary" />
         </div>
       </PaperViewport>
+      {marker && isSuccess && (
+        <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />
+      )}
     </div>
   );
 }

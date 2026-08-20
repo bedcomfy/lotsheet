@@ -26,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "39"; // HOLD outranks all flags: summary grouping + flag order
+const PDF_VERSION = "47"; // Add a third meter-sheet bus-wash reasoning line
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
@@ -85,10 +85,22 @@ async function sheetData(path: string, blank: boolean) {
     };
   }
   if (path === "/service/print-all") {
-    const [fuel, def, farebox, flags, busMaster, flagConfig, busTypeConfig] = await Promise.all([
+    const [
+      fuel,
+      def,
+      farebox,
+      meterReadings,
+      busErrors,
+      flags,
+      busMaster,
+      flagConfig,
+      busTypeConfig,
+    ] = await Promise.all([
       getState("fuel"),
       getState("def"),
       getState("farebox"),
+      getState("meter-readings"),
+      getState("bus-errors"),
       getFlags(),
       getState("bus_master"),
       getState("flag_config"),
@@ -98,6 +110,8 @@ async function sheetData(path: string, blank: boolean) {
       fuel: fuel.value || null,
       def: def.value || null,
       farebox: farebox.value || null,
+      meterReadings: meterReadings.value || null,
+      busErrors: busErrors.value || null,
       flags,
       busMaster: busMaster.value || null,
       flagConfig: flagConfig.value || null,
@@ -158,6 +172,14 @@ function printSnapshotResponses(path: string, snapshot: unknown): Map<string, un
     responses.set("/api/state/fuel", { value: data.fuel || null, updatedAt: null });
     responses.set("/api/state/def", { value: data.def || null, updatedAt: null });
     responses.set("/api/state/farebox", { value: data.farebox || null, updatedAt: null });
+    responses.set("/api/state/meter-readings", {
+      value: data.meterReadings || null,
+      updatedAt: null,
+    });
+    responses.set("/api/state/bus-errors", {
+      value: data.busErrors || null,
+      updatedAt: null,
+    });
   } else if (path !== "/service/print-blank") {
     const key = path.slice(1);
     responses.set(`/api/state/${key}`, { value: data.value || null, updatedAt: null });

@@ -1,13 +1,29 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Coins, Droplets, FileDown, Flag, Fuel, Layers, Printer } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Coins,
+  Droplets,
+  FileDown,
+  Flag,
+  Fuel,
+  Gauge,
+  Layers,
+  Printer,
+  TriangleAlert,
+} from "lucide-react";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { openSheetPdf } from "../lib/pdf";
+import { useFlags } from "../lib/queries";
+import type { FlagEntry, FlagMap } from "../lib/types";
 import DatePickerField from "./DatePickerField";
 import FareboxSheet from "./FareboxSheet";
 import FuelSheet from "./FuelSheet";
+import ManagerPanel from "./ManagerPanelLazy";
 import ServiceFlagSummary from "./ServiceFlagSummary";
+import BusErrorsSheet from "../sheets/bus-errors/BusErrorsSheet";
+import MeterReadingsSheet from "../sheets/meter-readings/MeterReadingsSheet";
 import { AppPage, Button, SplitButton, TabBar, Toolbar, ToolbarGroup } from "../ui";
 import styles from "./ServiceSheets.module.css";
 
@@ -16,6 +32,8 @@ const TABS = [
   { id: "fuel", label: "Fuel", icon: Fuel },
   { id: "def", label: "DEF", icon: Droplets },
   { id: "farebox", label: "Farebox", icon: Coins },
+  { id: "meters", label: "Meter Readings", icon: Gauge },
+  { id: "errors", label: "Bus Errors", icon: TriangleAlert },
   { id: "summary", label: "Flag Summary", icon: Flag },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -30,10 +48,17 @@ function initialTab(): TabId {
 export default function ServiceSheets() {
   const [tab, setTab] = useState<TabId>(initialTab);
   const [date, setDate] = useState(chicagoDateShort);
-  const flushers = useRef<Record<"fuel" | "def" | "farebox", Flush | null>>({
+  const [managerOpen, setManagerOpen] = useState(false);
+  const { data: busFlags = {} } = useFlags();
+  const queryClient = useQueryClient();
+  const flushers = useRef<
+    Record<"fuel" | "def" | "farebox" | "meters" | "errors", Flush | null>
+  >({
     fuel: null,
     def: null,
     farebox: null,
+    meters: null,
+    errors: null,
   });
 
   const registerFuel = useCallback((flush: Flush | null) => {
@@ -44,6 +69,12 @@ export default function ServiceSheets() {
   }, []);
   const registerFarebox = useCallback((flush: Flush | null) => {
     flushers.current.farebox = flush;
+  }, []);
+  const registerMeters = useCallback((flush: Flush | null) => {
+    flushers.current.meters = flush;
+  }, []);
+  const registerErrors = useCallback((flush: Flush | null) => {
+    flushers.current.errors = flush;
   }, []);
 
   function selectTab(next: TabId) {
@@ -74,6 +105,24 @@ export default function ServiceSheets() {
       flush: flushAll,
     });
   }
+
+  function printSummary() {
+    openSheetPdf({
+      path: "/service/summary",
+      maint: true,
+      params: { dateOverride: date },
+    });
+  }
+
+  const onFlagsUpdated = useCallback(
+    (bus: string, entry: FlagEntry) => {
+      queryClient.setQueryData<FlagMap>(["flags"], (current = {}) => ({
+        ...current,
+        [bus]: entry,
+      }));
+    },
+    [queryClient],
+  );
 
   return (
     <AppPage className={styles.page}>
@@ -107,19 +156,24 @@ export default function ServiceSheets() {
 
           <ToolbarGroup>
             {tab === "all" ? (
-              <SplitButton
-                variant="primary"
-                onPress={printAll}
-                menuLabel="Print options"
-                items={[{ id: "blank", label: "Print blank forms", icon: <FileDown size={16} /> }]}
-                onAction={(key) => {
-                  if (key === "blank") printBlankAll();
-                }}
-              >
-                <Printer size={16} /> Print PDF
-              </SplitButton>
+              <>
+                <Button onPress={() => setManagerOpen(true)}>
+                  <Flag aria-hidden="true" /> Edit Flags
+                </Button>
+                <SplitButton
+                  variant="primary"
+                  onPress={printAll}
+                  menuLabel="Print options"
+                  items={[{ id: "blank", label: "Print blank forms", icon: <FileDown size={16} /> }]}
+                  onAction={(key) => {
+                    if (key === "blank") printBlankAll();
+                  }}
+                >
+                  <Printer size={16} /> Print PDF
+                </SplitButton>
+              </>
             ) : (
-              <Button variant="primary" onPress={printAll}>
+              <Button variant="primary" onPress={printSummary}>
                 <Printer size={16} /> Print PDF
               </Button>
             )}
@@ -156,14 +210,35 @@ export default function ServiceSheets() {
             dateOverride={date}
             onRegisterFlush={registerFarebox}
           />
-          <ServiceFlagSummary dateOverride={date} />
+          <MeterReadingsSheet
+            embedded
+            marker={false}
+            dateOverride={date}
+            onRegisterFlush={registerMeters}
+          />
+          <BusErrorsSheet
+            embedded
+            marker={false}
+            onRegisterFlush={registerErrors}
+          />
+          <ServiceFlagSummary dateOverride={date} marker={false} />
         </div>
       )}
 
       {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" />}
       {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies />}
       {tab === "farebox" && <FareboxSheet />}
+      {tab === "meters" && <MeterReadingsSheet />}
+      {tab === "errors" && <BusErrorsSheet />}
       {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
+
+      {managerOpen && (
+        <ManagerPanel
+          flags={busFlags}
+          onClose={() => setManagerOpen(false)}
+          onBusFlagsUpdated={onFlagsUpdated}
+        />
+      )}
     </AppPage>
   );
 }

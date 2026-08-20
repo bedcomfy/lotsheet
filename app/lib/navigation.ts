@@ -4,6 +4,7 @@ import {
   BusFront,
   ClipboardList,
   FileText,
+  Files,
   Fuel,
   Home,
   RefreshCw,
@@ -52,6 +53,13 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
     icon: Fuel,
     matchPrefix: "/service",
     description: "Fuel, DEF, farebox, and lane sheets",
+  },
+  {
+    path: "/other",
+    label: "Other Sheets",
+    icon: Files,
+    matchPrefix: "/other",
+    description: "Cleaning and supporting operational forms",
   },
 ];
 

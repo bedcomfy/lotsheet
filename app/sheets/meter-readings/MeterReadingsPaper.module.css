@@ -1,0 +1,222 @@
+.page {
+  padding: 1.01in 0.8in 0.38in;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.logo {
+  position: absolute;
+  top: 0.28in;
+  left: 0.32in;
+  width: 0.34in;
+  height: auto;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.36in;
+  margin: 0 0 0.54in;
+}
+
+.header h1 {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.date,
+.datePart,
+.meters label,
+.probes label,
+.time {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.date {
+  min-width: 0;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.datePart {
+  gap: 7px;
+}
+
+.date input,
+.meters input,
+.time input,
+.probes input {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  font-weight: 400;
+}
+
+.date input {
+  width: 0.82in;
+  border-bottom: 1px solid #111;
+  text-align: center;
+}
+
+.datePart:last-child input {
+  width: 0.95in;
+}
+
+.meterHead {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 4px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.meters {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.meters td {
+  height: 0.4in;
+  border: 1px solid #111;
+  padding: 0 8px;
+  vertical-align: middle;
+}
+
+.meters label {
+  width: 100%;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.meters input {
+  width: 100%;
+  height: 0.32in;
+}
+
+.wash {
+  display: grid;
+  gap: 0.1in;
+  margin: 0.56in 0 0.58in 0.26in;
+}
+
+.check {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  padding: 0;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.check:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.check > span {
+  display: inline-flex;
+  width: 0.18in;
+  height: 0.18in;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #111;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.washLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.time {
+  gap: 5px;
+}
+
+.time input {
+  width: 0.7in;
+  border-bottom: 1px solid #111;
+  text-align: center;
+}
+
+.reason {
+  margin-bottom: 0.54in;
+}
+
+.reason h2,
+.probes h2 {
+  margin: 0 0 0.22in;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.reason h2 {
+  font-weight: 700;
+}
+
+.reason textarea {
+  width: 100%;
+  height: 0.93in;
+  resize: none;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #000;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 0.31in,
+      #111 0.31in,
+      #111 calc(0.31in + 1px)
+    );
+  font: inherit;
+  line-height: 0.31in;
+}
+
+.probes {
+  display: grid;
+  max-width: 5.8in;
+  gap: 0.24in;
+}
+
+.probes h2 {
+  font-weight: 400;
+}
+
+.probes label {
+  gap: 8px;
+  font-weight: 400;
+}
+
+.probes label span {
+  width: 0.85in;
+}
+
+.probes input {
+  width: 3.6in;
+}
+
+@media print {
+  .page {
+    padding: 1.01in 0.8in 0.38in;
+  }
+}
