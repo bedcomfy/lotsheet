@@ -120,7 +120,7 @@
 
 .task {
   display: grid;
-  min-height: 0.44in;
+  min-height: 0.48in;
   align-content: start;
 }
 
@@ -144,7 +144,7 @@
 .foreman {
   display: flex;
   justify-content: flex-end;
-  margin: 0.2in 0 0.22in;
+  margin: 0.16in 0;
 }
 
 .foreman input {
@@ -155,12 +155,16 @@
 
 .defects {
   display: grid;
-  gap: 0.12in;
+  gap: 0.18in;
+}
+
+.defects h2 {
+  margin-bottom: -0.06in;
 }
 
 .defects input {
   width: 100%;
-  height: 0.26in;
+  height: 0.28in;
 }
 
 @media print {

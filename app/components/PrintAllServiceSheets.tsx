@@ -13,8 +13,8 @@ function param(name: string): string {
 }
 
 // Composite print target. Its order is also the All-tab preview order:
-// Fuel, DEF North/South, Farebox North/South, meter readings, bus errors,
-// then the optional flag summary.
+// Fuel, DEF North/South, meter readings, bus errors, the optional flag
+// summary, then Farebox North/South.
 export default function PrintAllServiceSheets() {
   const [options, setOptions] = useState({ loaded: false, includeFlags: false, dateOverride: "" });
   const [ready, setReady] = useState({
@@ -69,13 +69,6 @@ export default function PrintAllServiceSheets() {
         dateOverride={options.dateOverride}
         onReady={defReady}
       />
-      <FareboxSheet
-        embedded
-        marker={false}
-        previewLaneCopies
-        dateOverride={options.dateOverride}
-        onReady={fareboxReady}
-      />
       <MeterReadingsSheet
         embedded
         marker={false}
@@ -90,6 +83,13 @@ export default function PrintAllServiceSheets() {
           marker={false}
         />
       )}
+      <FareboxSheet
+        embedded
+        marker={false}
+        previewLaneCopies
+        dateOverride={options.dateOverride}
+        onReady={fareboxReady}
+      />
       {allReady && <div id="print-ready" aria-hidden="true" style={{ display: "none" }} />}
     </main>
   );

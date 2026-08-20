@@ -31,10 +31,10 @@ const TABS = [
   { id: "all", label: "All", icon: Layers },
   { id: "fuel", label: "Fuel", icon: Fuel },
   { id: "def", label: "DEF", icon: Droplets },
-  { id: "farebox", label: "Farebox", icon: Coins },
   { id: "meters", label: "Meter Readings", icon: Gauge },
   { id: "errors", label: "Bus Errors", icon: TriangleAlert },
   { id: "summary", label: "Flag Summary", icon: Flag },
+  { id: "farebox", label: "Farebox", icon: Coins },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 type Flush = () => Promise<unknown>;
@@ -203,13 +203,6 @@ export default function ServiceSheets() {
             dateOverride={date}
             onRegisterFlush={registerDef}
           />
-          <FareboxSheet
-            embedded
-            marker={false}
-            previewLaneCopies
-            dateOverride={date}
-            onRegisterFlush={registerFarebox}
-          />
           <MeterReadingsSheet
             embedded
             marker={false}
@@ -222,15 +215,22 @@ export default function ServiceSheets() {
             onRegisterFlush={registerErrors}
           />
           <ServiceFlagSummary dateOverride={date} marker={false} />
+          <FareboxSheet
+            embedded
+            marker={false}
+            previewLaneCopies
+            dateOverride={date}
+            onRegisterFlush={registerFarebox}
+          />
         </div>
       )}
 
       {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" />}
       {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies />}
-      {tab === "farebox" && <FareboxSheet />}
       {tab === "meters" && <MeterReadingsSheet />}
       {tab === "errors" && <BusErrorsSheet />}
       {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
+      {tab === "farebox" && <FareboxSheet />}
 
       {managerOpen && (
         <ManagerPanel

@@ -311,7 +311,7 @@ export default function FareboxSheet({
     );
   }
 
-  // Probed & Dumped: a Y / N the servicer circles, exactly like the lane N/S
+  // Probed & Dumped: a Y - N the servicer circles, exactly like the lane N/S
   // in the header. On screen, tapping a letter circles it (tap again to
   // un-circle); blank prints show plain letters to circle by hand.
   function pdCell(bus: string, forceBlank = false) {
@@ -336,7 +336,7 @@ export default function FareboxSheet({
     return (
       <span className="fbx__pd">
         {letter("y", "Y")}
-        <span className="fbx__ynsep">/</span>
+        <span className="fbx__ynsep">-</span>
         {letter("n", "N")}
       </span>
     );

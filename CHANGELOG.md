@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.21.1 - 2026-08-20
+
+- Reordered Service Sheets to Fuel, DEF, Meter Readings, Bus Errors, Flag
+  Summary, and Farebox across the tabs, combined preview, and print bundles.
+- Refined Fuel Meter Readings with evenly spaced handwriting lines while
+  preserving the approved page structure and margins.
+- Balanced Farebox `Y - N` choices around the center divider and reduced its
+  side and bottom margins without changing the form height or crowding the
+  Pace mark.
+- Expanded the Interior Cleaning checklist spacing and rebalanced its foreman
+  and defect-writing sections so the form fills the page with clear bottom
+  separation.
+
 ## 0.21.0 - 2026-08-20
 
 - Added an `Other Sheets` workspace with a source-faithful Interior Bus
