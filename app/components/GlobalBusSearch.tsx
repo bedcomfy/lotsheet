@@ -3,22 +3,19 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, BusFront, Flag, MapPin } from "lucide-react";
+import { BusFront } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import { useFlags, useLotSheet } from "../lib/queries";
-import type { FlagEntry } from "../lib/types";
 import {
   Button,
   EmptyState,
   ResponsiveDialog,
   SearchField,
-  StatusBadge,
 } from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
-import FlagPills from "./FlagPills";
 import ManagerPanel from "./ManagerPanelLazy";
-import TypeCodes from "./TypeCodes";
+import type { BusWorkspaceDetails, BusWorkspaceStatus } from "./ManagerPanel";
 import type { FlagMap } from "../lib/types";
 import styles from "./GlobalBusSearch.module.css";
 
@@ -29,86 +26,10 @@ function isEditable(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
 }
 
-export interface GlobalBusDetails {
-  bus: string;
-  label: string;
+export interface GlobalBusDetails extends BusWorkspaceDetails {
   model: string;
   location: string;
-  status: "ready" | "notReady" | "offProperty" | "missing" | "retired";
-  entry?: FlagEntry;
-}
-
-const STATUS_COPY: Record<
-  GlobalBusDetails["status"],
-  { label: string; tone: "success" | "warning" | "info" | "danger" | "neutral" }
-> = {
-  ready: { label: "Ready for service", tone: "success" },
-  notReady: { label: "Not ready for service", tone: "warning" },
-  offProperty: { label: "Off property", tone: "info" },
-  missing: { label: "Missing", tone: "danger" },
-  retired: { label: "Retired", tone: "neutral" },
-};
-
-export function GlobalBusResult({
-  details,
-  onOpenLotSheet,
-  onEditFlags,
-}: {
-  details: GlobalBusDetails;
-  onOpenLotSheet?: () => void;
-  onEditFlags?: () => void;
-}) {
-  const status = STATUS_COPY[details.status];
-  return (
-    <div className={styles.result}>
-      <div className={styles.identity}>
-        <span className={styles.busIcon} aria-hidden="true">
-          <BusFront />
-        </span>
-        <div className={styles.identityCopy}>
-          <span className={styles.busNumber}>{details.label}</span>
-          <span className={styles.model}>{details.model || "Fleet bus"}</span>
-        </div>
-        <TypeCodes num={details.bus} variant="ui" />
-      </div>
-
-      <div className={styles.summary}>
-        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-        <span className={styles.location}>
-          <MapPin aria-hidden="true" />
-          {details.location}
-        </span>
-      </div>
-
-      <section className={styles.flags} aria-labelledby="global-bus-flags">
-        <h3 id="global-bus-flags">Active flags</h3>
-        <div className={styles.flagList}>
-          {details.entry &&
-          ((details.entry.flags || []).length > 0 || (details.entry.note || "").trim()) ? (
-            <FlagPills entry={details.entry} />
-          ) : (
-            <span className={styles.noFlags}>No active flags</span>
-          )}
-        </div>
-      </section>
-
-      {(onOpenLotSheet || onEditFlags) && (
-        <div className={styles.actions}>
-          {onOpenLotSheet && (
-            <Button variant="primary" onPress={onOpenLotSheet}>
-              Open on Lot Sheet
-              <ArrowRight aria-hidden="true" />
-            </Button>
-          )}
-          {onEditFlags && (
-            <Button variant="secondary" onPress={onEditFlags}>
-              <Flag aria-hidden="true" /> Edit flags
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  status: BusWorkspaceStatus;
 }
 
 export default function GlobalBusSearch() {
@@ -120,7 +41,6 @@ export default function GlobalBusSearch() {
   const { data: flags = {} } = useFlags();
   const [query, setQuery] = useState("");
   const [selectedBus, setSelectedBus] = useState("");
-  const [flagOpen, setFlagOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const sheet = sheetData?.sheet || null;
 
@@ -155,7 +75,6 @@ export default function GlobalBusSearch() {
       model: bus?.model || "",
       location: locations.length ? locations.join(" · ") : "No current placement",
       status,
-      entry: flags[selectedBus],
     };
   }, [flags, isKnown, label, master.buses, selectedBus, sheet]);
 
@@ -189,57 +108,45 @@ export default function GlobalBusSearch() {
         />
       </form>
 
-      <ResponsiveDialog
-        isOpen={!!selectedBus && !flagOpen}
-        onOpenChange={(open) => {
-          if (!open) close();
-        }}
-        title={details ? `Bus ${details.label}` : "Bus not found"}
-        description={
-          details
-            ? "Current fleet status from the live operational sheets."
-            : `${selectedBus} is not in the active bus list.`
-        }
-        size="sm"
-        footer={(requestClose) => (
-          <Button variant="quiet" onPress={requestClose}>
-            Done
-          </Button>
-        )}
-      >
-        {details ? (
-          <>
-            <GlobalBusResult
-              details={details}
-              onOpenLotSheet={() => {
-                close();
-                if (pathname === "/") {
-                  window.dispatchEvent(new CustomEvent("pace:lot-find", { detail: details.bus }));
-                } else {
-                  router.push(`/?find=${encodeURIComponent(details.bus)}`);
-                }
-              }}
-              onEditFlags={() => setFlagOpen(true)}
-            />
-          </>
-        ) : (
+      {details && selectedBus ? (
+        <ManagerPanel
+          flags={flags}
+          initialBus={selectedBus}
+          initialDetails={details}
+          onBusFlagsUpdated={(bus, entry) =>
+            qc.setQueryData<FlagMap>(["flags"], (prev = {}) => ({ ...prev, [bus]: entry }))
+          }
+          onOpenLotSheet={(bus) => {
+            close();
+            if (pathname === "/") {
+              window.dispatchEvent(new CustomEvent("pace:lot-find", { detail: bus }));
+            } else {
+              router.push(`/?find=${encodeURIComponent(bus)}`);
+            }
+          }}
+          onClose={close}
+        />
+      ) : (
+        <ResponsiveDialog
+          isOpen={!!selectedBus}
+          onOpenChange={(open) => {
+            if (!open) close();
+          }}
+          title="Bus not found"
+          description={`${selectedBus} is not in the active bus list.`}
+          size="sm"
+          footer={(requestClose) => (
+            <Button variant="quiet" onPress={requestClose}>
+              Done
+            </Button>
+          )}
+        >
           <EmptyState
             icon={<BusFront />}
             title="No matching bus"
             description="Check the bus number and try again."
           />
-        )}
-      </ResponsiveDialog>
-
-      {flagOpen && selectedBus && (
-        <ManagerPanel
-          flags={flags}
-          initialBus={selectedBus}
-          onBusFlagsUpdated={(bus, entry) =>
-            qc.setQueryData<FlagMap>(["flags"], (prev = {}) => ({ ...prev, [bus]: entry }))
-          }
-          onClose={() => setFlagOpen(false)}
-        />
+        </ResponsiveDialog>
       )}
     </>
   );

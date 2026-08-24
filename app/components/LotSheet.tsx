@@ -34,6 +34,7 @@ import { GridCell, FrontCell, BackLotBox } from "./LotGridCells";
 import { SheetRevision } from "../sheets/core";
 import CellEditor from "./CellEditor";
 import ManagerPanel from "./ManagerPanelLazy";
+import type { BusWorkspaceStatus } from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
 import LotEditor from "./LotEditorLazy";
 // Tap-to-open overlays load on first use, not with the page. CellEditor stays
@@ -1321,6 +1322,15 @@ export default function LotSheet() {
   // they remain listed for reference in the status dialog.
   const missingBuses = fleet.missing;
   const accountedBuses = fleet.accountedByFlagOnly;
+  const flagBusMaster = flagBus ? masterBuses.find((bus) => bus.num === flagBus) : null;
+  let flagBusStatus: BusWorkspaceStatus | undefined;
+  if (flagBus) {
+    if (flagBusMaster?.status === "retired") flagBusStatus = "retired";
+    else if (fleet.offProperty.has(flagBus)) flagBusStatus = "offProperty";
+    else if (fleet.readyForService.has(flagBus)) flagBusStatus = "ready";
+    else if (fleet.notReadyForService.has(flagBus)) flagBusStatus = "notReady";
+    else flagBusStatus = "missing";
+  }
 
   useEffect(() => {
     setLotStatus({ usable: readyForServiceCount, outOfService: notReadyForServiceCount });
@@ -1773,7 +1783,10 @@ export default function LotSheet() {
           onToggleLock={() => toggleLock(editing.id)}
           sendTargets={LOTS.map((l) => ({ key: l.key, label: LOT_LOCATION_LABELS[l.key] || l.title }))}
           onSendToLot={(bus, key) => sendCellBusToLot(editing.id, bus, key)}
-          onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
+          onEditFlags={(bus) => {
+            setEditing(null);
+            setFlagBus(bus);
+          }}
           onClearFlags={clearBusFlags}
           onSave={(num) => {
             const id = editing.id;
@@ -1816,7 +1829,10 @@ export default function LotSheet() {
           missingBuses={missingBuses}
           accountedBuses={accountedBuses}
           flagFor={flagFor}
-          onEditFlags={setFlagBus}
+          onEditFlags={(bus) => {
+            setMissingOpen(false);
+            setFlagBus(bus);
+          }}
           onClose={() => setMissingOpen(false)}
         />
       )}
@@ -1828,7 +1844,10 @@ export default function LotSheet() {
           notReadyForService={fleet.notReadyForService}
           fleetLocations={fleetLocations}
           flagFor={flagFor}
-          onEditFlags={setFlagBus}
+          onEditFlags={(bus) => {
+            setServiceDetail(null);
+            setFlagBus(bus);
+          }}
           onClose={() => setServiceDetail(null)}
         />
       )}
@@ -1848,7 +1867,11 @@ export default function LotSheet() {
           locate={locateBus}
           onRelocate={relocateBus}
           recent={recent.filter((b) => !locateBus(b, null))}
-          onEditFlags={(bus) => setFlagBus(bus)}
+          onEditFlags={(bus) => {
+            setEditingLot(null);
+            setShopOpen(false);
+            setFlagBus(bus);
+          }}
           onAdd={(bus) => addToLot(editingLot, bus)}
           onRemove={(i) => removeFromLot(editingLot, i)}
           onMove={(i, dir) => moveInLot(editingLot, i, dir)}
@@ -1886,7 +1909,11 @@ export default function LotSheet() {
           locate={locateBus}
           onRelocate={relocateBus}
           blockable
-          onEditFlags={(bus) => setFlagBus(bus)} /* stacks on top — Done returns here */
+          onEditFlags={(bus) => {
+            setEditingBay(null);
+            setShopOpen(false);
+            setFlagBus(bus);
+          }}
           onClearFlags={clearBusFlags}
           onSave={(num) => {
             setBaySlot(editingBay, num);
@@ -1901,6 +1928,13 @@ export default function LotSheet() {
         <ManagerPanel
           flags={flags}
           initialBus={flagBus}
+          initialDetails={{
+            bus: flagBus,
+            label: busLabel(flagBus),
+            model: flagBusMaster?.model || "",
+            location: fleetLocations[flagBus]?.join(" · ") || "No current placement",
+            status: flagBusStatus,
+          }}
           onBusFlagsUpdated={onBusFlagsUpdated}
           onClose={() => setFlagBus(null)}
         />

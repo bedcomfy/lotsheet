@@ -8,10 +8,17 @@ export interface OpenSheetPdfOptions {
   maint?: boolean;
   params?: Record<string, string | number | null | undefined>;
   flush?: () => unknown;
+  abortOnFlushError?: boolean;
 }
 
-export function openSheetPdf({ path = "/", maint = false, params = {}, flush }: OpenSheetPdfOptions = {}): void {
-  if (typeof window === "undefined") return;
+export function openSheetPdf({
+  path = "/",
+  maint = false,
+  params = {},
+  flush,
+  abortOnFlushError = false,
+}: OpenSheetPdfOptions = {}): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
   const qs = new URLSearchParams({ path, maint: maint ? "1" : "0" });
   for (const [k, v] of Object.entries(params)) if (v != null) qs.set(k, String(v));
   // Absolute URL — the print tab is opened as about:blank, where a relative
@@ -42,7 +49,17 @@ export function openSheetPdf({ path = "/", maint = false, params = {}, flush }: 
     w.document.close();
   };
 
-  Promise.resolve(flush ? flush() : null)
+  const ready = Promise.resolve(flush ? flush() : null);
+  if (abortOnFlushError) {
+    return ready.then(go).catch((error) => {
+      try {
+        w?.close();
+      } catch {}
+      throw error;
+    });
+  }
+
+  return ready
     .catch(() => {})
     .then(go);
 }

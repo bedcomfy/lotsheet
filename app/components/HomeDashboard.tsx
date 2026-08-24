@@ -381,8 +381,6 @@ export default function HomeDashboard() {
       <section className={styles.footnote}>
         <BusFront size={16} />
         <span>Live from Pace Northwest operational sheets</span>
-        <i />
-        <span>Updates automatically</span>
       </section>
 
       {availBucket && (() => {

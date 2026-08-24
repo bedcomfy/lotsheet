@@ -1,7 +1,15 @@
-.body {
+.body,
+.bodyCompact {
   display: flex;
-  min-height: 24rem;
   padding: 0;
+}
+
+.body {
+  min-height: 24rem;
+}
+
+.bodyCompact {
+  min-height: 0;
 }
 
 .inner {
@@ -17,21 +25,130 @@
 
 .innerFit {
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 .innerFit .list {
   min-height: 0;
-  flex: 1 1 auto;
-  overflow-y: auto;
+  flex: 0 1 auto;
+  overflow-y: visible;
+  overscroll-behavior-y: auto;
+  scrollbar-gutter: auto;
 }
 
-.detailBar {
+.workspace {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-5);
+  padding-bottom: var(--ui-space-4);
+}
+
+.workspaceBack {
+  width: max-content;
+  margin-bottom: calc(var(--ui-space-2) * -1);
+}
+
+.workspaceTopActions {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+  margin-left: auto;
+}
+
+.workspaceClear {
+  color: var(--ui-danger);
+}
+
+.workspaceIdentity {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--ui-space-4);
+  padding-bottom: var(--ui-space-5);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.workspaceBusIcon {
+  display: inline-grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+.workspaceBusIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.workspaceIdentityCopy {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: var(--ui-space-1);
+}
+
+.workspaceBusLine,
+.workspaceMeta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--ui-space-2);
-  padding: var(--ui-space-3) var(--ui-space-4) 0;
+}
+
+.workspaceIdentityCopy strong {
+  color: var(--ui-text);
+  font-size: 1.5rem;
+  font-weight: var(--ui-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--ui-line-height-tight);
+}
+
+.workspaceIdentityCopy span,
+.workspaceLocation {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.workspaceMeta {
+  margin-top: var(--ui-space-1);
+}
+
+.workspaceLocation {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.workspaceLocation svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.workspaceEditor,
+.workspaceEditorHeading {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-1);
+}
+
+.workspaceEditorHeading h3 {
+  margin: 0;
+}
+
+.workspaceEditorHeading h3 {
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-weight-semibold);
 }
 
 .tabs {
@@ -48,7 +165,8 @@
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-5);
+  padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-8);
+  scroll-padding-block: var(--ui-space-4) var(--ui-space-8);
   scrollbar-color: var(--ui-border-strong) transparent;
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
@@ -100,7 +218,8 @@
 .flagResult:focus-visible,
 .removeBus:focus-visible,
 .removeFlag:focus-visible,
-.tireButton:focus-visible {
+.tireButton:focus-visible,
+.tirePreset:focus-visible {
   outline: 2px solid var(--ui-focus);
   outline-offset: 2px;
 }
@@ -147,17 +266,32 @@
 
 .flagPicker {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: var(--ui-space-4);
+  gap: var(--ui-space-5);
+  padding-top: var(--ui-space-3);
+}
+
+.currentFlags,
+.suggestions {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-2);
 }
 
 .activeFlags,
-.flagChips,
 .reasonPicker,
 .departmentFlags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ui-space-2);
+}
+
+.flagChips {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: var(--ui-space-1);
 }
 
 .removableFlag {
@@ -169,7 +303,11 @@
   border: 1px solid
     color-mix(in srgb, var(--flag-color, var(--ui-accent)) 44%, var(--ui-border));
   border-radius: var(--ui-radius-pill);
-  color: var(--flag-color, var(--ui-accent));
+  color: color-mix(
+    in srgb,
+    var(--flag-color, var(--ui-accent)) 68%,
+    var(--ui-text)
+  );
   background: color-mix(
     in srgb,
     var(--flag-color, var(--ui-accent)) 12%,
@@ -178,6 +316,11 @@
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-weight-medium);
   line-height: 1.2;
+}
+
+.removableFlag > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .removeFlag {
@@ -210,7 +353,7 @@
 
 .flagResults {
   display: grid;
-  gap: var(--ui-space-1);
+  border-top: 1px solid var(--ui-border);
 }
 
 .flagResult {
@@ -219,11 +362,12 @@
   min-height: var(--ui-control-md);
   align-items: center;
   gap: var(--ui-space-3);
-  padding: var(--ui-space-2) var(--ui-space-3);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-md);
+  padding: var(--ui-space-3) var(--ui-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--ui-border);
+  border-radius: 0;
   color: var(--ui-text);
-  background: var(--ui-surface);
+  background: transparent;
   font: inherit;
   font-size: var(--ui-font-size-sm);
   letter-spacing: 0;
@@ -232,26 +376,26 @@
 }
 
 .flagResult:hover {
-  border-color: var(--ui-border-strong);
   background: var(--ui-surface-hover);
 }
 
 .flagResultSelected {
-  border-color: var(--ui-accent);
   color: var(--ui-accent);
   background: var(--ui-accent-soft);
+}
+
+.noteResult {
+  color: var(--ui-text-muted);
+}
+
+.noteResult:hover {
+  color: var(--ui-accent);
 }
 
 .flagResultIcon {
   display: inline-flex;
   flex: 0 0 auto;
   color: currentColor;
-}
-
-.noResults {
-  padding: var(--ui-space-3);
-  color: var(--ui-text-muted);
-  font-size: var(--ui-font-size-sm);
 }
 
 .sectionLabel,
@@ -300,10 +444,38 @@
   border-radius: var(--ui-radius-pill);
 }
 
+.flagChip {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-2);
+  border-color: transparent;
+  border-radius: var(--ui-radius-sm);
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+
+.flagChip > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.flagChip > svg {
+  flex: 0 0 auto;
+  color: var(--ui-accent);
+}
+
 .flagChip:hover,
 .choiceChip:hover,
 .tireButton:hover {
   border-color: var(--ui-accent);
+}
+
+.flagChip:hover {
+  border-color: transparent;
+  background: var(--ui-surface-hover);
 }
 
 .choiceService,
@@ -330,13 +502,6 @@
 
 .flagHint {
   line-height: var(--ui-line-height-body);
-}
-
-.noteBlock {
-  display: grid;
-  gap: var(--ui-space-2);
-  padding-top: var(--ui-space-3);
-  border-top: 1px solid var(--ui-border);
 }
 
 .noteComposer {
@@ -377,8 +542,48 @@
   flex-direction: column;
 }
 
+.detailPlain {
+  padding: var(--ui-space-3) 0 var(--ui-space-3) var(--ui-space-4);
+  border-width: 0 0 0 2px;
+  border-radius: 0;
+  border-color: var(--ui-accent);
+  background: transparent;
+}
+
 .detailLabel {
   font-weight: var(--ui-weight-medium);
+}
+
+.detailHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--ui-space-2);
+}
+
+.tirePresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+}
+
+.tirePreset {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: var(--ui-font-size-xs);
+  cursor: pointer;
+}
+
+.tirePreset:hover {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
 }
 
 .detailSummary {
@@ -532,17 +737,26 @@
   .noteComposer {
     align-items: stretch;
   }
-}
 
-.draftSave {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ui-space-3);
-  margin-top: var(--ui-space-2);
-}
+  .workspaceTopActions {
+    width: 100%;
+    justify-content: flex-start;
+    margin: var(--ui-space-2) 0 0;
+  }
 
-.draftHint {
-  color: var(--ui-text-subtle);
-  font-size: var(--ui-font-size-xs);
+  .workspaceTopActions > * {
+    flex: 0 0 auto;
+  }
+
+  .workspaceIdentity {
+    flex-wrap: wrap;
+  }
+
+  .workspaceIdentityCopy {
+    flex-basis: calc(100% - 4rem);
+  }
+
+  .flagChip {
+    width: 100%;
+  }
 }

@@ -730,6 +730,35 @@ export function searchFlags(query: string): FlagDef[] {
   return scored.map((s) => s.f);
 }
 
+// Resolve only deliberate, exact entries from the unified flag composer.
+// This is intentionally stricter than closestFlagMatch(): ordinary prose must
+// remain a custom note instead of being guessed into an unrelated flag.
+export function exactFlagMatch(input: string): FlagDef | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const query = normalize(raw);
+  const matches = searchFlags(raw);
+
+  const exactObjectCode = matches.find((flag) =>
+    flag.id.startsWith("object:") && flagObjectCodes(flag.id).some((code) => normalize(code) === query)
+  );
+  if (exactObjectCode) return exactObjectCode;
+
+  const exactNames = matches.filter((flag) =>
+    [flag.id, flagName(flag.id), flagLabel(flag.id), flag.label]
+      .some((candidate) => normalize(candidate) === query)
+  );
+  if (exactNames.length === 1) return exactNames[0];
+
+  const exactAliases = matches.filter((flag) => {
+    const override = flagConfigEntry(flag.id);
+    return [...(override?.aliases || []), ...(FLAG_ALIASES[flag.id] || [])]
+      .some((candidate) => normalize(candidate) === query);
+  });
+  return exactAliases.length === 1 ? exactAliases[0] : null;
+}
+
 // Turnover's fast-entry field accepts ordinary language. Prefer a direct
 // phrase match; if that fails, use meaningful words only when they point to one
 // clear best flag. Ambiguous text remains an Other note instead of guessing.

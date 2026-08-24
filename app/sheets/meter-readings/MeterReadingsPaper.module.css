@@ -183,13 +183,8 @@
   outline: 0;
   color: #000;
   background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 0.54in,
-      #111 0.54in,
-      #111 calc(0.54in + 1px)
-    );
+    linear-gradient(#111, #111) 0 0.7in / 100% 1px no-repeat,
+    linear-gradient(#111, #111) 0 1.12in / 100% 1px no-repeat;
   font: inherit;
   line-height: 0.54in;
 }

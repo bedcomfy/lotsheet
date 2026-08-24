@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.22.0 - 2026-08-24
+
+- Added a guided `Setup Lane` workflow for rebuilding the printable service
+  lane in the order Inspections, Retorques, Holds, Brake Tests, and Cards. It
+  reviews the replacement before applying it, removes superseded assignments,
+  and opens a fresh current-date PDF after the live update is confirmed.
+- Unified flags, object codes, and plain-language notes into one searchable bus
+  workspace. Notes become removable chips, detail-bearing flags keep the most
+  recently added bus in view, and optional inspection or retorque details warn
+  without blocking a valid save.
+- Streamlined bus and flag editing throughout the Lot Sheet, global search, and
+  dashboard, including preserved scroll position, clearer quick actions, and
+  removal of redundant instructional copy.
+- Corrected the Fuel Meter Readings print layout so only the two intended
+  handwriting lines appear beneath the bus-wash reason heading.
+
 ## 0.21.2 - 2026-08-20
 
 - Enlarged the Fuel and DEF grids with equal margins on all four sides while

@@ -1,10 +1,10 @@
 .pill {
   display: inline-flex;
+  min-width: 0;
   max-width: 100%;
   align-items: center;
   gap: var(--ui-space-1);
   padding: 0.25rem 0.55rem;
-  overflow: hidden;
   border: 1px solid
     color-mix(in srgb, var(--flag-color, var(--ui-accent)) 44%, var(--ui-border));
   border-radius: var(--ui-radius-pill);
@@ -23,8 +23,8 @@
   font-weight: var(--ui-weight-medium);
   line-height: 1.25;
   letter-spacing: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .note {

@@ -30,9 +30,13 @@
 .flagButton {
   width: 100%;
   min-height: 3rem;
+  height: auto;
+  align-items: center;
   justify-content: flex-start;
+  padding-block: var(--ui-space-2);
   border: 1px solid var(--ui-border);
   background: var(--ui-surface-muted);
+  white-space: normal;
 }
 
 .flagPills,
@@ -44,6 +48,10 @@
   gap: var(--ui-space-2);
 }
 
+.flagPills {
+  flex-wrap: wrap;
+}
+
 .addFlags svg,
 .chevron {
   width: 1rem;
@@ -51,6 +59,7 @@
 }
 
 .chevron {
+  flex: 0 0 auto;
   margin-left: auto;
   color: var(--ui-text-muted);
 }

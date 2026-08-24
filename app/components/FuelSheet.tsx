@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { FUEL_COLUMNS } from "../lib/fuelBuses";
 import { openSheetPdf } from "../lib/pdf";
 import { fuelIndicator } from "../lib/grid";
-import { Flag, History, Eraser, FileDown, FileText, MoreHorizontal } from "lucide-react";
+import { Flag, History, Eraser, FileDown, FileText, ListChecks, MoreHorizontal } from "lucide-react";
 import { useBusMaster } from "./BusMasterProvider";
 import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
@@ -99,6 +99,8 @@ interface FuelSheetProps {
   onReady?: (ready: boolean) => void;
   // Lets the shared Print All control flush the latest in-progress edits first.
   onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
+  // Service Sheets can open the guided nightly replacement beside Edit Flags.
+  onSetupLane?: () => void;
 }
 
 export default function FuelSheet({
@@ -113,6 +115,7 @@ export default function FuelSheet({
   dateOverride = "",
   onReady,
   onRegisterFlush,
+  onSetupLane,
 }: FuelSheetProps) {
   const [data, setData] = useState<FuelData>(emptyData);
   const [loaded, setLoaded] = useState(false);
@@ -373,6 +376,11 @@ export default function FuelSheet({
           variant="ui"
         />
         <ToolbarGroup className={chromeStyles.actions}>
+          {onSetupLane && (
+            <Button onPress={onSetupLane}>
+              <ListChecks aria-hidden="true" /> Setup Lane
+            </Button>
+          )}
           <Button onPress={() => setManagerOpen(true)}>
             <Flag aria-hidden="true" /> Edit Flags
           </Button>

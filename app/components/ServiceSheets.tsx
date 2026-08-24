@@ -10,6 +10,7 @@ import {
   Fuel,
   Gauge,
   Layers,
+  ListChecks,
   Printer,
   TriangleAlert,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import DatePickerField from "./DatePickerField";
 import FareboxSheet from "./FareboxSheet";
 import FuelSheet from "./FuelSheet";
 import ManagerPanel from "./ManagerPanelLazy";
+import SetupLane from "./SetupLaneLazy";
 import ServiceFlagSummary from "./ServiceFlagSummary";
 import BusErrorsSheet from "../sheets/bus-errors/BusErrorsSheet";
 import MeterReadingsSheet from "../sheets/meter-readings/MeterReadingsSheet";
@@ -49,6 +51,7 @@ export default function ServiceSheets() {
   const [tab, setTab] = useState<TabId>(initialTab);
   const [date, setDate] = useState(chicagoDateShort);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const { data: busFlags = {} } = useFlags();
   const queryClient = useQueryClient();
   const flushers = useRef<
@@ -97,12 +100,28 @@ export default function ServiceSheets() {
     openSheetPdf({ path: "/service/print-blank", params: { blank: 1 } });
   }
 
-  function printAll() {
-    openSheetPdf({
+  function printAll(dateOverride = date) {
+    return openSheetPdf({
       path: "/service/print-all",
       maint: true,
-      params: { dateOverride: date },
+      params: { dateOverride },
       flush: flushAll,
+    });
+  }
+
+  function applyLaneSetupAndPrint(apply: () => Promise<void>) {
+    const currentDate = chicagoDateShort();
+    setDate(currentDate);
+    return openSheetPdf({
+      path: "/service/print-all",
+      maint: true,
+      params: { dateOverride: currentDate },
+      abortOnFlushError: true,
+      flush: async () => {
+        await apply();
+        await queryClient.refetchQueries({ queryKey: ["flags"], type: "active" });
+        await flushAll();
+      },
     });
   }
 
@@ -157,12 +176,15 @@ export default function ServiceSheets() {
           <ToolbarGroup>
             {tab === "all" ? (
               <>
+                <Button onPress={() => setSetupOpen(true)}>
+                  <ListChecks aria-hidden="true" /> Setup Lane
+                </Button>
                 <Button onPress={() => setManagerOpen(true)}>
                   <Flag aria-hidden="true" /> Edit Flags
                 </Button>
                 <SplitButton
                   variant="primary"
-                  onPress={printAll}
+                  onPress={() => printAll()}
                   menuLabel="Print options"
                   items={[{ id: "blank", label: "Print blank forms", icon: <FileDown size={16} /> }]}
                   onAction={(key) => {
@@ -173,9 +195,14 @@ export default function ServiceSheets() {
                 </SplitButton>
               </>
             ) : (
-              <Button variant="primary" onPress={printSummary}>
-                <Printer size={16} /> Print PDF
-              </Button>
+              <>
+                <Button onPress={() => setSetupOpen(true)}>
+                  <ListChecks aria-hidden="true" /> Setup Lane
+                </Button>
+                <Button variant="primary" onPress={printSummary}>
+                  <Printer size={16} /> Print PDF
+                </Button>
+              </>
             )}
           </ToolbarGroup>
         </Toolbar>
@@ -225,18 +252,27 @@ export default function ServiceSheets() {
         </div>
       )}
 
-      {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" />}
-      {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies />}
-      {tab === "meters" && <MeterReadingsSheet />}
-      {tab === "errors" && <BusErrorsSheet />}
+      {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerFuel} />}
+      {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerDef} />}
+      {tab === "meters" && <MeterReadingsSheet onRegisterFlush={registerMeters} />}
+      {tab === "errors" && <BusErrorsSheet onRegisterFlush={registerErrors} />}
       {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
-      {tab === "farebox" && <FareboxSheet />}
+      {tab === "farebox" && <FareboxSheet onRegisterFlush={registerFarebox} />}
 
       {managerOpen && (
         <ManagerPanel
           flags={busFlags}
           onClose={() => setManagerOpen(false)}
           onBusFlagsUpdated={onFlagsUpdated}
+        />
+      )}
+      {setupOpen && (
+        <SetupLane
+          isOpen={setupOpen}
+          onOpenChange={setSetupOpen}
+          flags={busFlags}
+          onBusFlagsUpdated={onFlagsUpdated}
+          onApplyAndPrint={applyLaneSetupAndPrint}
         />
       )}
     </AppPage>

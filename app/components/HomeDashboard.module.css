@@ -404,13 +404,6 @@
   font-size: var(--ui-font-size-xs);
 }
 
-.footnote i {
-  width: 0.2rem;
-  height: 0.2rem;
-  border-radius: 999px;
-  background: var(--ui-border-strong);
-}
-
 .statusSummary {
   padding: var(--ui-space-3);
   border: 1px solid var(--ui-border);
