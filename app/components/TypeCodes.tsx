@@ -11,8 +11,9 @@ interface TypeCodesProps {
   variant?: "paper" | "ui";
 }
 
-// Renders a bus's type code(s), each in its colour, joined with a dash:
-// e.g. P  /  HEV  or  COACH / 30'. Standard buses (no types) render nothing.
+// Renders a bus's type code(s), each in its colour. Application UI keeps the
+// compact slash-separated form. On the Lot Sheet paper, the model tag sits
+// above the wrap so both remain legible in the narrow cell corner.
 export default function TypeCodes({ num, className = "", variant = "paper" }: TypeCodesProps) {
   const { types: busTypes } = useBusMaster();
   // Resolve to visible badges only (empty-code types like Standard render nothing),
@@ -38,11 +39,14 @@ export default function TypeCodes({ num, className = "", variant = "paper" }: Ty
       </span>
     );
   }
+  const paperVisible = [...visible].sort((a, b) => {
+    const rank = (kind: typeof a.kind) => (kind === "model" ? 0 : 1);
+    return rank(a.kind) - rank(b.kind);
+  });
   return (
     <span className={`typecodes ${className}`}>
-      {visible.map((ti, i) => (
+      {paperVisible.map((ti) => (
         <span key={ti.id} className="typecodes__seg">
-          {i > 0 && <span className="typecodes__sep">/</span>}
           <span className="badge" style={{ color: ti.color }}>
             {ti.code}
           </span>

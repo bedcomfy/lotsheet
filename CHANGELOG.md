@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.1 - 2026-08-24
+
+- Stacked Lot Sheet model/type and wrap tags vertically in the cell corner so
+  both labels remain readable without crowding the bus number.
+
 ## 0.24.0 - 2026-08-24
 
 - Added a separate Hybrid Bus Daily Servicing Log under Other Sheets with a

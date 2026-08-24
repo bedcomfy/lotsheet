@@ -263,18 +263,16 @@
   font-weight: 700;
   letter-spacing: 0.02em;
 }
-/* Type codes shown inline, dash-separated: P / HEV */
+/* Lot Sheet paper tags: model/type above the separately assigned wrap. */
 .typecodes {
   display: inline-flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
 }
 .typecodes__seg {
   display: inline-flex;
   align-items: baseline;
-}
-.typecodes__sep {
-  color: #6b7280;
-  padding: 0 1px;
 }
 /* Type code(s) pinned to the cell's top-right corner */
 .cell__types {
