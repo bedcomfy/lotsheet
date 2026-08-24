@@ -77,7 +77,7 @@ export default function CsvEditor({ onClose, onSaved }: CsvEditorProps) {
         if (!open) onClose();
       }}
       title="Edit full list (CSV)"
-      description="Columns: Bus Number, Bus Length, Bus Model, Model Tag, Wrap, Status, Fuel/DEF."
+      description="Columns: Bus Number, Bus Length, Bus Model, Model Tag, Wrap, Status, Fuel/DEF, Hybrid Service Log."
       size="lg"
       bodyClassName={styles.body}
       footer={(close) => (

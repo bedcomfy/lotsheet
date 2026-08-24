@@ -27,6 +27,16 @@ describe("SheetKit registry", () => {
     }
   });
 
+  it("registers the weekly hybrid log as a single Letter portrait page", () => {
+    const hybrid = getSheetDefinitionByPath("/hybrid-weekly");
+    expect(hybrid).toMatchObject({
+      id: "hybrid-weekly",
+      stateKey: "hybrid-weekly",
+      expectedPages: { min: 1, max: 1 },
+    });
+    expect(hybrid?.paper.id).toBe("letter-portrait");
+  });
+
   it("has unique ids and paths", () => {
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.id)).size).toBe(SHEET_DEFINITIONS.length);
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.path)).size).toBe(SHEET_DEFINITIONS.length);

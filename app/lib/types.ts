@@ -92,6 +92,7 @@ export interface MasterBus {
   type?: string; // legacy category id: standard/short/coach/pulse/pulsehybrid/tow
   status: string; // "active" | "retired"
   lane?: boolean; // included on the Fuel/DEF lane (set after seed construction)
+  hybridLane?: boolean; // included on the weekly Gillig hybrid service log
   name?: string; // named vehicles (e.g. JUDI)
 }
 

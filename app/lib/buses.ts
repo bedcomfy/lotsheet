@@ -51,6 +51,41 @@ export function busModelId(b: MasterBus | null | undefined): string {
   return String(b.modelId || "").trim() || modelIdFromName(b.model);
 }
 
+export const GILLIG_HYBRID_MODEL_ID = "gillig-low-floor-hev";
+
+export function isGilligHybridBus(
+  bus: MasterBus | null | undefined,
+): boolean {
+  if (!bus) return false;
+  if (busModelId(bus) === GILLIG_HYBRID_MODEL_ID) return true;
+  const model = String(bus.model || "").toLowerCase();
+  return model.includes("gillig") && model.includes("hybrid");
+}
+
+export function isOnHybridServiceLog(
+  bus: MasterBus | null | undefined,
+): boolean {
+  return (
+    !!bus &&
+    bus.status !== "retired" &&
+    isGilligHybridBus(bus) &&
+    bus.hybridLane !== false
+  );
+}
+
+// Existing saved fleet records predate the dedicated hybrid log. Migrate only
+// those legacy Gillig rows in memory: they leave Fuel/DEF and join the hybrid
+// log. Once an administrator saves the fleet, both choices are explicit.
+export function normalizeBusMaster(master?: BusMaster | null): BusMaster {
+  const source = master && Array.isArray(master.buses) ? master.buses : [];
+  return {
+    buses: source.map((bus) => {
+      if (!isGilligHybridBus(bus) || bus.hybridLane !== undefined) return bus;
+      return { ...bus, lane: false, hybridLane: true };
+    }),
+  };
+}
+
 export function busWrapId(b: MasterBus | null | undefined): string {
   if (!b) return "standard";
   const explicit = String(b.wrapId || "").trim();
@@ -111,14 +146,25 @@ const SEED: MasterBus[] = [
   // 2016 ENC Pulse/Axess SS — Pulse
   ...mk([6563, 6564, 6565, 6566, 6567, 6568, 6569, 6570, 6571, 6572, 6573], { model: "2016 ENC Pulse/Axess SS", type: "pulse", length: "40 feet" }),
   // Gillig Low Floor Diesel Electric Hybrid — Pulse & Hybrid
-  ...mk([25538, 25539, 25545], { model: "Gillig Low Floor Diesel Electric Hybrid", type: "pulsehybrid", length: "40 feet" }),
+  ...mk(
+    [25538, 25539, 25540, 25541, 25542, 25543, 25544, 25545, 25546, 25547],
+    {
+      model: "Gillig Low Floor Diesel Electric Hybrid",
+      type: "pulsehybrid",
+      length: "40 feet",
+    },
+  ),
   // Named vehicle (tow truck), not in the fleet spreadsheet
   { num: "9690", model: "Tow Truck", type: "tow", length: "", status: "active", name: "JUDI" },
 ];
 
 // Seed lane membership from the current Fuel sheet list (active buses only).
 const FUEL_SET = new Set(FUEL_COLUMNS.flat().map(String));
-for (const b of SEED) b.lane = b.status === "active" && FUEL_SET.has(b.num);
+for (const b of SEED) {
+  const hybrid = isGilligHybridBus(b);
+  b.lane = !hybrid && b.status === "active" && FUEL_SET.has(b.num);
+  if (hybrid) b.hybridLane = b.status === "active";
+}
 
 export const DEFAULT_MASTER: BusMaster = { buses: SEED };
 
@@ -127,7 +173,9 @@ export const KNOWN_MODELS = [...new Set(SEED.map((b) => b.model).filter(Boolean)
 
 // Build the lookup helpers for a given master list.
 export function busHelpers(master?: BusMaster | null) {
-  const buses = master && Array.isArray(master.buses) ? master.buses : DEFAULT_MASTER.buses;
+  const buses = normalizeBusMaster(
+    master && Array.isArray(master.buses) ? master : DEFAULT_MASTER,
+  ).buses;
   const numbers = buses.map((b) => b.num);
   const set = new Set(numbers);
   const byNum: Record<string, MasterBus> = {};
@@ -147,6 +195,19 @@ export function busHelpers(master?: BusMaster | null) {
     names,
     // Buses on the Fuel/DEF service lane (active + lane flag).
     laneBuses: () => buses.filter((b) => b.lane && b.status !== "retired").map((b) => b.num),
+    // Farebox still covers both regular service-lane buses and hybrids. The
+    // hybrid weekly log replaces only Fuel/DEF, not farebox checks.
+    fareboxBuses: () =>
+      buses
+        .filter(
+          (b) =>
+            b.status !== "retired" &&
+            (b.lane || isOnHybridServiceLog(b)),
+        )
+        .map((b) => b.num),
+    // Gillig hybrids on their dedicated weekly servicing log.
+    hybridServiceBuses: () =>
+      buses.filter(isOnHybridServiceLog).map((b) => b.num),
   };
 }
 
@@ -205,18 +266,35 @@ function parseCsvLine(line: string): string[] {
   return out;
 }
 
-// Master list -> CSV text (the columns from the fleet spreadsheet + Fuel/DEF).
+// Master list -> CSV text (the columns from the fleet spreadsheet + sheet membership).
 // A bus can have several types, joined with " + " (e.g. "Pulse + Hybrid").
 function typeLabel(id: string): string {
   return BUS_TYPES.find((t) => t.id === id)?.label || id;
 }
 export function masterToCsv(buses: MasterBus[]): string {
-  const head = ["Bus Number", "Bus Length", "Bus Model", "Model Tag", "Wrap", "Status", "Fuel/DEF"];
+  const head = [
+    "Bus Number",
+    "Bus Length",
+    "Bus Model",
+    "Model Tag",
+    "Wrap",
+    "Status",
+    "Fuel/DEF",
+    "Hybrid Service Log",
+  ];
   const rows = (buses || []).map((b) => {
     const profile = modelInfo(busModelId(b));
     const modelTag = profile?.typeId ? typeLabel(profile.typeId) : "";
-    return [b.num, profile?.length || b.length || "", profile?.label || b.model || "", modelTag, typeLabel(busWrapId(b)),
-      b.status === "retired" ? "Retired" : "Active", b.lane ? "Yes" : "No"]
+    return [
+      b.num,
+      profile?.length || b.length || "",
+      profile?.label || b.model || "",
+      modelTag,
+      typeLabel(busWrapId(b)),
+      b.status === "retired" ? "Retired" : "Active",
+      b.lane ? "Yes" : "No",
+      isOnHybridServiceLog(b) ? "Yes" : "No",
+    ]
       .map(csvCell)
       .join(",");
   });
@@ -237,6 +315,11 @@ export function csvToMaster(text: string): BusMaster {
   const iWrap = col("wrap");
   const iStatus = col("status");
   const iLane = col("fuel", "lane", "def");
+  const iHybridLane = header.findIndex(
+    (cell) =>
+      cell.includes("hybrid") &&
+      (cell.includes("service") || cell.includes("log")),
+  );
   // Legacy category labels/ids (old CSVs stored one "Bus Type" like "Pulse & Hybrid").
   const labelToCat: Record<string, string> = {};
   BUS_CATEGORIES.forEach((c) => (labelToCat[c.label.toLowerCase()] = c.id));
@@ -277,7 +360,11 @@ export function csvToMaster(text: string): BusMaster {
       types: Array.from(new Set([...legacyTypes, wrapId])),
       status: /retire/i.test((iStatus >= 0 ? cells[iStatus] : "") || "") ? "retired" : "active",
       lane: iLane >= 0 ? /^(y|t|1)/i.test((cells[iLane] || "").trim()) : false,
+      hybridLane:
+        iHybridLane >= 0
+          ? /^(y|t|1)/i.test((cells[iHybridLane] || "").trim())
+          : undefined,
     });
   }
-  return { buses };
+  return normalizeBusMaster({ buses });
 }

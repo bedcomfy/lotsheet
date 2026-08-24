@@ -26,6 +26,8 @@ import {
   busTypeIds,
   busWrapId,
   BUS_STATUSES,
+  GILLIG_HYBRID_MODEL_ID,
+  isGilligHybridBus,
 } from "../lib/buses";
 import { getDeviceActor } from "../lib/deviceActor";
 import type { MasterBus } from "../lib/types";
@@ -180,13 +182,38 @@ const FleetRow = memo(function FleetRow({
           }
           options={BUS_STATUSES}
         />
-        <Checkbox
-          isSelected={!!bus.lane}
-          isDisabled={bus.status === "retired"}
-          onChange={(selected) => onUpdate(bus.num, { lane: selected })}
-        >
-          Fuel/DEF
-        </Checkbox>
+        <div className={styles.sheetMembership}>
+          <Checkbox
+            isSelected={!!bus.lane}
+            isDisabled={bus.status === "retired"}
+            onChange={(selected) =>
+              onUpdate(
+                bus.num,
+                isGilligHybridBus(bus) && selected
+                  ? { lane: true, hybridLane: false }
+                  : { lane: selected },
+              )
+            }
+          >
+            Add to Fuel/DEF
+          </Checkbox>
+          {isGilligHybridBus(bus) && (
+            <Checkbox
+              isSelected={bus.hybridLane !== false}
+              isDisabled={bus.status === "retired"}
+              onChange={(selected) =>
+                onUpdate(
+                  bus.num,
+                  selected
+                    ? { hybridLane: true, lane: false }
+                    : { hybridLane: false },
+                )
+              }
+            >
+              Add to hybrid service log
+            </Checkbox>
+          )}
+        </div>
       </header>
       <div className={styles.assignments}>
         <SelectField
@@ -303,6 +330,9 @@ export default function AdminBusEditor() {
         modelId: id,
         model: model?.label || bus.model || "",
         length: model?.length || "",
+        ...(id === GILLIG_HYBRID_MODEL_ID
+          ? { lane: false, hybridLane: true }
+          : { hybridLane: false }),
         types: Array.from(
           new Set([wrapId, model?.typeId || ""].filter(Boolean)),
         ),
@@ -702,7 +732,7 @@ export default function AdminBusEditor() {
 
       <Panel
         title="Fleet"
-        description="Assign each bus a model and wrap. The inherited model tag updates automatically."
+        description="Assign each bus a model, wrap, and the service sheet where it belongs."
         bodyClassName={styles.fleetBody}
         actions={
           <>

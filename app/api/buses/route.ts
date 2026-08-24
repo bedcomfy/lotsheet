@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { getState, setState } from "../../lib/store";
-import { busModelId, busWrapId, DEFAULT_MASTER, LEGACY_CATEGORY_TYPES } from "../../lib/buses";
+import {
+  busModelId,
+  busWrapId,
+  DEFAULT_MASTER,
+  LEGACY_CATEGORY_TYPES,
+  normalizeBusMaster,
+} from "../../lib/buses";
 import type { MasterBus } from "../../lib/types";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +17,9 @@ const KEY = "bus_master";
 export async function GET() {
   const { value, updatedAt } = await getState(KEY);
   const v = value as { buses?: unknown } | null;
-  const master = v && Array.isArray(v.buses) ? v : DEFAULT_MASTER;
+  const master = normalizeBusMaster(
+    v && Array.isArray(v.buses) ? (v as { buses: MasterBus[] }) : DEFAULT_MASTER,
+  );
   return NextResponse.json({ master, updatedAt: updatedAt || null });
 }
 
@@ -26,7 +34,7 @@ export async function PUT(req: Request) {
   // `types` array, migrating any legacy single `type` category.
   const seen = new Set<string>();
   const buses: MasterBus[] = [];
-  for (const b of master.buses) {
+  for (const b of normalizeBusMaster(master).buses) {
     const num = String(b?.num || "").trim();
     if (!num || seen.has(num)) continue;
     seen.add(num);
@@ -47,6 +55,7 @@ export async function PUT(req: Request) {
       types,
       status: b.status === "retired" ? "retired" : "active",
       lane: !!b.lane,
+      hybridLane: !!b.hybridLane,
       ...(b.name ? { name: String(b.name) } : {}),
     });
   }

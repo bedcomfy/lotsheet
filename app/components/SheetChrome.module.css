@@ -26,6 +26,19 @@
   width: 10.5rem;
 }
 
+.dateControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.dateLabel {
+  flex: 0 0 auto;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+}
+
 .saved {
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs);
@@ -51,6 +64,10 @@
   }
 
   .date {
+    width: 100%;
+  }
+
+  .dateControl {
     width: 100%;
   }
 

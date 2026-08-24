@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { DEFAULT_MASTER, busHelpers } from "../lib/buses";
+import { DEFAULT_MASTER, busHelpers, normalizeBusMaster } from "../lib/buses";
 import type { BusMaster } from "../lib/types";
 
 type BusHelpers = ReturnType<typeof busHelpers>;
@@ -18,7 +18,9 @@ const Ctx = createContext<BusMasterContextValue | null>(null);
 // Starts from the built-in default (so first render matches the server and
 // nothing flashes), then loads the saved copy from /api/buses.
 export function BusMasterProvider({ children }: { children: ReactNode }) {
-  const [master, setMaster] = useState<BusMaster>(DEFAULT_MASTER);
+  const [master, setMaster] = useState<BusMaster>(() =>
+    normalizeBusMaster(DEFAULT_MASTER),
+  );
   const [ready, setReady] = useState(false); // saved copy has loaded (or failed)
 
   useEffect(() => {
@@ -26,7 +28,9 @@ export function BusMasterProvider({ children }: { children: ReactNode }) {
     fetch("/api/buses")
       .then((r) => r.json())
       .then((d) => {
-        if (alive && d && d.master && Array.isArray(d.master.buses)) setMaster(d.master);
+        if (alive && d && d.master && Array.isArray(d.master.buses)) {
+          setMaster(normalizeBusMaster(d.master));
+        }
       })
       .catch(() => {})
       .finally(() => alive && setReady(true));

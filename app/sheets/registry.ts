@@ -1,6 +1,7 @@
 import { LEGAL_PORTRAIT, LETTER_PORTRAIT } from "./core/profiles";
 import type { SheetDefinition } from "./core/types";
 import { busErrorsDefinition } from "./bus-errors/definition";
+import { hybridWeeklyDefinition } from "./hybrid-weekly/definition";
 import { interiorCleaningDefinition } from "./interior-cleaning/definition";
 import { meterReadingsDefinition } from "./meter-readings/definition";
 import {
@@ -129,6 +130,7 @@ export const SHEET_DEFINITIONS = [
   meterReadingsDefinition,
   busErrorsDefinition,
   interiorCleaningDefinition,
+  hybridWeeklyDefinition,
 ] as const;
 
 type RegisteredSheetDefinition = (typeof SHEET_DEFINITIONS)[number];

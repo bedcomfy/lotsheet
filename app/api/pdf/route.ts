@@ -26,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "47"; // Add a third meter-sheet bus-wash reasoning line
+const PDF_VERSION = "48"; // Add weekly hybrid log and dedicated Fuel/DEF membership
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).

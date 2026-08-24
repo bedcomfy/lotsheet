@@ -258,8 +258,8 @@ export default function FareboxSheet({
     openSheetPdf({ path: "/farebox", maint: false, params: { blank: 1 } });
   }
 
-  const { laneBuses, ready: busReady } = useBusMaster();
-  const buses = laneOrder(laneBuses());
+  const { fareboxBuses, ready: busReady } = useBusMaster();
+  const buses = laneOrder(fareboxBuses());
   const requestedDate = dateOverride || param("dateOverride") || "";
   const displayDate = blankMode ? "" : requestedDate || (data.date && data.date.trim() ? data.date : chicagoDateShort());
 

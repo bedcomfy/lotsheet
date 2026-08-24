@@ -218,6 +218,13 @@
   min-width: 0;
 }
 
+.sheetMembership {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
 @media (max-width: 960px) {
   .tagRow,
   .modelRow {

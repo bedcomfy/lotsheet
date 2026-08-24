@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.23.0 - 2026-08-24
+
+- Added a source-faithful Hybrid Bus Weekly Servicing Log under Other Sheets.
+  The one-page Letter form follows the supplied Sunday-through-Saturday layout,
+  updates every printed date from a selectable week, and fills itself from the
+  current active Gillig hybrid fleet.
+- Added a dedicated `Add to hybrid service log` fleet setting for the Gillig
+  hybrid model. Existing hybrid buses move off Fuel/DEF in memory without a
+  production-data migration, remain on Farebox checks, and can be reassigned
+  explicitly from the protected bus editor or CSV.
+- Added SheetKit registration, live saved week state and history, PDF cache
+  invalidation, Storybook coverage, mobile Fit/100% viewing, and regression
+  tests for week boundaries and hybrid sheet membership.
+
 ## 0.22.0 - 2026-08-24
 
 - Added a guided `Setup Lane` workflow for rebuilding the printable service

@@ -15,6 +15,7 @@ const ALLOWED = new Set([
   "interior-cleaning",
   "meter-readings",
   "bus-errors",
+  "hybrid-weekly",
 ]);
 
 // Next 15+ makes route `params` a Promise — await it before use.

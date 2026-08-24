@@ -9,6 +9,7 @@ export const SHEET_REVISIONS = {
   "interior-cleaning": "8/20/26",
   "meter-readings": "8/20/26",
   "bus-errors": "8/20/26",
+  "hybrid-weekly": "8/24/26",
 } as const;
 
 export type RevisionSheetId = keyof typeof SHEET_REVISIONS;

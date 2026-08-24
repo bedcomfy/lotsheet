@@ -1,0 +1,138 @@
+.page {
+  --hybrid-table-height: 9.52in;
+  box-sizing: border-box;
+  padding: 0.28in 0.333333in 0.32in;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.logo {
+  position: absolute;
+  top: 0.3in;
+  left: 0.34in;
+  width: 0.27in;
+  height: auto;
+}
+
+.header {
+  display: grid;
+  height: 0.59in;
+  align-content: start;
+  justify-items: center;
+  gap: 0.085in;
+  font-size: 16.666667px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 21.333333px;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.rule {
+  height: 0;
+  margin: 0 0 0.141in;
+  border-top: 1.6px solid #111;
+}
+
+.days {
+  display: grid;
+  height: var(--hybrid-table-height);
+  grid-template-rows: repeat(7, 1fr);
+}
+
+.dayTable {
+  width: 100%;
+  height: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: 1.2px solid #111;
+  color: #111;
+  background: #fff;
+}
+
+.dayTable + .dayTable {
+  margin-top: -1.2px;
+}
+
+.dayTable col.busColumn {
+  width: 32pt;
+}
+
+.dayTable col.entryColumn {
+  width: 52pt;
+}
+
+.dayTable th,
+.dayTable td {
+  box-sizing: border-box;
+  padding: 0 0.08in;
+  border: 0.666667px solid #8a8a8a;
+  vertical-align: middle;
+}
+
+.dayTable th:nth-child(4n),
+.dayTable td:nth-child(4n) {
+  border-right: 1.266667px solid #111;
+}
+
+.dayHeading {
+  height: 0.138889in;
+  background: #d9d9d9;
+}
+
+.dayHeading th,
+.dayHeading td {
+  padding: 0;
+  border: 0;
+  border-bottom: 0;
+  font-size: 9.6px;
+  font-weight: 700;
+  line-height: normal;
+  text-align: center;
+}
+
+.dayHeading th + td,
+.dayHeading td + th {
+  border-left: 1.266667px solid #111;
+}
+
+.labels {
+  height: 0.138889in;
+  background: #d9d9d9;
+}
+
+.labels th {
+  padding: 0;
+  border: 0;
+  font-size: 6.933333px;
+  font-weight: 700;
+  line-height: normal;
+  text-align: center;
+}
+
+.labels th:nth-child(4n) {
+  border-right: 1.266667px solid #111;
+}
+
+.dayTable tbody tr {
+  height: calc((100% - 0.277778in) / var(--hybrid-data-rows));
+}
+
+.dayTable tbody th {
+  font-size: 9.066667px;
+  font-weight: 700;
+  text-align: left;
+}
+
+@media print {
+  .page {
+    padding: 0.28in 0.333333in 0.32in;
+  }
+}

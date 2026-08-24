@@ -43,6 +43,8 @@ interface KeyedSheetWorkspaceProps<T> {
   embedded?: boolean;
   marker?: boolean;
   dateOverride?: string;
+  dateLabel?: string;
+  dateShortYear?: boolean;
   getDate?: (value: T) => string;
   setDate?: (value: T, date: string) => T;
   onReady?: (ready: boolean) => void;
@@ -62,6 +64,8 @@ export default function KeyedSheetWorkspace<T>({
   embedded = false,
   marker = true,
   dateOverride = "",
+  dateLabel,
+  dateShortYear = true,
   getDate,
   setDate,
   onReady,
@@ -196,14 +200,23 @@ export default function KeyedSheetWorkspace<T>({
       {!embedded && (
         <Toolbar className={`${chromeStyles.toolbar} no-print`}>
           {getDate && setDate ? (
-            <DatePickerField
-              className={chromeStyles.date}
-              value={displayDate}
-              onValueChange={(date) => setValue((current) => setDate(current, date))}
-              shortYear
-              ariaLabel={`${definition.title} date`}
-              variant="ui"
-            />
+            <label className={chromeStyles.dateControl}>
+              {dateLabel && (
+                <span className={chromeStyles.dateLabel}>{dateLabel}</span>
+              )}
+              <DatePickerField
+                className={chromeStyles.date}
+                value={displayDate}
+                onValueChange={(date) =>
+                  setValue((current) => setDate(current, date))
+                }
+                shortYear={dateShortYear}
+                ariaLabel={
+                  dateLabel || `${definition.title} date`
+                }
+                variant="ui"
+              />
+            </label>
           ) : (
             <span className={chromeStyles.title}>{definition.title}</span>
           )}
