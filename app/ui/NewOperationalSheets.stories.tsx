@@ -5,6 +5,11 @@ import { BusErrorsPaper } from "../sheets/bus-errors/BusErrorsPaper";
 import { busErrorsFixtures } from "../sheets/bus-errors/fixtures";
 import { InteriorCleaningPaper } from "../sheets/interior-cleaning/InteriorCleaningPaper";
 import { interiorCleaningFixtures } from "../sheets/interior-cleaning/fixtures";
+import { HybridDailyPaper } from "../sheets/hybrid-daily/HybridDailyPaper";
+import {
+  HYBRID_DAILY_SAMPLE_BUSES,
+  hybridDailyFixtures,
+} from "../sheets/hybrid-daily/fixtures";
 import { HybridWeeklyPaper } from "../sheets/hybrid-weekly/HybridWeeklyPaper";
 import {
   HYBRID_WEEKLY_SAMPLE_BUSES,
@@ -23,6 +28,10 @@ function SheetGallery({ fixture = "typical" }: { fixture?: FixtureName }) {
         <InteriorCleaningPaper data={interiorCleaningFixtures[fixture]} />
         <MeterReadingsPaper data={meterReadingsFixtures[fixture]} />
         <BusErrorsPaper data={busErrorsFixtures[fixture]} />
+        <HybridDailyPaper
+          data={hybridDailyFixtures[fixture]}
+          busNumbers={fixture === "blank" ? [] : HYBRID_DAILY_SAMPLE_BUSES}
+        />
         <HybridWeeklyPaper
           data={hybridWeeklyFixtures[fixture]}
           busNumbers={HYBRID_WEEKLY_SAMPLE_BUSES}
@@ -79,6 +88,16 @@ export const PhoneFit: Story = {
             label="Bus Errors phone preview"
           >
             <BusErrorsPaper data={busErrorsFixtures.typical} />
+          </PaperViewport>
+          <PaperViewport
+            profile={LETTER_PORTRAIT}
+            mobileViewer
+            label="Hybrid Daily Service Log phone preview"
+          >
+            <HybridDailyPaper
+              data={hybridDailyFixtures.typical}
+              busNumbers={HYBRID_DAILY_SAMPLE_BUSES}
+            />
           </PaperViewport>
           <PaperViewport
             profile={LETTER_PORTRAIT}

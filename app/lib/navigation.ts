@@ -20,6 +20,7 @@ export interface AppRoute {
   icon: LucideIcon;
   description: string;
   matchPrefix?: string;
+  matchPaths?: string[];
 }
 
 export interface AppRouteGroup {
@@ -59,6 +60,7 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
     label: "Other Sheets",
     icon: Files,
     matchPrefix: "/other",
+    matchPaths: ["/interior-cleaning", "/hybrid-weekly", "/hybrid-daily"],
     description: "Cleaning and supporting operational forms",
   },
 ];
@@ -157,6 +159,7 @@ export function routeIsActive(
   pathname: string | null,
 ): boolean {
   if (!pathname) return false;
+  if (route.matchPaths?.includes(pathname)) return true;
   if (route.matchPrefix) {
     return pathname === route.path || pathname.startsWith(route.matchPrefix);
   }

@@ -1,7 +1,7 @@
 .page {
-  --hybrid-table-height: 9.52in;
+  --hybrid-table-height: 9.6in;
   box-sizing: border-box;
-  padding: 0.28in 0.333333in 0.32in;
+  padding: 0.28in 0.25in 0.24in;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
   font-weight: 400;
@@ -111,7 +111,7 @@
 .labels th {
   padding: 0;
   border: 0;
-  font-size: 6.933333px;
+  font-size: 8.666667px;
   font-weight: 700;
   line-height: normal;
   text-align: center;
@@ -126,13 +126,13 @@
 }
 
 .dayTable tbody th {
-  font-size: 9.066667px;
+  font-size: 10.666667px;
   font-weight: 700;
   text-align: left;
 }
 
 @media print {
   .page {
-    padding: 0.28in 0.333333in 0.32in;
+    padding: 0.28in 0.25in 0.24in;
   }
 }

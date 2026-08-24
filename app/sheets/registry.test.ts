@@ -37,6 +37,17 @@ describe("SheetKit registry", () => {
     expect(hybrid?.paper.id).toBe("letter-portrait");
   });
 
+  it("registers the daily hybrid log as its own single Letter page", () => {
+    const hybrid = getSheetDefinitionByPath("/hybrid-daily");
+    expect(hybrid).toMatchObject({
+      id: "hybrid-daily",
+      stateKey: "hybrid-daily",
+      expectedPages: { min: 1, max: 1 },
+      variants: ["current", "blank"],
+    });
+    expect(hybrid?.paper.id).toBe("letter-portrait");
+  });
+
   it("has unique ids and paths", () => {
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.id)).size).toBe(SHEET_DEFINITIONS.length);
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.path)).size).toBe(SHEET_DEFINITIONS.length);

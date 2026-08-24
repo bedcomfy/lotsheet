@@ -50,6 +50,11 @@ interface KeyedSheetWorkspaceProps<T> {
   onReady?: (ready: boolean) => void;
   onRegisterFlush?: (flush: Flush | null) => void;
   describeHistory?: (value: T) => { title: string; meta: string };
+  printLabel?: string;
+  blankPrintLabel?: string;
+  getBlankPrintParams?: (
+    value: T,
+  ) => Record<string, string | number | null | undefined>;
 }
 
 function queryParam(name: string): string {
@@ -71,6 +76,9 @@ export default function KeyedSheetWorkspace<T>({
   onReady,
   onRegisterFlush,
   describeHistory,
+  printLabel = "Print PDF",
+  blankPrintLabel = "Print blank form",
+  getBlankPrintParams,
 }: KeyedSheetWorkspaceProps<T>) {
   const adapter = useMemo(
     () => createKeyedStateAdapter(definition),
@@ -188,7 +196,10 @@ export default function KeyedSheetWorkspace<T>({
   function printBlank() {
     openSheetPdf({
       path: definition.path,
-      params: { blank: 1 },
+      params: {
+        blank: 1,
+        ...(getBlankPrintParams?.(valueRef.current) || {}),
+      },
     });
   }
 
@@ -252,7 +263,7 @@ export default function KeyedSheetWorkspace<T>({
               items={[
                 {
                   id: "blank",
-                  label: "Print blank form",
+                  label: blankPrintLabel,
                   icon: <FileText size={16} />,
                 },
               ]}
@@ -260,7 +271,7 @@ export default function KeyedSheetWorkspace<T>({
                 if (key === "blank") printBlank();
               }}
             >
-              <FileDown aria-hidden="true" /> Print PDF
+              <FileDown aria-hidden="true" /> {printLabel}
             </SplitButton>
           </ToolbarGroup>
         </Toolbar>

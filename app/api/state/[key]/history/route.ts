@@ -13,6 +13,7 @@ const ALLOWED = new Set([
   "interior-cleaning",
   "meter-readings",
   "bus-errors",
+  "hybrid-daily",
   "hybrid-weekly",
 ]);
 

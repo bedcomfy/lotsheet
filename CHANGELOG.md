@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.24.0 - 2026-08-24
+
+- Added a separate Hybrid Bus Daily Servicing Log under Other Sheets with a
+  selectable service date, the current eligible hybrid fleet, and 20 uniform
+  write-in rows for fuel, DEF, farebox probing, pump readings, cleaning needs,
+  issues or notes, and six-digit servicer IDs.
+- Added current-roster and blank daily print options. Blank forms preserve the
+  selected date without pre-filling bus numbers, and both variants use the same
+  one-page Letter layout, Pace mark, structural revision date, and fresh PDF
+  cache version.
+- Enlarged the weekly hybrid log's bus and column labels and used more of the
+  available page margins for clearer handwriting and improved legibility while
+  preserving its supplied one-page structure.
+
 ## 0.23.0 - 2026-08-24
 
 - Added a source-faithful Hybrid Bus Weekly Servicing Log under Other Sheets.
