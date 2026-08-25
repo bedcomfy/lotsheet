@@ -15,7 +15,7 @@ import type {
   SearchFieldProps as AriaSearchFieldProps,
   TextFieldProps as AriaTextFieldProps,
 } from "react-aria-components";
-import type { ReactNode, Ref } from "react";
+import type { HTMLInputTypeAttribute, ReactNode, Ref } from "react";
 import styles from "./Field.module.css";
 import { cx } from "./utils";
 
@@ -32,6 +32,7 @@ export interface TextFieldProps
   extends Omit<AriaTextFieldProps, "children" | "className">,
     FieldCopyProps {
   className?: string;
+  inputType?: HTMLInputTypeAttribute;
 }
 
 export function TextField({
@@ -42,6 +43,7 @@ export function TextField({
   placeholder,
   inputRef,
   className,
+  inputType = "text",
   ...props
 }: TextFieldProps) {
   return (
@@ -50,7 +52,12 @@ export function TextField({
         {label}
       </Label>
       <div className={styles.control}>
-        <Input ref={inputRef} className={styles.input} placeholder={placeholder} />
+        <Input
+          ref={inputRef}
+          className={styles.input}
+          placeholder={placeholder}
+          type={inputType}
+        />
       </div>
       {description && (
         <Text slot="description" className={styles.description}>

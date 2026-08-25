@@ -15,6 +15,7 @@ const ALLOWED = new Set([
   "bus-errors",
   "hybrid-daily",
   "hybrid-weekly",
+  "monthly-cleaning",
 ]);
 
 function check(key: string): boolean {

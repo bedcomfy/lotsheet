@@ -52,6 +52,11 @@ export const FieldSet: Story = {
         isReadOnly
       />
       <TextField
+        label="Cleaning month"
+        inputType="month"
+        defaultValue="2026-08"
+      />
+      <TextField
         label="Disabled value"
         value="Unavailable"
         isDisabled

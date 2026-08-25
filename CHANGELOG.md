@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0 - 2026-08-24
+
+- Added a Monthly Bus Cleaning sheet under Other Sheets with the current active
+  bus roster, excluding non-bus fleet entries such as the tow truck.
+- Added a month selector and live cleaning-date and servicer fields while
+  preserving a four-column printable layout based on the existing service
+  sheets.
+- Added current-roster and blank print options. The roster print uses the
+  selected month, while the blank form leaves a handwritten line in the title:
+  `Bus Cleaning Month of __________`.
+
 ## 0.24.1 - 2026-08-24
 
 - Stacked Lot Sheet model/type and wrap tags vertically in the cell corner so

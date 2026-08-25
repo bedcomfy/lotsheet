@@ -17,6 +17,11 @@ import {
 } from "../sheets/hybrid-weekly/fixtures";
 import { MeterReadingsPaper } from "../sheets/meter-readings/MeterReadingsPaper";
 import { meterReadingsFixtures } from "../sheets/meter-readings/fixtures";
+import { MonthlyCleaningPaper } from "../sheets/monthly-cleaning/MonthlyCleaningPaper";
+import {
+  MONTHLY_CLEANING_SAMPLE_BUSES,
+  monthlyCleaningFixtures,
+} from "../sheets/monthly-cleaning/fixtures";
 import styles from "./NewOperationalSheets.stories.module.css";
 
 type FixtureName = "blank" | "typical" | "stress";
@@ -35,6 +40,11 @@ function SheetGallery({ fixture = "typical" }: { fixture?: FixtureName }) {
         <HybridWeeklyPaper
           data={hybridWeeklyFixtures[fixture]}
           busNumbers={HYBRID_WEEKLY_SAMPLE_BUSES}
+        />
+        <MonthlyCleaningPaper
+          data={monthlyCleaningFixtures[fixture]}
+          busNumbers={MONTHLY_CLEANING_SAMPLE_BUSES}
+          blank={fixture === "blank"}
         />
       </div>
     </main>
@@ -107,6 +117,16 @@ export const PhoneFit: Story = {
             <HybridWeeklyPaper
               data={hybridWeeklyFixtures.typical}
               busNumbers={HYBRID_WEEKLY_SAMPLE_BUSES}
+            />
+          </PaperViewport>
+          <PaperViewport
+            profile={LETTER_PORTRAIT}
+            mobileViewer
+            label="Monthly Bus Cleaning phone preview"
+          >
+            <MonthlyCleaningPaper
+              data={monthlyCleaningFixtures.typical}
+              busNumbers={MONTHLY_CLEANING_SAMPLE_BUSES}
             />
           </PaperViewport>
         </div>

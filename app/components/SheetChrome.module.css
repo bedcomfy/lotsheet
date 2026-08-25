@@ -32,6 +32,13 @@
   gap: var(--ui-space-2);
 }
 
+.monthControl {
+  display: inline-grid;
+  grid-template-columns: max-content 10.5rem;
+  align-items: center;
+  width: auto;
+}
+
 .dateLabel {
   flex: 0 0 auto;
   color: var(--ui-text-muted);
@@ -68,6 +75,11 @@
   }
 
   .dateControl {
+    width: 100%;
+  }
+
+  .monthControl {
+    grid-template-columns: 1fr;
     width: 100%;
   }
 

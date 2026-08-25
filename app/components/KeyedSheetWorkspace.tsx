@@ -20,6 +20,7 @@ import {
   ActionMenu,
   ConfirmDialog,
   SplitButton,
+  TextField,
   Toolbar,
   ToolbarGroup,
 } from "../ui";
@@ -45,6 +46,7 @@ interface KeyedSheetWorkspaceProps<T> {
   dateOverride?: string;
   dateLabel?: string;
   dateShortYear?: boolean;
+  dateControlType?: "date" | "month";
   getDate?: (value: T) => string;
   setDate?: (value: T, date: string) => T;
   onReady?: (ready: boolean) => void;
@@ -71,6 +73,7 @@ export default function KeyedSheetWorkspace<T>({
   dateOverride = "",
   dateLabel,
   dateShortYear = true,
+  dateControlType = "date",
   getDate,
   setDate,
   onReady,
@@ -210,7 +213,17 @@ export default function KeyedSheetWorkspace<T>({
     <div className={chromeStyles.page}>
       {!embedded && (
         <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-          {getDate && setDate ? (
+          {getDate && setDate && dateControlType === "month" ? (
+            <TextField
+              className={chromeStyles.monthControl}
+              label={dateLabel || `${definition.title} month`}
+              inputType="month"
+              value={displayDate}
+              onChange={(month) =>
+                setValue((current) => setDate(current, month))
+              }
+            />
+          ) : getDate && setDate ? (
             <label className={chromeStyles.dateControl}>
               {dateLabel && (
                 <span className={chromeStyles.dateLabel}>{dateLabel}</span>

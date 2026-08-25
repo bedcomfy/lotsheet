@@ -11,6 +11,7 @@ export const SHEET_REVISIONS = {
   "bus-errors": "8/20/26",
   "hybrid-daily": "8/24/26",
   "hybrid-weekly": "8/24/26",
+  "monthly-cleaning": "8/24/26",
 } as const;
 
 export type RevisionSheetId = keyof typeof SHEET_REVISIONS;

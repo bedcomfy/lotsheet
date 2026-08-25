@@ -60,7 +60,12 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
     label: "Other Sheets",
     icon: Files,
     matchPrefix: "/other",
-    matchPaths: ["/interior-cleaning", "/hybrid-weekly", "/hybrid-daily"],
+    matchPaths: [
+      "/interior-cleaning",
+      "/hybrid-weekly",
+      "/hybrid-daily",
+      "/monthly-cleaning",
+    ],
     description: "Cleaning and supporting operational forms",
   },
 ];
