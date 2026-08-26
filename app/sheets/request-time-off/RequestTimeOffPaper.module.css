@@ -1,0 +1,234 @@
+.page {
+  box-sizing: border-box;
+  padding: 0.58in 0.78in 0.42in;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.logo {
+  position: absolute;
+  top: 0.28in;
+  left: 0.32in;
+  width: 0.34in;
+  height: auto;
+  pointer-events: none;
+}
+
+.page h1 {
+  margin: 0.31in 0 0;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.page input {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  color: #000;
+  background: transparent;
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.page input:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.timestamp {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 0.58in;
+  padding-right: 0.24in;
+}
+
+.timestamp input {
+  width: 1.65in;
+  border-bottom: 1px solid #111;
+  text-align: center;
+}
+
+.leaveSection {
+  margin-top: 0.11in;
+}
+
+.leaveSection h2 {
+  margin: 0 0 0.2in;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.leaveGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.18fr 1fr;
+  column-gap: 0.38in;
+  row-gap: 0.16in;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.09in;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.choice input[type="checkbox"] {
+  width: 0.2in;
+  height: 0.2in;
+  flex: 0 0 0.2in;
+  margin: 0;
+  accent-color: #111;
+}
+
+.period {
+  margin-top: 0.51in;
+}
+
+.period p {
+  margin: 0;
+}
+
+.periodFields {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.08in;
+  margin-top: 0.22in;
+  white-space: nowrap;
+}
+
+.dateFields,
+.datePart {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.dateFields {
+  gap: 0.04in;
+}
+
+.datePart {
+  gap: 0.04in;
+}
+
+.datePart input {
+  width: 0.44in;
+  border-bottom: 1px solid #111;
+  text-align: center;
+}
+
+.datePart:last-child input {
+  width: 0.62in;
+}
+
+.days {
+  width: 0.48in;
+  border-bottom: 1px solid #111 !important;
+  text-align: center;
+}
+
+.employeeBlock {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.7fr) minmax(0, 0.72fr);
+  gap: 0.12in;
+  align-items: end;
+  margin-top: 0.39in;
+}
+
+.lineField {
+  display: grid;
+  min-width: 0;
+  gap: 0.03in;
+  text-align: center;
+}
+
+.lineField > span:first-child {
+  min-height: 1.2em;
+}
+
+.lineField > input,
+.prefixedLine {
+  width: 100%;
+  height: 0.31in;
+  border-bottom: 1px solid #111;
+}
+
+.prefixedLine {
+  display: flex;
+  align-items: baseline;
+}
+
+.prefixedLine b {
+  flex: 0 0 auto;
+  padding-right: 4px;
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 0.9;
+}
+
+.prefixedLine input {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+}
+
+.payrollChoices {
+  display: grid;
+  grid-template-columns: 1fr 1.18fr 1fr;
+  column-gap: 0.38in;
+  margin-top: 0.28in;
+}
+
+.approvalLines {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.35in;
+  column-gap: 0.22in;
+  row-gap: 0.55in;
+  margin: 0.68in 0.08in 0;
+}
+
+.approvalLine {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.approvalLine input {
+  width: 100%;
+  height: 0.28in;
+  border-bottom: 1px solid #111;
+}
+
+.approvalLine span {
+  padding-top: 0.04in;
+}
+
+.approvalDate span {
+  text-align: center;
+}
+
+.finalDecision {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.55in;
+  margin: 0.62in 0.14in 0;
+}
+
+@media print {
+  .page {
+    padding: 0.58in 0.78in 0.42in;
+  }
+
+  .page input:focus-visible {
+    outline: 0;
+  }
+}

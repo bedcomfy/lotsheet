@@ -59,6 +59,17 @@ describe("SheetKit registry", () => {
     expect(cleaning?.paper.id).toBe("letter-portrait");
   });
 
+  it("registers Request Time Off as a blank-capable Letter form", () => {
+    const request = getSheetDefinitionByPath("/request-time-off");
+    expect(request).toMatchObject({
+      id: "request-time-off",
+      stateKey: "request-time-off",
+      expectedPages: { min: 1, max: 1 },
+      variants: ["current", "blank"],
+    });
+    expect(request?.paper.id).toBe("letter-portrait");
+  });
+
   it("has unique ids and paths", () => {
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.id)).size).toBe(SHEET_DEFINITIONS.length);
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.path)).size).toBe(SHEET_DEFINITIONS.length);

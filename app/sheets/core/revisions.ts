@@ -12,6 +12,7 @@ export const SHEET_REVISIONS = {
   "hybrid-daily": "8/24/26",
   "hybrid-weekly": "8/24/26",
   "monthly-cleaning": "8/24/26",
+  "request-time-off": "8/25/26",
 } as const;
 
 export type RevisionSheetId = keyof typeof SHEET_REVISIONS;

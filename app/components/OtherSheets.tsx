@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import type { Key } from "react-aria-components";
-import { BusFront, CalendarDays, CalendarRange, Sparkles } from "lucide-react";
+import {
+  BusFront,
+  CalendarDays,
+  CalendarOff,
+  CalendarRange,
+  Sparkles,
+} from "lucide-react";
 import HybridDailySheet from "../sheets/hybrid-daily/HybridDailySheet";
 import HybridWeeklySheet from "../sheets/hybrid-weekly/HybridWeeklySheet";
 import InteriorCleaningSheet from "../sheets/interior-cleaning/InteriorCleaningSheet";
 import MonthlyCleaningSheet from "../sheets/monthly-cleaning/MonthlyCleaningSheet";
+import RequestTimeOffSheet from "../sheets/request-time-off/RequestTimeOffSheet";
 import { AppPage, PageHeader, TabBar } from "../ui";
 import styles from "./OtherSheets.module.css";
 
@@ -44,6 +51,11 @@ export default function OtherSheets() {
             label: "Monthly Bus Cleaning",
             icon: <CalendarRange aria-hidden="true" />,
           },
+          {
+            id: "request-time-off",
+            label: "Request Time Off",
+            icon: <CalendarOff aria-hidden="true" />,
+          },
         ]}
       />
       {selected === "interior-cleaning" ? (
@@ -52,8 +64,10 @@ export default function OtherSheets() {
         <HybridWeeklySheet />
       ) : selected === "hybrid-daily" ? (
         <HybridDailySheet />
-      ) : (
+      ) : selected === "monthly-cleaning" ? (
         <MonthlyCleaningSheet />
+      ) : (
+        <RequestTimeOffSheet />
       )}
     </AppPage>
   );

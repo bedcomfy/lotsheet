@@ -16,6 +16,7 @@ const ALLOWED = new Set([
   "hybrid-daily",
   "hybrid-weekly",
   "monthly-cleaning",
+  "request-time-off",
 ]);
 
 function check(key: string): boolean {

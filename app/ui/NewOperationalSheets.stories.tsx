@@ -22,6 +22,8 @@ import {
   MONTHLY_CLEANING_SAMPLE_BUSES,
   monthlyCleaningFixtures,
 } from "../sheets/monthly-cleaning/fixtures";
+import { RequestTimeOffPaper } from "../sheets/request-time-off/RequestTimeOffPaper";
+import { requestTimeOffFixtures } from "../sheets/request-time-off/fixtures";
 import styles from "./NewOperationalSheets.stories.module.css";
 
 type FixtureName = "blank" | "typical" | "stress";
@@ -46,6 +48,7 @@ function SheetGallery({ fixture = "typical" }: { fixture?: FixtureName }) {
           busNumbers={MONTHLY_CLEANING_SAMPLE_BUSES}
           blank={fixture === "blank"}
         />
+        <RequestTimeOffPaper data={requestTimeOffFixtures[fixture]} />
       </div>
     </main>
   );
@@ -128,6 +131,13 @@ export const PhoneFit: Story = {
               data={monthlyCleaningFixtures.typical}
               busNumbers={MONTHLY_CLEANING_SAMPLE_BUSES}
             />
+          </PaperViewport>
+          <PaperViewport
+            profile={LETTER_PORTRAIT}
+            mobileViewer
+            label="Request Time Off phone preview"
+          >
+            <RequestTimeOffPaper data={requestTimeOffFixtures.typical} />
           </PaperViewport>
         </div>
       </div>

@@ -75,3 +75,40 @@ final result: passed
   Letter/Legal MediaBoxes, and the absence of application chrome.
 - Storybook visual regression, TypeScript, 85 unit tests, and the production
   build passed.
+
+---
+
+# Design QA: Request Time Off Sheet
+
+## Source
+
+- Reference: supplied photograph of the Pace Request Time Off paper form.
+- Implementation: `/request-time-off` and the Request Time Off tab under
+  `/other` on `codex/request-time-off-sheet`.
+- Comparison state: blank Letter page at desktop and 375 x 812 phone widths.
+
+## Result
+
+final result: passed
+
+## Visual Review
+
+- The title, date/time line, three-column leave choices, requested-period
+  fields, employee signature block, payroll choices, two approval lines, and
+  final approval choices preserve the source order and spacing.
+- The photographed skew and perspective were removed while retaining the
+  original form's simple black-and-white typography and handwriting areas.
+- The existing Pace mark and structural revision convention were added without
+  covering or shifting any source field.
+- The browser preview and generated PDF use the same paper component and exact
+  Letter geometry.
+
+## Verification
+
+- Desktop and mobile previews were visually inspected in 100% and Fit modes.
+- Mobile body width stayed within the viewport; only the paper viewport owns
+  horizontal panning at 100%.
+- A test timestamp and Birthday selection persisted through reload using the
+  shared sheet state path, while blank printing omitted the saved values.
+- The final PDF rendered as one 612 x 792 point Letter page with no clipping,
+  overlap, extra page, or application chrome.

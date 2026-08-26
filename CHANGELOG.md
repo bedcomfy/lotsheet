@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.26.0 - 2026-08-25
+
+- Added a source-faithful Request Time Off form under Other Sheets with all
+  leave choices, request dates, employee details, approval signatures, and
+  final approval fields from the supplied paper form.
+- Added live shared saving, previous-sheet history, current and blank Letter
+  printing, the Pace mark, and a structural revision date.
+- Added SheetKit registration, direct-route navigation, mobile Fit/100%
+  viewing, schema coverage, and Storybook blank, typical, stress, and phone
+  fixtures.
+
 ## 0.25.1 - 2026-08-25
 
 - Fixed `Print Blank Daily Log` so it keeps the complete current hybrid bus

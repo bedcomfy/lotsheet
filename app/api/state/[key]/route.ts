@@ -18,6 +18,7 @@ const ALLOWED = new Set([
   "hybrid-daily",
   "hybrid-weekly",
   "monthly-cleaning",
+  "request-time-off",
 ]);
 
 // Next 15+ makes route `params` a Promise — await it before use.

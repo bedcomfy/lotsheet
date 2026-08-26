@@ -65,6 +65,7 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
       "/hybrid-weekly",
       "/hybrid-daily",
       "/monthly-cleaning",
+      "/request-time-off",
     ],
     description: "Cleaning and supporting operational forms",
   },
