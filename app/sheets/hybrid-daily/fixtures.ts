@@ -14,7 +14,7 @@ export const HYBRID_DAILY_SAMPLE_BUSES = [
 ];
 
 export const hybridDailyFixtures = {
-  blank: hybridDailySchema.parse({ date: "08/24/2026" }),
+  blank: hybridDailySchema.parse({ date: "" }),
   typical: hybridDailySchema.parse({ date: "08/24/2026" }),
   stress: hybridDailySchema.parse({ date: "12/31/2026" }),
 };

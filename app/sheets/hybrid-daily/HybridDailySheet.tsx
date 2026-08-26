@@ -62,7 +62,6 @@ export default function HybridDailySheet({
         onRegisterFlush={onRegisterFlush}
         printLabel="Print Current Roster"
         blankPrintLabel="Print Blank Daily Log"
-        getBlankPrintParams={(value) => ({ dateOverride: value.date })}
         describeHistory={(value) => ({
           title: value.date ? `Date: ${value.date}` : "Undated hybrid daily log",
           meta: `${busNumbers.length} hybrid buses`,
@@ -70,7 +69,8 @@ export default function HybridDailySheet({
         renderPaper={({ value, blank, dateOverride }) => (
           <HybridDailyPaper
             data={value}
-            busNumbers={blank ? [] : busNumbers}
+            busNumbers={busNumbers}
+            blank={blank}
             dateOverride={dateOverride}
           />
         )}

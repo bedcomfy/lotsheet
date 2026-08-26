@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.1 - 2026-08-25
+
+- Fixed `Print Blank Daily Log` so it keeps the complete current hybrid bus
+  roster and clears the date instead of clearing the buses.
+
 ## 0.25.0 - 2026-08-24
 
 - Added a Monthly Bus Cleaning sheet under Other Sheets with the current active

@@ -9,6 +9,7 @@ import styles from "./HybridDailyPaper.module.css";
 interface HybridDailyPaperProps {
   data: HybridDailyData;
   busNumbers: string[];
+  blank?: boolean;
   dateOverride?: string;
 }
 
@@ -17,12 +18,13 @@ const ROW_COUNT = 20;
 export function HybridDailyPaper({
   data,
   busNumbers,
+  blank = false,
   dateOverride = "",
 }: HybridDailyPaperProps) {
   const sortedBuses = [...busNumbers].sort(
     (left, right) => Number(left) - Number(right) || left.localeCompare(right),
   );
-  const date = dateOverride || data.date;
+  const date = blank ? "" : dateOverride || data.date;
   const day = hybridDailyDayLabel(date);
 
   return (

@@ -26,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "50"; // Add the monthly bus cleaning sheet
+const PDF_VERSION = "51"; // Fix the blank Hybrid Daily roster and date
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).
