@@ -742,6 +742,7 @@
 
 /* ---------- Turnover sheet (LEGAL size, 8.5 x 14) — fixed 1:1 grid ---------- */
 .turn-sheet {
+  --turnover-edge: 0.25in;
   position: relative;
   background: var(--paper);
   color: var(--ink); /* white paper, dark ink — even in dark theme */
@@ -750,8 +751,8 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 20px 24px;
-  font-size: var(--tfz, 13px);
+  padding: var(--turnover-edge);
+  font-size: var(--tfz, 14px);
 }
 @media screen {
   .turn-sheet {
@@ -777,9 +778,9 @@
 .turnt td {
   border: 1px solid #999;
   /* Uniform fixed-height rows so empty cells don't collapse (1:1 with paper). */
-  height: 1.9em;
+  height: 24.6875px;
   padding: 0 4px;
-  font-size: var(--tfz, 13px);
+  font-size: var(--tfz, 14px);
   white-space: nowrap;
   overflow: hidden;
   vertical-align: middle;
@@ -789,13 +790,17 @@
   border: none;
 }
 .turnt__brand {
+  position: relative;
+  top: -2px;
   text-align: center;
   font-weight: normal;
 }
 .turnt__shiftpick {
+  position: relative;
+  top: -2px;
   text-align: center;
   white-space: nowrap;
-  font-size: calc(var(--tfz, 13px) + 2px);
+  font-size: calc(var(--tfz, 14px) + 2px);
 }
 .turnt__shiftsep {
   color: #6b7280;
@@ -824,6 +829,10 @@
   align-items: center;
   gap: 5px;
 }
+.turnt__band .turnt__fline {
+  position: relative;
+  top: -2px;
+}
 .turnt__fieldlbl {
   flex: 0 0 auto;
   white-space: nowrap;
@@ -840,19 +849,20 @@
 .turnt__slash {
   flex: 0 0 auto;
 }
-/* Header rows: underlined labels with light shading. */
+/* Shaded headers use clean labels without underlines. */
 .turnt__head td,
 td.turnt__head {
   text-align: center;
   font-weight: normal;
-  text-decoration: underline;
+  text-decoration: none;
   background: #e6e6e6;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-/* The Bay header keeps the underline but no shading. */
+/* The unshaded Bay header retains the source sheet's underlines. */
 .turnt__head--plain td {
   background: #fff;
+  text-decoration: underline;
 }
 .turnt__head--btn,
 .turnt__reason--btn,
@@ -915,7 +925,7 @@ td.turnt__head {
   width: 100%;
   border: none;
   background: transparent;
-  font-size: var(--tfz, 13px);
+  font-size: var(--tfz, 14px);
   padding: 0;
   text-align: left;
 }
@@ -942,7 +952,7 @@ td.turnt__head {
     min-width: 0;
     max-width: none;
     width: 100%;
-    padding: 0.3in 0.34in;
+    padding: var(--turnover-edge);
   }
   /* The on-screen edit affordances don't print. */
   .turnt__edit {

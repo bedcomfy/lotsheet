@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.25.2 - 2026-08-27
+
+- Matched the Turnover Sheet preview and legal-size PDF with equal side and
+  bottom margins while keeping the form anchored to the bottom of the page.
+- Improved printed legibility with slightly larger text without changing the
+  table's row heights, column widths, or overall grid geometry.
+- Added breathing room between the date header and the grid and removed
+  underlines from shaded section labels while preserving the source form's
+  unshaded underlined labels.
+
 ## 0.25.1 - 2026-08-25
 
 - Fixed `Print Blank Daily Log` so it keeps the complete current hybrid bus

@@ -26,7 +26,7 @@ import chromeStyles from "./SheetChrome.module.css";
 import styles from "./TurnoverSheet.module.css";
 
 const STORAGE_KEY = "turnover";
-const FONT_DEFAULT = 13;
+const FONT_DEFAULT = 14;
 const FONT_MIN = 8;
 const FONT_MAX = 16;
 
