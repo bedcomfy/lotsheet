@@ -753,7 +753,7 @@ export default function TurnoverSheet() {
               <tr className="turnt__head turnt__head--plain">
                 <td />
                 <td>BAY</td>
-                <td colSpan={3}>1ST HALF</td>
+                <td colSpan={3}>SHOP</td>
                 <td colSpan={4}>HOLDS / NOTES</td>
               </tr>
               {Array.from({ length: BAY_ROWS }, (_, i) => {

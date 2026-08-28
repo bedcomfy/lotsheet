@@ -906,7 +906,7 @@ td.turnt__head {
 .turnt__bayno {
   flex: 0 0 auto;
 }
-/* The bay bus's flags under 1ST HALF — auto from the flag system, tap to edit.
+/* The bay bus's flags under SHOP — auto from the flag system, tap to edit.
    The input next to it stays free for extra hand-typed notes. */
 .turnt__bayflag {
   flex: 0 1 auto;

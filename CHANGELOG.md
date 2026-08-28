@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.3 - 2026-08-27
+
+- Renamed the Turnover Sheet's `1ST HALF` column to `SHOP`.
+
 ## 0.25.2 - 2026-08-27
 
 - Matched the Turnover Sheet preview and legal-size PDF with equal side and
