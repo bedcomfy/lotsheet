@@ -789,6 +789,11 @@
 .turnt__band td {
   border: none;
 }
+/* Spacer between the DATE line and the first grid header. */
+.turnt__band--gap td {
+  height: 20px;
+  padding: 0;
+}
 .turnt__brand {
   position: relative;
   top: -2px;
@@ -849,20 +854,19 @@
 .turnt__slash {
   flex: 0 0 auto;
 }
-/* Shaded headers use clean labels without underlines. */
+/* Every section title is bold with no underline (shaded or not). */
 .turnt__head td,
 td.turnt__head {
   text-align: center;
-  font-weight: normal;
+  font-weight: 700 !important;
   text-decoration: none;
   background: #e6e6e6;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
-/* The unshaded Bay header retains the source sheet's underlines. */
+/* The Bay header is bold like the rest but not shaded. */
 .turnt__head--plain td {
   background: #fff;
-  text-decoration: underline;
 }
 .turnt__head--btn,
 .turnt__reason--btn,
@@ -876,7 +880,7 @@ td.turnt__head {
 }
 .turnt__divlbl {
   text-align: center;
-  text-decoration: underline;
+  font-weight: 700 !important;
 }
 .turnt__c {
   text-align: center;

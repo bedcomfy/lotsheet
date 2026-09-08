@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.26.1 - 2026-09-08
+
+- Turnover Sheet titles (`MECH.`, `VEH #`, `NORTH LOT`, `EAST LOT`, `NORTH
+  LANE`, `SOUTH LANE`, `EMPLOYEE CALLOFFS`, `BAY`, `SHOP`, `HOLDS / NOTES`, and
+  the `FENCE` / `R/C` / `APRON` dividers) are now all bold with no underlines.
+- Dropped `- REASON` from the `NORTH LOT` and `EAST LOT` headers.
+- Widened the gap between the `DATE` line and the first grid header so the
+  header band no longer crowds the lot titles. The structural revision date and
+  the PDF cache version moved forward so new prints pick this up.
+
 ## 0.26.0 - 2026-09-08
 
 - Simplified `Setup Lane` to three categories: Inspections, Retorques, and a

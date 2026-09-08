@@ -26,7 +26,7 @@ export const maxDuration = 60;
 
 const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
-const PDF_VERSION = "52"; // Service Lane summary: BRING TO CARDS with hold/cards reasons
+const PDF_VERSION = "53"; // Turnover: bold titles, no REASON headers, wider date gap
 
 // Recursively sort object keys so the signature doesn't depend on key/row
 // order (Postgres returns flag rows in no guaranteed order).

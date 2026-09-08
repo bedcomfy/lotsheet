@@ -736,21 +736,25 @@ export default function TurnoverSheet() {
                 <td />
                 <td />
               </tr>
+              {/* Breathing room between the date line and the grid. */}
+              <tr className="turnt__band turnt__band--gap">
+                <td colSpan={9} />
+              </tr>
               {/* Section headers (click the header OR a vehicle number to manage buses) */}
               <tr className="turnt__head">
                 <td>MECH.</td>
                 <td>VEH #</td>
                 <td colSpan={2} className="turnt__head--btn" onClick={() => setEditingLot("north")}>
-                  NORTH LOT - REASON <span className="turnt__edit">✎</span>
+                  NORTH LOT <span className="turnt__edit">✎</span>
                 </td>
                 <td>MECH.</td>
                 <td>VEH #</td>
                 <td colSpan={3} className="turnt__head--btn" onClick={() => setEditingLot("east")}>
-                  EAST LOT - REASON <span className="turnt__edit">✎</span>
+                  EAST LOT <span className="turnt__edit">✎</span>
                 </td>
               </tr>
               {rows}
-              {/* Bay table (header underlined but NOT shaded) */}
+              {/* Bay table (header bold but NOT shaded) */}
               <tr className="turnt__head turnt__head--plain">
                 <td />
                 <td>BAY</td>
