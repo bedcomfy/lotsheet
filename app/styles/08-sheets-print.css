@@ -796,13 +796,13 @@
 }
 .turnt__brand {
   position: relative;
-  top: -2px;
+  top: 0;
   text-align: center;
   font-weight: normal;
 }
 .turnt__shiftpick {
   position: relative;
-  top: -2px;
+  top: 0;
   text-align: center;
   white-space: nowrap;
   font-size: calc(var(--tfz, 14px) + 2px);
