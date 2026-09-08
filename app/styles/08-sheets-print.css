@@ -791,7 +791,7 @@
 }
 /* Spacer between the DATE line and the first grid header. */
 .turnt__band--gap td {
-  height: 20px;
+  height: 10px;
   padding: 0;
 }
 .turnt__brand {
