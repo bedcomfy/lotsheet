@@ -722,7 +722,7 @@ export default function TurnoverSheet() {
                 </td>
               </tr>
               {/* Date (left) — three blanks like the original */}
-              <tr className="turnt__band">
+              <tr className="turnt__band turnt__band--date">
                 <td colSpan={3} className="turnt__field">
                   <div className="turnt__fline">
                     <span className="turnt__fieldlbl">DATE:</span>

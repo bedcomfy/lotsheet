@@ -838,6 +838,10 @@
   position: relative;
   top: -2px;
 }
+/* The DATE line sits 2px lower than FOREMAN so the two lines do not touch. */
+.turnt__band--date .turnt__fline {
+  top: 0;
+}
 .turnt__fieldlbl {
   flex: 0 0 auto;
   white-space: nowrap;
