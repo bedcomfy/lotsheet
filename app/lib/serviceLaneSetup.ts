@@ -8,12 +8,16 @@ import type { FlagEntry, FlagMap } from "./types";
 export const SERVICE_LANE_FLAGS = [
   "hold",
   "cards",
-  "braketest",
   "inspection",
   "retorque",
 ] as const;
 
 export type ServiceLaneFlagId = (typeof SERVICE_LANE_FLAGS)[number];
+
+// Holds and Cards are one lane category: every one of those buses gets brought
+// to cards, and each carries a reason. A bus is one or the other, never both.
+export const BRING_TO_CARDS_FLAGS = ["hold", "cards"] as const;
+export type BringToCardsKind = (typeof BRING_TO_CARDS_FLAGS)[number];
 
 const SERVICE_LANE_FLAG_SET = new Set<string>(SERVICE_LANE_FLAGS);
 
@@ -23,6 +27,7 @@ export function emptyFlagEntry(): FlagEntry {
     note: "",
     inspMiles: null,
     holdReason: "",
+    cardsReason: "",
     retorqueTires: [],
     inspOption: "",
   };
@@ -44,6 +49,41 @@ export function serviceLaneBusCount(flags: FlagMap | null | undefined): number {
   return Object.values(flags || {}).filter(hasServiceLaneFlags).length;
 }
 
+// Which Bring-to-Cards kind a bus carries (Hold outranks Cards), if any.
+export function bringToCardsKind(entry: FlagEntry | null | undefined): BringToCardsKind | null {
+  if (entry?.flags?.includes("hold")) return "hold";
+  if (entry?.flags?.includes("cards")) return "cards";
+  return null;
+}
+
+// The reason attached to the bus's Bring-to-Cards kind.
+export function bringToCardsReason(entry: FlagEntry | null | undefined): string {
+  const kind = bringToCardsKind(entry);
+  if (kind === "hold") return (entry?.holdReason || "").trim();
+  if (kind === "cards") return (entry?.cardsReason || "").trim();
+  return "";
+}
+
+// Make a bus a Hold or a Cards bus (never both). Switching kinds carries the
+// reason across so nothing typed is lost.
+export function setBringToCardsKind(entry: FlagEntry, kind: BringToCardsKind): FlagEntry {
+  const reason = bringToCardsReason(entry);
+  const flags = entry.flags.filter((id) => id !== "hold" && id !== "cards");
+  return {
+    ...entry,
+    flags: [...flags, kind],
+    holdReason: kind === "hold" ? reason : "",
+    cardsReason: kind === "cards" ? reason : "",
+  };
+}
+
+export function setBringToCardsReason(entry: FlagEntry, reason: string): FlagEntry {
+  const kind = bringToCardsKind(entry);
+  if (kind === "hold") return { ...entry, holdReason: reason };
+  if (kind === "cards") return { ...entry, cardsReason: reason };
+  return entry;
+}
+
 // Remove only the flags owned by the nightly service-lane setup. Unrelated
 // maintenance flags and custom-note flags survive the replacement.
 export function clearServiceLaneFlags(entry: FlagEntry): FlagEntry {
@@ -54,6 +94,7 @@ export function clearServiceLaneFlags(entry: FlagEntry): FlagEntry {
       (id) => !SERVICE_LANE_FLAG_SET.has(id) && id !== "followup",
     ),
     holdReason: "",
+    cardsReason: "",
     retorqueTires: [],
   };
 }
@@ -70,6 +111,7 @@ export function removeStagedServiceFlag(
     ...entry,
     flags: entry.flags.filter((id) => id !== flagId),
     holdReason: flagId === "hold" ? "" : entry.holdReason,
+    cardsReason: flagId === "cards" ? "" : entry.cardsReason,
     retorqueTires: flagId === "retorque" ? [] : entry.retorqueTires,
   };
 }
@@ -90,7 +132,7 @@ export function mergeServiceLaneSetup(current: FlagEntry, staged?: FlagEntry): F
   if (!staged) return next;
 
   const stagedFlags = new Set(staged.flags || []);
-  const simpleFlags = ["hold", "cards", "braketest"] as const;
+  const simpleFlags = ["hold", "cards"] as const;
   next = {
     ...next,
     flags: Array.from(
@@ -100,6 +142,7 @@ export function mergeServiceLaneSetup(current: FlagEntry, staged?: FlagEntry): F
       ]),
     ),
     holdReason: stagedFlags.has("hold") ? staged.holdReason || "" : "",
+    cardsReason: stagedFlags.has("cards") ? staged.cardsReason || "" : "",
   };
 
   if (stagedFlags.has("inspection")) {

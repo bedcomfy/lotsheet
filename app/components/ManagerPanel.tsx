@@ -9,6 +9,7 @@ import {
   RETORQUE_TIRES,
   retorqueTiresDisplay,
   HOLD_REASONS,
+  CARDS_REASONS,
   inspMilesDisplay,
   INSPECTION_OPTIONS,
   entryHasContent,
@@ -54,7 +55,7 @@ import {
 } from "../ui";
 import styles from "./ManagerPanel.module.css";
 
-const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+const EMPTY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" };
 // Pseudo-flag for the By flag tab: every freeform custom-note flag.
 const NOTE_FLAG = "__note";
 const requiresDetail = (id: string) => id === NOTE_FLAG || flagRequiresDetail(id);
@@ -172,36 +173,43 @@ export function TirePicker({
   );
 }
 
-export function HoldReasonPicker({
+// Hold and Cards share one reason picker: optional quick-picks plus a free-text
+// "Other reason" that auto-saves.
+export function ReasonPicker({
+  kind,
   reason,
   onChange: onSave,
   variant = "panel",
 }: {
+  kind: "hold" | "cards";
   reason: string | undefined;
   onChange: (r: string) => void;
   variant?: DetailVariant;
 }) {
-  // Same auto-save behavior for the free-text "Other reason".
+  const quickPicks = kind === "hold" ? HOLD_REASONS : CARDS_REASONS;
+  const name = kind === "hold" ? "Hold" : "Cards";
   const { text, onChange, flush, saveNow } = useAutoSaveText(reason, onSave);
   return (
     <div className={`${styles.detailBox} ${styles.detailColumn} ${variant === "plain" ? styles.detailPlain : ""}`}>
-      <div className={styles.detailLabel}>Hold reason (optional)</div>
-      <div className={styles.reasonPicker}>
-        {HOLD_REASONS.map((r) => (
-          <Pressable
-            key={r}
-            className={`${styles.choiceChip} ${reason === r ? styles.choiceMaintenance : ""}`}
-            onPress={() => saveNow(r)}
-          >
-            {r}
-          </Pressable>
-        ))}
-      </div>
+      <div className={styles.detailLabel}>{name} reason (optional)</div>
+      {quickPicks.length > 0 && (
+        <div className={styles.reasonPicker}>
+          {quickPicks.map((r) => (
+            <Pressable
+              key={r}
+              className={`${styles.choiceChip} ${reason === r ? styles.choiceMaintenance : ""}`}
+              onPress={() => saveNow(r)}
+            >
+              {r}
+            </Pressable>
+          ))}
+        </div>
+      )}
       <TextField
         className={styles.detailText}
-        label="Other hold reason"
+        label={quickPicks.length ? `Other ${name.toLowerCase()} reason` : `${name} reason`}
         labelHidden
-        placeholder="Other reason…"
+        placeholder={quickPicks.length ? "Other reason…" : "Reason…"}
         value={text}
         onChange={onChange}
         onBlur={flush}
@@ -209,6 +217,14 @@ export function HoldReasonPicker({
       />
     </div>
   );
+}
+
+export function HoldReasonPicker(props: {
+  reason: string | undefined;
+  onChange: (r: string) => void;
+  variant?: DetailVariant;
+}) {
+  return <ReasonPicker kind="hold" {...props} />;
 }
 
 // Optional inspection type — pick one of A-3 … C-24 (or none).
@@ -330,6 +346,7 @@ export function FlagPicker({ entry, onChange, searchRef }: {
     }
     const patch: FlagEntry = { ...entry, flags: entry.flags.filter((f) => f !== id) };
     if (id === "hold") patch.holdReason = "";
+    if (id === "cards") patch.cardsReason = "";
     if (id === "retorque") patch.retorqueTires = [];
     onChange(patch);
     closeDetail(id);
@@ -365,6 +382,7 @@ export function FlagPicker({ entry, onChange, searchRef }: {
   function pillLabel(id: string) {
     if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
     if (id === "hold" && (entry.holdReason || "").trim()) return `Hold · ${entry.holdReason}`;
+    if (id === "cards" && (entry.cardsReason || "").trim()) return `Cards · ${entry.cardsReason}`;
     if (id === "inspection") {
       const option = inspectionOptionFromText(entry.inspOption);
       const detail = option ? flagName(`object:${option.objectCode}`) : inspMilesDisplay(entry);
@@ -516,13 +534,16 @@ export function FlagPicker({ entry, onChange, searchRef }: {
       )}
 
       {/* Keep contextual choices beside the action that opened them. */}
-      {["hold", "inspection", "retorque"]
+      {["hold", "cards", "inspection", "retorque"]
         .filter((id) => detailShown(id))
         .map((id) => (
           <div className={styles.flagDetail} key={`${id}-detail`}>
             {id === "retorque" && <TirePicker tires={entry.retorqueTires || []} onChange={setTires} />}
             {id === "hold" && (
-              <HoldReasonPicker reason={entry.holdReason || ""} onChange={(r) => onChange({ ...entry, holdReason: r })} />
+              <ReasonPicker kind="hold" reason={entry.holdReason || ""} onChange={(r) => onChange({ ...entry, holdReason: r })} />
+            )}
+            {id === "cards" && (
+              <ReasonPicker kind="cards" reason={entry.cardsReason || ""} onChange={(r) => onChange({ ...entry, cardsReason: r })} />
             )}
             {id === "inspection" && (
               <InspOptionPicker
@@ -691,6 +712,7 @@ export default function ManagerPanel({
         note: entry.note,
         inspMiles: entry.inspMiles ?? null,
         holdReason: entry.holdReason ?? "",
+        cardsReason: entry.cardsReason ?? "",
         retorqueTires: entry.retorqueTires || [],
         inspOption: entry.inspOption ?? "",
         actor: getDeviceActor(),
@@ -755,6 +777,7 @@ export default function ManagerPanel({
       : { ...cur, flags: cur.flags.filter((f) => f !== pickedFlag) };
     if (pickedFlag === "retorque") patch.retorqueTires = [];
     if (pickedFlag === "hold") patch.holdReason = "";
+    if (pickedFlag === "cards") patch.cardsReason = "";
     return patch;
   }
   function removeFromFlag(bus: string) {
@@ -805,7 +828,8 @@ export default function ManagerPanel({
     if (tires.length) setPending((p) => p.filter((b) => b !== bus));
   }
   function setReasonFor(bus: string, reason: string) {
-    save(bus, { ...getEntry(bus), holdReason: reason });
+    const cur = getEntry(bus);
+    save(bus, pickedFlag === "cards" ? { ...cur, cardsReason: reason } : { ...cur, holdReason: reason });
   }
   function addNoteFor(bus: string, value: string) {
     const current = getEntry(bus);
@@ -1070,7 +1094,10 @@ export default function ManagerPanel({
                       </>
                     )}
                     {pickedFlag === "hold" && (
-                      <HoldReasonPicker key={bus} reason={entry.holdReason || ""} onChange={(r) => setReasonFor(bus, r)} />
+                      <ReasonPicker kind="hold" key={bus} reason={entry.holdReason || ""} onChange={(r) => setReasonFor(bus, r)} />
+                    )}
+                    {pickedFlag === "cards" && (
+                      <ReasonPicker kind="cards" key={bus} reason={entry.cardsReason || ""} onChange={(r) => setReasonFor(bus, r)} />
                     )}
                     {pickedFlag === "inspection" && (
                       <InspOptionPicker

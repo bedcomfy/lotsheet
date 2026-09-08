@@ -17,7 +17,10 @@ import {
   setInspectionOption,
 } from "../lib/grid";
 import {
+  BRING_TO_CARDS_FLAGS,
   addStagedServiceFlag,
+  bringToCardsKind,
+  bringToCardsReason,
   emptyFlagEntry,
   hasServiceLaneFlags,
   mergeServiceLaneSetup,
@@ -25,6 +28,9 @@ import {
   serviceLaneAssignmentCount,
   serviceLaneBusCount,
   serviceLaneSetupIssues,
+  setBringToCardsKind,
+  setBringToCardsReason,
+  type BringToCardsKind,
   type ServiceLaneFlagId,
 } from "../lib/serviceLaneSetup";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -37,15 +43,20 @@ import {
 } from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
 import {
-  HoldReasonPicker,
   InspOptionPicker,
+  ReasonPicker,
   TirePicker,
 } from "./ManagerPanel";
 import TypeCodes from "./TypeCodes";
 import styles from "./SetupLane.module.css";
 
+// Wizard steps. "bringcards" is one category covering both Hold and Cards:
+// every one of those buses is brought to cards, and each is marked Hold or
+// Card with a reason.
+type StepId = "inspection" | "retorque" | "bringcards" | "review";
+
 const STEPS: Array<{
-  id: ServiceLaneFlagId | "review";
+  id: StepId;
   label: string;
   heading: string;
   description: string;
@@ -63,22 +74,10 @@ const STEPS: Array<{
     description: "Enter a bus, then choose the tires that need retorque.",
   },
   {
-    id: "hold",
-    label: "Holds",
-    heading: "Add tonight's holds",
-    description: "Enter each held bus. Add a reason when it helps the lane team.",
-  },
-  {
-    id: "braketest",
-    label: "Brake tests",
-    heading: "Add brake tests",
-    description: "Enter every bus that needs a brake test tonight.",
-  },
-  {
-    id: "cards",
-    label: "Cards",
-    heading: "Add card buses",
-    description: "Enter every bus that needs cards on the service lane.",
+    id: "bringcards",
+    label: "Holds & Cards",
+    heading: "Add buses to bring to cards",
+    description: "Enter a bus, mark it Hold or Card, then add the reason.",
   },
   {
     id: "review",
@@ -88,13 +87,24 @@ const STEPS: Array<{
   },
 ];
 
+const STEP_FLAGS: Record<Exclude<StepId, "review">, readonly ServiceLaneFlagId[]> = {
+  inspection: ["inspection"],
+  retorque: ["retorque"],
+  bringcards: BRING_TO_CARDS_FLAGS,
+};
+
+const KIND_LABEL: Record<BringToCardsKind, string> = { hold: "Hold", cards: "Card" };
+
 function entryFor(flags: FlagMap, bus: string): FlagEntry {
   return flags[bus] || emptyFlagEntry();
 }
 
-function stepCount(flags: FlagMap, id: ServiceLaneFlagId | "review"): number {
-  if (id === "review") return serviceLaneAssignmentCount(flags);
-  return Object.values(flags).filter((entry) => entry.flags.includes(id)).length;
+function hasStepFlag(entry: FlagEntry | undefined, step: Exclude<StepId, "review">): boolean {
+  return !!entry && STEP_FLAGS[step].some((id) => entry.flags.includes(id));
+}
+
+function sortBuses(buses: string[]): string[] {
+  return buses.slice().sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
 interface SetupLaneProps {
@@ -115,12 +125,16 @@ export default function SetupLane({
   const { isKnown, label } = useBusMaster();
   const [stepIndex, setStepIndex] = useState(0);
   const [staged, setStaged] = useState<FlagMap>({});
+  // Buses entered on the Holds & Cards step that have not been marked Hold or
+  // Card yet. They stay in the list until a kind is picked, and are never
+  // applied without one.
+  const [undecided, setUndecided] = useState<string[]>([]);
   const [busInput, setBusInput] = useState("");
   const [inputError, setInputError] = useState("");
   const [status, setStatus] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [pinnedBuses, setPinnedBuses] = useState<Partial<Record<ServiceLaneFlagId, string>>>({});
+  const [pinnedBuses, setPinnedBuses] = useState<Partial<Record<StepId, string>>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
@@ -129,6 +143,7 @@ export default function SetupLane({
     if (isOpen && !wasOpen.current) {
       setStepIndex(0);
       setStaged({});
+      setUndecided([]);
       setBusInput("");
       setInputError("");
       setStatus("");
@@ -139,17 +154,26 @@ export default function SetupLane({
   }, [isOpen]);
 
   const step = STEPS[stepIndex];
-  const currentFlag = step.id === "review" ? null : step.id;
+  const currentStep = step.id === "review" ? null : step.id;
+
   const stagedRows = useMemo(() => {
-    if (!currentFlag) return [];
-    const rows = Object.keys(staged)
-      .filter((bus) => staged[bus].flags.includes(currentFlag))
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    const pinned = pinnedBuses[currentFlag];
+    if (!currentStep) return [];
+    const withFlag = Object.keys(staged).filter((bus) => hasStepFlag(staged[bus], currentStep));
+    const rows = sortBuses(
+      currentStep === "bringcards" ? Array.from(new Set([...undecided, ...withFlag])) : withFlag,
+    );
+    const pinned = pinnedBuses[currentStep];
     return pinned && rows.includes(pinned)
       ? [pinned, ...rows.filter((bus) => bus !== pinned)]
       : rows;
-  }, [currentFlag, pinnedBuses, staged]);
+  }, [currentStep, pinnedBuses, staged, undecided]);
+
+  function stepCount(id: StepId): number {
+    if (id === "review") return serviceLaneAssignmentCount(staged);
+    const withFlag = Object.keys(staged).filter((bus) => hasStepFlag(staged[bus], id)).length;
+    return id === "bringcards" ? withFlag + undecided.length : withFlag;
+  }
+
   const issues = useMemo(() => serviceLaneSetupIssues(staged), [staged]);
   const assignmentCount = serviceLaneAssignmentCount(staged);
   const stagedBusCount = serviceLaneBusCount(staged);
@@ -165,54 +189,75 @@ export default function SetupLane({
   }
 
   function addBus(raw = busInput) {
-    if (!currentFlag) return;
+    if (!currentStep) return;
     const bus = sanitizeBus(raw);
     if (!bus || !isKnown(bus)) {
       setInputError("That bus is not in the active fleet list.");
       return;
     }
-    setPinnedBuses((current) => ({ ...current, [currentFlag]: bus }));
-    updateBus(bus, (entry) => addStagedServiceFlag(entry, currentFlag));
+    setPinnedBuses((current) => ({ ...current, [currentStep]: bus }));
+    if (currentStep === "bringcards") {
+      // The bus waits at the top of the list until it is marked Hold or Card.
+      if (!hasStepFlag(staged[bus], "bringcards")) {
+        setUndecided((current) => (current.includes(bus) ? current : [...current, bus]));
+      }
+    } else {
+      const flagId = STEP_FLAGS[currentStep][0];
+      updateBus(bus, (entry) => addStagedServiceFlag(entry, flagId));
+    }
     setBusInput("");
     setInputError("");
     requestAnimationFrame(() => contentRef.current?.scrollTo({ top: 0 }));
     focusInput();
   }
 
+  function withoutStepFlags(entry: FlagEntry, id: Exclude<StepId, "review">): FlagEntry {
+    return STEP_FLAGS[id].reduce((next, flagId) => removeStagedServiceFlag(next, flagId), entry);
+  }
+
   function removeBus(bus: string) {
-    if (!currentFlag) return;
+    if (!currentStep) return;
     setStaged((current) => {
       const next = { ...current };
-      const entry = removeStagedServiceFlag(entryFor(next, bus), currentFlag);
+      const entry = withoutStepFlags(entryFor(next, bus), currentStep);
       if (hasServiceLaneFlags(entry)) next[bus] = entry;
       else delete next[bus];
       return next;
     });
+    if (currentStep === "bringcards") {
+      setUndecided((current) => current.filter((item) => item !== bus));
+    }
     setPinnedBuses((current) => {
-      if (current[currentFlag] !== bus) return current;
+      if (current[currentStep] !== bus) return current;
       const next = { ...current };
-      delete next[currentFlag];
+      delete next[currentStep];
       return next;
     });
   }
 
   function clearCurrentStep() {
-    if (!currentFlag) return;
+    if (!currentStep) return;
     setStaged((current) => {
       const next: FlagMap = {};
       for (const [bus, currentEntry] of Object.entries(current)) {
-        const entry = removeStagedServiceFlag(currentEntry, currentFlag);
+        const entry = withoutStepFlags(currentEntry, currentStep);
         if (hasServiceLaneFlags(entry)) next[bus] = entry;
       }
       return next;
     });
+    if (currentStep === "bringcards") setUndecided([]);
     setPinnedBuses((current) => {
       const next = { ...current };
-      delete next[currentFlag];
+      delete next[currentStep];
       return next;
     });
     setStatus("");
     requestAnimationFrame(() => contentRef.current?.scrollTo({ top: 0 }));
+  }
+
+  function chooseKind(bus: string, kind: BringToCardsKind) {
+    updateBus(bus, (entry) => setBringToCardsKind(entry, kind));
+    setUndecided((current) => current.filter((item) => item !== bus));
   }
 
   function moveTo(nextIndex: number) {
@@ -246,6 +291,7 @@ export default function SetupLane({
             note: next.note,
             inspMiles: next.inspMiles ?? null,
             holdReason: next.holdReason,
+            cardsReason: next.cardsReason,
             retorqueTires: next.retorqueTires,
             inspOption: next.inspOption,
             actor: getDeviceActor(),
@@ -280,6 +326,10 @@ export default function SetupLane({
       setApplying(false);
     }
   }
+
+  const undecidedNote = undecided.length
+    ? ` ${undecided.length} bus${undecided.length === 1 ? " was" : "es were"} never marked Hold or Card and will be left out.`
+    : "";
 
   const footer = (
     <div className={styles.footerContent}>
@@ -328,7 +378,7 @@ export default function SetupLane({
         <div className={styles.flow}>
           <nav className={styles.steps} aria-label="Setup Lane progress">
             {STEPS.map((item, index) => {
-              const count = stepCount(staged, item.id);
+              const count = stepCount(item.id);
               return (
                 <Pressable
                   key={item.id}
@@ -354,7 +404,7 @@ export default function SetupLane({
                   <strong>{currentAssignmentCount}</strong>
                   <span>current assignments on {currentBusCount} buses</span>
                 </div>
-                {currentFlag && (
+                {currentStep && (
                   <Button
                     className={styles.clearStep}
                     variant="quiet"
@@ -369,7 +419,7 @@ export default function SetupLane({
               </div>
             </div>
 
-            {currentFlag ? (
+            {currentStep ? (
               <>
                 <div className={styles.addBus}>
                   <TextField
@@ -411,6 +461,7 @@ export default function SetupLane({
                   <div className={styles.busList}>
                     {stagedRows.map((bus) => {
                       const entry = entryFor(staged, bus);
+                      const kind = currentStep === "bringcards" ? bringToCardsKind(entry) : null;
                       return (
                         <section className={styles.busRow} key={bus}>
                           <div className={styles.busRowHeader}>
@@ -427,14 +478,39 @@ export default function SetupLane({
                             </Pressable>
                           </div>
 
-                          {currentFlag === "hold" && (
-                            <HoldReasonPicker
-                              variant="plain"
-                              reason={entry.holdReason}
-                              onChange={(holdReason) => updateBus(bus, (current) => ({ ...current, holdReason }))}
-                            />
+                          {currentStep === "bringcards" && (
+                            <>
+                              <div
+                                className={styles.kindChooser}
+                                role="group"
+                                aria-label={`Bus ${label(bus)} is a`}
+                              >
+                                {BRING_TO_CARDS_FLAGS.map((option) => (
+                                  <Pressable
+                                    key={option}
+                                    className={`${styles.kindChip} ${kind === option ? styles.kindChipActive : ""}`}
+                                    aria-pressed={kind === option}
+                                    onPress={() => chooseKind(bus, option)}
+                                  >
+                                    {KIND_LABEL[option]}
+                                  </Pressable>
+                                ))}
+                                {!kind && (
+                                  <span className={styles.kindHint}>Choose Hold or Card</span>
+                                )}
+                              </div>
+                              {kind && (
+                                <ReasonPicker
+                                  key={kind}
+                                  kind={kind}
+                                  variant="plain"
+                                  reason={bringToCardsReason(entry)}
+                                  onChange={(reason) => updateBus(bus, (current) => setBringToCardsReason(current, reason))}
+                                />
+                              )}
+                            </>
                           )}
-                          {currentFlag === "inspection" && (
+                          {currentStep === "inspection" && (
                             <InspOptionPicker
                               variant="plain"
                               option={entry.inspOption}
@@ -448,7 +524,7 @@ export default function SetupLane({
                               }))}
                             />
                           )}
-                          {currentFlag === "retorque" && (
+                          {currentStep === "retorque" && (
                             <TirePicker
                               variant="plain"
                               tires={entry.retorqueTires}
@@ -473,18 +549,25 @@ export default function SetupLane({
                   </div>
                 ) : (
                   STEPS.slice(0, -1).map((item) => {
-                    const rows = Object.keys(staged)
-                      .filter((bus) => staged[bus].flags.includes(item.id))
-                      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+                    const stepId = item.id;
+                    if (stepId === "review") return null;
+                    const rows = sortBuses(
+                      Object.keys(staged).filter((bus) => hasStepFlag(staged[bus], stepId)),
+                    );
                     if (!rows.length) return null;
+                    const groupLabel = item.id === "bringcards" ? "Bring to Cards" : item.label;
                     return (
                       <section className={styles.reviewGroup} key={item.id}>
-                        <h4>{item.label}<span>{rows.length}</span></h4>
+                        <h4>{groupLabel}<span>{rows.length}</span></h4>
                         <div className={styles.reviewRows}>
                           {rows.map((bus) => {
                             const entry = staged[bus];
                             let detail = "";
-                            if (item.id === "hold") detail = entry.holdReason || "No reason";
+                            if (item.id === "bringcards") {
+                              const kind = bringToCardsKind(entry);
+                              const reason = bringToCardsReason(entry);
+                              detail = `${kind ? KIND_LABEL[kind] : ""} · ${reason || "No reason"}`;
+                            }
                             if (item.id === "inspection") {
                               detail = inspectionOptionFromText(entry.inspOption)?.label || "Choose type";
                               if (entry.flags.includes("followup")) detail += " · Follow up";
@@ -503,6 +586,14 @@ export default function SetupLane({
                   })
                 )}
 
+                {undecided.length > 0 && (
+                  <div className={styles.issues} role="status">
+                    <strong>Not marked Hold or Card</strong>
+                    {sortBuses(undecided).map((bus) => (
+                      <span key={bus}>{label(bus)} will be left out until you choose Hold or Card</span>
+                    ))}
+                  </div>
+                )}
                 {issues.length > 0 && (
                   <div className={styles.issues} role="status">
                     <strong>Optional details missing</strong>
@@ -521,7 +612,7 @@ export default function SetupLane({
         isOpen={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Replace the current lane setup?"
-        description={`This removes the existing printable service flags from ${currentBusCount} bus${currentBusCount === 1 ? "" : "es"}, then applies ${assignmentCount} assignment${assignmentCount === 1 ? "" : "s"}. Other maintenance flags and notes stay unchanged.${issues.length ? ` ${issues.length} assignment${issues.length === 1 ? " has" : "s have"} optional details missing.` : ""}`}
+        description={`This removes the existing printable service flags from ${currentBusCount} bus${currentBusCount === 1 ? "" : "es"}, then applies ${assignmentCount} assignment${assignmentCount === 1 ? "" : "s"}. Other maintenance flags and notes stay unchanged.${issues.length ? ` ${issues.length} assignment${issues.length === 1 ? " has" : "s have"} optional details missing.` : ""}${undecidedNote}`}
         confirmLabel="Replace setup"
         isPending={applying}
         onConfirm={applySetup}

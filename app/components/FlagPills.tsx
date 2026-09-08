@@ -15,6 +15,7 @@ function tierRank(tier: string): number {
 function pillText(id: string, entry: FlagEntry): string {
   if (id === "retorque") return `Retorque · ${retorqueTiresDisplay(entry.retorqueTires)}`;
   if (id === "hold") return (entry.holdReason || "").trim() ? `Hold · ${entry.holdReason}` : "Hold";
+  if (id === "cards") return (entry.cardsReason || "").trim() ? `Cards · ${entry.cardsReason}` : "Cards";
   if (id === "inspection") {
     const miles = inspMilesDisplay(entry);
     return miles ? `Inspection · ${miles}` : "Inspection";

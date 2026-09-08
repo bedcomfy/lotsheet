@@ -15,11 +15,11 @@ export async function GET() {
 export async function POST(req: Request) {
   const { data, error } = await parseBody(req, flagPayloadSchema);
   if (error) return error;
-  const { bus, flags, note, holdReason, retorqueTires, inspOption } = data;
+  const { bus, flags, note, holdReason, cardsReason, retorqueTires, inspOption } = data;
   const inspMiles = data.inspMiles ?? null;
   const beforeMap = await getFlags();
   const before = beforeMap[bus] || null;
-  const after = { flags, note, inspMiles, holdReason, retorqueTires, inspOption };
+  const after = { flags, note, inspMiles, holdReason, cardsReason, retorqueTires, inspOption };
   await setBusFlags(bus, after);
   await recordAuditEvent("flag_update", { bus, before, after }, data.actor);
   return NextResponse.json({ ok: true });

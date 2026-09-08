@@ -18,6 +18,7 @@ export const busFlags = pgTable(`bus_flags${TABLE_SUFFIX}`, {
   note: text("note"),
   inspMiles: integer("insp_miles"),
   holdReason: text("hold_reason"),
+  cardsReason: text("cards_reason"),
   retorqueTires: text("retorque_tires"),
   inspOption: text("insp_option"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),

@@ -410,6 +410,9 @@ export const ALL_FLAGS: FlagDef[] = [...FLAGS, ...OBJECT_CODE_FLAGS];
 // allows anything else. (Movement used to be its own flag — a movement bus is
 // always a hold, so it's now a hold reason.)
 export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
+// A Cards bus carries a reason the same way. No quick-picks yet — add common
+// ones here and the pickers show them automatically.
+export const CARDS_REASONS: string[] = [];
 export function flagLabel(id: string | null | undefined): string {
   if (isCustomNoteFlag(id)) return customNoteText(id);
   const override = flagConfigEntry(id);
@@ -587,7 +590,7 @@ export function removeInspection(entry: FlagEntry): FlagEntry {
   };
 }
 
-export type FlagDetailKind = "retorque_tires" | "hold_reason" | "inspection_type";
+export type FlagDetailKind = "retorque_tires" | "hold_reason" | "cards_reason" | "inspection_type";
 export interface FlagDetailDefinition {
   flagId: string;
   kind: FlagDetailKind;
@@ -598,6 +601,7 @@ export interface FlagDetailDefinition {
 export const FLAG_DETAIL_DEFINITIONS: FlagDetailDefinition[] = [
   { flagId: "retorque", kind: "retorque_tires", label: "Which tires?", required: true },
   { flagId: "hold", kind: "hold_reason", label: "Hold reason" },
+  { flagId: "cards", kind: "cards_reason", label: "Cards reason" },
   { flagId: "inspection", kind: "inspection_type", label: "Inspection type / follow up" },
 ];
 
@@ -897,8 +901,15 @@ export function inspMilesDisplay(entry: FlagEntry | null | undefined): string {
   return `Miles ${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 }
 
-// All of a bus's flag labels, ordered most → least severe. HOLD carries its
-// reason inline ("HOLD (Cubs Bus)") so every full display shows it.
+// The free-text reason attached to a Hold or Cards flag ("" for other flags).
+export function flagReason(entry: FlagEntry | null | undefined, id: string): string {
+  if (id === "hold") return (entry?.holdReason || "").trim();
+  if (id === "cards") return (entry?.cardsReason || "").trim();
+  return "";
+}
+
+// All of a bus's flag labels, ordered most → least severe. HOLD and CARDS carry
+// their reason inline ("HOLD (Cubs Bus)") so every full display shows it.
 export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
   const flags = (entry?.flags || [])
     .slice()
@@ -910,8 +921,8 @@ export function flagListLabels(entry: FlagEntry | null | undefined): string[] {
       // which intentionally remains the short numeric code.
       const label = objectCodeFromFlagId(id) ? flagName(id) : flagLabel(id);
       if (!label) return "";
-      const reason = (entry?.holdReason || "").trim();
-      if (id === "hold" && reason) return `${label} (${reason})`;
+      const reason = flagReason(entry, id);
+      if (reason) return `${label} (${reason})`;
       return label;
     })
     .filter(Boolean);
@@ -975,13 +986,12 @@ export function groupFlaggedBuses(flagsMap: FlagMap | null | undefined): FlagGro
 
 // ---- Fuel / DEF flag display ----
 // The fuel/DEF sheets show ONE letter to the left of the bus number: R / H / I
-// for a single retorque / hold / inspection flag, or "*" when the bus has more
-// than one service-lane flag.
+// for a single retorque / hold / inspection flag (C for cards), or "*" when the
+// bus has more than one service-lane flag.
 const FUEL_LETTERS: [string, string][] = [
   ["retorque", "R"],
   ["hold", "H"],
   ["inspection", "I"],
-  ["braketest", "B"],
   ["cards", "C"],
 ];
 export function fuelIndicator(entry: FlagEntry | null | undefined): string {
@@ -1011,9 +1021,9 @@ export interface FuelSection {
 }
 
 // The fuel/DEF second sheet: one row per flagged bus, listing its Retorque /
-// Inspection / Hold flags (only those three) next to the number, each with its
-// detail (inspection miles / hold reason).
-export const FUEL_SUMMARY_FLAGS = ["retorque", "inspection", "hold", "braketest", "cards"];
+// Inspection / Hold / Cards flags next to the number, each with its detail
+// (inspection type / hold reason / cards reason / tires).
+export const FUEL_SUMMARY_FLAGS = ["retorque", "inspection", "hold", "cards"];
 export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[] {
   const rows: FlagRow[] = [];
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
@@ -1023,8 +1033,8 @@ export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[]
       if (!entry.flags.includes(id)) continue;
       let detail = "";
       if (id === "inspection") detail = inspectionObjectCodeDescription(entry) || inspMilesDisplay(entry);
-      else if (id === "hold") detail = (entry.holdReason || "").trim();
       else if (id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
+      else detail = flagReason(entry, id);
       items.push({ id, label: flagLabel(id), detail });
     }
     if (items.length) rows.push({ bus, items, indicator: fuelIndicator(entry) });
@@ -1033,15 +1043,16 @@ export function fuelBusFlagList(flagsMap: FlagMap | null | undefined): FlagRow[]
   return rows;
 }
 
-// Fuel/DEF flagged-buses summary split into sections by flag group. A bus is
-// listed once, under the highest-precedence group it carries (Holds/Cards/Brake
-// tests > Inspections > Retorques), but its line lists every flag it has.
+// Service Lane flag summary split into sections by flag group. A bus is listed
+// once, under the highest-precedence group it carries (Bring to Cards >
+// Inspections > Retorques), but its line lists every flag it has. Every held
+// or carded bus goes to cards, and each line spells out which it is and why.
 export const FUEL_SECTIONS = [
-  { id: "holdcards", label: "Holds · Cards · Brake tests", flags: ["hold", "cards", "braketest"] },
+  { id: "bringcards", label: "BRING TO CARDS", flags: ["hold", "cards"] },
   { id: "inspection", label: "Inspections", flags: ["inspection"] },
   { id: "retorque", label: "Retorques", flags: ["retorque"] },
 ];
-const FUEL_ITEM_ORDER = ["hold", "cards", "braketest", "inspection", "retorque"];
+const FUEL_ITEM_ORDER = ["hold", "cards", "inspection", "retorque"];
 export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSection[] {
   const out: FuelSection[] = FUEL_SECTIONS.map((s) => ({ id: s.id, label: s.label, rows: [] }));
   for (const [bus, entry] of Object.entries(flagsMap || {})) {
@@ -1051,8 +1062,8 @@ export function fuelFlagSections(flagsMap: FlagMap | null | undefined): FuelSect
     const items: FlagItem[] = FUEL_ITEM_ORDER.filter((f) => entry.flags.includes(f)).map((f) => {
       let detail = "";
       if (f === "inspection") detail = inspectionObjectCodeDescription(entry) || inspMilesDisplay(entry);
-      else if (f === "hold") detail = (entry.holdReason || "").trim();
       else if (f === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires);
+      else detail = flagReason(entry, f);
       return { id: f, label: flagLabel(f), detail };
     });
     out[idx].rows.push({ bus, items, indicator: fuelIndicator(entry) });

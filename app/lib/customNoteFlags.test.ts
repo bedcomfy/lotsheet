@@ -17,6 +17,7 @@ function entry(patch: Partial<FlagEntry> = {}): FlagEntry {
     note: "",
     inspMiles: null,
     holdReason: "",
+    cardsReason: "",
     retorqueTires: [],
     inspOption: "",
     ...patch,
@@ -80,6 +81,8 @@ describe("custom note flags", () => {
       "6467": entry({ flags: ["cards", "inspection"] }),
     });
 
+    expect(section.id).toBe("bringcards");
+    expect(section.label).toBe("BRING TO CARDS");
     expect(section.rows).toEqual([
       {
         bus: "6467",
@@ -90,5 +93,22 @@ describe("custom note flags", () => {
         ],
       },
     ]);
+  });
+
+  it("spells out Hold and Cards with their reasons on the service summary", () => {
+    const sections = fuelFlagSections({
+      "6401": entry({ flags: ["hold"], holdReason: "Cubs Bus" }),
+      "6402": entry({ flags: ["cards"], cardsReason: "Mirror" }),
+      "6403": entry({ flags: ["braketest"] }),
+    });
+
+    expect(sections).toHaveLength(1);
+    expect(
+      sections[0].rows.map((row) => [row.bus, row.items.map((i) => `${i.label} (${i.detail})`).join(", ")]),
+    ).toEqual([
+      ["6401", "HOLD (Cubs Bus)"],
+      ["6402", "CARDS (Mirror)"],
+    ]);
+    expect(flagsAndNote(entry({ flags: ["cards"], cardsReason: "Mirror" }))).toBe("CARDS (Mirror)");
   });
 });

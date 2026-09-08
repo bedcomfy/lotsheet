@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { objectCodeFlagId } from "./objectCodes";
 import {
+  SERVICE_LANE_FLAGS,
+  bringToCardsKind,
+  bringToCardsReason,
   clearServiceLaneFlags,
   emptyFlagEntry,
   mergeServiceLaneSetup,
   serviceLaneSetupIssues,
+  setBringToCardsKind,
+  setBringToCardsReason,
 } from "./serviceLaneSetup";
 import { customNoteFlagId } from "./customNoteFlags";
 
@@ -22,6 +27,7 @@ describe("service lane setup", () => {
         customNoteFlagId("Door sticks"),
       ],
       holdReason: "Parts",
+      cardsReason: "Mirror",
       inspOption: "C-24",
     };
 
@@ -29,6 +35,42 @@ describe("service lane setup", () => {
       ...emptyFlagEntry(),
       flags: ["eng", customNoteFlagId("Door sticks")],
     });
+  });
+
+  it("no longer treats brake tests as a lane flag", () => {
+    expect(SERVICE_LANE_FLAGS).not.toContain("braketest");
+    const current = { ...emptyFlagEntry(), flags: ["braketest", "hold"], holdReason: "Parade" };
+    // A brake test is an ordinary maintenance flag now: the lane replacement
+    // leaves it alone.
+    expect(clearServiceLaneFlags(current).flags).toEqual(["braketest"]);
+    expect(mergeServiceLaneSetup(current, undefined).flags).toEqual(["braketest"]);
+  });
+
+  it("keeps a cards reason through the merge and drops it with the flag", () => {
+    const staged = { ...emptyFlagEntry(), flags: ["cards"], cardsReason: "Mirror" };
+    const merged = mergeServiceLaneSetup(emptyFlagEntry(), staged);
+    expect(merged.flags).toEqual(["cards"]);
+    expect(merged.cardsReason).toBe("Mirror");
+    expect(merged.holdReason).toBe("");
+
+    const stale = { ...emptyFlagEntry(), flags: ["hold"], cardsReason: "Stale" };
+    expect(mergeServiceLaneSetup(emptyFlagEntry(), stale).cardsReason).toBe("");
+  });
+
+  it("marks a bus Hold or Card, never both, and carries the reason across", () => {
+    let entry = setBringToCardsKind(emptyFlagEntry(), "hold");
+    entry = setBringToCardsReason(entry, "Cubs Bus");
+    expect(bringToCardsKind(entry)).toBe("hold");
+    expect(entry.holdReason).toBe("Cubs Bus");
+
+    entry = setBringToCardsKind(entry, "cards");
+    expect(entry.flags).toEqual(["cards"]);
+    expect(entry.holdReason).toBe("");
+    expect(entry.cardsReason).toBe("Cubs Bus");
+    expect(bringToCardsReason(entry)).toBe("Cubs Bus");
+
+    expect(bringToCardsKind(emptyFlagEntry())).toBeNull();
+    expect(setBringToCardsReason(emptyFlagEntry(), "x")).toEqual(emptyFlagEntry());
   });
 
   it("merges staged details into the latest unrelated bus flags", () => {

@@ -131,6 +131,7 @@ export default function ShopSheet() {
         ((!entry.flags || !entry.flags.length) &&
           !(entry.note && entry.note.trim()) &&
           !(entry.holdReason && entry.holdReason.trim()) &&
+          !(entry.cardsReason && entry.cardsReason.trim()) &&
           !(entry.retorqueTires && entry.retorqueTires.length) &&
           entry.inspMiles == null);
       if (empty) delete next[bus];
@@ -326,7 +327,7 @@ export default function ShopSheet() {
 
   async function saveOffProp(bus: string, on: boolean) {
     const liveFlags = qc.getQueryData<FlagMap>(["flags"]) || flags;
-    const cur: FlagEntry = liveFlags[bus] || { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+    const cur: FlagEntry = liveFlags[bus] || { flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" };
     const has = (cur.flags || []).includes("offprop");
     if (on === has) return;
     const entry: FlagEntry = {
@@ -343,6 +344,7 @@ export default function ShopSheet() {
         note: entry.note,
         inspMiles: entry.inspMiles ?? null,
         holdReason: entry.holdReason ?? "",
+        cardsReason: entry.cardsReason ?? "",
         retorqueTires: entry.retorqueTires || [],
         inspOption: entry.inspOption ?? "",
         actor: getDeviceActor(),
@@ -356,6 +358,7 @@ export default function ShopSheet() {
       note: "",
       inspMiles: null,
       holdReason: "",
+      cardsReason: "",
       retorqueTires: [],
       inspOption: "",
     };

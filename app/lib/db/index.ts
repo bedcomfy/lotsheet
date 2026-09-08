@@ -35,6 +35,7 @@ const DDL: string[] = [
   `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS note TEXT`,
   `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS insp_miles INTEGER`,
   `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS hold_reason TEXT`,
+  `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS cards_reason TEXT`,
   `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS retorque_tires TEXT`,
   `ALTER TABLE ${T("bus_flags")} ADD COLUMN IF NOT EXISTS insp_option TEXT`,
   `CREATE TABLE IF NOT EXISTS ${T("app_state")} (key TEXT PRIMARY KEY, value JSONB, updated_at TIMESTAMPTZ DEFAULT now())`,

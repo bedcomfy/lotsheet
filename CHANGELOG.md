@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.26.0 - 2026-09-08
+
+- Simplified `Setup Lane` to three categories: Inspections, Retorques, and a
+  combined `Holds & Cards` step. Enter a bus, mark it `Hold` or `Card`, then add
+  the reason. A bus is one or the other, switching keeps the typed reason, and a
+  bus left unmarked is called out on the review screen instead of being applied.
+- Removed brake tests from the service lane. `Brake test` remains an ordinary
+  maintenance flag in the bus editor, but it no longer has a Setup Lane step and
+  no longer prints on the Service Lane summary or as a Fuel/DEF indicator.
+- Cards buses now carry a reason the same way holds do, everywhere a hold reason
+  already shows: the bus editor and By flag workspace, Lot Sheet cells, flag
+  pills, the Turnover reason list, and the audit log.
+- Renamed the Service Lane summary's first section to `BRING TO CARDS`. Every
+  held or carded bus lists there as `HOLD (reason)` or `CARDS (reason)`, so the
+  reader knows the bus goes to cards, which kind it is, and why.
+- Saved reasons use a new `cards_reason` column that the app adds on connect;
+  no manual production migration is needed. Fresh PDFs pick up the new layout.
+
 ## 0.25.3 - 2026-08-27
 
 - Renamed the Turnover Sheet's `1ST HALF` column to `SHOP`.

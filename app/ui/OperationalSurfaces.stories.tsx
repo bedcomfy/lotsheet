@@ -17,6 +17,7 @@ const EMPTY_ENTRY: FlagEntry = {
   note: "",
   inspMiles: null,
   holdReason: "",
+  cardsReason: "",
   retorqueTires: [],
   inspOption: "",
 };
@@ -115,6 +116,7 @@ export const BusWithLongFlags: Story = {
         note: "",
         inspMiles: 300,
         holdReason: "Parts",
+        cardsReason: "",
         retorqueTires: ["cf", "rf"],
         inspOption: "C-24",
       }}
@@ -208,6 +210,7 @@ export const FlagPillStates: Story = {
               note: "Legacy note remains readable",
               inspMiles: 300,
               holdReason: "Parts",
+              cardsReason: "",
               retorqueTires: ["cf", "rf"],
               inspOption: "C-24",
             }}
@@ -229,6 +232,7 @@ export const FlagPillsWrapWithoutClipping: Story = {
           ...EMPTY_ENTRY,
           flags: ["oos", "hold", "offprop", "inspection", "cleaning"],
           holdReason: "Awaiting an unusually long parts description",
+          cardsReason: "",
           inspOption: "C-24",
         }}
       />

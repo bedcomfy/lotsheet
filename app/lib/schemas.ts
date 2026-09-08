@@ -13,6 +13,7 @@ export const flagPayloadSchema = z.object({
   flags: z.array(z.string()).default([]),
   note: z.string().catch("").default(""),
   holdReason: z.string().catch("").default(""),
+  cardsReason: z.string().catch("").default(""),
   retorqueTires: z.array(z.string()).default([]),
   inspOption: z.string().catch("").default(""),
   inspMiles: z.union([z.number(), z.null()]).optional(),

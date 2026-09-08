@@ -46,6 +46,7 @@ export interface FlagEntry {
   note: string; // legacy single-note field; kept readable while old records remain
   inspMiles: number | null; // legacy inspection mileage detail
   holdReason: string; // detail for the Hold flag
+  cardsReason: string; // detail for the Cards flag
   retorqueTires: string[]; // tire ids for the Retorque flag (rf/cf/rr/cr)
   inspOption: string; // inspection type (A-3 through C-24 or TRANS-75), optional
 }

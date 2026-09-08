@@ -20,6 +20,7 @@ describe("store (PGlite in-memory)", () => {
       note: "",
       inspMiles: null,
       holdReason: "Cubs Bus",
+      cardsReason: "",
       retorqueTires: [],
       inspOption: "",
     });
@@ -27,7 +28,7 @@ describe("store (PGlite in-memory)", () => {
     expect(flags["6510"]?.flags).toContain("hold");
     expect(flags["6510"]?.holdReason).toBe("Cubs Bus");
 
-    await setBusFlags("6510", { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" });
+    await setBusFlags("6510", { flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" });
     expect((await getFlags())["6510"]).toBeUndefined();
   });
 
@@ -41,6 +42,7 @@ describe("store (PGlite in-memory)", () => {
       note: "",
       inspMiles: null,
       holdReason: "",
+      cardsReason: "",
       retorqueTires: [],
       inspOption: "",
     });

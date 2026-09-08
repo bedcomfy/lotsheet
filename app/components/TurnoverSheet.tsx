@@ -149,6 +149,7 @@ export default function TurnoverSheet() {
         ((!entry.flags || !entry.flags.length) &&
           !(entry.note && entry.note.trim()) &&
           !(entry.holdReason && entry.holdReason.trim()) &&
+          !(entry.cardsReason && entry.cardsReason.trim()) &&
           !(entry.retorqueTires && entry.retorqueTires.length) &&
           entry.inspMiles == null);
       if (empty) delete next[bus];
@@ -168,7 +169,7 @@ export default function TurnoverSheet() {
       .then((body) => (body.flags || {}) as FlagMap)
       .catch(() => flags);
     const current = latest[bus] || {
-      flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "",
+      flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "",
     };
     const inspection = inspectionOptionFromText(typed);
     const matched = inspection ? null : closestFlagMatch(typed);

@@ -26,7 +26,7 @@ function toMiles(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-const EMPTY_ENTRY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+const EMPTY_ENTRY: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" };
 
 // Normalise any stored shape (old string, old array, or new object) to an entry.
 function toEntry(v: unknown): FlagEntry {
@@ -36,6 +36,7 @@ function toEntry(v: unknown): FlagEntry {
   const o = v as Record<string, unknown>;
   let flags: string[] = Array.isArray(o.flags) ? o.flags.filter(Boolean) : [];
   const holdReason = flags.includes("hold") && typeof o.holdReason === "string" ? o.holdReason : "";
+  const cardsReason = flags.includes("cards") && typeof o.cardsReason === "string" ? o.cardsReason : "";
   const retorqueTires = flags.includes("retorque") && Array.isArray(o.retorqueTires) ? o.retorqueTires.filter(Boolean) : [];
   // A retorque needs a tire (a hold can stand on its own, reason optional).
   if (flags.includes("retorque") && retorqueTires.length === 0) flags = flags.filter((f) => f !== "retorque");
@@ -45,6 +46,7 @@ function toEntry(v: unknown): FlagEntry {
     note: typeof o.note === "string" ? o.note : "",
     inspMiles: toMiles(o.inspMiles),
     holdReason,
+    cardsReason,
     retorqueTires,
     inspOption,
   };
@@ -85,6 +87,7 @@ export async function getFlags(): Promise<FlagMap> {
       note: r.note || "",
       inspMiles: r.inspMiles,
       holdReason: r.holdReason || "",
+      cardsReason: r.cardsReason || "",
       retorqueTires: (r.retorqueTires || "").split(",").filter(Boolean),
       inspOption: r.inspOption || "",
     });
@@ -105,6 +108,7 @@ export async function setBusFlags(bus: string, entry: unknown): Promise<void> {
       note: e.note,
       inspMiles: e.inspMiles,
       holdReason: e.holdReason,
+      cardsReason: e.cardsReason,
       retorqueTires: (e.retorqueTires || []).join(","),
       inspOption: e.inspOption || "",
       updatedAt: sql`now()`,

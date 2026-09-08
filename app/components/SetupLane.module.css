@@ -373,3 +373,47 @@
     flex: 1 1 auto;
   }
 }
+
+/* Holds & Cards: mark each bus Hold or Card before its reason. */
+.kindChooser {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin-top: var(--ui-space-3);
+}
+
+.kindChip {
+  display: inline-flex;
+  min-height: var(--ui-control-sm);
+  align-items: center;
+  padding: 0 var(--ui-space-4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-pill);
+  color: var(--ui-text);
+  background: var(--ui-surface);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-weight-medium);
+  cursor: pointer;
+}
+
+.kindChip:hover {
+  border-color: var(--ui-text-muted);
+}
+
+.kindChip:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.kindChipActive {
+  border-color: var(--ui-accent);
+  color: var(--ui-on-accent, #fff);
+  background: var(--ui-accent);
+}
+
+.kindHint {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}

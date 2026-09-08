@@ -102,6 +102,7 @@ function flagDetails(details: unknown): { title: string; detail: string; badge: 
   if (removed.length) changes.push(`removed ${removed.map(flagName).join(", ")}`);
   if ((before?.note || "") !== (after?.note || "")) changes.push(after?.note ? "changed note" : "cleared note");
   if ((before?.holdReason || "") !== (after?.holdReason || "")) changes.push(after?.holdReason ? "changed hold reason" : "cleared hold reason");
+  if ((before?.cardsReason || "") !== (after?.cardsReason || "")) changes.push(after?.cardsReason ? "changed cards reason" : "cleared cards reason");
   if ((before?.inspOption || "") !== (after?.inspOption || "")) changes.push(after?.inspOption ? "changed inspection" : "cleared inspection");
   if (JSON.stringify(before?.retorqueTires || []) !== JSON.stringify(after?.retorqueTires || [])) changes.push("changed retorque tires");
   return {

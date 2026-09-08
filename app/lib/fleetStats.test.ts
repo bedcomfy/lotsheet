@@ -3,7 +3,7 @@ import { fleetStats } from "./fleetStats";
 import type { FlagEntry, FlagMap, LotSheet, MasterBus } from "./types";
 
 function entry(flags: string[]): FlagEntry {
-  return { flags, note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+  return { flags, note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" };
 }
 
 const master: MasterBus[] = [

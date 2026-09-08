@@ -9,7 +9,7 @@ import type { FlagEntry, FlagMap } from "../lib/types";
 
 const CURRENT_FLAGS: FlagMap = {
   "6404": { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Parts" },
-  "6435": { ...emptyFlagEntry(), flags: ["cards"] },
+  "6435": { ...emptyFlagEntry(), flags: ["cards"], cardsReason: "Mirror" },
   "6442": {
     ...emptyFlagEntry(),
     flags: ["inspection", objectCodeFlagId("6603")],
@@ -57,11 +57,18 @@ export const GuidedReplacement: Story = {
   render: () => <Fixture />,
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body);
-    await userEvent.click(screen.getByRole("button", { name: "Holds" }));
-    const field = await screen.findByRole("textbox", { name: "Add bus to holds" });
+    await userEvent.click(screen.getByRole("button", { name: "Holds & Cards" }));
+    const field = await screen.findByRole("textbox", { name: "Add bus to holds & cards" });
     await userEvent.type(field, "6427");
     await expect(screen.getByText("6427", { selector: "strong" })).toBeVisible();
     await expect(field).toHaveValue("");
+
+    // A new bus waits for a Hold / Card choice before it shows a reason picker.
+    const newRow = screen.getByText("6427", { selector: "strong" }).closest("section");
+    if (!newRow) throw new Error("Could not find the new row.");
+    await expect(within(newRow).getByText("Choose Hold or Card")).toBeVisible();
+    await userEvent.click(within(newRow).getByRole("button", { name: "Hold" }));
+    await expect(within(newRow).getByRole("button", { name: "Movement" })).toBeVisible();
 
     await userEvent.type(field, "25538");
     let rows = screen.getAllByText(/^(25538|6427)$/, { selector: "strong" });
@@ -73,9 +80,13 @@ export const GuidedReplacement: Story = {
     rows = screen.getAllByText(/^(25538|6427)$/, { selector: "strong" });
     await expect(rows[0]).toHaveTextContent("25538");
 
-    await userEvent.click(screen.getByRole("button", { name: "Clear all holds" }));
+    // Switching to Card keeps the typed reason and swaps the picker.
+    await userEvent.click(within(olderRow).getByRole("button", { name: "Card" }));
+    await expect(within(olderRow).getByRole("textbox", { name: "Cards reason" })).toHaveValue("Movement");
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear all holds & cards" }));
     await expect(screen.queryByText("25538", { selector: "strong" })).not.toBeInTheDocument();
-    await expect(screen.getByRole("button", { name: "Clear all holds" })).toBeDisabled();
+    await expect(screen.getByRole("button", { name: "Clear all holds & cards" })).toBeDisabled();
   },
 };
 

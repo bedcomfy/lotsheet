@@ -86,7 +86,7 @@ type ClearTarget =
   | { kind: "lots" }
   | { kind: "location"; key: LotKey; label: string; count: number };
 
-const EMPTY_FLAG: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", retorqueTires: [], inspOption: "" };
+const EMPTY_FLAG: FlagEntry = { flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "" };
 
 // Tolerate the old { num, color, status } cell shape from earlier saved sheets.
 function cellToNum(v: unknown): string {
@@ -890,6 +890,7 @@ export default function LotSheet() {
         note: entry.note,
         inspMiles: entry.inspMiles ?? null,
         holdReason: entry.holdReason ?? "",
+        cardsReason: entry.cardsReason ?? "",
         retorqueTires: entry.retorqueTires || [],
         inspOption: entry.inspOption ?? "",
         actor: getDeviceActor(),
@@ -920,6 +921,7 @@ export default function LotSheet() {
         if (flagId === "inspection") patch.inspOption = "";
         if (flagId === "retorque") patch.retorqueTires = [];
         if (flagId === "hold") patch.holdReason = "";
+        if (flagId === "cards") patch.cardsReason = "";
         postFlagEntry(bus, patch);
       }
     }
