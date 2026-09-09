@@ -6,21 +6,20 @@ import {
   ArrowRight,
   BusFront,
   ClipboardCheck,
+  Eraser,
   Plus,
   Trash2,
 } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { getDeviceActor } from "../lib/deviceActor";
-import {
-  inspectionOptionFromText,
-  retorqueTiresDisplay,
-  setInspectionOption,
-} from "../lib/grid";
+import { setInspectionOption } from "../lib/grid";
 import {
   BRING_TO_CARDS_FLAGS,
   addStagedServiceFlag,
   bringToCardsKind,
   bringToCardsReason,
+  describeServiceLaneEntry,
+  diffServiceLaneSetup,
   emptyFlagEntry,
   hasServiceLaneFlags,
   mergeServiceLaneSetup,
@@ -30,13 +29,14 @@ import {
   serviceLaneSetupIssues,
   setBringToCardsKind,
   setBringToCardsReason,
+  stageCurrentServiceLane,
   type BringToCardsKind,
+  type ServiceLaneChange,
   type ServiceLaneFlagId,
 } from "../lib/serviceLaneSetup";
 import type { FlagEntry, FlagMap } from "../lib/types";
 import {
   Button,
-  ConfirmDialog,
   Pressable,
   ResponsiveDialog,
   TextField,
@@ -95,6 +95,18 @@ const STEP_FLAGS: Record<Exclude<StepId, "review">, readonly ServiceLaneFlagId[]
 
 const KIND_LABEL: Record<BringToCardsKind, string> = { hold: "Hold", cards: "Card" };
 
+const CHANGE_GROUPS: Array<{ change: ServiceLaneChange; label: string }> = [
+  { change: "add", label: "Adding" },
+  { change: "change", label: "Changing" },
+  { change: "drop", label: "Dropping" },
+  { change: "keep", label: "Keeping as is" },
+];
+
+// Number groups pasted or typed together: "6414 6392, 6450" → ["6414","6392","6450"].
+function splitBusNumbers(raw: string): string[] {
+  return Array.from(new Set(raw.split(/[^0-9]+/).filter(Boolean)));
+}
+
 function entryFor(flags: FlagMap, bus: string): FlagEntry {
   return flags[bus] || emptyFlagEntry();
 }
@@ -138,6 +150,8 @@ export default function SetupLane({
   const [status, setStatus] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [applying, setApplying] = useState(false);
+  // How many buses the wizard started with (carried over from the live lane).
+  const [seededCount, setSeededCount] = useState(0);
   const [pinnedBuses, setPinnedBuses] = useState<Partial<Record<StepId, string>>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -145,8 +159,12 @@ export default function SetupLane({
 
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
+      // Tonight's lane is usually most of last night's: start from what is on
+      // the lane now, so the crew removes what's done instead of retyping.
+      const seed = stageCurrentServiceLane(flags);
       setStepIndex(0);
-      setStaged({});
+      setStaged(seed);
+      setSeededCount(Object.keys(seed).length);
       setUndecided([]);
       setBusInput("");
       setInputError("");
@@ -155,6 +173,9 @@ export default function SetupLane({
       setPinnedBuses({});
     }
     wasOpen.current = isOpen;
+    // `flags` is only read when the wizard opens; live updates while it is open
+    // must not reset what the crew has staged.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const step = STEPS[stepIndex];
@@ -179,6 +200,8 @@ export default function SetupLane({
   }
 
   const issues = useMemo(() => serviceLaneSetupIssues(staged), [staged]);
+  const diff = useMemo(() => diffServiceLaneSetup(flags, staged), [flags, staged]);
+  const changeCount = (change: ServiceLaneChange) => diff.filter((row) => row.change === change).length;
   const assignmentCount = serviceLaneAssignmentCount(staged);
   const stagedBusCount = serviceLaneBusCount(staged);
   const currentAssignmentCount = serviceLaneAssignmentCount(flags);
@@ -212,6 +235,35 @@ export default function SetupLane({
     setBusInput("");
     setInputError("");
     requestAnimationFrame(() => contentRef.current?.scrollTo({ top: 0 }));
+    focusInput();
+  }
+
+  // Several numbers at once (typed with spaces/commas or pasted from a text).
+  // Known buses are added; the rest are reported and left in the field.
+  function addMany(raw: string) {
+    if (!currentStep) return;
+    const tokens = splitBusNumbers(raw);
+    if (!tokens.length) {
+      setInputError("That bus is not in the active fleet list.");
+      return;
+    }
+    const unknown = tokens.filter((token) => !isKnown(sanitizeBus(token)));
+    for (const token of tokens) {
+      const bus = sanitizeBus(token);
+      if (isKnown(bus)) addBus(bus);
+    }
+    if (unknown.length) {
+      setBusInput(unknown.join(" "));
+      setInputError(`Not in the active fleet list: ${unknown.join(", ")}`);
+    }
+  }
+
+  function startFresh() {
+    setStaged({});
+    setUndecided([]);
+    setPinnedBuses({});
+    setSeededCount(0);
+    setStatus("");
     focusInput();
   }
 
@@ -334,8 +386,30 @@ export default function SetupLane({
   const undecidedNote = undecided.length
     ? ` ${undecided.length} bus${undecided.length === 1 ? " was" : "es were"} never marked Hold or Card and will be left out.`
     : "";
+  const issuesNote = issues.length
+    ? ` ${issues.length} assignment${issues.length === 1 ? " has" : "s have"} optional details missing.`
+    : "";
+  const confirmSummary =
+    `Adds ${changeCount("add")}, changes ${changeCount("change")}, drops ${changeCount("drop")}, keeps ${changeCount("keep")}. `
+    + `Other maintenance flags and notes stay unchanged.${issuesNote}${undecidedNote}`;
 
-  const footer = (
+  // The confirm step lives in the footer, so the review list stays on screen
+  // while the crew decides.
+  const footer = confirmOpen ? (
+    <div className={`${styles.footerContent} ${styles.confirmBar}`} role="alertdialog" aria-label="Replace the current lane setup?">
+      <span className={styles.confirmText}>
+        <strong>Replace the current lane setup?</strong> {confirmSummary}
+      </span>
+      <div className={styles.footerActions}>
+        <Button variant="quiet" onPress={() => setConfirmOpen(false)} isDisabled={applying}>
+          Cancel
+        </Button>
+        <Button variant="primary" onPress={applySetup} isDisabled={applying}>
+          <ClipboardCheck aria-hidden="true" /> {applying ? "Applying…" : "Replace setup"}
+        </Button>
+      </div>
+    </div>
+  ) : (
     <div className={styles.footerContent}>
       <span className={styles.footerSummary}>
         {step.id === "review"
@@ -368,9 +442,9 @@ export default function SetupLane({
   return (
     <>
       <ResponsiveDialog
-        isOpen={isOpen && !confirmOpen}
+        isOpen={isOpen}
         onOpenChange={(open) => {
-          if (!open && !confirmOpen) onOpenChange(false);
+          if (!open) onOpenChange(false);
         }}
         title="Setup Lane"
         description="Build tonight's printable service flags, then replace the old setup once."
@@ -425,17 +499,33 @@ export default function SetupLane({
 
             {currentStep ? (
               <>
+                {seededCount > 0 && (
+                  <div className={styles.seedNote} role="note">
+                    <span>
+                      Started from tonight's lane — <strong>{seededCount}</strong> bus{seededCount === 1 ? "" : "es"} carried
+                      over. Remove the ones that are done, add what's new.
+                    </span>
+                    <Pressable className={styles.seedReset} onPress={startFresh}>
+                      <Eraser aria-hidden="true" /> Start from scratch
+                    </Pressable>
+                  </div>
+                )}
                 <div className={styles.addBus}>
                   <TextField
                     className={styles.busInput}
                     inputRef={inputRef}
                     label={`Add bus to ${step.label.toLowerCase()}`}
-                    placeholder="Bus number"
+                    placeholder="Bus number — or paste several"
                     inputMode="numeric"
                     value={busInput}
                     errorMessage={inputError}
                     autoFocus
                     onChange={(value) => {
+                      // A pasted list ("6414 6392 6450") adds every bus at once.
+                      if (splitBusNumbers(value).length > 1) {
+                        addMany(value);
+                        return;
+                      }
                       const bus = sanitizeBus(value);
                       setBusInput(bus);
                       setInputError("");
@@ -444,12 +534,12 @@ export default function SetupLane({
                     onKeyDown={(event) => {
                       if (event.key !== "Enter") return;
                       event.preventDefault();
-                      addBus();
+                      addMany(busInput);
                     }}
                   />
                   <Button
                     variant="primary"
-                    onPress={() => addBus()}
+                    onPress={() => addMany(busInput)}
                     isDisabled={!busInput.trim()}
                   >
                     <Plus aria-hidden="true" /> Add
@@ -466,12 +556,16 @@ export default function SetupLane({
                     {stagedRows.map((bus) => {
                       const entry = entryFor(staged, bus);
                       const kind = currentStep === "bringcards" ? bringToCardsKind(entry) : null;
+                      const onLaneNow = hasStepFlag(flags[bus], currentStep);
                       return (
                         <section className={styles.busRow} key={bus}>
                           <div className={styles.busRowHeader}>
                             <div className={styles.busIdentity}>
                               <strong>{label(bus)}</strong>
                               <TypeCodes num={bus} variant="ui" />
+                              <span className={styles.rowBadge} data-tone={onLaneNow ? "current" : "new"}>
+                                {onLaneNow ? "on lane now" : "new"}
+                              </span>
                             </div>
                             <Pressable
                               className={styles.removeBus}
@@ -543,47 +637,35 @@ export default function SetupLane({
               </>
             ) : (
               <div className={styles.review}>
-                {assignmentCount === 0 ? (
+                {diff.length === 0 ? (
                   <div className={styles.emptyReview}>
                     <ClipboardCheck aria-hidden="true" />
                     <div>
-                      <strong>Clear tonight's service flags</strong>
-                      <p>Applying this empty setup removes the current printable lane flags and preserves every unrelated flag and note.</p>
+                      <strong>Nothing on the lane tonight</strong>
+                      <p>No lane flags are set now and none are staged. Applying changes nothing.</p>
                     </div>
                   </div>
                 ) : (
-                  STEPS.slice(0, -1).map((item) => {
-                    const stepId = item.id;
-                    if (stepId === "review") return null;
-                    const rows = sortBuses(
-                      Object.keys(staged).filter((bus) => hasStepFlag(staged[bus], stepId)),
-                    );
+                  CHANGE_GROUPS.map(({ change, label: groupLabel }) => {
+                    const rows = diff.filter((row) => row.change === change);
                     if (!rows.length) return null;
-                    const groupLabel = item.id === "bringcards" ? "Bring to Cards" : item.label;
                     return (
-                      <section className={styles.reviewGroup} key={item.id}>
+                      <section className={styles.reviewGroup} key={change} data-change={change}>
                         <h4>{groupLabel}<span>{rows.length}</span></h4>
                         <div className={styles.reviewRows}>
-                          {rows.map((bus) => {
-                            const entry = staged[bus];
-                            let detail = "";
-                            if (item.id === "bringcards") {
-                              const kind = bringToCardsKind(entry);
-                              const reason = bringToCardsReason(entry);
-                              detail = `${kind ? KIND_LABEL[kind] : ""} · ${reason || "No reason"}`;
-                            }
-                            if (item.id === "inspection") {
-                              detail = inspectionOptionFromText(entry.inspOption)?.label || "Choose type";
-                              if (entry.flags.includes("followup")) detail += " · Follow up";
-                            }
-                            if (item.id === "retorque") detail = retorqueTiresDisplay(entry.retorqueTires) || "Choose tires";
-                            return (
-                              <div className={styles.reviewRow} key={bus}>
-                                <strong>{label(bus)}</strong>
-                                {detail && <span>{detail}</span>}
-                              </div>
-                            );
-                          })}
+                          {rows.map((row) => (
+                            <div className={styles.reviewRow} key={row.bus}>
+                              <strong>{label(row.bus)}</strong>
+                              <span>
+                                {row.change === "change" && (
+                                  <s className={styles.diffBefore}>{describeServiceLaneEntry(row.before)}</s>
+                                )}
+                                {row.change === "drop"
+                                  ? describeServiceLaneEntry(row.before)
+                                  : describeServiceLaneEntry(row.after)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </section>
                     );
@@ -611,16 +693,6 @@ export default function SetupLane({
           </div>
         </div>
       </ResponsiveDialog>
-
-      <ConfirmDialog
-        isOpen={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Replace the current lane setup?"
-        description={`This removes the existing printable service flags from ${currentBusCount} bus${currentBusCount === 1 ? "" : "es"}, then applies ${assignmentCount} assignment${assignmentCount === 1 ? "" : "s"}. Other maintenance flags and notes stay unchanged.${issues.length ? ` ${issues.length} assignment${issues.length === 1 ? " has" : "s have"} optional details missing.` : ""}${undecidedNote}`}
-        confirmLabel="Replace setup"
-        isPending={applying}
-        onConfirm={applySetup}
-      />
     </>
   );
 }

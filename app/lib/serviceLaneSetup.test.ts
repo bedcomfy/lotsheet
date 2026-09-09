@@ -6,8 +6,11 @@ import {
   bringToCardsReason,
   clearServiceLaneFlags,
   emptyFlagEntry,
+  describeServiceLaneEntry,
+  diffServiceLaneSetup,
   mergeServiceLaneSetup,
   serviceLaneSetupIssues,
+  stageCurrentServiceLane,
   setBringToCardsKind,
   setBringToCardsReason,
 } from "./serviceLaneSetup";
@@ -120,5 +123,50 @@ describe("service lane setup", () => {
     expect(merged.flags).toEqual(expect.arrayContaining(["inspection", "retorque"]));
     expect(merged.inspOption).toBe("");
     expect(merged.retorqueTires).toEqual([]);
+  });
+
+  it("stages only the lane slice of tonight's live flags", () => {
+    const staged = stageCurrentServiceLane({
+      "6404": { ...emptyFlagEntry(), flags: ["hold", "eng", customNoteFlagId("Door")], holdReason: "Parts" },
+      "6442": { ...emptyFlagEntry(), flags: ["inspection", objectCodeFlagId("6603"), "followup"], inspOption: "A-3" },
+      "6475": { ...emptyFlagEntry(), flags: ["retorque"], retorqueTires: ["cf", "rf"] },
+      "6500": { ...emptyFlagEntry(), flags: ["safety"] },
+    });
+    expect(Object.keys(staged).sort()).toEqual(["6404", "6442", "6475"]);
+    expect(staged["6404"].flags).toEqual(["hold"]);
+    expect(staged["6404"].holdReason).toBe("Parts");
+    expect(staged["6442"].flags).toEqual(expect.arrayContaining(["inspection", objectCodeFlagId("6603"), "followup"]));
+    expect(staged["6475"].retorqueTires).toEqual(["cf", "rf"]);
+  });
+
+  it("diffs the staged lane against the live one bus by bus", () => {
+    const current = {
+      "6404": { ...emptyFlagEntry(), flags: ["hold", "eng"], holdReason: "Parts" },
+      "6435": { ...emptyFlagEntry(), flags: ["cards"], cardsReason: "Mirror" },
+      "6475": { ...emptyFlagEntry(), flags: ["retorque"], retorqueTires: ["cf", "rf"] },
+    };
+    const staged = {
+      "6404": { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Parts" },
+      "6475": { ...emptyFlagEntry(), flags: ["retorque"], retorqueTires: ["rf", "cf", "rr", "cr"] },
+      "6510": { ...emptyFlagEntry(), flags: ["inspection"], inspOption: "A-3" },
+    };
+    const rows = diffServiceLaneSetup(current, staged).map((row) => [row.bus, row.change]);
+    expect(rows).toEqual([
+      ["6404", "keep"],
+      ["6435", "drop"],
+      ["6475", "change"],
+      ["6510", "add"],
+    ]);
+  });
+
+  it("describes a lane entry in one line", () => {
+    expect(describeServiceLaneEntry({
+      ...emptyFlagEntry(),
+      flags: ["hold", "inspection", "followup", "retorque"],
+      holdReason: "Parts",
+      inspOption: "A-3",
+      retorqueTires: ["cf", "rf"],
+    })).toBe("Hold (Parts) · A-3 · Follow up · Retorque Fronts");
+    expect(describeServiceLaneEntry({ ...emptyFlagEntry(), flags: ["cards"] })).toBe("Card");
   });
 });

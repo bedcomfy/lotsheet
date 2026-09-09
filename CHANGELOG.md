@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.27.0 - 2026-09-09
+
+Setup Lane starts from tonight's real lane instead of a blank slate.
+
+- Each step opens pre-filled with the buses already carrying that flag, each
+  marked "on lane now". Remove the ones that are done and add what's new —
+  most nights that is a handful of taps instead of retyping every bus number.
+  "Start from scratch" clears the carry-over when you want a clean rebuild.
+- The bus field accepts several numbers at once: type or paste
+  "6414 6392 6450" (spaces, commas, or one per line) and every known bus is
+  added; anything unrecognized stays in the field with a message.
+- Review now shows exactly what applying will do — Adding, Changing (old →
+  new), Dropping, and Keeping as is — rather than just a count.
+- The final confirmation moved into the footer, so the review list stays on
+  screen while you decide.
+
 ## 0.26.2 - 2026-09-09
 
 - Turnover Sheet rows are now all the same height. A bus with a long list of
