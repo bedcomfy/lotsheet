@@ -3,27 +3,25 @@
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
-  BusFront,
   CheckCircle2,
   CircleAlert,
   ClipboardList,
   Flag,
   Fuel,
+  ListChecks,
   MapPinOff,
   MapPinned,
-  Search,
   Warehouse,
   Wrench,
 } from "lucide-react";
 import { useBusMasterList, useFlags, useLotSheet } from "../../lib/queries";
 import { fleetBusLocations, fleetStats } from "../../lib/fleetStats";
-import { flagsFullDisplay } from "../../lib/grid";
+import { hasServiceLaneFlags } from "../../lib/serviceLaneSetup";
 import { Button } from "../../ui/Button";
-import { SearchField } from "../../ui/Field";
 import { MetricTile } from "../../ui/MetricTile";
 import { Pressable } from "../../ui/Pressable";
-import { ResponsiveDialog } from "../../ui/ResponsiveDialog";
 import { StatusBadge } from "../../ui/StatusBadge";
+import FleetGroupDialog from "../FleetGroupDialog";
 import styles from "./MTonight.module.css";
 
 type DetailId =
@@ -45,7 +43,6 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
   const { data: sheetData } = useLotSheet();
   const { data: flags = {} } = useFlags();
   const { data: masterBuses = [] } = useBusMasterList();
-  const [findBus, setFindBus] = useState("");
   const [detailId, setDetailId] = useState<DetailId | null>(null);
   const sheet = sheetData?.sheet || null;
 
@@ -69,6 +66,16 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
     [flags, fleet.activeFleet],
   );
+  const lane = useMemo(() => {
+    const active = Object.entries(flags).filter(([bus]) => fleet.activeFleet.has(bus));
+    const withFlag = (id: string) => active.filter(([, entry]) => (entry.flags || []).includes(id)).length;
+    return {
+      buses: active.filter(([, entry]) => hasServiceLaneFlags(entry)).length,
+      inspections: withFlag("inspection"),
+      retorques: withFlag("retorque"),
+      cards: withFlag("hold") + withFlag("cards"),
+    };
+  }, [flags, fleet.activeFleet]);
 
   const detail = useMemo(() => {
     if (!detailId) return null;
@@ -123,11 +130,6 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
     };
     return details[detailId];
   }, [detailId, flagged, fleet]);
-
-  function openSearchResult() {
-    if (!findBus) return;
-    onOpenBus(findBus);
-  }
 
   const placement = [
     {
@@ -188,26 +190,17 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         </Button>
       </section>
 
-      <section className={styles.searchPanel} aria-label="Find a bus">
-        <SearchField
-          label="Find a bus"
-          value={findBus}
-          inputMode="numeric"
-          placeholder="Enter bus number"
-          onChange={(value) =>
-            setFindBus(value.replace(/\D/g, "").slice(0, 5))
-          }
-          onKeyDown={(event) => {
-            if (event.key === "Enter") openSearchResult();
-          }}
-        />
-        <Button
-          aria-label="Open bus"
-          isDisabled={!findBus}
-          onPress={openSearchResult}
-        >
-          <Search aria-hidden="true" />
-          Open
+      <section className={styles.primaryAction} aria-label="Tonight's lane">
+        <div>
+          <span>Tonight&apos;s lane</span>
+          <strong>
+            {lane.inspections} insp · {lane.retorques} retorque · {lane.cards} to cards
+          </strong>
+          <small>{lane.buses} bus{lane.buses === 1 ? "" : "es"} on the printable service lane</small>
+        </div>
+        <Button onPress={() => onGo("setup")}>
+          <ListChecks aria-hidden="true" />
+          Set up
         </Button>
       </section>
 
@@ -315,13 +308,13 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         </div>
       </div>
       <section className={styles.quickActions} aria-label="Quick actions">
-        <Button fullWidth onPress={() => onGo("buses")}>
-          <BusFront aria-hidden="true" />
-          Find a Bus
-        </Button>
         <Button fullWidth onPress={() => onGo("service")}>
           <Fuel aria-hidden="true" />
           Service Sheets
+        </Button>
+        <Button fullWidth onPress={() => onGo("turnover")}>
+          <ClipboardList aria-hidden="true" />
+          Turnover
         </Button>
       </section>
 
@@ -330,45 +323,19 @@ export default function MTonight({ onGo, onOpenBus }: MTonightProps) {
         Connected to the live Pace Northwest sheets
       </footer>
 
-      <ResponsiveDialog
+      <FleetGroupDialog
         isOpen={Boolean(detail)}
         onOpenChange={(open) => {
           if (!open) setDetailId(null);
         }}
         title={detail?.title || ""}
         description={detail?.description}
-      >
-        <div className={styles.dialogSummary}>
-          <strong>{detail?.buses.length || 0}</strong>
-          <span>bus{detail?.buses.length === 1 ? "" : "es"}</span>
-        </div>
-        <div className={styles.busList}>
-          {detail?.buses.length === 0 && (
-            <p className={styles.empty}>No buses in this group.</p>
-          )}
-          {detail?.buses.map((bus) => {
-            const flagText = flags[bus] ? flagsFullDisplay(flags[bus]) : "";
-            const where =
-              detailId === "missing"
-                ? "No current location"
-                : (locations[bus] || ["No current location"]).join(" / ");
-            return (
-              <Pressable
-                className={styles.busRow}
-                key={bus}
-                onPress={() => onOpenBus(bus)}
-              >
-                <span>
-                  <strong>{bus}</strong>
-                  <small>{where}</small>
-                  {flagText && <em>{flagText}</em>}
-                </span>
-                <ArrowRight aria-hidden="true" />
-              </Pressable>
-            );
-          })}
-        </div>
-      </ResponsiveDialog>
+        buses={detail?.buses || []}
+        flags={flags}
+        locations={locations}
+        noLocation={detailId === "missing"}
+        onOpenBus={onOpenBus}
+      />
     </div>
   );
 }

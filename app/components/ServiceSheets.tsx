@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Coins,
@@ -52,6 +52,15 @@ export default function ServiceSheets() {
   const [date, setDate] = useState(chicagoDateShort);
   const [managerOpen, setManagerOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+
+  // Home's "Set up lane" tile deep-links here with ?setup=1.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("setup") !== "1") return;
+    setSetupOpen(true);
+    url.searchParams.delete("setup");
+    window.history.replaceState(null, "", url.toString());
+  }, []);
   const { data: busFlags = {} } = useFlags();
   const queryClient = useQueryClient();
   const flushers = useRef<

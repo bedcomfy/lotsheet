@@ -10,6 +10,7 @@ import {
   FileText,
   Fuel,
   ListChecks,
+  Files,
   RefreshCw,
   CheckCircle2,
   CircleAlert,
@@ -31,6 +32,8 @@ import {
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
 import BusCard from "./BusCard";
+import FleetGroupDialog from "./FleetGroupDialog";
+import { hasServiceLaneFlags } from "../lib/serviceLaneSetup";
 import { SkeletonStat } from "./Skeleton";
 import { Button } from "../ui/Button";
 import { MetricTile } from "../ui/MetricTile";
@@ -39,7 +42,7 @@ import { ResponsiveDialog } from "../ui/ResponsiveDialog";
 import { StatusBadge } from "../ui/StatusBadge";
 import styles from "./HomeDashboard.module.css";
 
-type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty";
+type StatusDetail = "usable" | "outOfService" | "grid" | "lots" | "shop" | "missing" | "offProperty" | "flagged";
 
 function formatSaved(iso: string | null | undefined): string {
   if (!iso) return "Not saved yet";
@@ -106,6 +109,8 @@ export default function HomeDashboard() {
     const flagged = Object.entries(flags).filter(([bus, entry]) =>
       fleet.activeFleet.has(bus) && ((entry.flags || []).length || entry.note)
     ).length;
+    const active = Object.entries(flags).filter(([bus]) => fleet.activeFleet.has(bus));
+    const withFlag = (id: string) => active.filter(([, entry]) => (entry.flags || []).includes(id)).length;
     return {
       grid: fleet.onGrid.size,
       lots: fleet.inLots.size,
@@ -115,8 +120,22 @@ export default function HomeDashboard() {
       notReady: fleet.notReadyForService.size,
       flagged,
       missing: fleet.missing.length,
+      lane: {
+        buses: active.filter(([, entry]) => hasServiceLaneFlags(entry)).length,
+        inspections: withFlag("inspection"),
+        retorques: withFlag("retorque"),
+        cards: withFlag("hold") + withFlag("cards"),
+      },
     };
   }, [flags, fleet]);
+  const flaggedBuses = useMemo(
+    () =>
+      Object.entries(flags)
+        .filter(([bus, entry]) => fleet.activeFleet.has(bus) && ((entry.flags || []).length || entry.note))
+        .map(([bus]) => bus)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+    [flags, fleet.activeFleet],
+  );
 
   const detail = useMemo(() => {
     if (!statusDetail) return null;
@@ -157,21 +176,24 @@ export default function HomeDashboard() {
         description: "Active buses currently marked Off property.",
         buses: sort([...fleet.offProperty]),
       },
+      flagged: {
+        title: "Flagged buses",
+        description: "Active buses with an open maintenance flag or note.",
+        buses: flaggedBuses,
+      },
     };
     return configs[statusDetail];
-  }, [fleet, statusDetail]);
+  }, [flaggedBuses, fleet, statusDetail]);
 
-  const quickActions = [
-    { label: "Open Lot Sheet", meta: "Daily grid and printout", path: "/", icon: ClipboardList },
-    { label: "Fill Rows", meta: "Fast row entry workflow", path: "/?fill=1", icon: ListChecks },
-    { label: "Turnover Sheet", meta: "Shift handoff and lot reasons", path: "/turnover", icon: RefreshCw },
-    { label: "Work Order", meta: "Oracle eAM printable form", path: "/workorder", icon: FileText },
-  ];
-
+  // Every sheet and tool once — the header carries the nightly primaries.
   const sheetLinks = [
+    { label: "Turnover Sheet", path: "/turnover", icon: RefreshCw },
     { label: "Service Sheets", path: "/service", icon: Fuel },
     { label: "Farebox Checks", path: "/service?tab=farebox", icon: Coins },
+    { label: "Work Order", path: "/workorder", icon: FileText },
     { label: "Shop", path: "/shop", icon: Wrench },
+    { label: "Other Sheets", path: "/other", icon: Files },
+    { label: "Fleet", path: "/buses", icon: BusFront },
     { label: "Admin Tools", path: "/admin/flags", icon: ShieldAlert },
   ];
 
@@ -188,14 +210,15 @@ export default function HomeDashboard() {
               <ListChecks aria-hidden="true" />
               Fill Rows
             </Button>
-            <Button onPress={() => router.push("/workorder")}>
-              <FileText aria-hidden="true" />
-              Work Order
-            </Button>
-            <Button onPress={() => router.push("/service")}>
+            <Button onPress={() => router.push("/service?tab=fuel&setup=1")}>
               <Fuel aria-hidden="true" />
-              Service Sheets
-            </Button>          </div>
+              Set up lane
+            </Button>
+            <Button onPress={() => router.push("/turnover")}>
+              <RefreshCw aria-hidden="true" />
+              Turnover
+            </Button>
+          </div>
           <div className={styles.saveState}>
             <StatusBadge tone="accent">Live updates</StatusBadge>
             <span>Last saved {formatSaved(updatedAt)}</span>
@@ -319,7 +342,7 @@ export default function HomeDashboard() {
               <span><strong>{stats.missing} buses missing</strong><small>No location on any sheet</small></span>
               <ArrowRight size={15} />
             </Pressable>
-            <Pressable className={styles.attentionRow} onPress={() => router.push("/?flags=1")}>
+            <Pressable className={styles.attentionRow} onPress={() => setStatusDetail("flagged")}>
               <span className={`${styles.listIcon} ${styles.listIconWarning}`}><CircleAlert size={18} /></span>
               <span><strong>{stats.flagged} flagged buses</strong><small>Open maintenance items</small></span>
               <ArrowRight size={15} />
@@ -337,25 +360,23 @@ export default function HomeDashboard() {
         <article className={styles.panel}>
           <header className={styles.panelHead}>
             <div>
-              <h2>Daily Operations</h2>
-              <p>Last saved {formatSaved(updatedAt)}</p>
+              <h2>Tonight&apos;s Lane</h2>
+              <p>{stats.lane.buses} bus{stats.lane.buses === 1 ? "" : "es"} on the printable service lane</p>
             </div>
+            <Pressable onPress={() => router.push("/service?tab=fuel&setup=1")}>Set up lane <ArrowRight size={14} /></Pressable>
           </header>
-          <div className={styles.actionList}>
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Pressable className={styles.actionRow} key={action.label} onPress={() => router.push(action.path)}>
-                  <span className={styles.actionIcon}><Icon size={19} /></span>
-                  <span>
-                    <strong>{action.label}</strong>
-                    <small>{action.meta}</small>
-                  </span>
-                  <ArrowRight size={17} />
-                </Pressable>
-              );
-            })}
+          <div className={styles.laneCounts}>
+            <Pressable className={styles.laneCount} onPress={() => router.push("/service?tab=summary")}>
+              <b>{stats.lane.inspections}</b><span>Inspections</span>
+            </Pressable>
+            <Pressable className={styles.laneCount} onPress={() => router.push("/service?tab=summary")}>
+              <b>{stats.lane.retorques}</b><span>Retorques</span>
+            </Pressable>
+            <Pressable className={styles.laneCount} onPress={() => router.push("/service?tab=summary")}>
+              <b>{stats.lane.cards}</b><span>Bring to cards</span>
+            </Pressable>
           </div>
+          <p className={styles.laneFoot}>Last sheet save {formatSaved(updatedAt)}</p>
         </article>
 
         <article className={styles.panel}>
@@ -417,36 +438,19 @@ export default function HomeDashboard() {
       })()}
 
       {detail && (
-        <ResponsiveDialog
+        <FleetGroupDialog
           isOpen={!openBus}
           onOpenChange={(open) => {
             if (!open) setStatusDetail(null);
           }}
           title={detail.title}
           description={detail.description}
-          size="md"
-          footer={(close) => <Button variant="primary" onPress={close}>Done</Button>}
-        >
-          <div className={styles.statusSummary}>
-            <strong>{detail.buses.length}</strong> bus{detail.buses.length === 1 ? "" : "es"}
-          </div>
-          <div className={styles.statusList}>
-            {detail.buses.length === 0 && <div className={styles.empty}>No buses in this group.</div>}
-            {detail.buses.map((bus) => {
-              const why = flags[bus] ? flagsFullDisplay(flags[bus]) : "";
-              return (
-                <Pressable className={styles.statusRow} key={bus} onPress={() => setOpenBus(bus)}>
-                  <strong>{bus}</strong>
-                  <span className={styles.statusWhere}>
-                    {statusDetail === "missing" ? "No current location" : (locations[bus] || ["No current location"]).join(" / ")}
-                  </span>
-                  {why && <span className={styles.statusWhy}>{why}</span>}
-                  <ArrowRight className={styles.statusGo} size={15} aria-hidden="true" />
-                </Pressable>
-              );
-            })}
-          </div>
-        </ResponsiveDialog>
+          buses={detail.buses}
+          flags={flags}
+          locations={locations}
+          noLocation={statusDetail === "missing"}
+          onOpenBus={setOpenBus}
+        />
       )}
 
       {openBus && (
