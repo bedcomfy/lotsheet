@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.26.2 - 2026-09-09
+
+- Turnover Sheet rows are now all the same height. A bus with a long list of
+  flags no longer stretches its row (Bay 3 in the field report): reason text
+  and bay flags stay on one line, shrink a step or two when long, and clip
+  rather than grow. Blank prints are unaffected by whatever is on the live
+  sheet. New prints regenerate; the structural revision date moved forward.
+- Lot Sheet: "Print blank sheet" in the Print PDF menu works on desktop again
+  (it was a dead menu item).
+- Turnover Sheet: typing a bus into a bay now removes it from any other bay or
+  lane/lot list, matching the Shop page and Lot Sheet.
+- The "in the shop" count on the Lot Sheet now matches the Shop page exactly
+  (Apron + Bays + Cards).
+- Setup Lane no longer auto-adds a bus while the typed number could still be
+  the start of a longer bus number (e.g. 2553 vs 25538) — press Enter or Add.
+- Fuel/DEF and Farebox sheets opened on their own no longer carry yesterday's
+  date forward: a date from an earlier service day (days roll at 6 AM) resets
+  to today. A date set from the Service Sheets "All" tab still wins.
+- Other Sheets remembers its tab in the address (`/other?tab=hybrid-daily`).
+
 ## 0.26.1 - 2026-09-08
 
 - Turnover Sheet titles (`MECH.`, `VEH #`, `NORTH LOT`, `EAST LOT`, `NORTH

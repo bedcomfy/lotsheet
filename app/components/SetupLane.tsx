@@ -122,7 +122,11 @@ export default function SetupLane({
   onBusFlagsUpdated,
   onApplyAndPrint,
 }: SetupLaneProps) {
-  const { isKnown, label } = useBusMaster();
+  const { isKnown, label, master } = useBusMaster();
+  // A typed number auto-adds only when it can't still grow into a different
+  // bus (e.g. "2553" while 25538 exists) — otherwise Enter/Add commits it.
+  const isAmbiguousPrefix = (bus: string) =>
+    master.buses.some((b) => b.num.length > bus.length && b.num.startsWith(bus) && isKnown(b.num));
   const [stepIndex, setStepIndex] = useState(0);
   const [staged, setStaged] = useState<FlagMap>({});
   // Buses entered on the Holds & Cards step that have not been marked Hold or
@@ -435,7 +439,7 @@ export default function SetupLane({
                       const bus = sanitizeBus(value);
                       setBusInput(bus);
                       setInputError("");
-                      if (isKnown(bus)) addBus(bus);
+                      if (isKnown(bus) && !isAmbiguousPrefix(bus)) addBus(bus);
                     }}
                     onKeyDown={(event) => {
                       if (event.key !== "Enter") return;

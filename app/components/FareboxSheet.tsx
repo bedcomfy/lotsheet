@@ -7,7 +7,7 @@ import { History, Eraser, FileDown, FileText, MoreHorizontal } from "lucide-reac
 import { useBusMaster } from "./BusMasterProvider";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
-import { chicagoDateShort } from "../lib/chicagoTime";
+import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
@@ -152,8 +152,10 @@ export default function FareboxSheet({
         if (alive && d && d.value) {
           const entries: Record<string, FareboxEntry> = {};
           for (const [bus, e] of Object.entries(d.value.entries || {})) entries[bus] = normalizeEntry(e);
+          const date = d.value.date || "";
           setData({
-            date: d.value.date || "",
+            // Yesterday's date must not carry into tonight's sheet.
+            date: !dateOverride && isStaleServiceDate(date) ? "" : date,
             probeSerial: d.value.probeSerial || "",
             entries,
           });

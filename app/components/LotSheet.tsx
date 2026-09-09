@@ -1279,13 +1279,10 @@ export default function LotSheet() {
   // Support vehicles such as JUDI never contribute to fleet totals.
   const offPropertyCount = blankPrintMode ? "" : displayFleet.offProperty.size;
 
-  // "# OF VEHICLES IN SHOP" is auto-counted too: everything on the Shop page
-  // (Apron + Bays + Cards) plus any bus flagged IN SHOP.
-  const inShopSet = new Set(displayFleet.inShop);
-  for (const [bus, e] of Object.entries(displayFlags)) {
-    if (displayFleet.activeFleet.has(bus) && (e.flags || []).includes("shop")) inShopSet.add(bus);
-  }
-  const inShopCount = blankPrintMode ? "" : inShopSet.size;
+  // "in the shop" counts exactly what the Shop page counts — Apron + Bays +
+  // Cards — so the two chips never disagree. (The IN SHOP flag still keeps a
+  // bus off the Missing list; it just isn't a shop location.)
+  const inShopCount = blankPrintMode ? "" : displayFleet.inShop.size;
 
   // Both counters are editable. OFF PROPERTY auto-fills the flag count when left
   // blank (like the TIME field) but a typed number wins; clearing it returns to
@@ -1530,6 +1527,7 @@ export default function LotSheet() {
             menuLabel="Print options"
             items={[{ id: "blank", label: "Print blank sheet", icon: <FileDown size={16} /> }]}
             onAction={(key) => {
+              if (key === "blank") openBlankPdf();
             }}
           >
             <FileDown aria-hidden="true" /> Print PDF

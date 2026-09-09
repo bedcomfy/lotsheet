@@ -80,3 +80,31 @@ export function chicagoNowMinutes(now = new Date()): number {
   const p = chicagoParts(now);
   return Number(p.hour24) * 60 + Number(p.minute);
 }
+
+// The garage's "service day" rolls over at 6:00 AM Chicago, not midnight: a
+// night crew that started on the 8th is still writing the 8th's sheets at 2 AM
+// on the 9th.
+const SERVICE_DAY_ROLLOVER_HOUR = 6;
+
+export function chicagoServiceDateShort(now = new Date()): string {
+  return chicagoDateShort(new Date(now.getTime() - SERVICE_DAY_ROLLOVER_HOUR * 60 * 60 * 1000));
+}
+
+// Parse a sheet date ("9/8/26", "09/08/2026") into a comparable yyyymmdd
+// number; null when it isn't a date.
+function shortDateOrdinal(value: string): number | null {
+  const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})\s*$/.exec(value || "");
+  if (!m) return null;
+  const year = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+  return year * 10000 + Number(m[1]) * 100 + Number(m[2]);
+}
+
+// True when a saved sheet date is from an earlier service day than the one in
+// progress — i.e. the sheet is showing yesterday's (or older) date and should
+// roll forward to today. Dates that don't parse, and future dates, are kept.
+export function isStaleServiceDate(saved: string, now = new Date()): boolean {
+  const savedOrd = shortDateOrdinal(saved);
+  if (savedOrd === null) return false;
+  const todayOrd = shortDateOrdinal(chicagoServiceDateShort(now));
+  return todayOrd !== null && savedOrd < todayOrd;
+}
