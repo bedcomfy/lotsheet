@@ -7,6 +7,7 @@ import {
   BusFront,
   ClipboardCheck,
   Eraser,
+  History,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -159,12 +160,12 @@ export default function SetupLane({
 
   useEffect(() => {
     if (isOpen && !wasOpen.current) {
-      // Tonight's lane is usually most of last night's: start from what is on
-      // the lane now, so the crew removes what's done instead of retyping.
-      const seed = stageCurrentServiceLane(flags);
+      // The wizard replaces the lane sheets, so it opens blank: what is typed
+      // here IS tonight's lane. Carrying over the live lane is one tap away
+      // (carryOverLane) for the nights that really are last night's again.
       setStepIndex(0);
-      setStaged(seed);
-      setSeededCount(Object.keys(seed).length);
+      setStaged({});
+      setSeededCount(0);
       setUndecided([]);
       setBusInput("");
       setInputError("");
@@ -206,6 +207,7 @@ export default function SetupLane({
   const stagedBusCount = serviceLaneBusCount(staged);
   const currentAssignmentCount = serviceLaneAssignmentCount(flags);
   const currentBusCount = serviceLaneBusCount(flags);
+  const nothingStaged = Object.keys(staged).length === 0 && undecided.length === 0;
 
   function focusInput() {
     requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
@@ -263,6 +265,18 @@ export default function SetupLane({
     setUndecided([]);
     setPinnedBuses({});
     setSeededCount(0);
+    setStatus("");
+    focusInput();
+  }
+
+  // Opt-in: stage every bus currently on the lane so the crew removes what is
+  // done instead of retyping. Only offered while nothing has been typed yet.
+  function carryOverLane() {
+    const seed = stageCurrentServiceLane(flags);
+    setStaged(seed);
+    setUndecided([]);
+    setPinnedBuses({});
+    setSeededCount(Object.keys(seed).length);
     setStatus("");
     focusInput();
   }
@@ -500,7 +514,7 @@ export default function SetupLane({
 
             {currentStep ? (
               <>
-                {seededCount > 0 && (
+                {seededCount > 0 ? (
                   <div className={styles.seedNote} role="note">
                     <span>
                       Started from tonight's lane — <strong>{seededCount}</strong> bus{seededCount === 1 ? "" : "es"} carried
@@ -510,7 +524,17 @@ export default function SetupLane({
                       <Eraser aria-hidden="true" /> Start from scratch
                     </Pressable>
                   </div>
-                )}
+                ) : nothingStaged && currentBusCount > 0 ? (
+                  <div className={`${styles.seedNote} ${styles.seedOffer}`} role="note">
+                    <span>
+                      Blank sheet. Type tonight's lane below, or copy the <strong>{currentBusCount}</strong> bus
+                      {currentBusCount === 1 ? "" : "es"} on the lane now and edit from there.
+                    </span>
+                    <Pressable className={styles.seedReset} onPress={carryOverLane}>
+                      <History aria-hidden="true" /> Start from tonight's lane
+                    </Pressable>
+                  </div>
+                ) : null}
                 <div className={styles.addBus}>
                   <TextField
                     className={styles.busInput}
@@ -564,9 +588,11 @@ export default function SetupLane({
                             <div className={styles.busIdentity}>
                               <strong>{label(bus)}</strong>
                               <TypeCodes num={bus} variant="ui" />
-                              <span className={styles.rowBadge} data-tone={onLaneNow ? "current" : "new"}>
-                                {onLaneNow ? "on lane now" : "new"}
-                              </span>
+                              {(onLaneNow || seededCount > 0) && (
+                                <span className={styles.rowBadge} data-tone={onLaneNow ? "current" : "new"}>
+                                  {onLaneNow ? "on lane now" : "new"}
+                                </span>
+                              )}
                             </div>
                             <Pressable
                               className={styles.removeBus}

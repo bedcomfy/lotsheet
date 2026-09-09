@@ -90,6 +90,26 @@ export const GuidedReplacement: Story = {
   },
 };
 
+export const CarryOverIsOptIn: Story = {
+  render: () => <Fixture />,
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    await userEvent.click(screen.getByRole("button", { name: "Holds & Cards" }));
+    // The wizard opens blank even though 6404 (hold) and 6435 (card) are on the lane.
+    await expect(screen.queryByText("6404", { selector: "strong" })).not.toBeInTheDocument();
+    await expect(screen.getByText("No buses added. Continue when this category is clear tonight.")).toBeVisible();
+
+    await userEvent.click(screen.getByRole("button", { name: "Start from tonight's lane" }));
+    await expect(screen.getByText("6404", { selector: "strong" })).toBeVisible();
+    await expect(screen.getByText("6435", { selector: "strong" })).toBeVisible();
+    await expect(screen.getByText(/carried over/)).toBeVisible();
+
+    await userEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
+    await expect(screen.queryByText("6404", { selector: "strong" })).not.toBeInTheDocument();
+    await expect(screen.getByRole("button", { name: "Start from tonight's lane" })).toBeVisible();
+  },
+};
+
 export const EmptyCurrentSetup: Story = {
   render: () => <Fixture flags={{}} />,
 };

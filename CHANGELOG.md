@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.33.1 - 2026-09-09
+
+- Set up lane opens blank again. It replaces the paper lane sheets, so what
+  you type is tonight's lane, nothing is carried over unless you ask. On a
+  blank step, a small note offers "Start from tonight's lane" for the nights
+  that really are last night's again; "Start from scratch" undoes it. The
+  multi-number paste, the Adding / Changing / Dropping review, and the
+  in-footer confirm from 0.27.0 stay.
+
 ## 0.33.0 - 2026-09-09
 
 - The Admin Tools password is now checked by the server, not the browser.
