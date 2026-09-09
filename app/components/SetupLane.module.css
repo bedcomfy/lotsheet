@@ -374,7 +374,8 @@
   }
 }
 
-/* "Started from tonight's lane" note above the add field. */
+/* Note above the add field: the opt-in "Start from tonight's lane" offer on a
+   blank step, or "Started from tonight's lane" once the crew took it. */
 .seedNote {
   display: flex;
   flex-wrap: wrap;
@@ -392,6 +393,11 @@
 
 .seedNote strong {
   color: var(--ui-text);
+}
+
+.seedOffer {
+  border-left-color: var(--ui-border-strong);
+  background: var(--ui-surface-muted);
 }
 
 .seedReset {
