@@ -1,23 +1,30 @@
 "use client";
 
 import { create } from "zustand";
-import { ADMIN_PASSWORD, ADMIN_SESSION_KEY } from "./admin";
+import { ADMIN_SESSION_KEY } from "./admin";
 
-// Shared "view is open, editing is gated" unlock, now a single Zustand store so
-// every consumer (Seniority, Work Pick, AdminGate, the unlock button) reacts to
-// the same unlocked state instead of each keeping its own copy synced through
-// sessionStorage. Same password/session as Admin Tools — unlocking anywhere
-// unlocks everywhere for the session. The API is unchanged.
+// Shared "view is open, editing is gated" unlock — one Zustand store so every
+// consumer (Seniority, Work Pick, AdminGate, the unlock button) reacts to the
+// same state. The password is checked by the server, which answers with an
+// httpOnly session cookie that the admin write routes require; unlocking
+// anywhere unlocks everywhere for the session.
 interface AdminUnlockState {
   unlocked: boolean;
-  tryUnlock: (password: string) => boolean;
+  tryUnlock: (password: string) => Promise<boolean>;
   lock: () => void;
 }
 
 export const useAdminUnlock = create<AdminUnlockState>((set) => ({
   unlocked: false,
-  tryUnlock: (password) => {
-    if (password.trim().toLowerCase() !== ADMIN_PASSWORD) return false;
+  tryUnlock: async (password) => {
+    const ok = await fetch("/api/admin/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    })
+      .then((response) => response.ok)
+      .catch(() => false);
+    if (!ok) return false;
     try {
       sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
     } catch {}
@@ -29,15 +36,23 @@ export const useAdminUnlock = create<AdminUnlockState>((set) => ({
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
     } catch {}
     set({ unlocked: false });
+    fetch("/api/admin/session", { method: "DELETE" }).catch(() => {});
   },
 }));
 
 // Restore a prior unlock on the client AFTER hydration — the store starts locked
-// (matching SSR), so this is a normal post-hydration state update, not a mismatch.
+// (matching SSR). The server confirms the cookie is still good, so a stale
+// "unlocked" flag never outlives an expired session.
 if (typeof window !== "undefined") {
   try {
     if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") {
-      useAdminUnlock.setState({ unlocked: true });
+      fetch("/api/admin/session", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : { unlocked: false }))
+        .then((data) => {
+          if (data?.unlocked) useAdminUnlock.setState({ unlocked: true });
+          else sessionStorage.removeItem(ADMIN_SESSION_KEY);
+        })
+        .catch(() => {});
     }
   } catch {}
 }

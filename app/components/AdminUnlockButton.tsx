@@ -8,7 +8,7 @@ export default function AdminUnlockButton({
   onSubmit,
   label = "Edit",
 }: {
-  onSubmit: (password: string) => boolean;
+  onSubmit: (password: string) => boolean | Promise<boolean>;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -21,8 +21,8 @@ export default function AdminUnlockButton({
     setError(false);
   }
 
-  function submit(closeDialog: () => void) {
-    if (onSubmit(password)) closeDialog();
+  async function submit(closeDialog: () => void) {
+    if (await onSubmit(password)) closeDialog();
     else setError(true);
   }
 

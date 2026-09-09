@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.33.0 - 2026-09-09
+
+- The Admin Tools password is now checked by the server, not the browser.
+  Unlocking gives this device a 12-hour session; saving the fleet list, flag
+  setup, or bus types requires it (anything else is rejected with "Unlock Admin
+  Tools first"). The password comes from the `ADMIN_PASSWORD` environment
+  variable and falls back to the current password when that isn't set, so
+  nothing changes for the crew until you choose to set one. If a session
+  expires mid-edit, the page locks again and says so instead of failing
+  silently.
+
 ## 0.32.0 - 2026-09-09
 
 Behind-the-scenes: faster, quieter, better tested.

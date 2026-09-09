@@ -19,6 +19,7 @@ import {
   type FlagTier,
 } from "../lib/grid";
 import { getDeviceActor } from "../lib/deviceActor";
+import { useAdminUnlock } from "../lib/useAdminUnlock";
 import {
   Button,
   Checkbox,
@@ -122,6 +123,7 @@ function rowsToConfig(rows: FlagAdminRow[]): FlagConfig {
 }
 
 export default function AdminFlagEditor() {
+  const lockAdmin = useAdminUnlock((state) => state.lock);
   const [rows, setRows] = useState<FlagAdminRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -180,7 +182,11 @@ export default function AdminFlagEditor() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ config, actor: getDeviceActor() }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        // An expired unlock locks the page again instead of failing silently.
+        if (response.status === 401) lockAdmin();
+        return response.json();
+      })
       .catch(() => null);
     if (result?.config) applyFlagConfig(result.config);
     if (result?.flags) setRows(result.flags);

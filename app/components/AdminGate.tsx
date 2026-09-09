@@ -11,8 +11,8 @@ export default function AdminGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
-  function unlock() {
-    if (!tryUnlock(password)) setError(true);
+  async function unlock() {
+    if (!(await tryUnlock(password))) setError(true);
   }
 
   if (unlocked) return <>{children}</>;
