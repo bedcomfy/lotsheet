@@ -1,12 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
 import { BusFront } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
-import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
-import { useFlags, useLotSheet } from "../lib/queries";
 import {
   Button,
   EmptyState,
@@ -14,9 +11,7 @@ import {
   SearchField,
 } from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
-import ManagerPanel from "./ManagerPanelLazy";
-import type { BusWorkspaceDetails, BusWorkspaceStatus } from "./ManagerPanel";
-import type { FlagMap } from "../lib/types";
+import BusCard from "./BusCard";
 import styles from "./GlobalBusSearch.module.css";
 
 function isEditable(target: EventTarget | null): boolean {
@@ -26,23 +21,13 @@ function isEditable(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
 }
 
-export interface GlobalBusDetails extends BusWorkspaceDetails {
-  model: string;
-  location: string;
-  status: BusWorkspaceStatus;
-}
-
 export default function GlobalBusSearch() {
   const router = useRouter();
   const pathname = usePathname();
-  const qc = useQueryClient();
-  const { master, isKnown, label } = useBusMaster();
-  const { data: sheetData } = useLotSheet();
-  const { data: flags = {} } = useFlags();
+  const { isKnown } = useBusMaster();
   const [query, setQuery] = useState("");
   const [selectedBus, setSelectedBus] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const sheet = sheetData?.sheet || null;
 
   // "/" or Ctrl/Cmd+K from anywhere focuses the fleet search.
   useEffect(() => {
@@ -57,26 +42,6 @@ export default function GlobalBusSearch() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
-
-  const details = useMemo<GlobalBusDetails | null>(() => {
-    if (!selectedBus || !isKnown(selectedBus)) return null;
-    const locations = fleetBusLocations(sheet, flags)[selectedBus] || [];
-    const fleet = fleetStats(sheet, flags, master.buses);
-    const bus = master.buses.find((item) => item.num === selectedBus);
-    let status: GlobalBusDetails["status"] = "missing";
-    if (bus?.status === "retired") status = "retired";
-    else if (fleet.offProperty.has(selectedBus)) status = "offProperty";
-    else if (fleet.readyForService.has(selectedBus)) status = "ready";
-    else if (fleet.notReadyForService.has(selectedBus)) status = "notReady";
-    return {
-      bus: selectedBus,
-      label: label(selectedBus),
-      model: bus?.model || "",
-      location: locations.length ? locations.join(" · ") : "No current placement",
-      status,
-    };
-  }, [flags, isKnown, label, master.buses, selectedBus, sheet]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,14 +73,9 @@ export default function GlobalBusSearch() {
         />
       </form>
 
-      {details && selectedBus ? (
-        <ManagerPanel
-          flags={flags}
-          initialBus={selectedBus}
-          initialDetails={details}
-          onBusFlagsUpdated={(bus, entry) =>
-            qc.setQueryData<FlagMap>(["flags"], (prev = {}) => ({ ...prev, [bus]: entry }))
-          }
+      {selectedBus && isKnown(selectedBus) ? (
+        <BusCard
+          bus={selectedBus}
           onOpenLotSheet={(bus) => {
             close();
             if (pathname === "/") {

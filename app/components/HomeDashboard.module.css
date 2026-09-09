@@ -458,8 +458,29 @@
 }
 
 .statusRow {
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: baseline;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.statusRow:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-surface-hover);
+}
+
+.statusRow:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.statusGo {
+  grid-row: 1;
+  grid-column: 3;
+  align-self: center;
+  color: var(--ui-text-subtle);
 }
 
 .statusWhy {

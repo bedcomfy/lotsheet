@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.28.0 - 2026-09-09
+
+One Bus Card, reachable from anywhere.
+
+- Typing a bus number — in the desktop header search, the new magnifier in the
+  phone's top bar on every page, or the phone Fleet tab — opens the same card:
+  where the bus sits, its status, its flags, and tonight's fuel/DEF/farebox
+  ticks, with one-tap actions. Quick-flag chips (Hold, Retorque, Inspection,
+  Out of service, Needs cleaning, …) toggle immediately with an Undo, Clear
+  confirms inline, Move sends the bus to a lot, bay, or grid spot, and Edit
+  flags opens the full editor already on that bus. A failed save reverts and
+  says so instead of silently dropping the change.
+- Home dashboard lists (Usable, Out of service, In shop, Missing, …) are now
+  tappable: each row opens that bus's card, so "bus 6414 is missing" is fixed
+  from the same screen.
+- The phone Lot Sheet magnifier still jumps to the bus on the grid.
+
 ## 0.27.0 - 2026-09-09
 
 Setup Lane starts from tonight's real lane instead of a blank slate.
