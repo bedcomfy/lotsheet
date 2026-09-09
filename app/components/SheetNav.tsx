@@ -57,7 +57,7 @@ export default function SheetNav() {
 
   const navigationItems: NavigationItem[] = NAVIGATION_GROUPS.flatMap(
     (group) =>
-      group.routes.filter((route) => route.path !== "/buses").map((route) => {
+      group.routes.map((route) => {
         const Icon = route.icon;
         return {
           id: route.path,

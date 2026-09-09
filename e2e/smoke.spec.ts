@@ -846,7 +846,7 @@ test("mobile service controls stay inside the safe viewport", async ({ page }) =
   await page.goto("/service?tab=summary");
 
   const pageSelector = page.getByRole("button", { name: "Service Sheets" });
-  const selectedTab = page.getByRole("radio", { name: "Flag Summary" });
+  const selectedTab = page.getByRole("radio", { name: "Service Lane" });
   const dateField = page.getByRole("textbox", { name: "Service sheets date" });
   await expect(selectedTab).toBeVisible();
   await expect(dateField).toBeVisible();

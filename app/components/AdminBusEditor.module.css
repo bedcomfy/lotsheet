@@ -140,7 +140,7 @@
 
 .fleetToolbar {
   display: grid;
-  grid-template-columns: minmax(15rem, 25rem) auto;
+  grid-template-columns: minmax(15rem, 25rem) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--ui-space-3);
   padding: var(--ui-space-3);
@@ -264,4 +264,15 @@
   .busIdentity {
     justify-content: space-between;
   }
+}
+
+.addBus {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-2);
+  margin-left: auto;
+}
+
+.addBus > :first-child {
+  width: 11rem;
 }

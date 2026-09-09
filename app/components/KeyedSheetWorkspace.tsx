@@ -317,7 +317,7 @@ export default function KeyedSheetWorkspace<T>({
       {historyOpen && definition.stateKey && (
         <SheetHistory
           apiBase={`/api/state/${definition.stateKey}/history`}
-          title={`${definition.title} - Previous Sheets`}
+          title={`${definition.title} — Previous sheets`}
           describe={(sheet) =>
             describeHistory
               ? describeHistory(validatedValue(definition, sheet))
@@ -332,7 +332,7 @@ export default function KeyedSheetWorkspace<T>({
         isOpen={clearOpen}
         onOpenChange={setClearOpen}
         title={`Clear the ${definition.title}?`}
-        description="The current sheet is saved to Previous Sheets before it is cleared."
+        description="The current sheet is saved to Previous sheets before it is cleared."
         confirmLabel="Clear sheet"
         tone="danger"
         onConfirm={clearSheet}

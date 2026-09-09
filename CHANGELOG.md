@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.31.0 - 2026-09-09
+
+Turnover entry without the dialogs, plus navigation and naming cleanups.
+
+- Turnover Sheet: type a bus number straight into any lane or lot line (North
+  Lot, East Lot, Fence, R/C, Apron, North/South Lane). A filled line is
+  replaced, an empty line adds to the end, clearing a line removes the bus, and
+  the bus leaves any other list it was in. The header pencil still opens the
+  full editor for reordering. When a bay note is turned into a flag, a small
+  confirmation ("Added Needs cleaning", "Added inspection A-3", "Saved as a
+  note") appears on the row; if it doesn't save, the text stays and says so.
+- Turnover Sheet chips are tappable: Usable / Out of Service open the readiness
+  lists, "in the shop" opens the Shop page, and a red Missing chip appears when
+  buses have no location.
+- One navigation list: Fleet is in the desktop sidebar; the phone's More menu
+  is built from the same routes; the standalone Fuel/DEF/Farebox/Meter/Errors
+  pages highlight Service Sheets; one theme toggle everywhere.
+- Desktop keyboard shortcuts: g then h/l/t/s/o/f/w jumps to Home, Lot,
+  Turnover, Service, Shop, Fleet, Work Order; ? shows the list; / or Ctrl+K
+  still focuses the fleet search.
+- Fleet editor: Add bus (number → active, on Fuel/DEF) and a per-bus Remove
+  with confirmation; Save fleet as before.
+- Naming: the service tab is "Service Lane" (what the paper says); history is
+  "Previous sheets" everywhere and its action is "Restore"; the inspection type
+  picker links to the Object Codes reference.
+
 ## 0.30.0 - 2026-09-09
 
 Less retyping, and sheets that tell you whether they saved.

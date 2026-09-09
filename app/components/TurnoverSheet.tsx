@@ -3,9 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ComponentProps, ReactNode } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { closestFlagMatch, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
+import { closestFlagMatch, flagName, flagsFullDisplay, inspectionOptionFromText, setInspectionOption } from "../lib/grid";
 import { addCustomNote } from "../lib/customNoteFlags";
-import { fleetStats } from "../lib/fleetStats";
+import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
+import { useRouter } from "next/navigation";
+import { MissingBusesModal, ServiceDetailModal } from "./LotStatusModals";
+import lotChrome from "./LotSheetChrome.module.css";
 import { History, Eraser, FileDown, MoreHorizontal, Check } from "lucide-react";
 import { sanitizeBus } from "../lib/buses";
 import { useBusMaster } from "./BusMasterProvider";
@@ -20,7 +23,7 @@ import { getDeviceActor } from "../lib/deviceActor";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey, TurnoverData } from "../lib/types";
-import { ActionMenu, Button, ConfirmDialog, StaticChip, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, ConfirmDialog, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LEGAL_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -62,8 +65,13 @@ function emptyData(): TurnoverData {
   return { cells: {}, shift: "" };
 }
 
+const EMPTY_FLAG_ENTRY: FlagEntry = {
+  flags: [], note: "", inspMiles: null, holdReason: "", cardsReason: "", retorqueTires: [], inspOption: "",
+};
+
 export default function TurnoverSheet() {
-  const { label: busLabel } = useBusMaster();
+  const { label: busLabel, isKnown } = useBusMaster();
+  const router = useRouter();
   const [data, setData] = useState<TurnoverData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -102,6 +110,31 @@ export default function TurnoverSheet() {
   );
   const qc = useQueryClient();
   const [flagBus, setFlagBus] = useState<string | null>(null);
+  // Toolbar chips open the same readiness lists the Lot Sheet bar does.
+  const [serviceDetail, setServiceDetail] = useState<"usable" | "outOfService" | null>(null);
+  const [missingOpen, setMissingOpen] = useState(false);
+  const fleetLocations = useMemo(
+    () => fleetBusLocations(lotSheetData?.sheet || null, flags),
+    [lotSheetData, flags],
+  );
+  // In-progress typing in a lane/lot line, keyed "lotKey:index" — committed to
+  // the shared list once it's a real bus (or on blur), so half-typed numbers
+  // never land in a printed list.
+  const [lineDrafts, setLineDrafts] = useState<Record<string, string>>({});
+  // Screen-only feedback after a bay note is turned into a flag.
+  const [bayNotices, setBayNotices] = useState<Record<string, { text: string; tone: "ok" | "error" }>>({});
+  const bayNoticeTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  function showBayNotice(key: string, text: string, tone: "ok" | "error") {
+    setBayNotices((current) => ({ ...current, [key]: { text, tone } }));
+    clearTimeout(bayNoticeTimers.current[key]);
+    bayNoticeTimers.current[key] = setTimeout(() => {
+      setBayNotices((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    }, tone === "ok" ? 4000 : 8000);
+  }
 
   const { data: employees = [] } = useEmployees();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -186,9 +219,84 @@ export default function TurnoverSheet() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bus, ...next, actor: getDeviceActor() }),
     }).then((response) => response.ok).catch(() => false);
-    if (!saved) return;
+    if (!saved) {
+      // Leave the text in place so nothing typed is lost.
+      showBayNotice(key, "Didn't save — check the connection and try again", "error");
+      return;
+    }
     onBusFlagsUpdated(bus, next);
     setCell(key, "");
+    showBayNotice(
+      key,
+      inspection ? `Added inspection ${inspection.label}` : matched ? `Added ${flagName(matched.id)}` : "Saved as a note",
+      "ok",
+    );
+  }
+
+  // Type a bus straight into a lane/lot line. A filled line is replaced, an
+  // empty line appends (the lists are ordered, not positional), clearing a
+  // filled line removes it, and the bus leaves any other list it was in.
+  function setLotLine(key: LotKey, idx: number, raw: string) {
+    const b = sanitizeBus(raw);
+    const current = lotsRef.current;
+    const next: TurnoverLots = { ...current };
+    const changed: LotKey[] = [key];
+    const arr = [...(current[key] || [])];
+    if (b) {
+      if (idx < arr.length) arr[idx] = b;
+      else arr.push(b);
+      for (let j = arr.length - 1; j >= 0; j -= 1) if (arr[j] === b && j !== Math.min(idx, arr.length - 1)) arr.splice(j, 1);
+      for (const [other, list] of Object.entries(current) as [LotKey, string[]][]) {
+        if (other === key || !Array.isArray(list) || !list.includes(b)) continue;
+        next[other] = other === "bay" ? list.map((x) => (x === b ? "" : x)) : list.filter((x) => x !== b);
+        changed.push(other);
+      }
+    } else if (idx < arr.length) {
+      arr.splice(idx, 1);
+    } else {
+      return;
+    }
+    next[key] = arr;
+    patchLots(next, changed);
+  }
+
+  function lotLineInput(lotKey: LotKey, idx: number) {
+    const bus = (lots[lotKey] || [])[idx] || "";
+    const draftKey = `${lotKey}:${idx}`;
+    const draft = lineDrafts[draftKey];
+    const clearDraft = () =>
+      setLineDrafts((current) => {
+        const next = { ...current };
+        delete next[draftKey];
+        return next;
+      });
+    return (
+      <input
+        className="turnt__in turnt__in--c"
+        inputMode="numeric"
+        aria-label={`${LOT_LABELS[lotKey]} line ${idx + 1}`}
+        value={draft ?? bus}
+        onChange={(event) => {
+          const v = sanitizeBus(event.target.value);
+          if (v && isKnown(v) && v !== bus) {
+            setLotLine(lotKey, idx, v);
+            clearDraft();
+            return;
+          }
+          setLineDrafts((current) => ({ ...current, [draftKey]: v }));
+        }}
+        onBlur={() => {
+          if (draft === undefined) return;
+          if (draft !== bus && (draft.length >= 4 || (!draft && bus))) setLotLine(lotKey, idx, draft);
+          clearDraft();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          event.currentTarget.blur();
+        }}
+      />
+    );
   }
 
   useEffect(() => {
@@ -552,9 +660,7 @@ export default function TurnoverSheet() {
     return (
       <>
         <td className="turnt__c">{bus ? E(`mech-${bus}`, { className: "turnt__in turnt__in--c" }) : null}</td>
-        <td className="turnt__c turnt__veh turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
-          {bus ? busLabel(bus) : ""}
-        </td>
+        <td className="turnt__c turnt__veh">{lotLineInput(lotKey, idx)}</td>
         <td
           colSpan={reasonSpan}
           className={`turnt__reason turnt__reason--btn${fitClass(reason, 30, 42)}`}
@@ -570,11 +676,10 @@ export default function TurnoverSheet() {
   // A single-column bus-list cell (lanes / bay halves): shows the bus; click to
   // add/reorder via the lot editor. `prefix` is an optional leading label.
   function busListCell(lotKey: LotKey, i: number, colSpan: number, prefix?: ReactNode) {
-    const bus = (lots[lotKey] || [])[i] || "";
     return (
-      <td colSpan={colSpan} className="turnt__listcell turnt__veh--btn" onClick={() => setEditingLot(lotKey)}>
+      <td colSpan={colSpan} className="turnt__listcell">
         {prefix}
-        <span className="turnt__listbus">{bus ? busLabel(bus) : ""}</span>
+        <span className="turnt__listbus">{lotLineInput(lotKey, i)}</span>
       </td>
     );
   }
@@ -666,9 +771,20 @@ export default function TurnoverSheet() {
           ariaLabel="Turnover Sheet date"
           variant="ui"
         />
-        <StaticChip tone="success">{fleet.readyForService.size} Usable</StaticChip>
-        <StaticChip tone="warning">{fleet.notReadyForService.size} Out of Service</StaticChip>
-        <StaticChip tone="accent">{fleet.inShop.size} in the shop</StaticChip>
+        <Button size="sm" className={lotChrome.readyButton} onPress={() => setServiceDetail("usable")}>
+          {fleet.readyForService.size} Usable
+        </Button>
+        <Button size="sm" className={lotChrome.outButton} onPress={() => setServiceDetail("outOfService")}>
+          {fleet.notReadyForService.size} Out of Service
+        </Button>
+        <Button size="sm" className={lotChrome.shopButton} onPress={() => router.push("/shop")}>
+          {fleet.inShop.size} in the shop
+        </Button>
+        {fleet.missing.length > 0 && (
+          <Button size="sm" className={lotChrome.missingButton} onPress={() => setMissingOpen(true)}>
+            {fleet.missing.length} Missing
+          </Button>
+        )}
         <SaveStatus state={saveState} />
         <ToolbarGroup className={chromeStyles.actions}>
           <ActionMenu
@@ -829,6 +945,14 @@ export default function TurnoverSheet() {
                             event.currentTarget.blur();
                           }}
                         />
+                        {bayNotices[`bay1h-${n}`] && (
+                          <span
+                            className={`turnt__baynote no-print ${bayNotices[`bay1h-${n}`].tone === "error" ? "turnt__baynote--error" : ""}`}
+                            role="status"
+                          >
+                            {bayNotices[`bay1h-${n}`].text}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td colSpan={4}>{E(`bay2h-${n}`)}</td>
@@ -861,11 +985,37 @@ export default function TurnoverSheet() {
       {flagBus && (
         <ManagerPanel flags={flags} initialBus={flagBus} onClose={() => setFlagBus(null)} onBusFlagsUpdated={onBusFlagsUpdated} />
       )}
+      {serviceDetail && !flagBus && (
+        <ServiceDetailModal
+          kind={serviceDetail}
+          readyForService={fleet.readyForService}
+          notReadyForService={fleet.notReadyForService}
+          fleetLocations={fleetLocations}
+          flagFor={(bus) => flags[bus] || EMPTY_FLAG_ENTRY}
+          onEditFlags={(bus) => {
+            setServiceDetail(null);
+            setFlagBus(bus);
+          }}
+          onClose={() => setServiceDetail(null)}
+        />
+      )}
+      {missingOpen && !flagBus && (
+        <MissingBusesModal
+          missingBuses={fleet.missing}
+          accountedBuses={[...fleet.activeFleet].filter((bus) => !fleet.missing.includes(bus))}
+          flagFor={(bus) => flags[bus] || EMPTY_FLAG_ENTRY}
+          onEditFlags={(bus) => {
+            setMissingOpen(false);
+            setFlagBus(bus);
+          }}
+          onClose={() => setMissingOpen(false)}
+        />
+      )}
 
       {prevOpen && (
         <SheetHistory
           apiBase={`/api/state/${STORAGE_KEY}/history`}
-          title="Turnover — Prev Sheets"
+          title="Turnover — Previous sheets"
           describe={(s) => {
             const c = s?.cells || {};
             const date = [c["date-m"], c["date-d"], c["date-y"]].filter(Boolean).join("/");

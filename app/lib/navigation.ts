@@ -53,6 +53,7 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
     label: "Service Sheets",
     icon: Fuel,
     matchPrefix: "/service",
+    matchPaths: ["/fuel", "/def", "/farebox", "/meter-readings", "/bus-errors"],
     description: "Fuel, DEF, farebox, and lane sheets",
   },
   {
@@ -151,8 +152,9 @@ export const MOBILE_SHEET_ROUTES: AppRoute[] = [
   ...FORM_ROUTES,
 ];
 
+// Everything the phone tab bar doesn't already cover (Home, Lot, Fleet, Sheets).
 export const MOBILE_MORE_ROUTES: AppRoute[] = [
-  SHOP_ROUTES[0],
+  ...SHOP_ROUTES.filter((route) => route.path === "/shop"),
   STAFFING_ROUTE,
   ...UTILITY_ROUTES,
   ADMIN_ROUTE,

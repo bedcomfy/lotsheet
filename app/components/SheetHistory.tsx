@@ -30,7 +30,7 @@ interface SheetHistoryProps {
 
 // Generic "Prev Sheets" browser. `apiBase` is the history endpoint
 // (e.g. /api/state/fuel/history); `describe(sheet)` returns { title, meta }.
-export default function SheetHistory({ apiBase, title = "Prev Sheets", describe, onImport, onClose }: SheetHistoryProps) {
+export default function SheetHistory({ apiBase, title = "Previous sheets", describe, onImport, onClose }: SheetHistoryProps) {
   const [sheets, setSheets] = useState<HistoryEntry[] | null>(null); // null = loading
   const [busy, setBusy] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
           if (!open) onClose();
         }}
         title={title}
-        description="The last 20 are kept. Import one to continue it, or delete it."
+        description="The last 20 are kept. Restore one to continue working on it, or delete it."
         size="md"
         footer={(close) => <Button variant="primary" onPress={close}>Done</Button>}
       >
@@ -90,7 +90,7 @@ export default function SheetHistory({ apiBase, title = "Prev Sheets", describe,
                   isDisabled={busy === s.id}
                   onPress={() => onImport(s.sheet, s.id)}
                 >
-                  Import
+                  Restore
                 </Button>
                 <Button
                   size="sm"
