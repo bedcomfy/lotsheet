@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminRequest, unauthorized } from "../../../lib/adminAuth";
 import { editableBusModelRows, editableBusTypeRows, normalizeBusTypeConfig } from "../../../lib/grid";
 import { getState, recordAuditEvent, setState } from "../../../lib/store";
 
@@ -18,6 +19,7 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
+  if (!isAdminRequest(req)) return unauthorized();
   const body = await req.json().catch(() => ({}));
   const before = normalizeBusTypeConfig((await getState(KEY)).value);
   const config = normalizeBusTypeConfig(body?.config);

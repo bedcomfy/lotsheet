@@ -47,6 +47,7 @@ import {
   TextField,
 } from "../ui";
 import { useBusMaster } from "./BusMasterProvider";
+import { useAdminUnlock } from "../lib/useAdminUnlock";
 import styles from "./AdminBusEditor.module.css";
 
 const CsvEditor = dynamic(() => import("./CsvEditor"), { ssr: false });
@@ -259,6 +260,7 @@ interface PendingConfirmation {
 
 export default function AdminBusEditor() {
   const { master, setMaster } = useBusMaster();
+  const lockAdmin = useAdminUnlock((state) => state.lock);
   const [buses, setBuses] = useState<MasterBus[]>(() =>
     master.buses.map((bus) => ({ ...bus })),
   );
@@ -406,8 +408,13 @@ export default function AdminBusEditor() {
       const response = await fetch("/api/buses", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ master: { buses } }),
+        body: JSON.stringify({ master: { buses }, actor: getDeviceActor() }),
       });
+      if (response.status === 401) {
+        setNotice("Your admin unlock expired — unlock again to save.");
+        lockAdmin();
+        return;
+      }
       const data = await response.json().catch(() => ({}));
       if (data?.master) {
         setMaster(data.master);
@@ -520,7 +527,13 @@ export default function AdminBusEditor() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ config, actor: getDeviceActor() }),
     })
-      .then((result) => result.json())
+      .then((result) => {
+        if (result.status === 401) {
+          setNotice("Your admin unlock expired — unlock again to save.");
+          lockAdmin();
+        }
+        return result.json();
+      })
       .catch(() => null);
     if (response?.config) applyBusTypeConfig(response.config);
     if (response?.types) setTypeRows(response.types);

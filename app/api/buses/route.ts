@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminRequest, unauthorized } from "../../lib/adminAuth";
 import { getState, recordAuditEvent, setState } from "../../lib/store";
 import {
   busModelId,
@@ -25,6 +26,7 @@ export async function GET() {
 
 // Save an edited master list. Each bus: { num, types: [], name? }.
 export async function PUT(req: Request) {
+  if (!isAdminRequest(req)) return unauthorized();
   const body = await req.json().catch(() => ({}));
   const master = body && body.master;
   if (!master || !Array.isArray(master.buses)) {
