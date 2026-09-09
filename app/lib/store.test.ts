@@ -13,7 +13,9 @@ import { customNoteFlagId, customNoteText } from "./customNoteFlags";
 
 // Runs against an in-memory PGlite database (PGLITE_DATA="memory" in
 // vitest.config.ts) — the same Drizzle queries production runs on Neon.
-describe("store (PGlite in-memory)", () => {
+// The first query pays PGlite's WASM start-up, which can pass 5s on a busy
+// machine, so the suite gets a longer per-test budget.
+describe("store (PGlite in-memory)", { timeout: 20_000 }, () => {
   it("round-trips and clears bus flags", async () => {
     await setBusFlags("6510", {
       flags: ["hold"],
