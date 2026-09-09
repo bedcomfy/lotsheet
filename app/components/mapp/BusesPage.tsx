@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import MBuses from "./MBuses";
-import MBusCard from "./MBusCard";
+import BusCard from "../BusCard";
 import { AppPage } from "../../ui";
 import styles from "./MApp.module.css";
 
@@ -32,7 +32,17 @@ export default function BusesPage() {
   return (
     <AppPage className={styles.page}>
       <MBuses onOpenBus={open} />
-      {openBus && <MBusCard bus={openBus} onClose={() => setOpenBus(null)} toast={toast} />}
+      {openBus && (
+        <BusCard
+          bus={openBus}
+          onClose={() => setOpenBus(null)}
+          toast={toast}
+          onOpenLotSheet={(bus) => {
+            setOpenBus(null);
+            window.location.assign(`/?find=${encodeURIComponent(bus)}`);
+          }}
+        />
+      )}
       {toastMsg && (
         <div className={styles.toast} role="status">
           <b>✓</b>&nbsp;{toastMsg}

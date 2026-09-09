@@ -30,6 +30,7 @@ import {
 } from "../lib/staffing";
 import { WORK_PICK_SEED } from "../lib/workPickSeed";
 import { useBusMasterList, useEmployees, useFlags, useLotSheet, useWorkPick } from "../lib/queries";
+import BusCard from "./BusCard";
 import { SkeletonStat } from "./Skeleton";
 import { Button } from "../ui/Button";
 import { MetricTile } from "../ui/MetricTile";
@@ -60,6 +61,7 @@ export default function HomeDashboard() {
   const { data: employees = [] } = useEmployees();
   const [now, setNow] = useState<number>(0);
   const [statusDetail, setStatusDetail] = useState<StatusDetail | null>(null);
+  const [openBus, setOpenBus] = useState<string | null>(null);
   const [availBucket, setAvailBucket] = useState<Bucket | null>(null);
 
   const sheet = sheetData?.sheet || null;
@@ -416,7 +418,7 @@ export default function HomeDashboard() {
 
       {detail && (
         <ResponsiveDialog
-          isOpen
+          isOpen={!openBus}
           onOpenChange={(open) => {
             if (!open) setStatusDetail(null);
           }}
@@ -433,17 +435,30 @@ export default function HomeDashboard() {
             {detail.buses.map((bus) => {
               const why = flags[bus] ? flagsFullDisplay(flags[bus]) : "";
               return (
-                <div className={styles.statusRow} key={bus}>
+                <Pressable className={styles.statusRow} key={bus} onPress={() => setOpenBus(bus)}>
                   <strong>{bus}</strong>
                   <span className={styles.statusWhere}>
                     {statusDetail === "missing" ? "No current location" : (locations[bus] || ["No current location"]).join(" / ")}
                   </span>
                   {why && <span className={styles.statusWhy}>{why}</span>}
-                </div>
+                  <ArrowRight className={styles.statusGo} size={15} aria-hidden="true" />
+                </Pressable>
               );
             })}
           </div>
         </ResponsiveDialog>
+      )}
+
+      {openBus && (
+        <BusCard
+          bus={openBus}
+          onClose={() => setOpenBus(null)}
+          onOpenLotSheet={(bus) => {
+            setOpenBus(null);
+            setStatusDetail(null);
+            router.push(`/?find=${encodeURIComponent(bus)}`);
+          }}
+        />
       )}
     </main>
   );

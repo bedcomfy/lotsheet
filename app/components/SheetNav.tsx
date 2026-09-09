@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import GlobalBusSearch from "./GlobalBusSearch";
+import BusSearchDialog from "./BusSearchDialog";
 import { useMobileNav } from "./MobileNavContext";
 import { APP_VERSION } from "../lib/appVersion";
 import {
@@ -32,6 +33,7 @@ export default function SheetNav() {
   const currentSheet = currentAppRoute(pathname);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  const [busSearchOpen, setBusSearchOpen] = useState(false);
 
   // Collapsed icon-rail preference — restored after mount so SSR markup stays
   // stable; the brief expanded flash matches how the theme restore behaves.
@@ -115,11 +117,15 @@ export default function SheetNav() {
               <span>{lotStatus.outOfService} out</span>
             </Pressable>
           )}
-          {isLotSheet && (
-            <Pressable className={styles.mobileSearch} onPress={openLotSearch} aria-label="Find bus">
-              <Search size={19} />
-            </Pressable>
-          )}
+          {/* On the Lot Sheet the magnifier jumps to the bus on the grid; on
+              every other page it opens the fleet search → Bus Card. */}
+          <Pressable
+            className={styles.mobileSearch}
+            onPress={isLotSheet ? openLotSearch : () => setBusSearchOpen(true)}
+            aria-label="Find bus"
+          >
+            <Search size={19} />
+          </Pressable>
         </div>
 
         <div className={styles.desktopLinks}>
@@ -156,6 +162,8 @@ export default function SheetNav() {
         </div>
         <GlobalBusSearch />
       </header>
+
+      <BusSearchDialog isOpen={busSearchOpen} onOpenChange={setBusSearchOpen} />
 
       <NavigationHub
         isOpen={switcherOpen}
