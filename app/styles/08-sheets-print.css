@@ -893,13 +893,20 @@ td.turnt__head {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
-/* Reasons (a bus's flags) wrap to as many lines as needed; the row grows and
-   pushes the buses below it down. (height on .turnt td is a minimum.) */
+/* Reasons (a bus's flags) stay on ONE line so every row keeps the same height
+   as the paper grid: long text steps down two font sizes (.turnt__fit--*) and
+   then clips with an ellipsis rather than growing the row. */
 .turnt__reason {
   text-align: left;
-  white-space: normal;
-  overflow: visible;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.turnt__reason.turnt__fit--sm {
+  font-size: 0.86em;
+}
+.turnt__reason.turnt__fit--xs {
+  font-size: 0.74em;
 }
 /* Lane / bay bus-list cells. */
 .turnt__listcell {
@@ -918,16 +925,25 @@ td.turnt__head {
    The input next to it stays free for extra hand-typed notes. */
 .turnt__bayflag {
   flex: 0 1 auto;
-  max-width: 55%;
+  min-width: 0;
+  max-width: 60%;
   border: none;
   background: transparent;
   color: #b91c1c;
   font-size: 0.85em;
-  line-height: 1.15;
+  line-height: 1;
   text-align: left;
-  white-space: normal;
+  white-space: nowrap; /* never wraps — the bay row height is fixed */
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 0 2px;
   cursor: pointer;
+}
+.turnt__bayflag.turnt__fit--sm {
+  font-size: 0.72em;
+}
+.turnt__bayflag.turnt__fit--xs {
+  font-size: 0.62em;
 }
 .turnt__in {
   width: 100%;
@@ -975,6 +991,10 @@ td.turnt__head {
   .turn-sheet--blank .turnt__bayflag,
   .turn-sheet--blank .turnt__listbus {
     visibility: hidden;
+  }
+  /* The bay flag button leaves the layout entirely on a blank form. */
+  .turn-sheet--blank .turnt__bayflag {
+    display: none;
   }
   .turn-sheet--blank .turnt__band .turnt__in {
     visibility: visible;

@@ -300,13 +300,24 @@ export default function TurnoverSheet() {
     scheduleLotPatch();
   }
   // BAY is 10 fixed spots — type the bus into each (no reorder). Stored as a
-  // 10-length array so the duplicate guard still finds the bus.
+  // 10-length array. A bus typed here leaves any other bay slot or lot list it
+  // was in (one bus, one place — same rule the Shop and Lot Sheet enforce).
   function setBayBus(i: number, raw: string) {
     const b = sanitizeBus(raw);
     const current = lotsRef.current;
     const arr = Array.from({ length: BAY_ROWS }, (_, j) => (current.bay || [])[j] || "");
+    const changed: LotKey[] = ["bay"];
+    const next: TurnoverLots = { ...current };
+    if (b && b !== "X") {
+      for (let j = 0; j < arr.length; j += 1) if (j !== i && arr[j] === b) arr[j] = "";
+      for (const [key, list] of Object.entries(current) as [LotKey, string[]][]) {
+        if (key === "bay" || !Array.isArray(list) || !list.includes(b)) continue;
+        next[key] = list.filter((x) => x !== b);
+        changed.push(key);
+      }
+    }
     arr[i] = b;
-    patchLots({ ...current, bay: arr }, ["bay"]);
+    patchLots({ ...next, bay: arr }, changed);
   }
   const addToLot = (key: LotKey, bus: string) =>
     patchLots({ ...lotsRef.current, [key]: [...(lotsRef.current[key] || []), bus] } as TurnoverLots, [key]);
@@ -518,6 +529,10 @@ export default function TurnoverSheet() {
   const E = (key: string, props: Partial<ComponentProps<typeof EmployeeInput>> = {}) => (
     <EmployeeInput value={data.cells[key] || ""} onChange={(v) => setCell(key, v)} employees={employees} {...props} />
   );
+  // Rows never grow: reason text over `sm` characters steps down a size, over
+  // `xs` steps down again, and past that it clips (the paper grid is fixed).
+  const fitClass = (text: string, sm: number, xs: number) =>
+    text.length > xs ? " turnt__fit--xs" : text.length > sm ? " turnt__fit--sm" : "";
   const C = (key: string, props: ComponentProps<"input"> = {}) => (
     <input className="turnt__in" value={data.cells[key] || ""} onChange={(e) => setCell(key, e.target.value)} {...props} />
   );
@@ -526,6 +541,7 @@ export default function TurnoverSheet() {
   // REASON (the bus's flags; click to edit flags). Empty slots open the editor.
   function lotSlot(lotKey: LotKey, idx: number, reasonSpan: number) {
     const bus = (lots[lotKey] || [])[idx] || "";
+    const reason = bus ? flagsFullDisplay(flags[bus]) : "";
     return (
       <>
         <td className="turnt__c">{bus ? E(`mech-${bus}`, { className: "turnt__in turnt__in--c" }) : null}</td>
@@ -534,10 +550,11 @@ export default function TurnoverSheet() {
         </td>
         <td
           colSpan={reasonSpan}
-          className="turnt__reason turnt__reason--btn"
+          className={`turnt__reason turnt__reason--btn${fitClass(reason, 30, 42)}`}
           onClick={bus ? () => setFlagBus(bus) : () => setEditingLot(lotKey)}
+          title={reason || undefined}
         >
-          {bus ? flagsFullDisplay(flags[bus]) : ""}
+          {reason}
         </td>
       </>
     );
@@ -784,9 +801,9 @@ export default function TurnoverSheet() {
                         {bayFlags && (
                           <button
                             type="button"
-                            className="turnt__bayflag"
+                            className={`turnt__bayflag${fitClass(bayFlags, 22, 32)}`}
                             onClick={() => setFlagBus(bayBus)}
-                            title="This bus's flags — tap to edit"
+                            title={`${bayFlags} — tap to edit`}
                           >
                             {bayFlags}
                           </button>

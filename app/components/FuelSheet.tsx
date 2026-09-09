@@ -10,7 +10,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
-import { chicagoDateShort } from "../lib/chicagoTime";
+import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap } from "../lib/types";
@@ -193,7 +193,13 @@ export default function FuelSheet({
     fetch(`/api/state/${storageKey}`)
       .then((r) => r.json())
       .then((d) => {
-        if (alive && d && d.value) setData({ ...emptyData(), ...d.value });
+        if (alive && d && d.value) {
+          const value = { ...emptyData(), ...d.value };
+          // A date left over from an earlier service day would print as-is;
+          // clear it so today's shows (an explicit date from the All tab wins).
+          if (!dateOverride && isStaleServiceDate(value.date)) value.date = "";
+          setData(value);
+        }
       })
       .catch(() => {})
       .finally(() => alive && setLoaded(true));
