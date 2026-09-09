@@ -1,0 +1,32 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-1);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  white-space: nowrap;
+}
+
+.status svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.status[data-state="saved"] {
+  color: var(--ui-success);
+}
+
+.status[data-state="error"] {
+  color: var(--ui-danger);
+  font-weight: var(--ui-weight-medium);
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

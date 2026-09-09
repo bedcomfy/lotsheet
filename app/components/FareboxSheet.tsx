@@ -7,6 +7,8 @@ import { History, Eraser, FileDown, FileText, MoreHorizontal } from "lucide-reac
 import { useBusMaster } from "./BusMasterProvider";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
+import SaveStatus, { useSaveState } from "./SaveStatus";
+import ServicerFillBar from "./ServicerFillBar";
 import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
@@ -84,6 +86,8 @@ interface FareboxSheetProps {
   embedded?: boolean;
   previewLaneCopies?: boolean;
   dateOverride?: string;
+  // Under Service Sheets the date is shared across tabs; report edits up.
+  onDateChange?: (value: string) => void;
   onReady?: (ready: boolean) => void;
   onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
 }
@@ -93,12 +97,14 @@ export default function FareboxSheet({
   embedded = false,
   previewLaneCopies = false,
   dateOverride = "",
+  onDateChange,
   onReady,
   onRegisterFlush,
 }: FareboxSheetProps) {
   const [data, setData] = useState<FareboxData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveState, markSave] = useSaveState();
   const [printMode, setPrintMode] = useState(false);
   const [blankMode, setBlankMode] = useState(false);
   const [laneCopies, setLaneCopies] = useState(false); // print an N set + an S set
@@ -172,17 +178,22 @@ export default function FareboxSheet({
     if (!loaded || printMode) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      markSave("saving");
       fetch(`/api/state/farebox`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ value: data }),
       })
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`save → ${r.status}`);
+          return r.json();
+        })
         .then((d) => {
           if (d.updatedAt) setSavedAt(new Date(d.updatedAt));
+          markSave("saved");
           schedulePrewarm();
         })
-        .catch(() => {});
+        .catch(() => markSave("error"));
     }, 600);
     return () => clearTimeout(saveTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -489,11 +500,15 @@ export default function FareboxSheet({
         <DatePickerField
           className={chromeStyles.date}
           value={data.date || displayDate}
-          onValueChange={(value) => setData((d) => ({ ...d, date: value }))}
+          onValueChange={(value) => {
+            setData((d) => ({ ...d, date: value }));
+            onDateChange?.(value);
+          }}
           shortYear
           ariaLabel="Farebox sheet date"
           variant="ui"
         />
+        <SaveStatus state={saveState} />
         <ToolbarGroup className={chromeStyles.actions}>
           <ActionMenu
             label={<><MoreHorizontal size={16} /> More</>}
@@ -519,6 +534,34 @@ export default function FareboxSheet({
           </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
+      {!embedded && !printMode && !blankMode && (
+        <ServicerFillBar
+          blankCount={buses.filter((bus) => !(data.entries[bus] || EMPTY_ENTRY).serv).length}
+          onFill={(serv) =>
+            setData((d) => {
+              const entries = { ...d.entries };
+              for (const bus of buses) {
+                const cur = entries[bus] || EMPTY_ENTRY;
+                if (!cur.serv) entries[bus] = { ...cur, serv };
+              }
+              return { ...d, entries };
+            })
+          }
+          extra={{
+            label: "Mark all Y",
+            hint: `${buses.filter((bus) => !(data.entries[bus] || EMPTY_ENTRY).yn).length} without a Y/N`,
+            onPress: () =>
+              setData((d) => {
+                const entries = { ...d.entries };
+                for (const bus of buses) {
+                  const cur = entries[bus] || EMPTY_ENTRY;
+                  if (!cur.yn) entries[bus] = { ...cur, yn: "y" };
+                }
+                return { ...d, entries };
+              }),
+          }}
+        />
+      )}
 
       <PaperViewport
         profile={LETTER_PORTRAIT}

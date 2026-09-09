@@ -760,3 +760,14 @@
     width: 100%;
   }
 }
+
+/* A rejected flag save — the panel already shows the optimistic change. */
+.saveError {
+  margin: 0 0 var(--ui-space-3);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border-left: 3px solid var(--ui-danger);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+  font-size: var(--ui-font-size-sm);
+}

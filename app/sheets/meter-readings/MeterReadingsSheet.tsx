@@ -9,6 +9,7 @@ interface MeterReadingsSheetProps {
   embedded?: boolean;
   marker?: boolean;
   dateOverride?: string;
+  onDateChange?: (value: string) => void;
   onReady?: (ready: boolean) => void;
   onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
 }
@@ -25,6 +26,7 @@ export default function MeterReadingsSheet({
   embedded = false,
   marker = true,
   dateOverride = "",
+  onDateChange,
   onReady,
   onRegisterFlush,
 }: MeterReadingsSheetProps) {
@@ -35,6 +37,7 @@ export default function MeterReadingsSheet({
       embedded={embedded}
       marker={marker}
       dateOverride={dateOverride}
+      onDateChange={onDateChange}
       getDate={getDate}
       setDate={setDate}
       onReady={onReady}

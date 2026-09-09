@@ -1,0 +1,33 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+  width: min(100%, 8.5in);
+  margin: 0 auto var(--ui-space-2);
+  padding: var(--ui-space-2) var(--ui-space-3);
+  border: 1px dashed var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface);
+  font-size: var(--ui-font-size-sm);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--ui-accent);
+}
+
+.field {
+  width: 7rem;
+}
+
+.extra {
+  margin-left: auto;
+}
+
+.hint {
+  color: var(--ui-text-muted);
+  font-weight: var(--ui-weight-regular);
+}

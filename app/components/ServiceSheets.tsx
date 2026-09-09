@@ -261,12 +261,13 @@ export default function ServiceSheets() {
         </div>
       )}
 
-      {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerFuel} />}
-      {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerDef} />}
-      {tab === "meters" && <MeterReadingsSheet onRegisterFlush={registerMeters} />}
+      {/* One date for the whole night: every tab reads and edits the same value. */}
+      {tab === "fuel" && <FuelSheet title="PNW FUEL SHEET" storageKey="fuel" dateOverride={date} onDateChange={setDate} onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerFuel} />}
+      {tab === "def" && <FuelSheet title="PNW DEF SHEET" storageKey="def" showShiftFields laneCopies dateOverride={date} onDateChange={setDate} onSetupLane={() => setSetupOpen(true)} onRegisterFlush={registerDef} />}
+      {tab === "meters" && <MeterReadingsSheet dateOverride={date} onDateChange={setDate} onRegisterFlush={registerMeters} />}
       {tab === "errors" && <BusErrorsSheet onRegisterFlush={registerErrors} />}
       {tab === "summary" && <ServiceFlagSummary dateOverride={date} />}
-      {tab === "farebox" && <FareboxSheet onRegisterFlush={registerFarebox} />}
+      {tab === "farebox" && <FareboxSheet dateOverride={date} onDateChange={setDate} onRegisterFlush={registerFarebox} />}
 
       {managerOpen && (
         <ManagerPanel

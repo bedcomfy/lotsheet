@@ -702,6 +702,7 @@ export default function ManagerPanel({
   }, [query]);
 
   const getEntry = (bus: string): FlagEntry => flags[bus] || { ...EMPTY };
+  const [saveError, setSaveError] = useState("");
   function save(bus: string, entry: FlagEntry) {
     const request = fetch("/api/flags", {
       method: "POST",
@@ -717,7 +718,16 @@ export default function ManagerPanel({
         inspOption: entry.inspOption ?? "",
         actor: getDeviceActor(),
       }),
-    }).catch(() => null);
+    })
+      .then((response) => {
+        // The UI already shows the change; say so if the server didn't take it.
+        setSaveError(response.ok ? "" : `Bus ${label(bus)} didn't save — check the connection and try again.`);
+        return response;
+      })
+      .catch(() => {
+        setSaveError(`Bus ${label(bus)} didn't save — check the connection and try again.`);
+        return null;
+      });
     onBusFlagsUpdated(bus, entry);
     return request;
   }
@@ -878,6 +888,11 @@ export default function ManagerPanel({
       )}
     >
       <div className={`${styles.inner} ${tab === "bus" && openBus ? styles.innerFit : ""}`}>
+        {saveError && (
+          <div className={styles.saveError} role="alert">
+            {saveError}
+          </div>
+        )}
         {/* The By bus / By flag tabs are only useful when browsing — hide them
             while editing a single bus so that view stays compact. */}
         {!(tab === "bus" && openBus) && (

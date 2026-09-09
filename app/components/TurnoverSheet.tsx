@@ -12,6 +12,7 @@ import { useBusMaster } from "./BusMasterProvider";
 import SheetHistory from "./SheetHistory";
 import EmployeeInput from "./EmployeeInput";
 import ManagerPanel from "./ManagerPanelLazy";
+import SaveStatus, { useSaveState } from "./SaveStatus";
 import LotEditor from "./LotEditorLazy";
 import DatePickerField from "./DatePickerField";
 import { chicagoParts } from "../lib/chicagoTime";
@@ -66,6 +67,7 @@ export default function TurnoverSheet() {
   const [data, setData] = useState<TurnoverData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveState, markSave] = useSaveState();
   const [printMode, setPrintMode] = useState(false);
   const [fontPx, setFontPx] = useState(FONT_DEFAULT);
   const [printFlags, setPrintFlags] = useState(true); // print the filled sheet? (off = blank form)
@@ -469,17 +471,22 @@ export default function TurnoverSheet() {
     if (!loaded || printMode) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      markSave("saving");
       fetch(`/api/state/${STORAGE_KEY}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ value: data }),
       })
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`save → ${r.status}`);
+          return r.json();
+        })
         .then((d) => {
           if (d.updatedAt) setSavedAt(new Date(d.updatedAt));
+          markSave("saved");
           schedulePrewarm();
         })
-        .catch(() => {});
+        .catch(() => markSave("error"));
     }, 600);
     return () => clearTimeout(saveTimer.current);
   }, [data, loaded, printMode]);
@@ -662,6 +669,7 @@ export default function TurnoverSheet() {
         <StaticChip tone="success">{fleet.readyForService.size} Usable</StaticChip>
         <StaticChip tone="warning">{fleet.notReadyForService.size} Out of Service</StaticChip>
         <StaticChip tone="accent">{fleet.inShop.size} in the shop</StaticChip>
+        <SaveStatus state={saveState} />
         <ToolbarGroup className={chromeStyles.actions}>
           <ActionMenu
             label={<><MoreHorizontal size={16} /> More</>}
