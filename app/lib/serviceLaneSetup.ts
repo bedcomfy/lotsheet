@@ -1,6 +1,7 @@
 import {
   inspectionOptionFromText,
   removeInspection,
+  retorqueTiresDisplay,
   setInspectionOption,
 } from "./grid";
 import type { FlagEntry, FlagMap } from "./types";
@@ -177,4 +178,86 @@ export function serviceLaneSetupIssues(staged: FlagMap): string[] {
     }
   }
   return issues;
+}
+
+// Just the service-lane slice of a bus's live entry, shaped the way the wizard
+// stages it — so tonight's setup can start from what is already on the lane.
+export function stageServiceLaneSlice(entry: FlagEntry | null | undefined): FlagEntry | null {
+  if (!entry || !hasServiceLaneFlags(entry)) return null;
+  return mergeServiceLaneSetup(emptyFlagEntry(), entry);
+}
+
+export function stageCurrentServiceLane(flags: FlagMap | null | undefined): FlagMap {
+  const staged: FlagMap = {};
+  for (const [bus, entry] of Object.entries(flags || {})) {
+    const slice = stageServiceLaneSlice(entry);
+    if (slice) staged[bus] = slice;
+  }
+  return staged;
+}
+
+// One line describing a bus's lane assignments: "Hold (Parts) · A-3 · Fronts".
+export function describeServiceLaneEntry(entry: FlagEntry | null | undefined): string {
+  if (!entry) return "";
+  const parts: string[] = [];
+  const kind = bringToCardsKind(entry);
+  if (kind) {
+    const reason = bringToCardsReason(entry);
+    parts.push(`${kind === "hold" ? "Hold" : "Card"}${reason ? ` (${reason})` : ""}`);
+  }
+  if (entry.flags.includes("inspection")) {
+    const option = inspectionOptionFromText(entry.inspOption);
+    parts.push(option ? option.label : "Inspection");
+    if (entry.flags.includes("followup")) parts.push("Follow up");
+  }
+  if (entry.flags.includes("retorque")) {
+    parts.push(`Retorque ${retorqueTiresDisplay(entry.retorqueTires) || "(tires?)"}`);
+  }
+  return parts.join(" · ");
+}
+
+export type ServiceLaneChange = "add" | "change" | "drop" | "keep";
+
+export interface ServiceLaneDiffRow {
+  bus: string;
+  change: ServiceLaneChange;
+  before: FlagEntry | null;
+  after: FlagEntry | null;
+}
+
+function laneSignature(entry: FlagEntry | null): string {
+  if (!entry) return "";
+  return JSON.stringify({
+    flags: [...entry.flags].sort(),
+    hold: (entry.holdReason || "").trim(),
+    cards: (entry.cardsReason || "").trim(),
+    insp: inspectionOptionFromText(entry.inspOption)?.id || "",
+    tires: [...(entry.retorqueTires || [])].sort(),
+  });
+}
+
+// What applying `staged` would do to the live lane, bus by bus. Both sides are
+// reduced to their lane slice first so unrelated flags never show as changes.
+export function diffServiceLaneSetup(
+  current: FlagMap | null | undefined,
+  staged: FlagMap | null | undefined,
+): ServiceLaneDiffRow[] {
+  const buses = new Set([
+    ...Object.keys(current || {}).filter((bus) => hasServiceLaneFlags(current?.[bus])),
+    ...Object.keys(staged || {}).filter((bus) => hasServiceLaneFlags(staged?.[bus])),
+  ]);
+  const rows: ServiceLaneDiffRow[] = [];
+  for (const bus of buses) {
+    const before = stageServiceLaneSlice(current?.[bus]);
+    const after = stageServiceLaneSlice(staged?.[bus]);
+    const change: ServiceLaneChange = !before
+      ? "add"
+      : !after
+        ? "drop"
+        : laneSignature(before) === laneSignature(after)
+          ? "keep"
+          : "change";
+    rows.push({ bus, change, before, after });
+  }
+  return rows.sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true }));
 }
