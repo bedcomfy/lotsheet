@@ -7,6 +7,8 @@ import { useQueryClient } from "@tanstack/react-query";
 // the server's change token advances — so shared data (sheet, flags, employees,
 // work pick…) updates within ~1s of any write on any device, instead of waiting
 // for each query's fallback interval.
+const LIVE_KEYS = new Set(["sheet", "flags", "buses", "employees", "workpick", "m-service-tonight"]);
+
 export function useLiveSync() {
   const qc = useQueryClient();
   useEffect(() => {
@@ -28,8 +30,9 @@ export function useLiveSync() {
           const pulse = typeof data.pulse === "number" ? data.pulse : since;
           if (pulse > since) {
             since = pulse;
-            // Something changed — let active queries refetch their latest.
-            qc.invalidateQueries();
+            // Something shared changed — refetch the live slices, not every
+            // query on the page.
+            qc.invalidateQueries({ predicate: (query) => LIVE_KEYS.has(String(query.queryKey[0])) });
           } else {
             since = pulse; // timed out with no change; keep waiting
           }

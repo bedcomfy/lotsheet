@@ -87,6 +87,7 @@ export default function TurnoverSheet() {
     north: [], east: [], fence: [], rc: [], apron: [], northlane: [], southlane: [], bay: [], cards: [],
   });
   const [lotsLoaded, setLotsLoaded] = useState(false);
+  const loadLotsRef = useRef<(() => void) | null>(null);
   const lotDirty = useRef(false);
   const lotTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lotsRef = useRef<TurnoverLots>(lots);
@@ -109,6 +110,11 @@ export default function TurnoverSheet() {
     [lotSheetData, flags, masterBuses],
   );
   const qc = useQueryClient();
+  // The shared sheet query is invalidated by the live pulse; reload our lot
+  // lists the moment it changes instead of waiting for the poll.
+  useEffect(() => {
+    loadLotsRef.current?.();
+  }, [lotSheetData?.updatedAt]);
   const [flagBus, setFlagBus] = useState<string | null>(null);
   // Toolbar chips open the same readiness lists the Lot Sheet bar does.
   const [serviceDetail, setServiceDetail] = useState<"usable" | "outOfService" | null>(null);
@@ -332,10 +338,14 @@ export default function TurnoverSheet() {
         })
         .catch(() => {})
         .finally(() => alive && setLotsLoaded(true));
+    loadLotsRef.current = load;
     load();
-    const iv = setInterval(load, 1500);
+    // The live pulse (below) reloads within ~1s of any change; this interval is
+    // only a safety net.
+    const iv = setInterval(load, 5000);
     return () => {
       alive = false;
+      loadLotsRef.current = null;
       clearInterval(iv);
     };
   }, []);

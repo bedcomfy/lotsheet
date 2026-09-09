@@ -27,4 +27,3 @@ export const FUEL_COLUMNS: string[][] = [
   ],
 ];
 
-export const FUEL_BUS_COUNT = FUEL_COLUMNS.reduce((n, c) => n + c.length, 0); // 126

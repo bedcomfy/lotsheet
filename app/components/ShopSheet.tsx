@@ -10,7 +10,7 @@ import CellEditor from "./CellEditor";
 import LotEditor from "./LotEditorLazy";
 import ManagerPanel from "./ManagerPanelLazy";
 import { getDeviceActor } from "../lib/deviceActor";
-import { useFlags } from "../lib/queries";
+import { useFlags, useLotSheet } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FlagEntry, FlagMap, LotKey } from "../lib/types";
 import {
@@ -97,6 +97,13 @@ export default function ShopSheet() {
   const lotWriteVersion = useRef(0);
 
   // Shared sheet: load + poll (skip adopting while our own edit is in flight).
+  // The live pulse invalidates the shared sheet query; reload on it so the
+  // interval below is only a safety net.
+  const { data: liveSheet } = useLotSheet();
+  const loadRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    loadRef.current?.();
+  }, [liveSheet?.updatedAt]);
   useEffect(() => {
     let alive = true;
     const load = () =>
@@ -113,10 +120,12 @@ export default function ShopSheet() {
         })
         .catch(() => {})
         .finally(() => alive && setLoaded(true));
+    loadRef.current = load;
     load();
-    const iv = setInterval(load, 1500);
+    const iv = setInterval(load, 5000);
     return () => {
       alive = false;
+      loadRef.current = null;
       clearInterval(iv);
     };
   }, []);

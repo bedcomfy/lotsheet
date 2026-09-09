@@ -111,6 +111,18 @@ function flagDetails(details: unknown): { title: string; detail: string; badge: 
     badge: "Flag",
   };
 }
+function busMasterDetails(details: unknown): { title: string; detail: string; badge: string } {
+  const d = (details || {}) as { added?: string[]; removed?: string[]; total?: number };
+  const parts: string[] = [];
+  if (d.added?.length) parts.push(`added ${d.added.join(", ")}`);
+  if (d.removed?.length) parts.push(`removed ${d.removed.join(", ")}`);
+  return {
+    title: "Fleet list saved",
+    detail: `${parts.length ? parts.join(" · ") : "details edited"}${typeof d.total === "number" ? ` · ${d.total} buses` : ""}`,
+    badge: "Fleet",
+  };
+}
+
 
 function adminFlagConfigDetails(details: unknown): { title: string; detail: string; badge: string } {
   const d = (details || {}) as { before?: { flags?: Record<string, unknown> }; after?: { flags?: Record<string, unknown> } };
@@ -166,7 +178,9 @@ export default function AuditLog() {
         ? flagDetails(event.details)
         : event.kind === "admin_flag_config_update"
           ? adminFlagConfigDetails(event.details)
-          : { title: event.kind, detail: "", badge: "Audit" };
+          : event.kind === "bus_master_update"
+            ? busMasterDetails(event.details)
+            : { title: event.kind, detail: "", badge: "Audit" };
       return {
         id: `audit-${event.id}`,
         at: event.createdAt,

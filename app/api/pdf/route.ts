@@ -8,7 +8,8 @@
 
 import { createHash } from "crypto";
 import { getSheet, getFlags, getState, getPdfCache, setPdfCache } from "../../lib/store";
-import { chicagoMinuteKey } from "../../lib/chicagoTime";
+import { chicagoDateShort, chicagoMinuteKey } from "../../lib/chicagoTime";
+import { pdfSignature } from "../../lib/pdfSignature";
 import { DEFAULT_MASTER } from "../../lib/buses";
 import {
   editableBusModelRows,
@@ -28,26 +29,8 @@ const BUILD = "chromium-html-3";
 // Bump when the print layout changes so old cached PDFs are invalidated.
 const PDF_VERSION = "53"; // Turnover: bold titles, no REASON headers, wider date gap
 
-// Recursively sort object keys so the signature doesn't depend on key/row
-// order (Postgres returns flag rows in no guaranteed order).
-function stable(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(stable);
-  if (v && typeof v === "object") {
-    const obj = v as Record<string, unknown>;
-    return Object.keys(obj)
-      .sort()
-      .reduce<Record<string, unknown>>((o, k) => {
-        o[k] = stable(obj[k]);
-        return o;
-      }, {});
-  }
-  return v;
-}
-
 function signature(data: unknown, maint: boolean): string {
-  return createHash("sha1")
-    .update(JSON.stringify({ v: PDF_VERSION, maint: !!maint, data: stable(data ?? null) }))
-    .digest("hex");
+  return pdfSignature(data, maint, PDF_VERSION);
 }
 
 // The data a sheet's PDF is built from — used for the cache signature so a
@@ -409,7 +392,14 @@ export async function GET(req: Request) {
       blank,
       variant,
       overrides,
-      printMinute: blank ? null : chicagoMinuteKey(),
+      // Only the Lot Sheet prints the clock (when its time isn't overridden);
+      // every other sheet prints at most today's date, so its cache lives all
+      // day instead of expiring every minute.
+      printMinute: blank
+        ? null
+        : definition.id === "lot" && !overrides.timeOverride
+          ? chicagoMinuteKey()
+          : chicagoDateShort(),
     }, maint);
     const cached = await getPdfCache(path, maint);
     if (cached && cached.signature === sig && cached.data) {
