@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.33.4 - 2026-09-09
+
+- Set up lane is back to how it worked before 0.27.0: the Review step lists
+  tonight's Inspections, Retorques, and Bring to Cards as you built them, with
+  no Adding / Changing / Dropping / Keeping comparison against the live lane,
+  and the "Start from tonight's lane" carry-over is gone. What you type is the
+  lane. Pasting several bus numbers at once still works.
+
 ## 0.33.3 - 2026-09-09
 
 - Edit flags on phones: the Service / Maintenance / Safety row no longer
