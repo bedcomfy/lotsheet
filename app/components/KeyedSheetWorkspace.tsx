@@ -25,6 +25,7 @@ import {
   ToolbarGroup,
 } from "../ui";
 import DatePickerField from "./DatePickerField";
+import SaveStatus, { useSaveState } from "./SaveStatus";
 import SheetHistory from "./SheetHistory";
 import chromeStyles from "./SheetChrome.module.css";
 
@@ -44,6 +45,8 @@ interface KeyedSheetWorkspaceProps<T> {
   embedded?: boolean;
   marker?: boolean;
   dateOverride?: string;
+  // Report date edits up (Service Sheets keeps one date across its tabs).
+  onDateChange?: (value: string) => void;
   dateLabel?: string;
   dateShortYear?: boolean;
   dateControlType?: "date" | "month";
@@ -71,6 +74,7 @@ export default function KeyedSheetWorkspace<T>({
   embedded = false,
   marker = true,
   dateOverride = "",
+  onDateChange,
   dateLabel,
   dateShortYear = true,
   dateControlType = "date",
@@ -98,6 +102,7 @@ export default function KeyedSheetWorkspace<T>({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [saveState, markSave] = useSaveState();
   const valueRef = useRef(value);
 
   useEffect(() => {
@@ -143,7 +148,11 @@ export default function KeyedSheetWorkspace<T>({
     if (!loaded || printMode || blankMode) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      adapter.save(valueRef.current).catch(() => {});
+      markSave("saving");
+      adapter
+        .save(valueRef.current)
+        .then(() => markSave("saved"))
+        .catch(() => markSave("error"));
     }, 600);
     return () => clearTimeout(saveTimer.current);
   }, [adapter, blankMode, loaded, printMode, value]);
@@ -231,9 +240,10 @@ export default function KeyedSheetWorkspace<T>({
               <DatePickerField
                 className={chromeStyles.date}
                 value={displayDate}
-                onValueChange={(date) =>
-                  setValue((current) => setDate(current, date))
-                }
+                onValueChange={(date) => {
+                  setValue((current) => setDate(current, date));
+                  onDateChange?.(date);
+                }}
                 shortYear={dateShortYear}
                 ariaLabel={
                   dateLabel || `${definition.title} date`
@@ -244,6 +254,7 @@ export default function KeyedSheetWorkspace<T>({
           ) : (
             <span className={chromeStyles.title}>{definition.title}</span>
           )}
+          <SaveStatus state={saveState} />
           <ToolbarGroup className={chromeStyles.actions}>
             <ActionMenu
               label={

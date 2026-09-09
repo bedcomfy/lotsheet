@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.30.0 - 2026-09-09
+
+Less retyping, and sheets that tell you whether they saved.
+
+- Fuel, DEF, and Farebox sheets get a "fill every row" bar: type the servicer
+  initials once and fill every blank SERV cell; Farebox also has "Mark all Y"
+  for the buses that still have no Y/N. Screen only — nothing changes on paper.
+- Service Sheets keep one date across every tab (Fuel, DEF, Meter Readings,
+  Flag Summary, Farebox): change it anywhere and the others follow.
+- Lot, lane, and shop list editors accept several bus numbers at once — type
+  or paste "6414 6392 6450" and each known, unplaced bus is added; the rest
+  stay in the field with the reason (unknown, or already in Bay 2).
+- Sheet toolbars show a quiet save state: "Saving…", "Saved" for a moment, or
+  "Not saved — retrying" in red when the server rejected a write (Fuel, DEF,
+  Farebox, Turnover, Meter Readings, Bus Errors, Interior/Hybrid/Monthly
+  sheets). The flag editor now says when a flag change didn't save instead of
+  dropping it silently.
+
 ## 0.29.0 - 2026-09-09
 
 Home is now a command center for tonight, on desktop and phone.

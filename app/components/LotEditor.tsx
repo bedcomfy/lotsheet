@@ -104,6 +104,7 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
   const { isKnown: isKnownBus, label: busLabel } = useBusMaster();
   const [val, setVal] = useState("");
   const [dup, setDup] = useState(""); // where this bus already sits, if anywhere
+  const [note, setNote] = useState(""); // outcome of a multi-number paste
   const ref = useRef<HTMLInputElement>(null);
 
   // Reordering happens on the grip handle only, so taps on the row's buttons
@@ -155,9 +156,41 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
   const known = isKnownBus(val);
   const showWarn = val.length >= 4 && !known;
 
+  // Several numbers typed or pasted together ("6414 6392, 6450"): add every
+  // known bus that isn't already placed somewhere; report the rest.
+  function addMany(raw: string) {
+    const tokens = Array.from(new Set(raw.split(/[^0-9]+/).filter(Boolean)));
+    const leftovers: string[] = [];
+    const notes: string[] = [];
+    for (const token of tokens) {
+      const b = sanitizeBus(token);
+      if (!b || !isKnownBus(b)) {
+        leftovers.push(token);
+        notes.push(`${token} isn't a known bus`);
+        continue;
+      }
+      const where = locate ? locate(b, null) : "";
+      if (where) {
+        leftovers.push(b);
+        notes.push(`${b} is in ${where}`);
+        continue;
+      }
+      onAdd(b);
+    }
+    setVal(leftovers.join(" "));
+    setDup("");
+    setNote(notes.length ? `Not added — ${notes.join("; ")}.` : "");
+    ref.current?.focus({ preventScroll: true });
+  }
+
   function onChange(raw: string) {
+    if (raw.split(/[^0-9]+/).filter(Boolean).length > 1) {
+      addMany(raw);
+      return;
+    }
     const v = sanitizeBus(raw);
     setDup("");
+    setNote("");
     // Autocomplete: as soon as a valid bus is typed, add it (like the grid /
     // Fill Rows auto-advance). Unknown numbers still add via the Add button.
     if (isKnownBus(v)) add(v);
@@ -223,7 +256,12 @@ export default function LotEditor({ title, subtitle, list, flags = {}, locate, o
             </div>
           </div>
         )}
-        {showWarn && !dup && (
+        {note && !dup && (
+          <div className={styles.warning} role="status">
+            {note}
+          </div>
+        )}
+        {showWarn && !dup && !note && (
           <div className={styles.warning}>
             {val} isn&apos;t on the bus list — double-check it. Press Add to use it anyway.
           </div>

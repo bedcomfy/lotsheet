@@ -10,6 +10,8 @@ import { useBusMaster } from "./BusMasterProvider";
 import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
+import SaveStatus, { useSaveState } from "./SaveStatus";
+import ServicerFillBar from "./ServicerFillBar";
 import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
@@ -101,6 +103,9 @@ interface FuelSheetProps {
   onRegisterFlush?: (flush: (() => Promise<unknown>) | null) => void;
   // Service Sheets can open the guided nightly replacement beside Edit Flags.
   onSetupLane?: () => void;
+  // Under Service Sheets the date is shared across every tab: the picker here
+  // reports changes up instead of owning the date.
+  onDateChange?: (value: string) => void;
 }
 
 export default function FuelSheet({
@@ -116,10 +121,12 @@ export default function FuelSheet({
   onReady,
   onRegisterFlush,
   onSetupLane,
+  onDateChange,
 }: FuelSheetProps) {
   const [data, setData] = useState<FuelData>(emptyData);
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveState, markSave] = useSaveState();
   const [printMode, setPrintMode] = useState(false);
   const [blankMode, setBlankMode] = useState(false);
   const [laneVariant, setLaneVariant] = useState(false); // ?variant=ns on the print URL
@@ -212,17 +219,22 @@ export default function FuelSheet({
     if (!loaded || printMode) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
+      markSave("saving");
       fetch(`/api/state/${storageKey}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ value: data }),
       })
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`save → ${r.status}`);
+          return r.json();
+        })
         .then((d) => {
           if (d.updatedAt) setSavedAt(new Date(d.updatedAt));
+          markSave("saved");
           schedulePrewarm();
         })
-        .catch(() => {});
+        .catch(() => markSave("error"));
     }, 600);
     return () => clearTimeout(saveTimer.current);
   }, [data, loaded, storageKey, printMode]);
@@ -294,7 +306,8 @@ export default function FuelSheet({
   }
 
   const { laneBuses, ready: busReady } = useBusMaster();
-  const { columns, rows, total } = buildLaneColumns(laneBuses());
+  const laneList = laneBuses();
+  const { columns, rows, total } = buildLaneColumns(laneList);
   const flagsEnabled = !blankMode && (showFlags ?? param("maint") !== "0");
 
   useEffect(() => {
@@ -376,11 +389,15 @@ export default function FuelSheet({
         <DatePickerField
           className={chromeStyles.date}
           value={data.date || displayDate}
-          onValueChange={(value) => setField("date", value)}
+          onValueChange={(value) => {
+            setField("date", value);
+            onDateChange?.(value);
+          }}
           shortYear
           ariaLabel={`${title} date`}
           variant="ui"
         />
+        <SaveStatus state={saveState} />
         <ToolbarGroup className={chromeStyles.actions}>
           {onSetupLane && (
             <Button onPress={onSetupLane}>
@@ -414,6 +431,21 @@ export default function FuelSheet({
           </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
+      {!embedded && !printMode && !blankMode && (
+        <ServicerFillBar
+          blankCount={laneList.filter((bus) => !(data.entries[bus] || { gals: "", serv: "" }).serv).length}
+          onFill={(serv) =>
+            setData((d) => {
+              const entries = { ...d.entries };
+              for (const bus of laneList) {
+                const cur = entries[bus] || { gals: "", serv: "" };
+                if (!cur.serv) entries[bus] = { ...cur, serv };
+              }
+              return { ...d, entries };
+            })
+          }
+        />
+      )}
 
       <PaperViewport
         profile={LETTER_PORTRAIT}
