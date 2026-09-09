@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.29.0 - 2026-09-09
+
+Home is now a command center for tonight, on desktop and phone.
+
+- Every bus list on Home and the phone Tonight board (Usable, Out of service,
+  In shop, Missing, Flagged, …) is actionable: tap a row for the Bus Card, or
+  act on the whole group from the footer — Move all to a lot (North, East,
+  Fence, Apron, Cards), Flag all with a quick flag, or Clear flags on all —
+  with an inline confirm and a saving counter.
+- A "Tonight's Lane" panel shows inspections, retorques, and bring-to-cards
+  counts with a one-tap "Set up lane" that opens the Setup Lane wizard directly
+  (`/service?tab=fuel&setup=1`). The phone board gets the same tile.
+- The desktop header's primaries are now Open Lot Sheet, Fill Rows, Set up
+  lane, and Turnover; the duplicated Daily Operations list is gone and every
+  sheet and tool appears exactly once under Sheets & Tools (now including
+  Turnover, Other Sheets, and Fleet).
+- The phone board's own search box is gone (the top-bar magnifier covers every
+  page); its quick actions are Service Sheets and Turnover.
+
 ## 0.28.0 - 2026-09-09
 
 One Bus Card, reachable from anywhere.

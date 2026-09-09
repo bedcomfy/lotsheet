@@ -569,3 +569,51 @@
   font-weight: var(--ui-weight-semibold);
   text-transform: uppercase;
 }
+
+/* Tonight's Lane panel: three counts + set-up link. */
+.laneCounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ui-space-2);
+  padding: var(--ui-space-3);
+}
+
+.laneCount {
+  display: grid;
+  justify-items: start;
+  gap: var(--ui-space-1);
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  color: inherit;
+  background: var(--ui-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.laneCount:hover {
+  background: var(--ui-surface-hover);
+}
+
+.laneCount:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+.laneCount b {
+  font-size: var(--ui-font-size-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.laneCount span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.laneFoot {
+  margin: 0;
+  padding: 0 var(--ui-space-4) var(--ui-space-3);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
