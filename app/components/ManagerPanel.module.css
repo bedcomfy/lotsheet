@@ -772,13 +772,15 @@
   font-size: var(--ui-font-size-sm);
 }
 
+/* Underlined at rest: an inline link must not rely on color alone (a11y). */
 .detailLink {
   margin-left: var(--ui-space-2);
   color: var(--ui-accent);
   font-weight: var(--ui-weight-medium);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .detailLink:hover {
-  text-decoration: underline;
+  color: var(--ui-accent-pressed, var(--ui-accent));
 }
