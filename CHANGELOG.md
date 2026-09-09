@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.33.3 - 2026-09-09
+
+- Edit flags on phones: the Service / Maintenance / Safety row no longer
+  collapses to a sliver when the bus list below it is long (seen with 16
+  buses under Custom notes). The row keeps its height and scrolls sideways.
+
 ## 0.33.2 - 2026-09-09
 
 - Removed the "fill every row" servicer-initials bar from the Fuel, DEF, and

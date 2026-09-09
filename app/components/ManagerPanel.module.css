@@ -626,6 +626,10 @@
 
 .departmentTabs {
   display: flex;
+  /* A flex-column child with overflow-x: auto (phones) has no intrinsic
+     min-height, so the scrolling bus list below would squeeze this row to a
+     sliver. Never shrink it. */
+  flex: 0 0 auto;
   gap: var(--ui-space-2);
   margin-bottom: var(--ui-space-3);
 }
@@ -724,6 +728,8 @@
 
   .departmentTabs {
     overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
   }
 
   .departmentTab {
