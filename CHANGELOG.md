@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.32.0 - 2026-09-09
+
+Behind-the-scenes: faster, quieter, better tested.
+
+- Building a PDF in the background no longer wakes every device to refetch
+  everything; live updates now refresh only the shared data (sheet, flags,
+  fleet, staffing), not every query on the page.
+- Cached PDFs for every sheet except the Lot Sheet (which prints the clock)
+  now stay valid all day instead of expiring every minute, so Print PDF is
+  instant far more often and the server renders far less.
+- The Turnover and Shop pages reload their lists the moment the shared sheet
+  changes (via the live update) and poll only every 5 seconds as a fallback,
+  instead of re-downloading the whole sheet every 1.5 seconds.
+- Fleet list saves are now recorded in the Audit Log (buses added/removed).
+- Tests added for the Lot Sheet conflict merge and the PDF cache key; a few
+  unused code paths removed.
+
 ## 0.31.0 - 2026-09-09
 
 Turnover entry without the dialogs, plus navigation and naming cleanups.

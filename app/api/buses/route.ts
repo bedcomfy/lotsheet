@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getState, setState } from "../../lib/store";
+import { getState, recordAuditEvent, setState } from "../../lib/store";
 import {
   busModelId,
   busWrapId,
@@ -59,6 +59,18 @@ export async function PUT(req: Request) {
       ...(b.name ? { name: String(b.name) } : {}),
     });
   }
+  const previous = (await getState(KEY)).value as { buses?: MasterBus[] } | null;
   const updatedAt = await setState(KEY, { buses });
+  const beforeNums = new Set((previous?.buses || []).map((bus) => bus.num));
+  const afterNums = new Set(buses.map((bus) => bus.num));
+  await recordAuditEvent(
+    "bus_master_update",
+    {
+      added: [...afterNums].filter((num) => !beforeNums.has(num)),
+      removed: [...beforeNums].filter((num) => !afterNums.has(num)),
+      total: buses.length,
+    },
+    typeof body.actor === "string" ? body.actor : "",
+  );
   return NextResponse.json({ ok: true, master: { buses }, updatedAt });
 }

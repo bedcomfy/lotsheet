@@ -126,11 +126,6 @@ function normalizeOp(op: unknown): LotSheetOp | null {
   }
   return null;
 }
-
-export function normalizeOps(ops: unknown): LotSheetOp[] {
-  return normalizeOpEnvelopes(ops).map((entry) => entry.op);
-}
-
 export function normalizeOpEnvelopes(ops: unknown): LotSheetOpEnvelope[] {
   if (!Array.isArray(ops)) return [];
   const normalized: LotSheetOpEnvelope[] = [];

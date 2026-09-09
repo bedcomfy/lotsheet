@@ -9,7 +9,6 @@ import { asc, desc, eq, gt, inArray, max, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import type { DB } from "./db";
 import { appState, auditEvents, busFlags, lotSheetOps, sheetHistory, TABLE_SUFFIX } from "./db/schema";
-import { mergeLotSheet } from "./lotSheetMerge";
 import {
   applyLotSheetOpsToSheet,
   normalizeOpEnvelopes,
@@ -144,39 +143,6 @@ export async function getSheet(): Promise<{ sheet: LotSheet | null; updatedAt: s
   };
 }
 
-export async function setSheet(sheet: LotSheet): Promise<string> {
-  const db = await getDb();
-  const rows = await db
-    .insert(appState)
-    .values({ key: SHEET_KEY, value: sheet, updatedAt: sql`now()` })
-    .onConflictDoUpdate({ target: appState.key, set: { value: sheet, updatedAt: sql`now()` } })
-    .returning({ updatedAt: appState.updatedAt });
-  await bumpPulse(db);
-  return isoOrNull(rows[0]?.updatedAt) || new Date().toISOString();
-}
-
-export async function mergeSetSheet(
-  baseSheet: LotSheet | null | undefined,
-  incoming: LotSheet,
-  force = false
-): Promise<{ sheet: LotSheet; updatedAt: string }> {
-  const db = await getDb();
-  const result = await db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${SHEET_LOCK}))`);
-    const rows = await tx.select({ value: appState.value }).from(appState).where(eq(appState.key, SHEET_KEY));
-    const current = (rows[0]?.value || null) as LotSheet | null;
-    const next = force ? incoming : mergeLotSheet(baseSheet, incoming, current);
-    const written = await tx
-      .insert(appState)
-      .values({ key: SHEET_KEY, value: next, updatedAt: sql`now()` })
-      .onConflictDoUpdate({ target: appState.key, set: { value: next, updatedAt: sql`now()` } })
-      .returning({ updatedAt: appState.updatedAt });
-    return { sheet: next, updatedAt: isoOrNull(written[0]?.updatedAt) || new Date().toISOString() };
-  });
-  await bumpPulse(db);
-  return result;
-}
-
 export async function applySheetOps(
   rawOps: unknown,
   actor = ""
@@ -305,12 +271,24 @@ export async function getState(key: string): Promise<{ value: unknown; updatedAt
 
 export async function setState(key: string, value: unknown): Promise<string> {
   const db = await getDb();
+  const updatedAt = await writeState(db, key, value);
+  await bumpPulse(db);
+  return updatedAt;
+}
+
+// Same write, no pulse — for server-side caches (PDFs) that no client needs to
+// refetch for. Bumping the pulse there woke every device after every prewarm.
+export async function setStateQuiet(key: string, value: unknown): Promise<string> {
+  const db = await getDb();
+  return writeState(db, key, value);
+}
+
+async function writeState(db: DB, key: string, value: unknown): Promise<string> {
   const rows = await db
     .insert(appState)
     .values({ key, value, updatedAt: sql`now()` })
     .onConflictDoUpdate({ target: appState.key, set: { value, updatedAt: sql`now()` } })
     .returning({ updatedAt: appState.updatedAt });
-  await bumpPulse(db);
   return isoOrNull(rows[0]?.updatedAt) || new Date().toISOString();
 }
 
@@ -401,5 +379,5 @@ export async function getPdfCache(sheetPath: string, maint: boolean): Promise<Pd
 }
 
 export async function setPdfCache(sheetPath: string, maint: boolean, signature: string, data: string): Promise<void> {
-  await setState(pdfKey(sheetPath, maint), { signature, data } satisfies PdfCache);
+  await setStateQuiet(pdfKey(sheetPath, maint), { signature, data } satisfies PdfCache);
 }

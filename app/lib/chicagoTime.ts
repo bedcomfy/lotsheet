@@ -27,12 +27,6 @@ export function chicagoParts(now = new Date()): ChicagoParts {
     minute: get("minute"),
   };
 }
-
-export function chicagoDateFull(now = new Date()): string {
-  const p = chicagoParts(now);
-  return `${p.month}/${p.day}/${p.year}`;
-}
-
 export function chicagoDateShort(now = new Date()): string {
   const p = chicagoParts(now);
   return `${p.month}/${p.day}/${p.year.slice(-2)}`;

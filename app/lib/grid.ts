@@ -884,11 +884,6 @@ export function entryHasContent(entry: FlagEntry | null | undefined): boolean {
   return !!(entry && (operationalFlagIds(entry.flags).length || hasCustomNotes(entry)));
 }
 
-// Whether a bus is flagged for inspection.
-export function hasInspection(entry: FlagEntry | null | undefined): boolean {
-  return !!(entry && entry.flags && entry.flags.includes("inspection"));
-}
-
 // Inspection mileage readout: "Miles +300" (300 miles to go) or "Miles −100"
 // (100 miles overdue). Empty string when no mileage is set. Only meaningful for
 // buses that carry the inspection flag.
