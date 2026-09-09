@@ -463,9 +463,10 @@ export default function SetupLane({
                   className={`${styles.step} ${index === stepIndex ? styles.stepCurrent : ""}`}
                   onPress={() => moveTo(index)}
                   aria-current={index === stepIndex ? "step" : undefined}
+                  aria-label={item.label}
                 >
                   <span>{item.label}</span>
-                  {count > 0 && <span className={styles.stepCount}>{count}</span>}
+                  {count > 0 && <span className={styles.stepCount} aria-hidden="true">{count}</span>}
                 </Pressable>
               );
             })}
