@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.33.2 - 2026-09-09
+
+- Removed the "fill every row" servicer-initials bar from the Fuel, DEF, and
+  Farebox sheets (and Farebox's "Mark all Y" that lived on it). Servicers sign
+  their own rows; the bar was a miss.
+
 ## 0.33.1 - 2026-09-09
 
 - Set up lane opens blank again. It replaces the paper lane sheets, so what

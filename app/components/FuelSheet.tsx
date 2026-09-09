@@ -11,7 +11,6 @@ import ManagerPanel from "./ManagerPanelLazy";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import SaveStatus, { useSaveState } from "./SaveStatus";
-import ServicerFillBar from "./ServicerFillBar";
 import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { useFlags } from "../lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
@@ -431,21 +430,6 @@ export default function FuelSheet({
           </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
-      {!embedded && !printMode && !blankMode && (
-        <ServicerFillBar
-          blankCount={laneList.filter((bus) => !(data.entries[bus] || { gals: "", serv: "" }).serv).length}
-          onFill={(serv) =>
-            setData((d) => {
-              const entries = { ...d.entries };
-              for (const bus of laneList) {
-                const cur = entries[bus] || { gals: "", serv: "" };
-                if (!cur.serv) entries[bus] = { ...cur, serv };
-              }
-              return { ...d, entries };
-            })
-          }
-        />
-      )}
 
       <PaperViewport
         profile={LETTER_PORTRAIT}

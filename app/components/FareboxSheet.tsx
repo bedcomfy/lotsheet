@@ -8,7 +8,6 @@ import { useBusMaster } from "./BusMasterProvider";
 import SheetHistory from "./SheetHistory";
 import DatePickerField from "./DatePickerField";
 import SaveStatus, { useSaveState } from "./SaveStatus";
-import ServicerFillBar from "./ServicerFillBar";
 import { chicagoDateShort, isStaleServiceDate } from "../lib/chicagoTime";
 import { ActionMenu, Button, ConfirmDialog, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
@@ -534,34 +533,6 @@ export default function FareboxSheet({
           </SplitButton>
         </ToolbarGroup>
       </Toolbar>}
-      {!embedded && !printMode && !blankMode && (
-        <ServicerFillBar
-          blankCount={buses.filter((bus) => !(data.entries[bus] || EMPTY_ENTRY).serv).length}
-          onFill={(serv) =>
-            setData((d) => {
-              const entries = { ...d.entries };
-              for (const bus of buses) {
-                const cur = entries[bus] || EMPTY_ENTRY;
-                if (!cur.serv) entries[bus] = { ...cur, serv };
-              }
-              return { ...d, entries };
-            })
-          }
-          extra={{
-            label: "Mark all Y",
-            hint: `${buses.filter((bus) => !(data.entries[bus] || EMPTY_ENTRY).yn).length} without a Y/N`,
-            onPress: () =>
-              setData((d) => {
-                const entries = { ...d.entries };
-                for (const bus of buses) {
-                  const cur = entries[bus] || EMPTY_ENTRY;
-                  if (!cur.yn) entries[bus] = { ...cur, yn: "y" };
-                }
-                return { ...d, entries };
-              }),
-          }}
-        />
-      )}
 
       <PaperViewport
         profile={LETTER_PORTRAIT}
