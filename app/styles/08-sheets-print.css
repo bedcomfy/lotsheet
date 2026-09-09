@@ -961,6 +961,29 @@ td.turnt__head {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Screen-only confirmation after a bay note became a flag; floats over the
+   row so the fixed row height never changes. */
+.turnt__fline {
+  position: relative;
+}
+.turnt__baynote {
+  position: absolute;
+  right: 4px;
+  bottom: -2px;
+  z-index: 1;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #166534;
+  background: #dcfce7;
+  font-size: 10px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.turnt__baynote--error {
+  color: #991b1b;
+  background: #fee2e2;
+}
 .turnt__flagentry::placeholder {
   color: #6b7280;
   font-size: 0.82em;

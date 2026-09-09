@@ -8,16 +8,14 @@ import {
   ClipboardList,
   Home,
   Layers3,
-  Moon,
   MoreHorizontal,
-  Sun,
 } from "lucide-react";
 import type { AppRoute } from "../lib/navigation";
 import {
   MOBILE_MORE_ROUTES,
   MOBILE_SHEET_ROUTES,
 } from "../lib/navigation";
-import { Button } from "../ui/Button";
+import ThemeToggle from "./ThemeToggle";
 import {
   MobileNavigationBar,
   type MobileNavigationItem,
@@ -65,31 +63,14 @@ export default function MobileTabBar() {
   const pathname = usePathname() || "/";
   const searchParams = useSearchParams();
   const [hub, setHub] = useState<null | "sheets" | "more">(null);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => setHub(null), [pathname]);
-  useEffect(() => {
-    setTheme(
-      document.documentElement.getAttribute("data-theme") === "dark"
-        ? "dark"
-        : "light",
-    );
-  }, [hub]);
 
   if (searchParams.get("print") === "1") return null;
 
   function go(path: string) {
     setHub(null);
     router.push(path);
-  }
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("pace:theme", next);
-    } catch {}
   }
 
   function activeTab() {
@@ -147,16 +128,7 @@ export default function MobileTabBar() {
         description="Tools and administration"
         items={hubItems(MOBILE_MORE_ROUTES)}
         onAction={go}
-        footer={
-          <Button fullWidth onPress={toggleTheme}>
-            {theme === "dark" ? (
-              <Sun aria-hidden="true" />
-            ) : (
-              <Moon aria-hidden="true" />
-            )}
-            {theme === "dark" ? "Light mode" : "Dark mode"}
-          </Button>
-        }
+        footer={<ThemeToggle />}
       />
     </>
   );

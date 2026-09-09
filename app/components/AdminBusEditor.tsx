@@ -31,6 +31,7 @@ import {
 } from "../lib/buses";
 import { getDeviceActor } from "../lib/deviceActor";
 import type { MasterBus } from "../lib/types";
+import { sanitizeBus } from "../lib/buses";
 import {
   Button,
   Checkbox,
@@ -148,6 +149,7 @@ const FleetRow = memo(function FleetRow({
   onUpdate,
   onAssignModel,
   onAssignWrap,
+  onRemove,
 }: {
   bus: MasterBus;
   modelRows: BusModelAdminRow[];
@@ -157,6 +159,7 @@ const FleetRow = memo(function FleetRow({
   onUpdate: (num: string, patch: Partial<MasterBus>) => void;
   onAssignModel: (bus: MasterBus, id: string) => void;
   onAssignWrap: (bus: MasterBus, wrapId: string) => void;
+  onRemove: (bus: MasterBus) => void;
 }) {
   const selectedModelId = busModelId(bus);
   return (
@@ -197,6 +200,13 @@ const FleetRow = memo(function FleetRow({
           >
             Add to Fuel/DEF
           </Checkbox>
+          <IconButton
+            variant="quiet"
+            aria-label={`Remove bus ${bus.num} from the fleet`}
+            onPress={() => onRemove(bus)}
+          >
+            <Trash2 aria-hidden="true" />
+          </IconButton>
           {isGilligHybridBus(bus) && (
             <Checkbox
               isSelected={bus.hybridLane !== false}
@@ -253,6 +263,8 @@ export default function AdminBusEditor() {
     master.buses.map((bus) => ({ ...bus })),
   );
   const [filter, setFilter] = useState("");
+  const [newBus, setNewBus] = useState("");
+  const [newBusError, setNewBusError] = useState("");
   const [busSaving, setBusSaving] = useState(false);
   const [busDirty, setBusDirty] = useState(false);
   const [busSaved, setBusSaved] = useState(false);
@@ -321,6 +333,40 @@ export default function AdminBusEditor() {
     },
     [],
   );
+
+  // New buses start active and on the Fuel/DEF lane; model and wrap follow.
+  function addBus() {
+    const num = sanitizeBus(newBus);
+    if (num.length < 4) {
+      setNewBusError("Enter the full bus number.");
+      return;
+    }
+    if (buses.some((bus) => bus.num === num)) {
+      setNewBusError(`Bus ${num} is already on the list.`);
+      setFilter(num);
+      return;
+    }
+    setBuses((list) => [...list, { num, status: "active", lane: true, types: [] }]);
+    setBusDirty(true);
+    setBusSaved(false);
+    setNewBus("");
+    setNewBusError("");
+    setFilter(num);
+  }
+
+  const requestRemoveBus = useCallback((bus: MasterBus) => {
+    setConfirmation({
+      title: `Remove bus ${bus.num} from the fleet?`,
+      description:
+        "It disappears from every sheet, list, and count once you save the fleet. To keep its history, set its status to Retired instead.",
+      confirmLabel: "Remove bus",
+      onConfirm: () => {
+        setBuses((list) => list.filter((item) => item.num !== bus.num));
+        setBusDirty(true);
+        setBusSaved(false);
+      },
+    });
+  }, []);
 
   const assignModel = useCallback(
     (bus: MasterBus, id: string) => {
@@ -769,6 +815,29 @@ export default function AdminBusEditor() {
             onChange={setFilter}
           />
           <span className={styles.count}>{shown.length} buses</span>
+          <div className={styles.addBus}>
+            <TextField
+              label="New bus number"
+              labelHidden
+              placeholder="Add bus number"
+              inputMode="numeric"
+              value={newBus}
+              errorMessage={newBusError || undefined}
+              onChange={(value) => {
+                setNewBus(sanitizeBus(value));
+                setNewBusError("");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addBus();
+                }
+              }}
+            />
+            <Button onPress={addBus} isDisabled={!newBus.trim() || busSaving}>
+              <Plus aria-hidden="true" /> Add bus
+            </Button>
+          </div>
         </div>
         <div className={styles.fleetList}>
           {!shown.length && (
@@ -788,6 +857,7 @@ export default function AdminBusEditor() {
               onUpdate={updateBus}
               onAssignModel={assignModel}
               onAssignWrap={assignWrap}
+              onRemove={requestRemoveBus}
             />
           ))}
         </div>

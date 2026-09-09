@@ -539,7 +539,7 @@ export default function FuelSheet({
       {prevOpen && (
         <SheetHistory
           apiBase={`/api/state/${storageKey}/history`}
-          title={`${title} — Prev Sheets`}
+          title={`${title} — Previous sheets`}
           describe={(s) => {
             const n = Object.keys(s?.entries || {}).length;
             return {
@@ -556,7 +556,7 @@ export default function FuelSheet({
         isOpen={clearOpen}
         onOpenChange={setClearOpen}
         title={`Clear the ${title}?`}
-        description="The current sheet is saved to Previous Sheets before it is cleared."
+        description="The current sheet is saved to Previous sheets before it is cleared."
         confirmLabel="Clear sheet"
         tone="danger"
         onConfirm={clearAll}

@@ -258,6 +258,11 @@
   }
 }
 
+.missingButton {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
 .shopButton {
   color: var(--ui-info);
   background: var(--ui-info-soft);

@@ -575,7 +575,7 @@ export default function FareboxSheet({
       {prevOpen && (
         <SheetHistory
           apiBase="/api/state/farebox/history"
-          title="Farebox Sheet — Prev Sheets"
+          title="Farebox Sheet — Previous sheets"
           describe={(s) => {
             const n = Object.keys(s?.entries || {}).length;
             return {
@@ -592,7 +592,7 @@ export default function FareboxSheet({
         isOpen={clearOpen}
         onOpenChange={setClearOpen}
         title="Clear the Farebox sheet?"
-        description="The current sheet is saved to Previous Sheets before it is cleared."
+        description="The current sheet is saved to Previous sheets before it is cleared."
         confirmLabel="Clear sheet"
         tone="danger"
         onConfirm={clearAll}

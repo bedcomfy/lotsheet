@@ -771,3 +771,14 @@
   background: var(--ui-danger-soft);
   font-size: var(--ui-font-size-sm);
 }
+
+.detailLink {
+  margin-left: var(--ui-space-2);
+  color: var(--ui-accent);
+  font-weight: var(--ui-weight-medium);
+  text-decoration: none;
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}

@@ -249,7 +249,12 @@ export function InspOptionPicker({
 }) {
   return (
     <div className={`${styles.detailBox} ${styles.detailColumn} ${variant === "plain" ? styles.detailPlain : ""}`}>
-      <div className={styles.detailLabel}>Inspection type / follow up</div>
+      <div className={styles.detailLabel}>
+        Inspection type / follow up
+        <a className={styles.detailLink} href="/object-codes" target="_blank" rel="noreferrer">
+          Object codes
+        </a>
+      </div>
       <div className={styles.reasonPicker}>
         {INSPECTION_OPTIONS.map((o) => (
           <Pressable
