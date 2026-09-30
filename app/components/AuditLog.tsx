@@ -124,6 +124,39 @@ function busMasterDetails(details: unknown): { title: string; detail: string; ba
 }
 
 
+function miles(n: unknown): string {
+  return typeof n === "number" ? n.toLocaleString("en-US") : "—";
+}
+
+function pmMileageDetails(details: unknown): { title: string; detail: string; badge: string } {
+  const d = (details || {}) as {
+    bus?: string;
+    before?: { odometer?: number | null; lastPmMiles?: number | null; interval?: number | null } | null;
+    after?: { odometer?: number | null; lastPmMiles?: number | null; interval?: number | null } | null;
+  };
+  const parts: string[] = [];
+  const b = d.before || {};
+  const a = d.after || {};
+  if ((b.odometer ?? null) !== (a.odometer ?? null)) parts.push(`odometer ${miles(b.odometer ?? null)} → ${miles(a.odometer ?? null)}`);
+  if ((b.lastPmMiles ?? null) !== (a.lastPmMiles ?? null)) parts.push(`last PM ${miles(b.lastPmMiles ?? null)} → ${miles(a.lastPmMiles ?? null)}`);
+  if ((b.interval ?? null) !== (a.interval ?? null)) parts.push(`interval ${miles(b.interval ?? null)} → ${miles(a.interval ?? null)}`);
+  return {
+    title: `PM mileage · ${d.bus || "bus"}`,
+    detail: parts.length ? parts.join(" · ") : "details edited",
+    badge: "PM",
+  };
+}
+
+function pmImportDetails(details: unknown): { title: string; detail: string; badge: string } {
+  const d = (details || {}) as { count?: number; buses?: string[]; source?: string };
+  const list = (d.buses || []).slice(0, 8).join(", ");
+  return {
+    title: `PM mileage imported (${d.count ?? 0} bus${d.count === 1 ? "" : "es"})`,
+    detail: `${d.source || "pdf"}${list ? ` · ${list}${(d.buses || []).length > 8 ? "…" : ""}` : ""}`,
+    badge: "PM",
+  };
+}
+
 function adminFlagConfigDetails(details: unknown): { title: string; detail: string; badge: string } {
   const d = (details || {}) as { before?: { flags?: Record<string, unknown> }; after?: { flags?: Record<string, unknown> } };
   const before = d.before?.flags || {};
@@ -180,7 +213,13 @@ export default function AuditLog() {
           ? adminFlagConfigDetails(event.details)
           : event.kind === "bus_master_update"
             ? busMasterDetails(event.details)
-            : { title: event.kind, detail: "", badge: "Audit" };
+            : event.kind === "pm_mileage_update"
+              ? pmMileageDetails(event.details)
+              : event.kind === "pm_mileage_import"
+                ? pmImportDetails(event.details)
+                : event.kind === "pm_settings_update"
+                  ? { title: "PM interval settings changed", detail: "", badge: "PM" }
+                  : { title: event.kind, detail: "", badge: "Audit" };
       return {
         id: `audit-${event.id}`,
         at: event.createdAt,

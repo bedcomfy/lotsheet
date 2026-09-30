@@ -8,7 +8,7 @@
 import { asc, desc, eq, gt, inArray, max, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import type { DB } from "./db";
-import { appState, auditEvents, busFlags, lotSheetOps, sheetHistory, TABLE_SUFFIX } from "./db/schema";
+import { appState, auditEvents, busFlags, lotSheetOps, pmMileage, pmMileageLog, sheetHistory, TABLE_SUFFIX } from "./db/schema";
 import {
   applyLotSheetOpsToSheet,
   normalizeOpEnvelopes,
@@ -16,6 +16,14 @@ import {
   type LotSheetOpRecord,
 } from "./lotSheetOps";
 import type { FlagEntry, FlagMap, LotSheet } from "./types";
+import {
+  emptyPmRecord,
+  normalizePmSettings,
+  toMiles as toPmMiles,
+  type PmReading,
+  type PmRecord,
+  type PmSettings,
+} from "./pmMileage";
 import { inspectionOptionFromText, setInspectionOption } from "./grid";
 
 // ---------- flag-entry normalisation (unchanged) ----------
@@ -380,4 +388,169 @@ export async function getPdfCache(sheetPath: string, maint: boolean): Promise<Pd
 
 export async function setPdfCache(sheetPath: string, maint: boolean, signature: string, data: string): Promise<void> {
   await setStateQuiet(pdfKey(sheetPath, maint), { signature, data } satisfies PdfCache);
+}
+
+// ---------- PM mileage ----------
+const PM_SETTINGS_KEY = "pm_settings";
+
+function pmRowToRecord(row: typeof pmMileage.$inferSelect): PmRecord {
+  return {
+    bus: row.bus,
+    odometer: row.odometer ?? null,
+    odometerDate: row.odometerDate || null,
+    lastPmMiles: row.lastPmMiles ?? null,
+    lastPmDate: row.lastPmDate || null,
+    interval: row.interval ?? null,
+    note: row.note || "",
+    source: row.source || "",
+    updatedAt: isoOrNull(row.updatedAt),
+  };
+}
+
+export async function getPmSettings(): Promise<PmSettings> {
+  return normalizePmSettings((await getState(PM_SETTINGS_KEY)).value);
+}
+
+export async function setPmSettings(value: unknown): Promise<PmSettings> {
+  const settings = normalizePmSettings(value);
+  await setState(PM_SETTINGS_KEY, settings);
+  return settings;
+}
+
+export async function getPmMileage(): Promise<Record<string, PmRecord>> {
+  const db = await getDb();
+  const rows = await db.select().from(pmMileage);
+  const out: Record<string, PmRecord> = {};
+  for (const row of rows) out[row.bus] = pmRowToRecord(row);
+  return out;
+}
+
+// Miles may arrive as typed text ("123,456"); dates and notes as text or null.
+export interface PmPatch {
+  odometer?: number | string | null;
+  odometerDate?: string | null;
+  lastPmMiles?: number | string | null;
+  lastPmDate?: string | null;
+  interval?: number | string | null;
+  note?: string;
+  source?: string;
+}
+
+// Merge a patch into one bus's record. A changed odometer is also appended to
+// the reading log so reports can show history.
+export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): Promise<PmRecord> {
+  const db = await getDb();
+  const existing = (await db.select().from(pmMileage).where(eq(pmMileage.bus, bus)))[0];
+  const before = existing ? pmRowToRecord(existing) : emptyPmRecord(bus);
+  const next: PmRecord = {
+    ...before,
+    ...(patch.odometer !== undefined ? { odometer: toPmMiles(patch.odometer) } : {}),
+    ...(patch.odometerDate !== undefined ? { odometerDate: patch.odometerDate ? String(patch.odometerDate).trim() || null : null } : {}),
+    ...(patch.lastPmMiles !== undefined ? { lastPmMiles: toPmMiles(patch.lastPmMiles) } : {}),
+    ...(patch.lastPmDate !== undefined ? { lastPmDate: patch.lastPmDate ? String(patch.lastPmDate).trim() || null : null } : {}),
+    ...(patch.interval !== undefined ? { interval: toPmMiles(patch.interval) || null } : {}),
+    ...(patch.note !== undefined ? { note: String(patch.note ?? "").trim() } : {}),
+    source: patch.source ?? (patch.odometer !== undefined ? "manual" : before.source),
+  };
+  const rows = await db
+    .insert(pmMileage)
+    .values({
+      bus,
+      odometer: next.odometer,
+      odometerDate: next.odometerDate,
+      lastPmMiles: next.lastPmMiles,
+      lastPmDate: next.lastPmDate,
+      interval: next.interval,
+      note: next.note,
+      source: next.source,
+      updatedAt: sql`now()`,
+    })
+    .onConflictDoUpdate({
+      target: pmMileage.bus,
+      set: {
+        odometer: next.odometer,
+        odometerDate: next.odometerDate,
+        lastPmMiles: next.lastPmMiles,
+        lastPmDate: next.lastPmDate,
+        interval: next.interval,
+        note: next.note,
+        source: next.source,
+        updatedAt: sql`now()`,
+      },
+    })
+    .returning();
+  if (next.odometer !== null && next.odometer !== before.odometer) {
+    await db.insert(pmMileageLog).values({
+      bus,
+      odometer: next.odometer,
+      readAt: next.odometerDate,
+      source: next.source || "manual",
+      batch: null,
+      actor: actor || null,
+    });
+  }
+  await bumpPulse(db);
+  return pmRowToRecord(rows[0]);
+}
+
+// Apply a reviewed batch of readings (a PDF import). Only the odometer and its
+// date change; last-PM marks and intervals stay as they are.
+export async function applyPmReadings(
+  readings: PmReading[],
+  source: string,
+  actor = "",
+): Promise<{ batch: string; applied: string[] }> {
+  const db = await getDb();
+  const batch = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const applied: string[] = [];
+  for (const reading of readings) {
+    const odometer = toPmMiles(reading.odometer);
+    if (!reading.bus || odometer === null) continue;
+    await db
+      .insert(pmMileage)
+      .values({ bus: reading.bus, odometer, odometerDate: reading.readAt || null, source, updatedAt: sql`now()` })
+      .onConflictDoUpdate({
+        target: pmMileage.bus,
+        set: { odometer, odometerDate: reading.readAt || null, source, updatedAt: sql`now()` },
+      });
+    await db.insert(pmMileageLog).values({
+      bus: reading.bus,
+      odometer,
+      readAt: reading.readAt || null,
+      source,
+      batch,
+      actor: actor || null,
+    });
+    applied.push(reading.bus);
+  }
+  if (applied.length) await bumpPulse(db);
+  return { batch, applied };
+}
+
+export interface PmLogEntry {
+  id: string;
+  bus: string;
+  odometer: number;
+  readAt: string | null;
+  source: string;
+  batch: string | null;
+  actor?: string;
+  createdAt: string | null;
+}
+
+export async function listPmMileageLog(bus?: string, limit = 200): Promise<PmLogEntry[]> {
+  const n = Math.max(1, Math.min(2000, Math.floor(limit)));
+  const db = await getDb();
+  const base = db.select().from(pmMileageLog);
+  const rows = await (bus ? base.where(eq(pmMileageLog.bus, bus)) : base).orderBy(desc(pmMileageLog.id)).limit(n);
+  return rows.map((row) => ({
+    id: String(row.id),
+    bus: row.bus,
+    odometer: row.odometer,
+    readAt: row.readAt || null,
+    source: row.source || "",
+    batch: row.batch || null,
+    actor: row.actor || undefined,
+    createdAt: isoOrNull(row.createdAt),
+  }));
 }

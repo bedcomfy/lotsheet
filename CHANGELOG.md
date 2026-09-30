@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.35.0 - 2026-09-30
+
+- New **PM Mileage** page (Operations → PM Mileage, also on Home): every active
+  bus with its latest odometer reading, the mileage at its last PM inspection,
+  the PM interval, the next-due mileage, and miles left. Overdue and due-soon
+  buses sort to the top; the status tiles filter the list. Type in a cell to
+  update it; every odometer change is kept in a reading history for reports.
+- **Import PDF**: upload a mileage report and the readings it contains are
+  read by AI, matched to the fleet list, and shown for review (unknown or
+  retired buses are skipped, a reading lower than the one on file is flagged).
+  Nothing changes until you press Apply. Needs Admin Tools and the
+  `ANTHROPIC_API_KEY` environment variable on the server.
+- The fleet-wide PM interval (default 6,000 miles) and the "due soon" window
+  (500 miles) are editable from the page under Admin Tools; a bus can carry its
+  own interval.
+- Printable PM mileage reports will build on this list; the layouts come next.
+
 ## 0.34.0 - 2026-09-30
 
 - Work Order: the Pace logo in the form header is smaller (about 120px wide
