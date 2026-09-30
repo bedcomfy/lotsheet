@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { Eraser, FileDown, Plus, Trash2, UserPlus, Save, FolderOpen, MoreHorizontal } from "lucide-react";
+import { Eraser, FileDown, FileText, Plus, Trash2, UserPlus, Save, FolderOpen, MoreHorizontal } from "lucide-react";
 import WorkOrderHistory from "./WorkOrderHistory";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
-import { ActionMenu, Button, Chip, ConfirmDialog, IconButton, Toolbar, ToolbarGroup } from "../ui";
+import { ActionMenu, Button, Chip, ConfirmDialog, IconButton, SplitButton, Toolbar, ToolbarGroup } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -14,6 +14,9 @@ import workOrderChromeStyles from "./WorkOrderChrome.module.css";
 
 const STORAGE_KEY = "workorder";
 const PRINT_PART_ROWS = 5;
+// A blank form prints this many empty operation lines (a live print keeps its
+// real rows).
+const BLANK_OP_ROWS = 5;
 
 // ---- data model ----
 // One Work Order shared header, a list of employees (one printed sheet each), a
@@ -101,6 +104,8 @@ export default function WorkOrderSheet() {
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  // ?blank=1 prints an empty form: no saved data, no auto-filled date.
+  const [blankMode, setBlankMode] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [pendingArchived, setPendingArchived] = useState<WorkOrder | null>(null);
@@ -110,11 +115,18 @@ export default function WorkOrderSheet() {
 
   useEffect(() => {
     setPrintMode(param("print") === "1");
+    setBlankMode(param("blank") === "1");
   }, []);
 
-  // Load the saved work order.
+  // Load the saved work order (a blank print starts from the empty form).
   useEffect(() => {
     let alive = true;
+    if (param("blank") === "1") {
+      setLoaded(true);
+      return () => {
+        alive = false;
+      };
+    }
     fetch(`/api/state/${STORAGE_KEY}`)
       .then((r) => r.json())
       .then((d) => {
@@ -127,14 +139,14 @@ export default function WorkOrderSheet() {
     };
   }, []);
 
-  // Auto-fill Today's Date once, when empty.
+  // Auto-fill Today's Date once, when empty (never on a blank form).
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || blankMode) return;
     setData((d) => {
       if (d.todaysDate) return d;
       return { ...d, todaysDate: chicagoDateShort() };
     });
-  }, [loaded, data.todaysDate]);
+  }, [loaded, blankMode, data.todaysDate]);
 
   function schedulePrewarm() {
     if (printMode) return;
@@ -264,6 +276,9 @@ export default function WorkOrderSheet() {
     setPendingArchived({ ...emptyWorkOrder(), ...(sheet as WorkOrder) });
     setHistOpen(false);
   }
+  function printBlank() {
+    openSheetPdf({ path: `/${STORAGE_KEY}`, maint: false, params: { blank: 1 } });
+  }
   function printPdf() {
     openSheetPdf({
       path: `/${STORAGE_KEY}`,
@@ -278,7 +293,11 @@ export default function WorkOrderSheet() {
 
   // ---- one employee's 1:1 sheet ----
   function EmployeeSheet({ emp, index }: { emp: WOEmployee; index: number }) {
-    const ops = data.operations.filter((o) => o.assignedTo.includes(emp.id));
+    const assignedOps = data.operations.filter((o) => o.assignedTo.includes(emp.id));
+    const ops = blankMode
+      ? Array.from({ length: Math.max(BLANK_OP_ROWS, assignedOps.length) }, (_, i) =>
+          assignedOps[i] || { id: `blank-op-${i}`, num: "", objectCode: "", description: "", date: "", hours: "", activity: "", assignedTo: [emp.id] })
+      : assignedOps;
     const parts = data.parts[emp.id] || [];
     const partRows = printMode
       ? Array.from({ length: Math.max(PRINT_PART_ROWS, parts.length) }, (_, i) => parts[i] || blankPart(`print-${i}`))
@@ -330,13 +349,21 @@ export default function WorkOrderSheet() {
             <tr>
               <td><input className="wo-in" value={data.workOrderNumber} onChange={(e) => setField("workOrderNumber", e.target.value)} /></td>
               <td><input className="wo-in" value={data.vehicleNumber} onChange={(e) => setField("vehicleNumber", e.target.value)} /></td>
-              <td><DatePickerField className="wo-in" value={data.todaysDate} onValueChange={(value) => setField("todaysDate", value)} shortYear ariaLabel="Today's date" /></td>
+              <td>
+                {blankMode ? (
+                  <input className="wo-in" value="" readOnly aria-label="Today's date" />
+                ) : (
+                  <DatePickerField className="wo-in" value={data.todaysDate} onValueChange={(value) => setField("todaysDate", value)} shortYear ariaLabel="Today's date" />
+                )}
+              </td>
             </tr>
             {HEADER_ROWS.map(([field, label]) => (
               <tr key={field}>
                 <td className="wo-lbl">{label}</td>
                 <td colSpan={2}>
-                  {field === "workOrderCreationDate" ? (
+                  {field === "workOrderCreationDate" && blankMode ? (
+                    <input className="wo-in" value="" readOnly aria-label="Work order creation date" />
+                  ) : field === "workOrderCreationDate" ? (
                     <DatePickerField className="wo-in" value={String(data[field] || "")} onValueChange={(value) => setField(field, value)} ariaLabel="Work order creation date" />
                   ) : (
                     <input className="wo-in" value={String(data[field] || "")} onChange={(e) => setField(field, e.target.value)} />
@@ -373,7 +400,13 @@ export default function WorkOrderSheet() {
                 <td><input className="wo-in" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
                 <td><input className="wo-in" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
-                <td><DatePickerField className="wo-in wo-in--c" value={o.date} onValueChange={(value) => setOperation(o.id, { date: value })} ariaLabel={`Operation ${o.num || "date"}`} /></td>
+                <td>
+                  {blankMode ? (
+                    <input className="wo-in wo-in--c" value="" readOnly aria-label="Operation date" />
+                  ) : (
+                    <DatePickerField className="wo-in wo-in--c" value={o.date} onValueChange={(value) => setOperation(o.id, { date: value })} ariaLabel={`Operation ${o.num || "date"}`} />
+                  )}
+                </td>
                 <td><input className="wo-in wo-in--c" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} placeholder="____.__" /></td>
                 <td><input className="wo-in wo-in--c" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} placeholder="__________" /></td>
                 {!printMode && (
@@ -530,9 +563,17 @@ export default function WorkOrderSheet() {
               if (key === "clear") setClearOpen(true);
             }}
           />
-          <Button variant="primary" onPress={printPdf}>
+          <SplitButton
+            variant="primary"
+            onPress={printPdf}
+            menuLabel="Print options"
+            items={[{ id: "blank", label: "Print blank form", icon: <FileText size={16} /> }]}
+            onAction={(key) => {
+              if (key === "blank") printBlank();
+            }}
+          >
             <FileDown aria-hidden="true" /> Print PDF
-          </Button>
+          </SplitButton>
         </ToolbarGroup>
       </Toolbar>
 
