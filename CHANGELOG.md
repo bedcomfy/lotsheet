@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.0 - 2026-09-30
+
+- Work Order: the Pace logo in the form header is smaller (about 120px wide
+  instead of 210px), so the header takes less of the page.
+- Work Order: "Print blank form" under the Print PDF menu prints an empty work
+  order (no saved values, no auto-filled date) with five empty operation lines
+  and five empty part lines per sheet.
+
 ## 0.33.4 - 2026-09-09
 
 - Set up lane is back to how it worked before 0.27.0: the Review step lists

@@ -13,20 +13,20 @@
 }
 
 .wo-brand {
-  margin: 4px 0 40px 40px;
+  margin: 4px 0 28px 40px;
 }
 
 .wo-logo {
   display: block;
-  width: 210px;
+  width: 120px;
   height: auto;
   object-fit: contain;
   filter: grayscale(1) brightness(0);
 }
 
 .wo-brand-rule {
-  width: 216px;
-  margin: 8px 0 10px;
+  width: 126px;
+  margin: 6px 0 8px;
   border-top: 3px solid #111;
 }
 
