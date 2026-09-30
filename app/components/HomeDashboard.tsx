@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   Users,
   Wrench,
+  Gauge,
 } from "lucide-react";
 import { fleetBusLocations, fleetStats } from "../lib/fleetStats";
 import { flagsFullDisplay } from "../lib/grid";
@@ -194,6 +195,7 @@ export default function HomeDashboard() {
     { label: "Shop", path: "/shop", icon: Wrench },
     { label: "Other Sheets", path: "/other", icon: Files },
     { label: "Fleet", path: "/buses", icon: BusFront },
+    { label: "PM Mileage", path: "/pm-mileage", icon: Gauge },
     { label: "Admin Tools", path: "/admin/flags", icon: ShieldAlert },
   ];
 

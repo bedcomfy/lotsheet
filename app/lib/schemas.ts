@@ -40,6 +40,44 @@ export const employeesPayloadSchema = z.object({
 });
 export type EmployeeInput = z.infer<typeof employeeInputSchema>;
 
+// ---------- PM mileage ----------
+// PUT /api/pm-mileage — patch one bus. Miles arrive as numbers or typed text.
+const milesField = z.union([z.number(), z.string(), z.null()]).optional();
+export const pmMileagePatchSchema = z.object({
+  bus: z.string().trim().min(1),
+  odometer: milesField,
+  odometerDate: z.union([z.string(), z.null()]).optional(),
+  lastPmMiles: milesField,
+  lastPmDate: z.union([z.string(), z.null()]).optional(),
+  interval: milesField,
+  note: z.string().optional(),
+  actor: z.string().catch("").default(""),
+});
+export type PmMileagePatch = z.infer<typeof pmMileagePatchSchema>;
+
+// POST /api/pm-mileage/readings — a reviewed batch of odometer readings.
+export const pmReadingsPayloadSchema = z.object({
+  readings: z
+    .array(
+      z.object({
+        bus: z.string().trim().min(1),
+        odometer: z.number().int().nonnegative(),
+        readAt: z.union([z.string(), z.null()]).optional(),
+      }),
+    )
+    .min(1)
+    .max(2000),
+  source: z.string().catch("pdf").default("pdf"),
+  actor: z.string().catch("").default(""),
+});
+
+// PUT /api/pm-mileage/settings
+export const pmSettingsPayloadSchema = z.object({
+  defaultInterval: z.union([z.number(), z.string()]),
+  dueSoonMiles: z.union([z.number(), z.string()]).optional(),
+  actor: z.string().catch("").default(""),
+});
+
 // ---------- keyed state ----------
 // PUT /api/state/[key] — arbitrary per-sheet JSON; validate only the envelope.
 export const statePayloadSchema = z.object({

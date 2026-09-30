@@ -58,4 +58,31 @@ export const auditEvents = pgTable(`audit_events${TABLE_SUFFIX}`, {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-export const schema = { busFlags, appState, sheetHistory, lotSheetOps, auditEvents };
+// Preventive-maintenance mileage: latest odometer and last-PM mark per bus.
+// `interval` is a per-bus override (miles); null means the default in settings.
+export const pmMileage = pgTable(`pm_mileage${TABLE_SUFFIX}`, {
+  bus: text("bus").primaryKey(),
+  odometer: integer("odometer"),
+  odometerDate: text("odometer_date"),
+  lastPmMiles: integer("last_pm_miles"),
+  lastPmDate: text("last_pm_date"),
+  interval: integer("interval"),
+  note: text("note"),
+  source: text("source"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Every odometer reading that was recorded, so mileage reports can show the
+// history and a bad PDF import can be traced. `batch` groups one import.
+export const pmMileageLog = pgTable(`pm_mileage_log${TABLE_SUFFIX}`, {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  bus: text("bus").notNull(),
+  odometer: integer("odometer").notNull(),
+  readAt: text("read_at"),
+  source: text("source"),
+  batch: text("batch"),
+  actor: text("actor"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const schema = { busFlags, appState, sheetHistory, lotSheetOps, auditEvents, pmMileage, pmMileageLog };

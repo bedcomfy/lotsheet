@@ -6,6 +6,7 @@ import {
   FileText,
   Files,
   Fuel,
+  Gauge,
   Home,
   RefreshCw,
   SearchCode,
@@ -84,6 +85,12 @@ export const SHOP_ROUTES: AppRoute[] = [
     icon: BusFront,
     description: "Find buses, locations, flags, and service status",
   },
+  {
+    path: "/pm-mileage",
+    label: "PM Mileage",
+    icon: Gauge,
+    description: "Odometer readings and miles to the next inspection",
+  },
 ];
 
 export const FORM_ROUTES: AppRoute[] = [
@@ -154,7 +161,7 @@ export const MOBILE_SHEET_ROUTES: AppRoute[] = [
 
 // Everything the phone tab bar doesn't already cover (Home, Lot, Fleet, Sheets).
 export const MOBILE_MORE_ROUTES: AppRoute[] = [
-  ...SHOP_ROUTES.filter((route) => route.path === "/shop"),
+  ...SHOP_ROUTES.filter((route) => route.path !== "/buses"),
   STAFFING_ROUTE,
   ...UTILITY_ROUTES,
   ADMIN_ROUTE,
