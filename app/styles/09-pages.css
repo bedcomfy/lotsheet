@@ -5,7 +5,7 @@
   max-width: 816px;
   min-height: 1056px;
   margin: 14px auto;
-  padding: 46px 52px 70px;
+  padding: 29px 34px 44px;
   color: var(--ink);
   background: var(--paper);
   box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
@@ -13,7 +13,7 @@
 }
 
 .wo-brand {
-  margin: 4px 0 28px 40px;
+  margin: 4px 0 18px 40px;
 }
 
 .wo-logo {
@@ -41,13 +41,13 @@
 
 .wo-head {
   width: 100%;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
 .wo-head td {
-  height: 27px;
+  height: 26px;
   padding: 2px 8px;
   border: 1px solid #111;
   vertical-align: middle;
@@ -108,15 +108,15 @@
 }
 
 .wo-oprow td {
-  height: 66px;
+  height: 52px;
 }
 
 .wo-parts th {
-  height: 42px;
+  height: 34px;
 }
 
 .wo-parts td {
-  height: 55px;
+  height: 46px;
 }
 
 .wo-ops td.wo-opact,
@@ -149,7 +149,7 @@
 }
 
 .wo-completion {
-  margin: 24px 0 48px 40px;
+  margin: 14px 0 26px 40px;
   font-size: 16px;
 }
 
@@ -161,13 +161,18 @@
 }
 
 @media print {
+  /* @page margins (0.3in top/bottom, 0.35in sides — see WorkOrderSheet) leave
+     10.4in of printable height; each sheet is exactly one page. Nothing may
+     grow past that or the footer lands on a second page. */
   .wo-sheet {
     display: flow-root;
     width: 100%;
     max-width: none;
-    min-height: 10.08in;
+    height: 10.4in;
+    min-height: 0;
     margin: 0;
     padding: 0;
+    overflow: hidden;
     box-shadow: none;
     page-break-after: always;
   }

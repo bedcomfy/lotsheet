@@ -539,7 +539,7 @@ export default function WorkOrderSheet() {
 
   return (
     <div className={chromeStyles.page}>
-      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.5in 0.55in 0.42in; }" }} />
+      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.3in 0.35in 0.3in; }" }} />
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
         <ToolbarGroup className={chromeStyles.actions}>

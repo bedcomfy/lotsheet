@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.35.1 - 2026-09-30
+
+- Work Order printing: margins are now 0.3in top/bottom and 0.35in on the
+  sides (was about half an inch), the on-screen sheet uses the same margins so
+  the preview matches the paper, and every sheet is locked to exactly one
+  page. The blank form no longer spills its parts table and page footer onto a
+  second page: operation lines are 52px, part lines 46px, and the header and
+  "Completion information" gaps are tighter, so five operation and five part
+  lines fit on one letter page.
+
 ## 0.35.0 - 2026-09-30
 
 - New **PM Mileage** page (Operations → PM Mileage, also on Home): every active
