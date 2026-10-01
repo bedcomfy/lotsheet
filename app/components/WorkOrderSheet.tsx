@@ -12,52 +12,10 @@ import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
 import workOrderChromeStyles from "./WorkOrderChrome.module.css";
+import { WorkOrderPaper } from "../sheets/workorder/WorkOrderPaper";
+import type { WorkOrder, WOEmployee, WOOperation, WOPart } from "../sheets/workorder/types";
 
 const STORAGE_KEY = "workorder";
-const PRINT_PART_ROWS = 5;
-
-// ---- data model ----
-// One Work Order shared header, a list of employees (one printed sheet each), a
-// list of operations each assigned to one or more employees (a shared operation
-// prints on every assigned employee's sheet), and parts kept per employee.
-interface WOEmployee {
-  id: string;
-  badge: string;
-  name: string;
-}
-interface WOOperation {
-  id: string;
-  num: string;
-  objectCode: string;
-  description: string;
-  date: string;
-  hours: string;
-  activity: string;
-  assignedTo: string[]; // employee ids
-}
-interface WOPart {
-  id: string;
-  partNo: string;
-  description: string;
-  qty: string;
-  serial: string;
-  locator: string;
-  operationNum: string;
-  issuedBy: string;
-}
-interface WorkOrder {
-  workOrderNumber: string;
-  vehicleNumber: string;
-  todaysDate: string;
-  workOrderDescription: string;
-  vehicleDescription: string;
-  vehicleOdometer: string;
-  workOrderCreationDate: string;
-  createdBy: string;
-  employees: WOEmployee[];
-  operations: WOOperation[];
-  parts: Record<string, WOPart[]>; // employeeId -> its parts
-}
 
 // Random ids for user-added rows (deterministic seed ids below keep SSR stable).
 function uid(prefix: string): string {
@@ -322,17 +280,13 @@ export default function WorkOrderSheet() {
     });
   }
 
-  // ---- one employee's 1:1 sheet ----
+  // ---- one employee's editable sheet ----
   // Render keyed elements directly. A component defined inside WorkOrderSheet
   // gets a new identity on every edit and remounts the inputs, dropping focus.
   function renderEmployeeSheet(emp: WOEmployee, index: number) {
     const ops = data.operations.filter((o) => o.assignedTo.includes(emp.id));
     const parts = data.parts[emp.id] || [];
-    // A live print pads the parts list to five lines; a blank form keeps exactly
-    // the lines the preview has.
-    const partRows = printMode && !blankMode
-      ? Array.from({ length: Math.max(PRINT_PART_ROWS, parts.length) }, (_, i) => parts[i] || blankPart(`print-${i}`))
-      : parts;
+    const partRows = parts;
     const others = data.employees.filter((e) => e.id !== emp.id);
     return (
       <div
@@ -563,7 +517,7 @@ export default function WorkOrderSheet() {
           </tbody>
         </table>
 
-        <div className="wo-pagefoot">Page {index + 1} of {data.employees.length}</div>
+        <div className="wo-pagefoot">Employee sheet {index + 1} of {data.employees.length}</div>
         <SheetRevision sheetId="workorder" />
       </div>
     );
@@ -571,13 +525,13 @@ export default function WorkOrderSheet() {
 
   return (
     <div className={chromeStyles.page}>
-      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.3in 0.5in 0.3in; }" }} />
 
       <WorkOrderToolbar savedFlash={savedFlash} onOpenSaved={() => setHistOpen(true)}
         onSave={saveToArchive} onClear={() => setClearOpen(true)} onPrintBlank={printBlank} onPrintPdf={printPdf} />
 
       <PaperViewport profile={LETTER_PORTRAIT} fitOnMobile label="Work Order paper preview">
-        {data.employees.map(renderEmployeeSheet)}
+        <div className="no-print">{!printMode && data.employees.map(renderEmployeeSheet)}</div>
+        <WorkOrderPaper data={data} blank={blankMode} preview={printMode} />
 
         {!printMode && (
           <div className={`${workOrderChromeStyles.addEmployee} no-print`}>

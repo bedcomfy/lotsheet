@@ -1,4 +1,4 @@
-/* Work Order paper: shared by the live editor and the printable form. */
+/* Work Order editor. Printed content lives in WorkOrderPaper.module.css. */
 .wo-sheet {
   position: relative;
   width: 100%;
@@ -170,40 +170,6 @@
 }
 
 .wo-pagefoot {
-  position: absolute;
-  bottom: 34px;
-  left: 52px;
+  margin: 18px 4px 0;
   font-size: 15px;
-}
-
-@media print {
-  /* @page margins (0.3in top/bottom, 0.5in sides — see WorkOrderSheet) leave
-     10.4in of printable height; each sheet is exactly one page. Nothing may
-     grow past that or the footer lands on a second page. */
-  .wo-sheet {
-    display: flow-root;
-    width: 100%;
-    max-width: none;
-    height: 10.4in;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: none;
-    page-break-after: always;
-  }
-
-  .wo-brand {
-    margin-top: 0.08in;
-    margin-left: 0.38in;
-  }
-
-  .wo-pagefoot {
-    bottom: 0.12in;
-    left: 0.38in;
-  }
-
-  .wo-sheet:last-child {
-    page-break-after: auto;
-  }
 }

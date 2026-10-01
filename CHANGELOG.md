@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.45.8 - 2026-10-01
+
+- Prevent Work Order PDFs from cutting off operations or parts: wrap field values, fit the seven-operation form on Letter paper, and continue longer orders onto additional pages.
+- Reserve footer space with accurate page counts and repeat work order / employee identification on continuation tables.
+- Use regular body text and thin print borders. Keep native printing and Print PDF on the same paper layout, while preserving editing focus and blank-form behavior.
+
 ## 0.45.7 - 2026-10-01
 
 - Shorten the PM Bus status label to Hold; continue showing it only for Holds with the Inspection reason.

@@ -1,0 +1,62 @@
+/* Paper has its own typography and physical dimensions, independent of chrome.
+   No fixed height or clipped overflow: the browser paginates all content. */
+.document {
+  display: none;
+  color: #000;
+  background: #fff;
+  color-scheme: light;
+  font: 400 10pt/1.2 Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.document[data-preview="true"] { display: block; }
+.employee { width: 8.5in; min-height: 11in; margin: 0 auto 14px; padding: 0.35in 0.5in 0.5in; }
+.brand { margin: 0 0 0.12in 0.35in; break-inside: avoid; break-after: avoid; }
+.brand img { display: block; width: 1.15in; height: auto; filter: grayscale(1) brightness(0); }
+.brandRule { width: 1.2in; border-top: 2pt solid #000; margin: 5px 0 7px; }
+.brand h1 { margin: 0; font: 700 18pt/1.1 Arial, Helvetica, sans-serif; }
+.table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.table th, .table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; vertical-align: top; white-space: pre-wrap; }
+.table th { font-weight: 400; }
+.header { margin-bottom: 0.08in; }
+.header th { font-weight: 700; }
+.header td, .header th { min-height: 24px; padding: 3px 6px; }
+.header td { height: 24px; }
+.operations tbody td { height: 0.44in; }
+.table .lineCell { vertical-align: bottom; padding-bottom: 6px; }
+.lineCell > div { min-height: 16px; border-bottom: 0.5pt solid #000; text-align: center; }
+.table .identityCell { border: none; padding: 3px 0 5px; }
+.identity { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 8pt; }
+.identity span { min-width: 0; max-width: 100%; }
+.badge { display: flex; border: 0.5pt solid #000; border-top: 0; break-inside: avoid; }
+.badge > div { width: 50%; padding: 6px; white-space: pre-wrap; }
+.badge > div + div { border-left: 0.5pt solid #000; }
+.badge strong { margin-right: 8px; font-weight: 700; }
+.table .completion { padding: 12px 0 5px 0.35in; border: none; font-size: 11pt; }
+.parts tbody td { height: 0.35in; }
+
+@media print {
+  /* Margin boxes reserve footer space on EVERY physical page, including
+     continuation pages. Page counts come from pagination, not employee count. */
+  @page workorder {
+    size: letter portrait;
+    margin: 0.35in 0.5in 0.5in;
+    @bottom-left {
+      content: "Page " counter(page) " of " counter(pages);
+      font: 400 9pt Arial, Helvetica, sans-serif;
+      color: #000;
+    }
+    @bottom-right {
+      content: "Revised 7/7/26";
+      font: 400 7pt Arial, Helvetica, sans-serif;
+      color: #000;
+    }
+  }
+  .document { display: block; page: workorder; }
+  .employee { width: 100%; min-height: 0; margin: 0; padding: 0; }
+  .employee + .employee { break-before: page; }
+  .table { break-inside: auto; }
+  .table thead { display: table-header-group; break-inside: avoid; }
+  .table tr { break-inside: avoid; }
+}
