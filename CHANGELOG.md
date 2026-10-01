@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.2 - 2026-10-01
+
+- The typing test in front of the site behaves like a real one: the box
+  turns red the moment the typed text leaves the passage and wrong letters
+  are highlighted, a progress bar fills, Short / Medium / Long texts come
+  from a much larger pool and never repeat a recently shown text across
+  reloads, Tab gives a new text, and recent results stay in the browser.
+
 ## 0.46.1 - 2026-10-01
 
 - Added Log out under the sidebar and in the phone Pages menu. It ends the
