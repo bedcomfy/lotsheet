@@ -4,6 +4,7 @@ import { DEFAULT_PM_SETTINGS, emptyPmRecord, pmWorkItems } from "../lib/pmMileag
 
 const records = (["shop", "follow-up", "hold", "split", ""] as const).map((disposition, i) => ({
   ...emptyPmRecord(String(6400 + i)), odometer: 100_000, odometerDate: "9/30/26", disposition,
+  lastServiceAt: i === 4 ? null : "2026-09-30T01:20:46", lastServiceMiles: i === 4 ? null : 100000,
   nextInspType: "A-3" as const, nextInspMiles: 99_950 + i * 25, nextTransMiles: 100_250 + i * 25,
   note: i === 0 ? "Waiting for parts" : "",
 }));

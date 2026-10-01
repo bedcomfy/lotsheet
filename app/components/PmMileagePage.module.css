@@ -141,7 +141,7 @@
 /* Wide enough that every column stays readable; the panel scrolls sideways
    on mid-size screens instead of squeezing the inputs. */
 .table .row {
-  min-width: 61rem;
+  min-width: 64rem;
 }
 
 .groupHeading {
@@ -168,7 +168,7 @@
   grid-template-columns:
     minmax(8rem, 1fr)
     minmax(6rem, 0.8fr)
-    minmax(5.25rem, 0.7fr)
+    minmax(8rem, 0.9fr)
     minmax(6rem, 0.8fr)
     minmax(5.5rem, 0.7fr)
     minmax(7rem, auto)
@@ -228,6 +228,20 @@
 
 .cell {
   min-width: 0;
+}
+
+.serviceTime, .serviceTime time {
+  display: grid;
+  gap: var(--ui-space-1);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--ui-font-size-sm);
+}
+
+.readingDate {
+  display: block;
+  padding: 0 var(--ui-space-2);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
 }
 
 .cell input {

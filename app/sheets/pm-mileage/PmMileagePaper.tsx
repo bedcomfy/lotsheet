@@ -3,6 +3,7 @@ import {
   type PmFilter, type PmSettings, type PmWorkItem,
 } from "../../lib/pmMileage";
 import type { FlagMap } from "../../lib/types";
+import { serviceTimeParts } from "../../lib/vehicleServiceReport";
 import styles from "./PmMileagePaper.module.css";
 
 export interface PmMileagePaperProps {
@@ -27,6 +28,7 @@ export function PmMileagePaper({ items, labels, flags, settings, date, filter, q
         <p>{date} · {items.length} PMs · {busCount} {busCount === 1 ? "bus" : "buses"}</p>
         <p>Due soon: 0 to {formatMiles(settings.dueSoonMiles)} miles. Negative miles are overdue.</p>
         <p>Shop / Follow up first. Hold and Split remain in mileage order. Each PM is listed separately.</p>
+        <p>Last serviced / last odometer reading time: Fleetwatch fueling transaction, in Chicago time.</p>
         {(filter !== "all" || query.trim()) && <p className={styles.scope}>Showing: {filter === "all" ? "All PMs" : PM_STATUS_LABEL[filter]}{query.trim() ? ` · Search: ${query.trim()}` : ""}</p>}
       </header>
       {groups.length === 0 && <p>No PMs match this view.</p>}
@@ -39,11 +41,12 @@ export function PmMileagePaper({ items, labels, flags, settings, date, filter, q
           </colgroup>
           <thead>
             <tr><th className={styles.section} colSpan={6}>PM Mileage · {group.title} <span>{group.items.length} PMs</span></th></tr>
-            <tr><th scope="col">Bus</th><th scope="col">Odometer / As of</th><th scope="col">Next PM / Due at</th><th scope="col">Miles left</th><th scope="col">Status / Flags</th><th scope="col">Note</th></tr>
+            <tr><th scope="col">Bus</th><th scope="col">Odometer<br />Last serviced / last odometer reading time</th><th scope="col">Next PM / Due at</th><th scope="col">Miles left</th><th scope="col">Status / Flags</th><th scope="col">Note</th></tr>
           </thead>
           <tbody>
             {group.items.map((item) => {
               const r = item.record;
+              const serviceTime = serviceTimeParts(r.lastServiceAt);
               const busFlags = (flags[r.bus]?.flags || []).filter((flag) => flag === "hold" || flag === "split");
               const statuses = [...new Set([
                 ...(r.disposition ? [PM_DISPOSITION_LABEL[r.disposition].toUpperCase()] : []),
@@ -52,7 +55,11 @@ export function PmMileagePaper({ items, labels, flags, settings, date, filter, q
               return (
                 <tr key={item.id} data-pm-id={item.id}>
                   <td><strong>{r.bus}</strong>{labels[r.bus] && labels[r.bus] !== r.bus && <span>{labels[r.bus]}</span>}</td>
-                  <td>{r.odometer === null ? "Not recorded" : formatMiles(r.odometer)}<span>{r.odometerDate || "Date not recorded"}</span></td>
+                  <td>{r.odometer === null ? "Not recorded" : formatMiles(r.odometer)}
+                    {serviceTime ? <><span>{serviceTime.date}</span><span>{serviceTime.time}</span>
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatMiles(r.lastServiceMiles)} mi</span>}</>
+                      : <><span>Service not recorded</span>{r.odometerDate && <span>Reading: {r.odometerDate}</span>}</>}
+                  </td>
                   <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatMiles(item.dueMiles)}`}</span></td>
                   <td><strong>{item.milesLeft === null ? "Unknown" : `${item.milesLeft > 0 ? "+" : ""}${formatMiles(item.milesLeft)}`}</strong><span className={styles.urgency}>{PM_STATUS_LABEL[item.status]}</span></td>
                   <td className={styles.status}>{statuses.length ? statuses.join(" / ") : "-"}</td>

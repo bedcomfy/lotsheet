@@ -65,6 +65,8 @@ export const pmMileage = pgTable(`pm_mileage${TABLE_SUFFIX}`, {
   bus: text("bus").primaryKey(),
   odometer: integer("odometer"),
   odometerDate: text("odometer_date"),
+  lastServiceAt: text("last_service_at"),
+  lastServiceMiles: integer("last_service_miles"),
   lastInspType: text("last_insp_type"),
   lastInspMiles: integer("last_pm_miles"),
   lastInspDate: text("last_pm_date"),

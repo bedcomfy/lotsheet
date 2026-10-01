@@ -69,6 +69,8 @@ export interface PmRecord {
   bus: string;
   odometer: number | null; // current mileage
   odometerDate: string | null; // when that reading was taken (free text / ISO date)
+  lastServiceAt: string | null; // Fleetwatch fueling/service time in Chicago, YYYY-MM-DDTHH:mm:ss
+  lastServiceMiles: number | null; // transaction odometer paired with that time
   lastInspType: InspectionType | null; // the inspection most recently completed
   lastInspMiles: number | null; // odometer when it was done
   lastInspDate: string | null;
@@ -96,6 +98,8 @@ export function emptyPmRecord(bus: string): PmRecord {
     bus,
     odometer: null,
     odometerDate: null,
+    lastServiceAt: null,
+    lastServiceMiles: null,
     lastInspType: null,
     lastInspMiles: null,
     lastInspDate: null,

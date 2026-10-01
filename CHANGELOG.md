@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.44.0 - 2026-09-30
+
+- The automatic and manual Fleetwatch update now also reads the Vehicle Service
+  Status Report. PM Mileage and its printed sheet show "Last serviced / last
+  odometer reading time" with the exact date, time, and seconds in Chicago time.
+- Repeated service rows use the latest transaction; buses not serviced in the
+  current window retain their older last-service date. The timestamp is accepted
+  only when its transaction odometer agrees with the mileage report and saved
+  reading. Older timestamps cannot overwrite newer ones, and unchanged mileage
+  can receive a service time without adding duplicate mileage history.
+- Service times stay separate from PM completion dates and notes. If the service
+  report is unavailable, mileage still refreshes and a visible message explains
+  that the previous service times were kept.
+
 ## 0.43.0 - 2026-09-30
 
 - PM Mileage now downloads Fleetwatch's division 0043 odometer PDF for the

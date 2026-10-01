@@ -19,11 +19,25 @@ URLs, or date range. A database lease prevents simultaneous jobs across instance
 requests have a one-minute cooldown and interrupted jobs expire after three
 minutes. Report download timeout is 45 seconds; function timeout is 120 seconds.
 
+The update also downloads the **Vehicle Service Status Report** for the same
+window. The newest transaction for each bus supplies **Last serviced / last
+odometer reading time**, including seconds and older dates from the Vehicles Not
+Serviced section. Times remain in the Chicago wall-clock form supplied by
+Fleetwatch, which provides no UTC offset. They are separate from inspection and
+transmission completion dates, and appear on both the page and printed sheet.
+
+The service transaction odometer must match both the mileage report and the
+saved mileage before its timestamp is accepted. A mismatch keeps the existing
+timestamp for review/retry, and an older report never moves the timestamp back.
+A newer service time can be saved even when the odometer hasn't changed, without
+creating a duplicate odometer history entry. If only the service report fails,
+mileage still updates and the page explains that previous service times were kept.
+
 Only active fleet buses with valid positive mileage can change. Equal readings
 produce no writes or duplicate history. Lower readings, increases over 50,000
 miles, and buses edited during the download are skipped and listed on the page
 for review. Import PDF remains available to admins for reviewing exceptions.
-Mileage updates and history commit together; inspection schedules, completions,
+Mileage, service timestamps, and mileage history commit together; inspection schedules, completions,
 statuses, PM notes, and flag notes are untouched. Starred report rows indicate an
 older last-service reading, so their unknown reading date remains blank rather
 than being represented as today's service.

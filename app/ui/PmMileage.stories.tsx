@@ -23,6 +23,8 @@ const meta = {
     await expect(within(screen.getByRole("row", { name: "Bus 6404 A-3" })).queryByText(standardNote)).not.toBeInTheDocument();
     await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getAllByRole("row", { hidden: true })).toHaveLength(7);
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).toHaveTextContent("6435");
+    await expect(screen.getByRole("columnheader", { name: "Last serviced / last odometer reading time", hidden: true })).toBeInTheDocument();
+    await expect(within(screen.getByRole("row", { name: "Bus 6404 A-3" })).getByText("1:20:46 AM")).toBeVisible();
     await waitFor(() => expect(screen.getByRole("button", { name: "Print PDF" })).toBeEnabled());
   },
   beforeEach: ({ args }) => {
@@ -31,6 +33,7 @@ const meta = {
     let sync: MileageSyncStatus = {};
     const records: Record<string, PmRecord> = {
       "6404": { ...emptyPmRecord("6404"), odometer: 100_000, odometerDate: "10/1/26", nextInspType: "A-3", nextInspMiles: 100_025, nextTransMiles: 100_250,
+        lastServiceAt: "2026-09-30T01:20:46", lastServiceMiles: 100000,
         note: args.longContent ? "Follow up with the second shift about the transmission inspection and the parts requested for this bus." : "" },
       "6435": { ...emptyPmRecord("6435"), odometer: 120_100, nextInspType: "B-6", nextInspMiles: 120_000, disposition: "shop" },
     };
@@ -45,7 +48,9 @@ const meta = {
       if (path === "/api/pm-mileage/sync") {
         if (args.failSync) return Response.json({ ok: false, error: "Fleetwatch did not return a PDF. Try again shortly." }, { status: 502 });
         records["6404"].odometer = 100010;
-        sync = { lastSuccessAt: "2026-10-01T04:30:00Z", updated: 1, unchanged: 1, skipped: [{ bus: "6435", reason: "Below saved mileage" }] };
+        records["6404"].lastServiceAt = "2026-09-30T23:19:08";
+        records["6404"].lastServiceMiles = 100010;
+        sync = { lastSuccessAt: "2026-10-01T04:30:00Z", updated: 1, unchanged: 1, serviceUpdated: 1, skipped: [{ bus: "6435", reason: "Below saved mileage" }] };
         return Response.json({ ok: true, status: sync });
       }
       if (path === "/api/pm-mileage") {
@@ -90,6 +95,8 @@ export const UpdateMileage: Story = {
     await userEvent.click(screen.getByRole("button", { name: "Update mileage now" }));
     await waitFor(() => expect(row).toHaveTextContent("100,010"));
     await expect(row).toHaveTextContent("15");
+    await expect(within(row).getByText("11:19:08 PM")).toBeVisible();
+    await expect(within(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).getByText("11:19:08 PM")).toBeVisible();
     await expect(screen.getByText(/Last successful check/)).toHaveTextContent("1 updated");
     await userEvent.click(screen.getByRole("button", { name: "1 readings skipped" }));
     await expect(screen.getByText("Bus 6435: Below saved mileage")).toBeVisible();

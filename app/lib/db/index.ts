@@ -55,6 +55,8 @@ const DDL: string[] = [
   `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS next_insp_type TEXT`,
   `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS next_insp_miles INTEGER`,
   `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS next_trans_miles INTEGER`,
+  `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_service_at TEXT`,
+  `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_service_miles INTEGER`,
   `CREATE TABLE IF NOT EXISTS ${T("pm_inspections")} (id BIGSERIAL PRIMARY KEY, bus TEXT NOT NULL, kind TEXT NOT NULL, type TEXT, miles INTEGER NOT NULL, done_at TEXT, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS ${T("pm_inspections_bus_idx")} ON ${T("pm_inspections")} (bus, id DESC)`,
 ];

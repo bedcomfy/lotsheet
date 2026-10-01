@@ -10,6 +10,7 @@ import { openSheetPdf } from "../lib/pdf";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import type { MileageSyncStatus } from "../lib/fleetwatch";
+import { serviceTimeParts } from "../lib/vehicleServiceReport";
 import { readPdfTextInBrowser } from "../lib/pdfTextClient";
 import { getDeviceActor } from "../lib/deviceActor";
 import { inspectionOptionFromText } from "../lib/grid";
@@ -347,13 +348,14 @@ export default function PmMileagePage() {
       <div className={styles.syncNotice} role="status" aria-live="polite">
         <span><strong>Fleetwatch mileage</strong> · Previous 24 hours · Scheduled every 30 minutes</span>
         {sync.lastSuccessAt ? <span>Last successful check: {new Date(sync.lastSuccessAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
-          {` · ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged`}</span>
+          {` · Mileage: ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged${sync.serviceUpdated !== undefined ? ` · Service times: ${sync.serviceUpdated} updated` : ""}`}</span>
           : <span>No successful check yet. Use Update mileage now to fetch the latest report.</span>}
         {sync.runningUntil && Date.parse(sync.runningUntil) > Date.now() && <span>Fetching the latest report…</span>}
         {(syncMessage || sync.error) && <span className={styles.syncWarning}>{syncMessage || sync.error}</span>}
+        {sync.serviceError && <span className={styles.syncWarning}>{sync.serviceError}</span>}
         {!!sync.skipped?.length && <div>
           <Button variant="quiet" aria-expanded={showSyncSkipped} aria-controls="mileage-sync-skipped" onPress={() => setShowSyncSkipped((value) => !value)}>{sync.skipped.length} readings skipped</Button>
-          {showSyncSkipped && <ul id="mileage-sync-skipped">{sync.skipped.map((entry) => <li key={entry.bus}>Bus {entry.bus}: {entry.reason}</li>)}</ul>}
+          {showSyncSkipped && <ul id="mileage-sync-skipped">{sync.skipped.map((entry) => <li key={`${entry.bus}:${entry.reason}`}>Bus {entry.bus}: {entry.reason}</li>)}</ul>}
         </div>}
       </div>
 
@@ -389,7 +391,7 @@ export default function PmMileagePage() {
         </div>
       )}
 
-      <Panel className={styles.panel} title="Upcoming work" description={`${rows.length} of ${work.length} PMs · ${active.length} active buses`}>
+      <Panel className={styles.panel} title="Upcoming work" description={`${rows.length} of ${work.length} PMs · ${active.length} active buses · Service / odometer reading times are shown in Chicago time`}>
         <div className={styles.toolbar}>
           <SearchField
             label="Search buses"
@@ -414,7 +416,7 @@ export default function PmMileagePage() {
             <div className={`${styles.row} ${styles.head}`} role="row">
               <span role="columnheader">Bus</span>
               <span role="columnheader">Odometer</span>
-              <span role="columnheader">As of</span>
+              <span role="columnheader">Last serviced / last odometer reading time</span>
               <span role="columnheader">Next PM</span>
               <span role="columnheader">Miles left</span>
               <span role="columnheader">Actions</span>
@@ -428,6 +430,7 @@ export default function PmMileagePage() {
                 </div>
             {group.items.map((item) => {
               const r = item.record;
+              const serviceTime = serviceTimeParts(r.lastServiceAt);
               const bus = active.find((b) => b.num === r.bus);
               const flagged = item.kind === "inspection" ? flaggedInspection(flags, r.bus) : null;
               const workLabel = item.kind === "trans" ? "Trans PM" : item.type ?? flagged ?? "Inspection";
@@ -444,10 +447,15 @@ export default function PmMileagePage() {
                     <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric
                       value={r.odometer === null ? "" : String(r.odometer)} display={formatMiles(r.odometer)}
                       placeholder="miles" onCommit={(v) => save(r.bus, "odometer", v)} />
+                    {unlocked ? <Cell label={`Bus ${r.bus} ${workLabel} reading date`} value={r.odometerDate || ""}
+                      placeholder="reading date" onCommit={(v) => save(r.bus, "odometerDate", v)} />
+                      : !serviceTime && r.odometerDate ? <span className={styles.readingDate}>As of {r.odometerDate}</span> : null}
                   </div>
-                  <div role="cell" data-label="As of">
-                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} reading date`}
-                      value={r.odometerDate || ""} placeholder="date" onCommit={(v) => save(r.bus, "odometerDate", v)} />
+                  <div role="cell" data-label="Last serviced / last odometer reading time" className={styles.serviceTime}>
+                    {serviceTime ? <>
+                      <time dateTime={r.lastServiceAt!}><span>{serviceTime.date}</span><span>{serviceTime.time}</span></time>
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span className={styles.muted}>at {formatMiles(r.lastServiceMiles)} mi</span>}
+                    </> : <span className={styles.muted}>Not recorded</span>}
                   </div>
                   <div role="cell" data-label="Next PM" className={styles.derived}>
                     <div className={styles.nextCell}>

@@ -1,4 +1,5 @@
-import { fleetwatchReportUrl, parseFleetwatchReport } from "./fleetwatch";
+import { fleetwatchReportUrl, fleetwatchServiceReportUrl, parseFleetwatchReport } from "./fleetwatch";
+import { parseVehicleServiceReport } from "./vehicleServiceReport";
 import { readPdfText } from "./pmReportPdf";
 import { claimMileageSync, finishMileageSync } from "./pmMileageSyncStore";
 
@@ -36,10 +37,16 @@ export async function syncFleetwatchMileage() {
   if (!claim.claimed) return { ok: claim.running || !claim.status.error, error: claim.running ? undefined : claim.status.error, busy: claim.running, cooldown: !claim.running, status: claim.status };
   const url = fleetwatchReportUrl(now);
   try {
-    const pdf = await downloadFleetwatchReport(url);
-    const report = parseFleetwatchReport(await readPdfText(pdf), url);
+    const [mileage, service] = await Promise.allSettled([
+      downloadFleetwatchReport(url).then(readPdfText).then((pages) => parseFleetwatchReport(pages, url)),
+      downloadFleetwatchReport(fleetwatchServiceReportUrl(now)).then(readPdfText).then(parseVehicleServiceReport),
+    ]);
+    if (mileage.status === "rejected") throw mileage.reason;
+    if (service.status === "rejected") console.error("Fleetwatch service-time update failed", service.reason);
     const status = await finishMileageSync(claim.token, {
-      report, windowStart: url.searchParams.get("StartDate")!, windowEnd: url.searchParams.get("EndDate")!,
+      report: mileage.value, services: service.status === "fulfilled" ? service.value : [],
+      serviceError: service.status === "rejected" ? "Mileage checked, but Fleetwatch service times couldn't be refreshed. Previous service times were kept; try again shortly." : null,
+      windowStart: url.searchParams.get("StartDate")!, windowEnd: url.searchParams.get("EndDate")!,
     });
     return { ok: true, status };
   } catch (error) {

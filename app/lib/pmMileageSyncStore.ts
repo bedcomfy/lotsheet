@@ -6,6 +6,7 @@ import { DEFAULT_MASTER, normalizeBusMaster } from "./buses";
 import type { MasterBus } from "./types";
 import { FLEETWATCH_SOURCE, type MileageSyncStatus } from "./fleetwatch";
 import type { OdometerReportParse } from "./odometerReport";
+import type { VehicleServiceReading } from "./vehicleServiceReport";
 
 export const MILEAGE_SYNC_KEY = "pm_mileage_fleetwatch_sync";
 interface StoredSync extends MileageSyncStatus { token?: string }
@@ -41,7 +42,7 @@ export async function claimMileageSync(now = new Date()) {
 
 export async function finishMileageSync(
   token: string,
-  result: { report: OdometerReportParse; windowStart: string; windowEnd: string } | { error: string },
+  result: { report: OdometerReportParse; services?: VehicleServiceReading[]; serviceError?: string | null; windowStart: string; windowEnd: string } | { error: string },
 ): Promise<MileageSyncStatus> {
   const db = await getDb();
   return db.transaction(async (tx) => {
@@ -89,8 +90,28 @@ export async function finishMileageSync(
         await tx.insert(pmMileageLog).values({ bus: reading.bus, odometer: miles, readAt, source: FLEETWATCH_SOURCE, batch: token, actor: "Fleetwatch sync" });
         updated += 1;
       }
-      Object.assign(next, { lastSuccessAt: finishedAt, windowStart: result.windowStart, windowEnd: result.windowEnd, updated, unchanged, skipped, error: null });
-      if (updated) {
+      let serviceUpdated = 0;
+      const reportMileage = new Map(result.report.rows.map((reading) => [reading.bus, reading.odometer]));
+      for (const service of result.services || []) {
+        if (!active.has(service.bus)) continue;
+        // The reports can be generated on opposite sides of a fueling event.
+        // Keep the previous timestamp rather than associate a time with the
+        // wrong odometer; the next update will reconcile the two reports.
+        if (reportMileage.get(service.bus) !== service.odometer) {
+          skipped.push({ bus: service.bus, reason: "Service odometer differs from mileage report; service time kept" });
+          continue;
+        }
+        const previous = before.get(service.bus);
+        if (previous?.lastServiceAt && previous.lastServiceAt >= service.servicedAt) continue;
+        const saved = await tx.update(pmMileage).set({ lastServiceAt: service.servicedAt, lastServiceMiles: service.odometer, updatedAt: sql`now()` })
+          .where(sql`${pmMileage.bus} = ${service.bus} AND ${pmMileage.odometer} = ${service.odometer}
+            AND (${pmMileage.lastServiceAt} IS NULL OR ${pmMileage.lastServiceAt} < ${service.servicedAt})`)
+          .returning({ bus: pmMileage.bus });
+        if (saved.length) serviceUpdated += 1;
+        else skipped.push({ bus: service.bus, reason: "Service time did not match saved mileage; kept previous service" });
+      }
+      Object.assign(next, { lastSuccessAt: finishedAt, windowStart: result.windowStart, windowEnd: result.windowEnd, updated, unchanged, serviceUpdated, serviceError: result.serviceError || null, skipped, error: null });
+      if (updated || serviceUpdated) {
         await tx.execute(sql`INSERT INTO ${appState} (key, value, updated_at) VALUES ('__pulse', to_jsonb(1), now())
           ON CONFLICT (key) DO UPDATE SET value = to_jsonb(COALESCE((${appState}.value #>> '{}')::bigint, 0) + 1), updated_at = now()`);
       }

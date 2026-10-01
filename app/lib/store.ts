@@ -405,6 +405,8 @@ function pmRowToRecord(row: typeof pmMileage.$inferSelect): PmRecord {
     bus: row.bus,
     odometer: row.odometer ?? null,
     odometerDate: row.odometerDate || null,
+    lastServiceAt: row.lastServiceAt || null,
+    lastServiceMiles: row.lastServiceMiles ?? null,
     lastInspType: isInspectionType(row.lastInspType) ? row.lastInspType : null,
     lastInspMiles: row.lastInspMiles ?? null,
     lastInspDate: row.lastInspDate || null,
@@ -424,6 +426,8 @@ function pmRecordToRow(r: PmRecord) {
   return {
     odometer: r.odometer,
     odometerDate: r.odometerDate,
+    lastServiceAt: r.lastServiceAt,
+    lastServiceMiles: r.lastServiceMiles,
     lastInspType: r.lastInspType,
     lastInspMiles: r.lastInspMiles,
     lastInspDate: r.lastInspDate,

@@ -14,6 +14,8 @@ export interface MileageSyncStatus {
   windowEnd?: string;
   updated?: number;
   unchanged?: number;
+  serviceUpdated?: number;
+  serviceError?: string | null;
   skipped?: Array<{ bus: string; reason: string }>;
   error?: string | null;
 }
@@ -32,6 +34,17 @@ export function fleetwatchReportUrl(now = new Date()): URL {
     Fleet: "All", Division: "0043", Department: "All", VehType: "All",
     VehicleList: "All", TotalBy: "Division", Revenue: "Revenue",
     StartDate: fleetwatchDate(start), EndDate: fleetwatchDate(end), reportFormat: "pdf",
+  }).toString();
+  return url;
+}
+
+export function fleetwatchServiceReportUrl(now = new Date()): URL {
+  const mileage = fleetwatchReportUrl(now);
+  const url = new URL("https://pace.fleetwatch.com/Main_Reports/reports/Vehicle/Vehicle%20Service%20Status%20Report/Report.php");
+  url.search = new URLSearchParams({
+    Division: "0043", Department: "All", VehType: "All", TotalBy: "Division", Detail: "Detail",
+    Revenue: "Revenue", VehicleServiceStatus: "All", StartDate: mileage.searchParams.get("StartDate")!,
+    EndDate: mileage.searchParams.get("EndDate")!, reportFormat: "pdf",
   }).toString();
   return url;
 }
