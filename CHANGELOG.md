@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.36.0 - 2026-10-01
+
+- PM Mileage: intervals follow the inspection cycle instead of one editable
+  number. Each bus records the last inspection it had (A-3 … C-24, with the
+  mileage and date), and the next inspection and its due mileage are worked
+  out from that: B-12 → A-15 at 3,000 miles on, C-24 wraps back to A-3.
+  Transmission PMs run on their own fixed 75,000-mile interval off the same
+  odometer. Neither interval can be edited; the Interval button and
+  per-bus interval column are gone.
+- PM Mileage: "Complete" on each row marks an inspection or trans PM as done
+  at a given odometer reading and date. The bus moves to its next inspection,
+  its due mileage moves forward, and it drops to its new place in the list.
+  Completing an inspection can also clear the bus's Inspection flag on the
+  sheet. Each completion is kept in a history table and in the audit log.
+- PM Mileage: the list shows current mileage, mileage at the last inspection,
+  mileage for the next inspection, miles left (or over) for both the
+  inspection and the trans PM, and a hint from the sheet's Inspection flag
+  when a bus has no inspection on record yet.
+- UI kit: `SelectField` supports `labelHidden` like the text fields.
+
 ## 0.35.3 - 2026-10-01
 
 - Work Order: the Hours and Activity write-on lines sit near the bottom of

@@ -9,7 +9,8 @@ export async function GET() {
   return NextResponse.json({ settings: await getPmSettings() });
 }
 
-// The fleet-wide default PM interval and the "due soon" threshold. Admin only.
+// The fleet-wide "due soon" threshold. Admin only. (PM intervals are fixed by
+// the inspection cycle and the 75,000-mile transmission PM — not a setting.)
 export async function PUT(req: Request) {
   if (!isAdminRequest(req)) return unauthorized();
   const { data, error } = await parseBody(req, pmSettingsPayloadSchema);

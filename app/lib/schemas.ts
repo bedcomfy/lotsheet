@@ -43,17 +43,31 @@ export type EmployeeInput = z.infer<typeof employeeInputSchema>;
 // ---------- PM mileage ----------
 // PUT /api/pm-mileage — patch one bus. Miles arrive as numbers or typed text.
 const milesField = z.union([z.number(), z.string(), z.null()]).optional();
+const textField = z.union([z.string(), z.null()]).optional();
 export const pmMileagePatchSchema = z.object({
   bus: z.string().trim().min(1),
   odometer: milesField,
-  odometerDate: z.union([z.string(), z.null()]).optional(),
-  lastPmMiles: milesField,
-  lastPmDate: z.union([z.string(), z.null()]).optional(),
-  interval: milesField,
+  odometerDate: textField,
+  lastInspType: textField,
+  lastInspMiles: milesField,
+  lastInspDate: textField,
+  lastTransMiles: milesField,
+  lastTransDate: textField,
   note: z.string().optional(),
   actor: z.string().catch("").default(""),
 });
 export type PmMileagePatch = z.infer<typeof pmMileagePatchSchema>;
+
+// POST /api/pm-mileage/complete — an inspection or transmission PM was done.
+export const pmCompletePayloadSchema = z.object({
+  bus: z.string().trim().min(1),
+  kind: z.enum(["inspection", "trans"]),
+  type: textField, // inspection type that was done; defaults to the one that was next
+  miles: z.union([z.number(), z.string()]),
+  date: textField,
+  clearFlag: z.boolean().optional(), // also remove the bus's Inspection flag
+  actor: z.string().catch("").default(""),
+});
 
 // POST /api/pm-mileage/readings — a reviewed batch of odometer readings.
 export const pmReadingsPayloadSchema = z.object({
@@ -73,8 +87,7 @@ export const pmReadingsPayloadSchema = z.object({
 
 // PUT /api/pm-mileage/settings
 export const pmSettingsPayloadSchema = z.object({
-  defaultInterval: z.union([z.number(), z.string()]),
-  dueSoonMiles: z.union([z.number(), z.string()]).optional(),
+  dueSoonMiles: z.union([z.number(), z.string()]),
   actor: z.string().catch("").default(""),
 });
 

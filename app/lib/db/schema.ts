@@ -58,18 +58,33 @@ export const auditEvents = pgTable(`audit_events${TABLE_SUFFIX}`, {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-// Preventive-maintenance mileage: latest odometer and last-PM mark per bus.
-// `interval` is a per-bus override (miles); null means the default in settings.
+// Preventive-maintenance mileage: latest odometer, the last inspection (type
+// and mileage — last_pm_* columns), and the last transmission PM per bus.
+// Intervals are fixed by the inspection cycle, never stored.
 export const pmMileage = pgTable(`pm_mileage${TABLE_SUFFIX}`, {
   bus: text("bus").primaryKey(),
   odometer: integer("odometer"),
   odometerDate: text("odometer_date"),
-  lastPmMiles: integer("last_pm_miles"),
-  lastPmDate: text("last_pm_date"),
-  interval: integer("interval"),
+  lastInspType: text("last_insp_type"),
+  lastInspMiles: integer("last_pm_miles"),
+  lastInspDate: text("last_pm_date"),
+  lastTransMiles: integer("last_trans_miles"),
+  lastTransDate: text("last_trans_date"),
   note: text("note"),
   source: text("source"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Every completed PM (inspection or transmission), for history and reports.
+export const pmInspections = pgTable(`pm_inspections${TABLE_SUFFIX}`, {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  bus: text("bus").notNull(),
+  kind: text("kind").notNull(), // "inspection" | "trans"
+  type: text("type"), // A-3 … C-24 for inspections
+  miles: integer("miles").notNull(),
+  doneAt: text("done_at"),
+  actor: text("actor"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 // Every odometer reading that was recorded, so mileage reports can show the
@@ -85,4 +100,4 @@ export const pmMileageLog = pgTable(`pm_mileage_log${TABLE_SUFFIX}`, {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-export const schema = { busFlags, appState, sheetHistory, lotSheetOps, auditEvents, pmMileage, pmMileageLog };
+export const schema = { busFlags, appState, sheetHistory, lotSheetOps, auditEvents, pmMileage, pmMileageLog, pmInspections };
