@@ -32,7 +32,6 @@ import {
   isPmFleetBus,
   nextInspection,
   pmWorkItems,
-  pmOperationalFlags,
   pmDisplayDisposition,
   toMiles,
   transNextDue,
@@ -328,7 +327,7 @@ export default function PmMileagePage() {
       <PageHeader
         eyebrow="Preventive Maintenance"
         title="PM Mileage"
-        description="Shop and Follow up buses appear first. Split and Hold for Inspection flags appear on each PM row without changing mileage order. Each PM keeps its own row."
+        description="Shop and Follow up buses appear first. Bus status also shows Split and Holds for Inspection. All other PMs stay in mileage order. Each PM keeps its own row."
         actions={
           <div className={styles.headerActions}>
             <SaveStatus state={saveState} />
@@ -445,7 +444,6 @@ export default function PmMileagePage() {
                 </div>
             {group.items.map((item) => {
               const r = item.record;
-              const sharedFlags = pmOperationalFlags(flags[r.bus]);
               const disposition = pmDisplayDisposition(r, flags[r.bus]);
               const serviceTime = serviceTimeParts(r.lastServiceAt);
               const bus = active.find((b) => b.num === r.bus);
@@ -459,11 +457,6 @@ export default function PmMileagePage() {
                       <TypeCodes num={r.bus} variant="ui" />
                       {bus?.model ? <span>{bus.model}</span> : null}
                     </span>
-                    {sharedFlags.length > 0 && <div className={styles.pmFlags} role="group" aria-label={`PM flags for bus ${r.bus}`}>
-                      {sharedFlags.map((flag) => <StatusBadge key={flag} size="sm" tone={flag === "hold" ? "danger" : "warning"}>
-                        {PM_DISPOSITION_LABEL[flag]}
-                      </StatusBadge>)}
-                    </div>}
                   </div>
                   <div role="cell" data-label="Odometer">
                     <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric

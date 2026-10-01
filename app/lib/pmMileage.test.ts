@@ -29,6 +29,19 @@ import { emptyFlagEntry } from "./serviceLaneSetup";
 const S = DEFAULT_PM_SETTINGS;
 
 describe("shared flags on PM Mileage", () => {
+  it("fills Bus status from shared Split and Inspection Hold flags even without a saved PM status", () => {
+    const record = emptyPmRecord("6404");
+    const split = { ...emptyFlagEntry(), flags: ["split"] };
+    const hold = { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Inspection" };
+    expect(pmDisplayDisposition(record, split)).toBe("split");
+    expect(pmDisplayDisposition(record, hold)).toBe("hold");
+    expect(pmDisplayDisposition(record, { ...hold, holdReason: "Parade" })).toBe("");
+    const both = { ...hold, flags: ["split", "hold"] };
+    expect(pmDisplayDisposition(record, both)).toBe("hold");
+    expect(pmDisplayDisposition({ ...record, disposition: "split" }, both)).toBe("split");
+    expect(pmDisplayDisposition({ ...record, disposition: "hold" }, both)).toBe("hold");
+  });
+
   it("shows every Split but only Holds with the exact Inspection reason, ignoring case and whitespace", () => {
     const entry = { ...emptyFlagEntry(), flags: ["split", "hold", "inspection"], holdReason: "  INSPECTION  " };
     expect(pmOperationalFlags(entry)).toEqual(["split", "hold"]);

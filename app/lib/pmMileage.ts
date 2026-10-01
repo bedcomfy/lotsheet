@@ -44,8 +44,8 @@ export const PM_DISPOSITION_LABEL: Record<PmDisposition, string> = {
   split: "Split",
 };
 
-// Shared lot-sheet flags shown on PM rows. Other Hold reasons remain on the
-// lot sheet; neither flag changes the PM's mileage order or shop grouping.
+// Shared lot-sheet flags that qualify for the PM Bus status field. Other Hold
+// reasons remain on the lot sheet; these do not change mileage order.
 export function pmOperationalFlags(entry?: FlagEntry): Array<"split" | "hold"> {
   const visible: Array<"split" | "hold"> = [];
   if (entry?.flags.includes("split")) visible.push("split");
@@ -54,10 +54,11 @@ export function pmOperationalFlags(entry?: FlagEntry): Array<"split" | "hold"> {
 }
 
 export function pmDisplayDisposition(record: PmRecord, entry?: FlagEntry): PmDisposition {
-  if (record.disposition === "hold" || record.disposition === "split") {
-    return pmOperationalFlags(entry).includes(record.disposition) ? record.disposition : "";
-  }
-  return record.disposition;
+  if (record.disposition === "shop" || record.disposition === "follow-up") return record.disposition;
+  const flags = pmOperationalFlags(entry);
+  if ((record.disposition === "hold" || record.disposition === "split") && flags.includes(record.disposition)) return record.disposition;
+  if (flags.includes("hold")) return "hold";
+  return flags.includes("split") ? "split" : "";
 }
 export function isPmDisposition(value: unknown): value is PmDisposition {
   return typeof value === "string" && (PM_DISPOSITIONS as readonly string[]).includes(value);

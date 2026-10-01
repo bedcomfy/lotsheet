@@ -97,7 +97,7 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   await secondTab.close();
 });
 
-test("shared Split and Inspection Hold flags appear on both PM rows without changing order", async ({ page, context }) => {
+test("shared Split and Inspection Hold appear only in Bus status without changing order", async ({ page, context }) => {
   const api = context.request;
   await api.post("/api/admin/session", { data: { password: process.env.ADMIN_PASSWORD || "ride" } });
   for (const [index, bus] of ["6404", "6417", "6435"].entries()) {
@@ -107,7 +107,7 @@ test("shared Split and Inspection Hold flags appear on both PM rows without chan
   }
   await api.delete("/api/admin/session");
   for (const data of [
-    { bus: "6404", flags: ["split", "hold"], holdReason: "Inspection", note: "Flag note only" },
+    { bus: "6404", flags: ["split"], note: "Flag note only" },
     { bus: "6417", flags: ["hold"], holdReason: "Parade" },
     { bus: "6435", flags: ["hold"], holdReason: "Movement" },
   ]) expect((await api.post("/api/flags", { data })).ok()).toBe(true);
@@ -116,9 +116,9 @@ test("shared Split and Inspection Hold flags appear on both PM rows without chan
   const regular = table.getByRole("row", { name: "Bus 6404 A-3", exact: true });
   const trans = table.getByRole("row", { name: "Bus 6404 Trans PM", exact: true });
   for (const row of [regular, trans]) {
-    const badges = row.getByRole("group", { name: "PM flags for bus 6404" });
-    await expect(badges.getByText("Split", { exact: true })).toBeVisible();
-    await expect(badges.getByText("Hold · Inspection", { exact: true })).toBeVisible();
+    await expect(row.getByRole("button", { name: /status/ })).toContainText("Split");
+    await expect(row.getByRole("group", { name: "PM flags for bus 6404" })).toHaveCount(0);
+    await expect(row.getByRole("cell").first()).not.toContainText("Split");
     await expect(row).not.toContainText("Flag note only");
   }
   for (const bus of ["6417", "6435"]) for (const kind of ["A-3", "Trans PM"]) {
@@ -139,7 +139,9 @@ test("shared Split and Inspection Hold flags appear on both PM rows without chan
   expect(flag).toMatchObject({ flags: expect.arrayContaining(["hold", "split"]), holdReason: "Inspection", note: "Flag note only" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
-  await expect(regular.getByRole("group", { name: "PM flags for bus 6404" })).toBeVisible();
+  await expect(regular.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+  await expect(regular.getByRole("cell").first()).not.toContainText("Hold");
+  await expect(regular.getByRole("group", { name: "PM flags for bus 6404" })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: "test-results/pm-shared-flags-phone.png", fullPage: true });
   await api.post("/api/flags", { data: { bus: "6404", flags: ["hold"], holdReason: "Cubs Bus", note: "Flag note only" } });
@@ -149,6 +151,13 @@ test("shared Split and Inspection Hold flags appear on both PM rows without chan
   expect(await order()).toEqual(expectedOrder);
   await expect(regular).toContainText("at 100,025");
   await expect(trans).toContainText("at 100,250");
+  await api.post("/api/flags", { data: { bus: "6417", flags: ["hold"], holdReason: "Inspection" } });
+  await page.reload();
+  for (const kind of ["A-3", "Trans PM"]) {
+    const row = table.getByRole("row", { name: `Bus 6417 ${kind}`, exact: true });
+    await expect(row.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+    await expect(row.getByRole("cell").first()).not.toContainText("Hold");
+  }
 });
 
 test("Admin Tools exposes logout and clears the password after locking", async ({ page }) => {

@@ -35,7 +35,7 @@ const meta = {
     const originalFetch = window.fetch;
     let sync: MileageSyncStatus = {};
     const flags: FlagMap = args.sharedFlags ? {
-      "6404": { ...emptyFlagEntry(), flags: ["split", "hold"], holdReason: "Inspection", note: "Flag note stays separate" },
+      "6404": { ...emptyFlagEntry(), flags: ["split"], note: "Flag note stays separate" },
       "6435": { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Parade" },
     } : {};
     const records: Record<string, PmRecord> = {
@@ -106,9 +106,9 @@ export const SharedFlags: Story = {
     const screen = within(canvasElement);
     for (const name of ["Bus 6404 A-3", "Bus 6404 Trans PM"]) {
       const row = await screen.findByRole("row", { name });
-      const flags = await within(row).findByRole("group", { name: "PM flags for bus 6404" });
-      await expect(within(flags).getByText("Split")).toBeVisible();
-      await expect(within(flags).getByText("Hold · Inspection")).toBeVisible();
+      await waitFor(() => expect(within(row).getByRole("button", { name: /status/ })).toHaveTextContent("Split"));
+      await expect(within(row).queryByRole("group", { name: "PM flags for bus 6404" })).not.toBeInTheDocument();
+      await expect(within(row).getAllByRole("cell")[0]).not.toHaveTextContent("Split");
       await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);
     }
     await expect(within(screen.getByRole("row", { name: "Bus 6435 B-6" })).queryByRole("group", { name: "PM flags for bus 6435" })).not.toBeInTheDocument();

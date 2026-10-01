@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.6 - 2026-10-01
+
+- Remove the PM flag chips. Show shared Split and Inspection Hold values only in the existing Bus status control, including when they were set from the lot sheet.
+- Keep the Inspection hold reason, mileage ordering, and Shop / Follow up grouping.
+
 ## 0.45.5 - 2026-10-01
 
 - Show shared Split flags and Holds whose reason is Inspection on both inspection and Trans PM rows, without changing mileage order or the printed report.
