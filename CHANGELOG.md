@@ -4,6 +4,8 @@
 
 - Work Order: the Hours and Activity write-on lines sit near the bottom of
   their boxes instead of mid-cell, and Hours is a plain line (no decimal dot).
+- Work Order parts: the Qty column is wider (10% of the table, was 6%), taken
+  from Operation Number (16% → 12%).
 
 ## 0.35.2 - 2026-10-01
 
