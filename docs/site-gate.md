@@ -1,9 +1,15 @@
 # Site gate
 
-Every page and API path on the site sits behind a decoy until the browser holds
-an unlock cookie. The decoy is a plain typing-speed test ("keyflow") with no
+Every request to the site, on any path, hostname, or method, is checked by
+`proxy.ts` until the browser holds an unlock cookie. The proxy has no
+`matcher` on purpose: a request the matcher skipped would bypass the gate.
+Page-like paths get the decoy, a plain typing-speed test ("keyflow") with no
 link to the real site: no app chunks, fonts, icons, manifest, or styles. API
-paths and static files answer 404 while locked, so nothing can be enumerated.
+paths, Next's own chunks and image optimizer, Vercel paths, and files answer a
+bare 404, so nothing can be enumerated. Trailing slashes, different casing,
+encoded slashes, `..` segments, query strings, and RSC or prefetch requests
+make no difference: anything that is not one of the two exempt paths below is
+locked.
 
 ## How it unlocks
 

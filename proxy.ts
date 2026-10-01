@@ -3,14 +3,12 @@ import { GATE_COOKIE, GATE_EXEMPT_PATHS, isGateTokenValid } from "./app/lib/site
 import { decoyPage } from "./app/lib/siteGateDecoy";
 
 // Site gate: without the unlock cookie every page is the decoy typing test
-// and every API path is a 404. Nothing about the real site is reachable.
-// See docs/site-gate.md.
-
-export const config = {
-  // Everything except Next's static chunks (the decoy has none of its own)
-  // and the dev-server plumbing.
-  matcher: ["/((?!_next/static|_next/webpack-hmr|__nextjs).*)"],
-};
+// and everything else (API paths, Next's own chunks and images, files) is a
+// 404. Nothing about the real site is reachable. See docs/site-gate.md.
+//
+// Deliberately no `config.matcher`: a request the matcher skips would bypass
+// the gate, so every request is checked, static chunks included (the decoy
+// has none of its own). The only pass-throughs are GATE_EXEMPT_PATHS.
 
 export default async function proxy(req: NextRequest): Promise<Response> {
   const { pathname } = req.nextUrl;
@@ -19,9 +17,11 @@ export default async function proxy(req: NextRequest): Promise<Response> {
   return lockedResponse(pathname);
 }
 
+// Page-like paths get the decoy; anything that looks like an API call, a
+// Next internal, or a file gets a bare 404 so nothing can be enumerated.
 export function lockedResponse(pathname: string): Response {
   const noStore = { "cache-control": "no-store" };
-  if (pathname.startsWith("/api/") || pathname.startsWith("/_next/") || /\.[a-z0-9]+$/i.test(pathname)) {
+  if (/^\/(api|_next|_vercel)(\/|$)/i.test(pathname) || /\.[a-z0-9]+$/i.test(pathname)) {
     return NextResponse.json({ error: "Not found" }, { status: 404, headers: noStore });
   }
   return new NextResponse(decoyPage(), {
