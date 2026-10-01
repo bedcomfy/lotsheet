@@ -398,7 +398,7 @@
 
 .reviewRow {
   display: grid;
-  grid-template-columns: minmax(6rem, auto) minmax(6rem, auto) 1fr auto;
+  grid-template-columns: minmax(5.5rem, auto) minmax(5.5rem, auto) minmax(9rem, 1fr) minmax(10rem, 1.2fr);
   align-items: center;
   gap: var(--ui-space-2) var(--ui-space-3);
   padding: var(--ui-space-2) var(--ui-space-3);
@@ -420,9 +420,25 @@
 }
 
 .reviewDelta,
-.reviewDate {
+.reviewDate,
+.reviewPm {
   color: var(--ui-text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+.reviewPm {
+  color: var(--ui-text);
+}
+
+.reviewNote {
+  grid-column: 1 / -1;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+}
+
+.fileHint {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
 }
 
 .reviewWarning {

@@ -565,6 +565,12 @@ export async function listPmInspections(bus?: string, limit = 200): Promise<PmIn
 
 // Apply a reviewed batch of readings (a PDF import). Only the odometer and its
 // date change; the last-PM records stay as they are.
+const SAME_PM_TOLERANCE = 500; // miles; the report's "done at" and the crew's reading differ a little
+
+function samePm(typeA: string | null, milesA: number | null, typeB: string | null, milesB: number | null): boolean {
+  return typeA === typeB && milesA !== null && milesB !== null && Math.abs(milesA - milesB) <= SAME_PM_TOLERANCE;
+}
+
 export async function applyPmReadings(
   readings: PmReading[],
   source: string,
@@ -576,17 +582,33 @@ export async function applyPmReadings(
   for (const reading of readings) {
     const odometer = toPmMiles(reading.odometer);
     if (!reading.bus || odometer === null) continue;
+    const readAt = reading.readAt || null;
+    // A PM status report also says which inspection / trans PM was last
+    // done; a plain mileage list leaves those alone. The report carries no
+    // dates, so a date recorded on the site stays only while it still
+    // describes the same PM (same type, mileage within a few hundred).
+    const pm: Partial<typeof pmMileage.$inferInsert> = {};
+    const existing = await readPmRecord(db, reading.bus);
+    const lastInspMiles = toPmMiles(reading.lastInspMiles);
+    if (isInspectionType(reading.lastInspType) && lastInspMiles !== null) {
+      pm.lastInspType = reading.lastInspType;
+      pm.lastInspMiles = lastInspMiles;
+      if (!samePm(existing.lastInspType, existing.lastInspMiles, reading.lastInspType, lastInspMiles)) pm.lastInspDate = null;
+    }
+    const lastTransMiles = toPmMiles(reading.lastTransMiles);
+    if (lastTransMiles !== null) {
+      pm.lastTransMiles = lastTransMiles;
+      if (!samePm("trans", existing.lastTransMiles, "trans", lastTransMiles)) pm.lastTransDate = null;
+    }
+    const set = { odometer, odometerDate: readAt, source, updatedAt: sql`now()`, ...pm };
     await db
       .insert(pmMileage)
-      .values({ bus: reading.bus, odometer, odometerDate: reading.readAt || null, source, updatedAt: sql`now()` })
-      .onConflictDoUpdate({
-        target: pmMileage.bus,
-        set: { odometer, odometerDate: reading.readAt || null, source, updatedAt: sql`now()` },
-      });
+      .values({ bus: reading.bus, ...set })
+      .onConflictDoUpdate({ target: pmMileage.bus, set });
     await db.insert(pmMileageLog).values({
       bus: reading.bus,
       odometer,
-      readAt: reading.readAt || null,
+      readAt,
       source,
       batch,
       actor: actor || null,

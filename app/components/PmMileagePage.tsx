@@ -640,6 +640,8 @@ interface ImportResult {
   rejected: PmReadingRejection[];
   reportDate: string | null;
   notes: string | null;
+  method: "text" | "ai";
+  model: string | null;
   fileName: string;
   rawCount: number;
 }
@@ -698,7 +700,14 @@ function ImportDialog({
     if (!result) return;
     const readings = result.accepted
       .filter((x) => picked.has(x.bus))
-      .map((x) => ({ bus: x.bus, odometer: x.odometer, readAt: x.readAt }));
+      .map((x) => ({
+        bus: x.bus,
+        odometer: x.odometer,
+        readAt: x.readAt,
+        lastInspType: x.lastInspType ?? null,
+        lastInspMiles: x.lastInspMiles ?? null,
+        lastTransMiles: x.lastTransMiles ?? null,
+      }));
     if (!readings.length) return;
     setBusy(true);
     setError("");
@@ -747,24 +756,27 @@ function ImportDialog({
     <ResponsiveDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="Import a mileage report"
-      description="Upload the PDF. The readings it contains are listed for review before anything changes."
+      title="Import a PM status report"
+      description="Upload the report PDF. Each bus's current mileage, next inspection, and trans PM are listed for review before anything changes."
       size="lg"
       footer={<div className={styles.dialogFooter}>{footer}</div>}
     >
       <div className={styles.importBody}>
         {!unlocked && (
           <div className={styles.notice}>
-            Scanning a report needs Admin Tools. <AdminUnlockButton label="Unlock" onSubmit={tryUnlock} />
+            Importing a report needs Admin Tools. <AdminUnlockButton label="Unlock" onSubmit={tryUnlock} />
           </div>
         )}
         {done !== null ? (
           <div className={styles.doneNote}>
-            <Gauge aria-hidden="true" /> Saved {done} reading{done === 1 ? "" : "s"} from {result?.fileName}.
+            <Gauge aria-hidden="true" /> Saved {done} bus{done === 1 ? "" : "es"} from {result?.fileName}.
           </div>
         ) : !result ? (
           <label className={styles.filePick}>
-            <span>Mileage report (PDF)</span>
+            <span>PM status report (PDF)</span>
+            <span className={styles.fileHint}>
+              The report&apos;s own text is read directly — no AI, no cost. Picture-only scans need the AI reader.
+            </span>
             <input
               type="file"
               accept="application/pdf,.pdf"
@@ -782,6 +794,7 @@ function ImportDialog({
               <strong>{result.fileName}</strong>
               {result.reportDate ? <span> · report dated {result.reportDate}</span> : null}
               <span> · {result.rawCount} row{result.rawCount === 1 ? "" : "s"} found</span>
+              <span> · {result.method === "text" ? "read from the PDF text" : `read by AI (${result.model || "model"})`}</span>
               {result.notes ? <p>{result.notes}</p> : null}
             </div>
             {result.accepted.length === 0 ? (
@@ -799,7 +812,13 @@ function ImportDialog({
                         ? "first reading"
                         : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatMiles(row.previous)}`}
                     </span>
-                    <span className={styles.reviewDate}>{row.readAt || ""}</span>
+                    <span className={styles.reviewPm}>
+                      {row.nextInspType ? `next ${row.nextInspType} at ${formatMiles(row.nextInspDue)}` : ""}
+                      {row.nextInspType && row.transDue ? " · " : ""}
+                      {row.transDue ? `trans at ${formatMiles(row.transDue)}` : ""}
+                      {!row.nextInspType && !row.transDue ? "mileage only" : ""}
+                    </span>
+                    {row.note ? <span className={styles.reviewNote}>{row.note}</span> : null}
                     {row.warning && (
                       <span className={styles.reviewWarning}>
                         <AlertTriangle aria-hidden="true" /> {row.warning}

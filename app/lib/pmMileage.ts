@@ -219,6 +219,14 @@ export interface PmReading {
   odometer: number;
   readAt: string | null;
   note?: string | null;
+  // Present when the source says which PM is next (the PM status report):
+  // the last inspection and trans PM follow from it, and get written too.
+  nextInspType?: InspectionType | null;
+  nextInspDue?: number | null;
+  lastInspType?: InspectionType | null;
+  lastInspMiles?: number | null;
+  transDue?: number | null;
+  lastTransMiles?: number | null;
 }
 
 export interface PmReadingReview extends PmReading {
@@ -252,7 +260,7 @@ export function normalizeReportBus(raw: unknown, known: Set<string>): string {
 // unknown buses and unusable numbers are rejected, duplicates collapse to the
 // highest reading, and a reading below the one on file is kept but flagged.
 export function reviewReadings(
-  rows: Array<{ bus: unknown; odometer: unknown; readAt?: unknown; note?: unknown }>,
+  rows: Array<{ bus: unknown; odometer: unknown; readAt?: unknown; note?: unknown } & Partial<Omit<PmReading, "bus" | "odometer" | "readAt" | "note">>>,
   fleet: Pick<MasterBus, "num" | "status">[],
   current: Record<string, PmRecord>,
 ): { accepted: PmReadingReview[]; rejected: PmReadingRejection[] } {
@@ -278,7 +286,20 @@ export function reviewReadings(
     const readAt = row.readAt ? String(row.readAt).trim() || null : null;
     const note = row.note ? String(row.note).trim() || null : null;
     const prior = best.get(bus);
-    if (!prior || odometer > prior.odometer) best.set(bus, { bus, odometer, readAt, note });
+    if (!prior || odometer > prior.odometer) {
+      best.set(bus, {
+        bus,
+        odometer,
+        readAt,
+        note,
+        nextInspType: isInspectionType(row.nextInspType) ? row.nextInspType : null,
+        nextInspDue: toMiles(row.nextInspDue),
+        lastInspType: isInspectionType(row.lastInspType) ? row.lastInspType : null,
+        lastInspMiles: toMiles(row.lastInspMiles),
+        transDue: toMiles(row.transDue),
+        lastTransMiles: toMiles(row.lastTransMiles),
+      });
+    }
   }
   const accepted: PmReadingReview[] = [...best.values()]
     .sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true }))

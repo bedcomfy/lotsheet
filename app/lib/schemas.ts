@@ -77,6 +77,10 @@ export const pmReadingsPayloadSchema = z.object({
         bus: z.string().trim().min(1),
         odometer: z.number().int().nonnegative(),
         readAt: z.union([z.string(), z.null()]).optional(),
+        // From a PM status report: which inspection / trans PM was last done.
+        lastInspType: z.union([z.string(), z.null()]).optional(),
+        lastInspMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
+        lastTransMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
       }),
     )
     .min(1)
