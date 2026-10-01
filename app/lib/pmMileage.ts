@@ -19,6 +19,26 @@ export const DEFAULT_DUE_SOON_MILES = 500; // "due soon" once this close
 
 export type PmKind = "inspection" | "trans";
 
+// Where a bus stands while it waits on its PM: in the shop, needs a follow-up,
+// on hold, or split (work spread over visits). Free to change; not derived.
+export const PM_DISPOSITIONS = ["", "shop", "follow-up", "hold", "split"] as const;
+export type PmDisposition = (typeof PM_DISPOSITIONS)[number];
+export const PM_DISPOSITION_LABEL: Record<PmDisposition, string> = {
+  "": "—",
+  shop: "Shop",
+  "follow-up": "Follow up",
+  hold: "Hold",
+  split: "Split",
+};
+export function isPmDisposition(value: unknown): value is PmDisposition {
+  return typeof value === "string" && (PM_DISPOSITIONS as readonly string[]).includes(value);
+}
+export function normalizeDisposition(value: unknown): PmDisposition {
+  const v = String(value ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
+  if (v === "followup") return "follow-up";
+  return isPmDisposition(v) ? v : "";
+}
+
 export function isInspectionType(value: unknown): value is InspectionType {
   return typeof value === "string" && (INSPECTION_CYCLE as readonly string[]).includes(value);
 }
@@ -51,6 +71,7 @@ export interface PmRecord {
   lastInspDate: string | null;
   lastTransMiles: number | null; // odometer at the last transmission PM
   lastTransDate: string | null;
+  disposition: PmDisposition; // shop / follow-up / hold / split, or none
   note: string;
   source: string; // "manual" | "pdf" | ""
   updatedAt: string | null;
@@ -74,6 +95,7 @@ export function emptyPmRecord(bus: string): PmRecord {
     lastInspDate: null,
     lastTransMiles: null,
     lastTransDate: null,
+    disposition: "",
     note: "",
     source: "",
     updatedAt: null,
@@ -198,19 +220,33 @@ export interface PmCompletion {
 }
 
 // The record after a PM is done: the completed one becomes "last", so the
-// next one (and its due mileage) moves forward; the odometer never goes
-// backwards because of it.
+// next one (and its due mileage) moves forward. The PM is recorded at the
+// mileage it was DUE at, not the odometer when it happened, so the cycle
+// stays on its fixed marks (due 428,422 → done → next at 431,422) the same
+// way the fleet system schedules it; the entered mileage only moves the
+// odometer forward. A first inspection (no due mark yet) or an explicitly
+// different type is recorded at the entered mileage.
 export function applyCompletion(record: PmRecord, completion: PmCompletion): PmRecord {
   const miles = toMiles(completion.miles);
   if (miles === null) throw new Error("A mileage is required to complete a PM.");
   const odometer = record.odometer === null || miles > record.odometer ? miles : record.odometer;
   const odometerDate = record.odometer === null || miles > record.odometer ? completion.date : record.odometerDate;
   if (completion.kind === "trans") {
-    return { ...record, odometer, odometerDate, lastTransMiles: miles, lastTransDate: completion.date };
+    const due = transNextDue(record);
+    return { ...record, odometer, odometerDate, lastTransMiles: due ?? miles, lastTransDate: completion.date };
   }
-  const type = completion.type ?? nextInspection(record)?.type ?? null;
+  const next = nextInspection(record);
+  const type = completion.type ?? next?.type ?? null;
   if (!type) throw new Error("Pick which inspection was done — this bus has no inspection on record yet.");
-  return { ...record, odometer, odometerDate, lastInspType: type, lastInspMiles: miles, lastInspDate: completion.date };
+  const recordedAt = next && next.type === type ? next.miles : miles;
+  return { ...record, odometer, odometerDate, lastInspType: type, lastInspMiles: recordedAt, lastInspDate: completion.date };
+}
+
+// The mileage a completion will be recorded at (for previews).
+export function completionRecordedAt(record: PmRecord, kind: PmKind, type: InspectionType | null, miles: number): number {
+  if (kind === "trans") return transNextDue(record) ?? miles;
+  const next = nextInspection(record);
+  return next && (type === null || next.type === type) ? next.miles : miles;
 }
 
 // ---------- readings extracted from a PDF (or pasted) ----------

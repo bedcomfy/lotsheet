@@ -20,6 +20,7 @@ import {
   applyCompletion,
   emptyPmRecord,
   isInspectionType,
+  normalizeDisposition,
   normalizePmSettings,
   toMiles as toPmMiles,
   type PmCompletion,
@@ -406,6 +407,7 @@ function pmRowToRecord(row: typeof pmMileage.$inferSelect): PmRecord {
     lastInspDate: row.lastInspDate || null,
     lastTransMiles: row.lastTransMiles ?? null,
     lastTransDate: row.lastTransDate || null,
+    disposition: normalizeDisposition(row.disposition),
     note: row.note || "",
     source: row.source || "",
     updatedAt: isoOrNull(row.updatedAt),
@@ -421,6 +423,7 @@ function pmRecordToRow(r: PmRecord) {
     lastInspDate: r.lastInspDate,
     lastTransMiles: r.lastTransMiles,
     lastTransDate: r.lastTransDate,
+    disposition: r.disposition || null,
     note: r.note,
     source: r.source,
     updatedAt: sql`now()`,
@@ -482,6 +485,7 @@ export interface PmPatch {
   lastInspDate?: string | null;
   lastTransMiles?: number | string | null;
   lastTransDate?: string | null;
+  disposition?: string | null;
   note?: string;
   source?: string;
 }
@@ -502,6 +506,7 @@ export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): 
     ...(patch.lastInspDate !== undefined ? { lastInspDate: textOrNull(patch.lastInspDate) } : {}),
     ...(patch.lastTransMiles !== undefined ? { lastTransMiles: toPmMiles(patch.lastTransMiles) } : {}),
     ...(patch.lastTransDate !== undefined ? { lastTransDate: textOrNull(patch.lastTransDate) } : {}),
+    ...(patch.disposition !== undefined ? { disposition: normalizeDisposition(patch.disposition) } : {}),
     ...(patch.note !== undefined ? { note: String(patch.note ?? "").trim() } : {}),
     source: patch.source ?? (patch.odometer !== undefined ? "manual" : before.source),
   };

@@ -70,6 +70,7 @@ export const pmMileage = pgTable(`pm_mileage${TABLE_SUFFIX}`, {
   lastInspDate: text("last_pm_date"),
   lastTransMiles: integer("last_trans_miles"),
   lastTransDate: text("last_trans_date"),
+  disposition: text("disposition"), // shop / follow-up / hold / split
   note: text("note"),
   source: text("source"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.39.0 - 2026-10-01
+
+- PM Mileage: completing an inspection records it at the mileage it was
+  due, not the odometer when it happened, so the next one lands 3,000 miles
+  after that mark (due 428,422 → next at 431,422) the way the fleet system
+  schedules it. The odometer entered only moves the bus's current mileage
+  forward. Trans PMs are recorded at their due mark the same way. The list
+  re-sorts as soon as the record changes.
+- PM Mileage: a Status box on every row — Shop, Follow up, Hold, or Split —
+  saved per bus and shown in the audit log.
+- Import PDF: every reading is selected by default, warnings and starred
+  (not serviced) rows included; the sheets come in daily, so a reading
+  that looks off is corrected by the next one.
+- PM Mileage is admin-locked: the list reads as plain text until Admin
+  Tools are unlocked, and the server refuses edits, completions, and
+  imports without the admin session (401).
+
 ## 0.38.0 - 2026-10-01
 
 - PM Mileage: "Import PDF" also reads the Vehicles Monthly Miles to Date

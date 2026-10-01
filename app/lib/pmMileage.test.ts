@@ -75,10 +75,19 @@ describe("completing a PM", () => {
     expect(pmStatus(r, S)).toBe("overdue");
     const done = applyCompletion(r, { kind: "inspection", miles: 123_050, date: "10/1/26" });
     expect(done.lastInspType).toBe("A-15");
-    expect(done.lastInspMiles).toBe(123_050);
+    // Recorded at the mileage it was due (123,000), not the odometer when done.
+    expect(done.lastInspMiles).toBe(123_000);
     expect(done.lastInspDate).toBe("10/1/26");
-    expect(nextInspection(done)).toEqual({ type: "B-18", miles: 126_050, interval: 3000 });
+    expect(done.odometer).toBe(123_050);
+    expect(nextInspection(done)).toEqual({ type: "B-18", miles: 126_000, interval: 3000 });
     expect(pmStatus(done, S)).toBe("ok");
+    // Done early: still recorded at the due mark, odometer untouched.
+    const early = applyCompletion({ ...r, odometer: 122_400 }, { kind: "inspection", miles: 122_400, date: "10/1/26" });
+    expect(early.lastInspMiles).toBe(123_000);
+    expect(early.odometer).toBe(122_400);
+    // A different type than the one due is recorded at the entered mileage.
+    const other = applyCompletion(r, { kind: "inspection", type: "B-18", miles: 123_050, date: null });
+    expect(other).toMatchObject({ lastInspType: "B-18", lastInspMiles: 123_050 });
   });
 
   it("accepts an explicit type (first inspection on record) and bumps the odometer forward only", () => {
@@ -94,8 +103,10 @@ describe("completing a PM", () => {
   it("completes a transmission PM without touching the inspection record", () => {
     const r = { ...emptyPmRecord("6435"), odometer: 195_300, lastInspType: "A-3" as const, lastInspMiles: 194_000, lastTransMiles: 120_000 };
     const done = applyCompletion(r, { kind: "trans", miles: 195_300, date: "10/1/26" });
-    expect(done.lastTransMiles).toBe(195_300);
-    expect(transNextDue(done)).toBe(270_300);
+    expect(done.lastTransMiles).toBe(195_000); // the mark it was due at
+    expect(transNextDue(done)).toBe(270_000);
+    const first = applyCompletion({ ...emptyPmRecord("6436"), odometer: 90_000 }, { kind: "trans", miles: 90_000, date: null });
+    expect(first.lastTransMiles).toBe(90_000);
     expect(done.lastInspType).toBe("A-3");
     expect(pmStatus(done, S)).toBe("ok");
   });

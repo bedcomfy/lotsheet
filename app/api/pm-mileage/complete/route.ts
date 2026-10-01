@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminRequest, unauthorized } from "../../../lib/adminAuth";
 import { completePm, getFlags, recordAuditEvent, setBusFlags } from "../../../lib/store";
 import { parseBody, pmCompletePayloadSchema } from "../../../lib/schemas";
 import { isInspectionType } from "../../../lib/pmMileage";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 // forward and the bus drops down the list. Optionally clears the bus's
 // Inspection flag at the same time so the sheet and the PM list agree.
 export async function POST(req: Request) {
+  if (!isAdminRequest(req)) return unauthorized();
   const { data, error } = await parseBody(req, pmCompletePayloadSchema);
   if (error) return error;
   const { bus, kind, miles, date, clearFlag, actor } = data;
