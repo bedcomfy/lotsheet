@@ -31,11 +31,24 @@ signs every browser out and makes the crew type the new one once.
 
 For local development without the variable, the built-in passphrase works.
 
-## Cookie
+## Session, logout, and the 30-minute limit
 
-`kf_session`, HttpOnly, SameSite=Lax, Secure in production, one year, stateless
-(an HMAC keyed off the passphrase hash). Separate from the admin cookie
-(`pace_admin`), which still gates admin edits after the site is unlocked.
+`kf_session`, HttpOnly, SameSite=Lax, Secure in production, stateless. Its
+value is `<issue time>.<HMAC>` keyed off the passphrase hash, so the server
+ends every session 30 minutes after unlock no matter what the browser does
+with the cookie (`GATE_SESSION_SECONDS` in `app/lib/siteSession.ts`). A locked
+response also deletes the site and admin cookies.
+
+**Log out** sits under the sidebar (and in the phone Pages menu). It deletes
+both cookies through `DELETE /api/typing/results`, tells other open tabs
+through localStorage, and lands on the decoy at `/`.
+
+The unlocked app asks `GET /api/typing/results` when its session ends and
+reloads into the decoy at that moment, checks again whenever the tab comes
+back into view, and locks when another tab logs out (`SiteSessionWatch`).
+
+The admin cookie (`pace_admin`) still gates admin edits after the site is
+unlocked; it is cleared on site logout and whenever the gate locks a browser.
 
 ## What gets through without the cookie
 
@@ -50,7 +63,7 @@ and sets the unlock cookie on that browser first, so printing is unaffected.
 
 - `app/lib/siteGate.test.ts`, `app/lib/siteGateProxy.test.ts`, and
   `app/api/typing/results/route.test.ts` cover the module, the proxy, and the
-  unlock route with a test passphrase.
+  unlock route with a test passphrase, including expiry and logout.
 - `e2e/gate.setup.ts` checks the decoy in a real browser, unlocks with the
   passphrase from `playwright.config.ts`, and saves the cookie jar the other
   end-to-end tests start from.

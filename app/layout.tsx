@@ -10,6 +10,7 @@ import BusTypeConfigProvider from "./components/BusTypeConfigProvider";
 import { MobileNavProvider } from "./components/MobileNavContext";
 import MobileTabBar from "./components/MobileTabBar";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
+import SiteSessionWatch from "./components/SiteSessionWatch";
 
 export const metadata: Metadata = {
   title: "Pace Northwest Sheets",
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   <MobileTabBar />
                   <KeyboardShortcuts />
                 </Suspense>
+                <SiteSessionWatch />
                 </MobileNavProvider>
               </BusTypeConfigProvider>
             </FlagConfigProvider>

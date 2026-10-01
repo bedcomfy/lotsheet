@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.46.1 - 2026-10-01
+
+- Added Log out under the sidebar and in the phone Pages menu. It ends the
+  site session (and the admin session with it), locks other open tabs, and
+  returns to the typing test.
+- A site session now ends 30 minutes after unlock. The cookie carries its
+  signed issue time, so the limit holds server-side; the open page reloads
+  into the typing test at that moment and re-checks when a phone wakes up.
+
 ## 0.46.0 - 2026-10-01
 
 - The whole site now sits behind a decoy: browsers without the unlock cookie

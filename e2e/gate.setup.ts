@@ -36,4 +36,13 @@ setup("the decoy typing test hides the site until the passphrase is typed", asyn
   const { cookies } = await page.context().storageState();
   mkdirSync("tmp/playwright", { recursive: true });
   writeFileSync(STATE, JSON.stringify({ cookies, origins: [] }));
+
+  // The session is good for 30 minutes, and Log out returns to the decoy.
+  const session = await (await page.request.get("/api/typing/results")).json();
+  expect(session.session.expiresAt - Date.now()).toBeGreaterThan(29 * 60_000);
+  expect(session.session.expiresAt - Date.now()).toBeLessThanOrEqual(30 * 60_000);
+  await page.getByRole("button", { name: "Log out", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Typing Speed Test" })).toBeVisible();
+  expect(page.url()).toBe("http://localhost:3000/");
+  expect((await page.request.get("/api/pm-mileage")).status()).toBe(404);
 });

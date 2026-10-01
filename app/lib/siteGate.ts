@@ -1,11 +1,13 @@
 // Site gate. Every request is served a decoy typing-test page until the browser
 // holds the unlock cookie, which is handed out only when the passphrase is
-// typed into that page. Runtime-agnostic (Web Crypto only) because the check
+// typed into that page. The cookie carries its issue time and is signed, so a
+// session ends GATE_SESSION_SECONDS after unlock no matter what the browser
+// does with the cookie. Runtime-agnostic (Web Crypto only) because the check
 // runs in proxy.ts as well as in route handlers. See docs/site-gate.md.
 
-export const GATE_COOKIE = "kf_session";
-export const GATE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // seconds
-export const GATE_UNLOCK_PATH = "/api/typing/results";
+import { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH } from "./siteSession";
+
+export { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH };
 
 // Requests that must get through without the cookie.
 export const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
@@ -20,7 +22,10 @@ export const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
 // active hash, changing the passphrase also signs every browser out.
 const BUILT_IN_HASH = "f1a476a93ec2c427e7682a9c50cc503926c658de835fb06b1f3d338b82fb686a";
 
-const TOKEN_MESSAGE = "site-unlocked:v1";
+const TOKEN_PREFIX = "site-unlocked:v2:";
+// Tolerate a little clock drift between the server that issued a token and
+// the one validating it.
+const CLOCK_SKEW_MS = 60_000;
 
 export function normalizePhrase(input: string): string {
   return String(input || "").toLowerCase().replace(/\s+/g, "");
@@ -63,13 +68,27 @@ export async function phraseMatches(input: string): Promise<boolean> {
   return safeEqual(presented, await gateKey());
 }
 
-export async function gateToken(): Promise<string> {
-  return hmacHex(await gateKey(), TOKEN_MESSAGE);
+// "<issuedAtMs>.<hmac>" — the signature covers the issue time.
+export async function gateToken(issuedAt = Date.now()): Promise<string> {
+  const stamp = String(Math.floor(issuedAt));
+  return `${stamp}.${await hmacHex(await gateKey(), TOKEN_PREFIX + stamp)}`;
 }
 
-export async function isGateTokenValid(token: string | null | undefined): Promise<boolean> {
-  if (!token) return false;
-  return safeEqual(token, await gateToken());
+// When a token's session ends, or null for a missing, forged, future, or
+// expired token.
+export async function gateSessionExpiry(token: string | null | undefined, now = Date.now()): Promise<number | null> {
+  const match = /^(\d{1,16})\.([0-9a-f]{64})$/.exec(token || "");
+  if (!match) return null;
+  const issuedAt = Number(match[1]);
+  const expected = await hmacHex(await gateKey(), TOKEN_PREFIX + match[1]);
+  if (!safeEqual(match[2], expected)) return null;
+  if (issuedAt > now + CLOCK_SKEW_MS) return null;
+  const expiresAt = issuedAt + GATE_SESSION_SECONDS * 1000;
+  return now < expiresAt ? expiresAt : null;
+}
+
+export async function isGateTokenValid(token: string | null | undefined, now = Date.now()): Promise<boolean> {
+  return (await gateSessionExpiry(token, now)) !== null;
 }
 
 export function cookieFromHeader(cookieHeader: string | null | undefined, name: string): string {
@@ -87,6 +106,12 @@ export function gateCookieOptions() {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: GATE_COOKIE_MAX_AGE,
+    maxAge: GATE_SESSION_SECONDS,
   };
+}
+
+// Options that delete a session cookie. Logging out of the site also drops
+// the admin cookie: leaving the site means leaving everything.
+export function clearedCookieOptions() {
+  return { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 0 };
 }
