@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.9 - 2026-10-01
+
+- Remove the extra Work Order / Vehicle / Employee labels above the operation and parts tables.
+- Restore the original work order font sizes, column widths, row heights, and spacing. Content continues onto additional pages at full size instead of compressing the form to fit.
+
 ## 0.45.8 - 2026-10-01
 
 - Prevent Work Order PDFs from cutting off operations or parts: wrap field values, fit the seven-operation form on Letter paper, and continue longer orders onto additional pages.

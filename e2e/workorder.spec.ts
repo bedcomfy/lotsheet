@@ -34,6 +34,9 @@ async function inspectPdf(bytes: Buffer, name: string) {
     const text = items.map((item) => item.str).join(" ").replace(/-\s+/g, "-");
     expect(text).toContain(`Page ${i} of ${pdf.numPages}`);
     expect(text).toContain("Revised 7/7/26");
+    expect(text).not.toContain("Work Order:");
+    expect(text).not.toContain("Vehicle:");
+    expect(text).not.toContain("Employee:");
     // Footer lives in the page margin, outside all form content. Catch the old
     // fixed-height clipping and any wrapping that escapes the page's sides.
     for (const item of items.filter((item) => item.str.trim())) {
@@ -42,7 +45,12 @@ async function inspectPdf(bytes: Buffer, name: string) {
       expect(item.transform[4] + item.width, item.str).toBeLessThanOrEqual(577);
       if (!isFooter) {
         expect(item.transform[5], item.str).toBeGreaterThanOrEqual(36);
-        expect(item.transform[5] + item.height, item.str).toBeLessThanOrEqual(768);
+        expect(item.transform[5] + item.height, item.str).toBeLessThanOrEqual(792 - 0.3 * 72);
+      }
+      // The original 14px body font is 10.5pt in the PDF, even on continuation
+      // pages. More rows must add pages rather than shrink the printed form.
+      if (/OP-END-|PART-END-|CHECK-|PN-/.test(item.str)) {
+        expect(item.height, item.str).toBeCloseTo(10.5, 1);
       }
     }
     texts.push(text);
@@ -147,17 +155,20 @@ test("mobile toolbar exposes blank printing and clear, preserves the draft, and 
   await expect(page.locator(".wo-sheet")).toHaveCount(1);
 });
 
-test("seven-operation work order fits with complete parts, wrapped descriptions, and a separate footer", async ({ request, page }) => {
+test("overflowing work order continues at original size with complete parts and no extra identity labels", async ({ request, page }) => {
   test.setTimeout(120_000);
   const data = printFixture();
   expect((await request.put("/api/state/workorder", { data: { value: data } })).ok()).toBe(true);
   const response = await request.get("/api/pdf?path=/workorder");
   expect(response.ok()).toBe(true);
   const texts = await inspectPdf(await response.body(), "workorder-seven-operations");
-  expect(texts).toHaveLength(1);
-  for (let i = 0; i < 7; i++) expect(texts[0]).toContain(`OP-END-${i}`);
-  for (let i = 0; i < 5; i++) expect(texts[0]).toContain(`PART-END-${i}`);
-  expect(texts[0]).toContain("SECURE AND CHECK BRACKETS");
+  expect(texts).toHaveLength(2);
+  const text = texts.join(" ");
+  for (let i = 0; i < 7; i++) expect(text).toContain(`OP-END-${i}`);
+  for (let i = 0; i < 5; i++) expect(text).toContain(`PART-END-${i}`);
+  expect(text.replace(/\s+/g, " ")).toContain("SECURE AND CHECK BRACKETS");
+  expect(texts[1]).toContain("PART-END-4");
+  expect(texts[1]).toContain("Description");
 
   await page.goto("/workorder");
   await expect(page.locator("#print-ready")).toBeAttached();
@@ -167,6 +178,9 @@ test("seven-operation work order fits with complete parts, wrapped descriptions,
   const paper = page.locator("[data-workorder-paper]");
   await expect(paper).toBeVisible();
   expect(await paper.locator("[data-operation] td").first().evaluate((cell) => getComputedStyle(cell).fontWeight)).toBe("400");
+  expect(await paper.locator("[data-operation] td").first().evaluate((cell) => getComputedStyle(cell).fontSize)).toBe("14px");
+  expect(await paper.locator("[data-operation]").first().evaluate((row) => row.getBoundingClientRect().height)).toBeGreaterThanOrEqual(52);
+  expect(await paper.locator("[data-part]").first().evaluate((row) => row.getBoundingClientRect().height)).toBeGreaterThanOrEqual(46);
   const nativeTexts = await inspectPdf(await page.pdf({ preferCSSPageSize: true, printBackground: true }), "workorder-native-print");
   expect(nativeTexts.map((text) => text.replace(/\s+/g, " "))).toEqual(texts.map((text) => text.replace(/\s+/g, " ")));
 });
@@ -187,10 +201,8 @@ test("long work orders continue onto numbered pages with every assigned operatio
     expect(text.match(new RegExp(`OP-END-${i}(?![0-9])`, "g"))?.length).toBe(i < 3 ? 2 : 1);
   }
   for (let i = 0; i < 22; i++) expect(text).toContain(`PART-END-${i}`);
-  for (const [i, content] of texts.entries()) {
-    expect(content).toContain("WO-6512");
-    expect(content).toContain(i === texts.length - 1 ? "Second Technician" : "First Technician");
-  }
+  expect(text).toContain("First Technician");
+  expect(texts.at(-1)).toContain("Second Technician");
   expect(texts.at(-1)).toContain("SECOND EMPLOYEE PART");
   expect(texts.at(-1)).toContain("Oracle eAM Work Order");
 });
