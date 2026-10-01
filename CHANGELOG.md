@@ -10,6 +10,9 @@
   also signs every browser out.
 - The automatic Fleetwatch update, the PDF renderer, and the admin unlock keep
   working behind the gate.
+- Phone paper previews no longer slip under the bottom navigation when the
+  "Saving… / Saved" status (or anything else above the sheet) appears after
+  the page has loaded; the viewer re-measures when its surroundings change.
 
 ## 0.45.10 - 2026-10-01
 

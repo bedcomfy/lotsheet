@@ -1,5 +1,5 @@
 import { expect, test as setup } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 // Matches playwright.config.ts. Runs before every other project and saves the
 // unlocked cookie jar they start from.
@@ -30,6 +30,10 @@ setup("the decoy typing test hides the site until the passphrase is typed", asyn
   await expect(page.getByRole("heading", { name: "Available Now" })).toBeVisible({ timeout: 30000 });
   expect(page.url()).toContain("/home");
 
+  // Save the cookie only. The unlocked visit also wrote the app's own
+  // localStorage (sidebar rail state and the like), which the other tests
+  // must start without, exactly as a fresh browser would.
+  const { cookies } = await page.context().storageState();
   mkdirSync("tmp/playwright", { recursive: true });
-  await page.context().storageState({ path: STATE });
+  writeFileSync(STATE, JSON.stringify({ cookies, origins: [] }));
 });
