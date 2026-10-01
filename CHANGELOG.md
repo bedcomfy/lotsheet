@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.2 - 2026-10-01
+
+- Add Foreman / SR to the PM completion dialog and save the entered name with each inspection or Trans PM.
+- Show the recorded name in the Completed list and Info history, including undone completions.
+
 ## 0.45.1 - 2026-10-01
 
 - Show last completed PMs only from inspections completed through the site, excluding imported and manually entered schedule history.

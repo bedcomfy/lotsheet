@@ -82,6 +82,7 @@ export const pmCompletePayloadSchema = z.object({
   type: textField, // inspection type that was done; defaults to the one that was next
   miles: z.union([z.number(), z.string()]),
   completedAt: z.string().datetime({ offset: true }),
+  foremanSr: z.string().trim().max(120).optional(),
   requestId: z.string().uuid(),
   expectedSchedule: z.string().min(1).max(1000),
   clearFlag: z.boolean().optional(), // also remove the bus's Inspection flag

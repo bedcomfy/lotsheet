@@ -92,6 +92,7 @@ export const pmInspections = pgTable(`pm_inspections${TABLE_SUFFIX}`, {
   miles: integer("miles").notNull(),
   doneAt: text("done_at"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+  foremanSr: text("foreman_sr"),
   odometer: integer("odometer"),
   requestId: text("request_id"),
   beforeState: jsonb("before_state").$type<PmRecord>(),

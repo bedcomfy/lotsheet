@@ -768,6 +768,7 @@ function CompleteDialog({
   const [type, setType] = useState<string>(next?.type ?? flaggedType ?? "");
   const [miles, setMiles] = useState("");
   const [completedAt] = useState(() => new Date().toISOString());
+  const [foremanSr, setForemanSr] = useState("");
   const [requestId] = useState(() => crypto.randomUUID());
   const [expectedSchedule] = useState(() => pmScheduleToken(record, target.kind));
   const [clearFlag, setClearFlag] = useState(hasFlag);
@@ -809,6 +810,7 @@ function CompleteDialog({
           type: isInspection ? type : null,
           miles: milesValue,
           completedAt,
+          foremanSr: foremanSr.trim(),
           requestId,
           expectedSchedule,
           clearFlag: isInspection && hasFlag && clearFlag,
@@ -865,6 +867,7 @@ function CompleteDialog({
         ) : <TextField label="Inspection done" value={type} isReadOnly />)}
         <TextField label="Date" value={chicagoDateShort(new Date(completedAt))} isReadOnly />
         <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
+        <TextField label="Foreman / SR" value={foremanSr} onChange={setForemanSr} maxLength={120} placeholder="Enter your name" />
         <TextField label="Odometer now" inputMode="numeric" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
           description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatMiles(record.odometer)} mi`} />
         {hasFlag && isInspection && (

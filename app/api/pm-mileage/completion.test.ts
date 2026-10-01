@@ -22,14 +22,17 @@ describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
   it("records the actual time/odometer once, and undo preserves later mileage, other PMs, status, notes and flags", async () => {
     await seed("6404");
     await setBusFlags("6404", { flags: ["inspection", "hold"], inspOption: "A-3", inspMiles: 100025, note: "Flag note", holdReason: "Parts" });
-    const body = await payload("6404");
+    const body = { ...await payload("6404"), foremanSr: "  Jordan Smith  ", actor: "test-device" };
     const responses = await Promise.all([complete(req(body)), complete(req(body))]);
     expect(responses.map((r) => r.status)).toEqual([200, 200]);
     const [entry] = await listPmInspections("6404");
     expect(await listPmInspections("6404")).toHaveLength(1);
-    expect(entry).toMatchObject({ completedAt: body.completedAt, odometer: 100050, miles: 100025, canUndo: true, type: "A-3" });
+    expect(entry).toMatchObject({ completedAt: body.completedAt, odometer: 100050, miles: 100025, canUndo: true, type: "A-3", foremanSr: "Jordan Smith", actor: "test-device" });
+    expect((await complete(req({ ...body, foremanSr: "Different name" }))).status).toBe(200);
+    expect((await listPmInspections("6404"))[0].foremanSr).toBe("Jordan Smith");
     expect((await getFlags())["6404"].flags).toEqual(["hold"]);
     expect((await complete(req(await payload("6404", "trans")))).status).toBe(200);
+    expect((await listPmInspections("6404"))[0].foremanSr).toBeNull();
     await updatePmMileage("6404", { odometer: 100500, odometerDate: "10/2/26", disposition: "split", note: "PM note" });
     expect((await undo(req({ id: entry.id }))).status).toBe(200);
     const record = (await getPmMileage())["6404"];
@@ -38,7 +41,7 @@ describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
     expect(transNextDue(record)).toBe(175250);
     expect((await getFlags())["6404"]).toMatchObject({ flags: expect.arrayContaining(["inspection", "hold", "split"]), inspOption: "A-3", inspMiles: 100025, note: "Flag note", holdReason: "Parts" });
     expect((await undo(req({ id: entry.id }))).status).toBe(200);
-    expect((await listPmInspections("6404")).find((e) => e.id === entry.id)).toMatchObject({ canUndo: false, undoneAt: expect.any(String) });
+    expect((await listPmInspections("6404")).find((e) => e.id === entry.id)).toMatchObject({ canUndo: false, undoneAt: expect.any(String), foremanSr: "Jordan Smith" });
     expect((await complete(req(body))).status).toBe(409);
   });
 
@@ -77,6 +80,8 @@ describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
     expect((await complete(req(body, "https://other.example"))).status).toBe(403);
     expect((await undo(req({ id: "1" }, "https://other.example"))).status).toBe(403);
     expect((await complete(req({ ...body, disposition: "shop" }))).status).toBe(400);
+    expect((await complete(req({ ...body, foremanSr: "a".repeat(121) }))).status).toBe(400);
+    expect((await complete(req({ ...body, foremanSr: 123 }))).status).toBe(400);
     expect((await complete(req({ ...body, completedAt: "2000-01-01T00:00:00Z" }))).status).toBe(400);
     expect((await complete(req({ ...body, type: "B-12" }))).status).toBe(409);
     expect((await complete(req(await payload("9690")))).status).toBe(409);

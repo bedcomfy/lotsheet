@@ -5,7 +5,7 @@ import { emptyPmRecord } from "./pmMileage";
 describe("Completed PM list", () => {
   it("includes all buses but shows PMs only from the site log, with undone entries excluded", () => {
     const buses = ["1", "2", "3", "4", "5"].map((num) => ({ num, status: "active" }));
-    const entry = (bus: string, completedAt: string): PmInspectionEntry => ({ bus, completedAt, id: bus, kind: "inspection", type: "A-3", miles: 1000, odometer: 1025, doneAt: "10/1/26", createdAt: completedAt, undoneAt: null, canUndo: true, undoReason: null });
+    const entry = (bus: string, completedAt: string): PmInspectionEntry => ({ bus, completedAt, id: bus, kind: "inspection", type: "A-3", miles: 1000, odometer: 1025, doneAt: "10/1/26", createdAt: completedAt, undoneAt: null, canUndo: true, undoReason: null, foremanSr: null });
     const rows = completedBusRows(buses, [entry("1", "2026-10-01T17:00:00Z"),
       { ...entry("2", "2026-10-01T18:00:00Z"), kind: "trans", type: null, miles: 75000 },
       { ...entry("3", "2026-10-01T19:00:00Z"), undoneAt: "2026-10-01T20:00:00Z" }]);
@@ -19,7 +19,7 @@ describe("Completed PM list", () => {
 
   it("uses the site save time for older completions and returns to the previous entry after undo", () => {
     const base: PmInspectionEntry = { bus: "1", id: "1", kind: "inspection", type: "A-3", miles: 1000,
-      odometer: 1025, doneAt: "9/30/26", completedAt: null, createdAt: "2026-10-01T17:12:34Z", undoneAt: null, canUndo: false, undoReason: null };
+      odometer: 1025, doneAt: "9/30/26", completedAt: null, createdAt: "2026-10-01T17:12:34Z", undoneAt: null, canUndo: false, undoReason: null, foremanSr: null };
     const rows = completedBusRows([{ num: "1", status: "active" }], [
       { ...base, id: "3", type: "A-9", completedAt: "2026-10-01T19:00:00Z", undoneAt: "2026-10-01T19:10:00Z" },
       { ...base, id: "2", type: "B-6", completedAt: "2026-10-01T16:00:00Z" }, base,

@@ -1,13 +1,13 @@
 .table { overflow-x: auto; margin-top: var(--ui-space-4); }
-.row { display: grid; grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1fr) minmax(14rem, 1.4fr) minmax(10rem, 1fr) 3rem; gap: var(--ui-space-3); align-items: center; padding: var(--ui-space-3); border-bottom: 1px solid var(--ui-border); }
+.row { display: grid; grid-template-columns: minmax(4rem, 0.6fr) minmax(8rem, 1fr) minmax(12rem, 1.4fr) minmax(8rem, 1fr) minmax(8rem, 1fr) 3rem; gap: var(--ui-space-3); align-items: center; padding: var(--ui-space-3); border-bottom: 1px solid var(--ui-border); }
+.row > div { min-width: 0; overflow-wrap: anywhere; }
 .head { color: var(--ui-text-muted); background: var(--ui-surface-muted); font-size: var(--ui-font-size-xs); font-weight: var(--ui-weight-semibold); }
 .muted { display: block; color: var(--ui-text-muted); font-size: var(--ui-font-size-sm); }
-.entry { padding: var(--ui-space-4) 0; border-bottom: 1px solid var(--ui-border); }
+.entry { padding: var(--ui-space-4) 0; border-bottom: 1px solid var(--ui-border); overflow-wrap: anywhere; }
 .entry p { margin: var(--ui-space-2) 0; }
 @media (max-width: 900px) {
   .head { display: none; }
   .row { grid-template-columns: 1fr 1fr; }
-  .row > div { min-width: 0; overflow-wrap: anywhere; }
   .row > div::before { content: attr(data-label); display: block; color: var(--ui-text-muted); font-size: var(--ui-font-size-xs); margin-bottom: var(--ui-space-1); }
   .row > div:first-child { grid-column: 1 / -1; }
 }

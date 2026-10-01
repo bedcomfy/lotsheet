@@ -18,9 +18,10 @@ function Fixture({ longContent }: { longContent: boolean }) {
 }
 const meta = {
   title: "Patterns/PM Completion History", component: Fixture, args: { longContent: false },
-  beforeEach: () => {
+  beforeEach: ({ args }) => {
     const original = window.fetch;
     let entry: PmInspectionEntry = { id: "1", bus: "6404", kind: "inspection", type: "A-3", miles: 100025, odometer: 100050,
+      foremanSr: args.longContent ? "Alexandria Maria De La Cruz — Northwest evening shift" : "Jordan Smith",
       doneAt: "10/1/26", completedAt: "2026-10-01T18:12:34Z", createdAt: "2026-10-01T18:12:34Z", undoneAt: null, canUndo: true, undoReason: null };
     window.fetch = async (input, init) => {
       const url = new URL(String(input), location.origin);
@@ -42,6 +43,7 @@ const meta = {
     await expect(row).toHaveTextContent("100,025");
     await expect(row).not.toHaveTextContent("100,050");
     await expect(row).not.toHaveTextContent("Scheduled mark");
+    await expect(within(row).getByRole("cell", { name: /Jordan Smith|Alexandria Maria/ })).toBeVisible();
     await expect(screen.getByRole("row", { name: "Completed work for bus 6435" })).toHaveTextContent("No completion recorded");
   },
 } satisfies Meta<typeof Fixture>;
@@ -56,10 +58,12 @@ export const Undo: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await userEvent.click(await screen.findByRole("button", { name: "Completion info for bus 6404" }));
     const info = await screen.findByRole("dialog", { name: "Completion history · Bus 6404" });
+    await within(info).findByText("Foreman / SR: Jordan Smith");
     await userEvent.click(await within(info).findByRole("button", { name: "Undo completion" }));
     const confirm = await screen.findByRole("dialog", { name: "Undo A-3 completion?" });
     await userEvent.click(within(confirm).getByRole("button", { name: "Undo completion" }));
     await expect(await within(info).findByText("A-3 · Undone")).toBeVisible();
+    await expect(within(info).getByText("Foreman / SR: Jordan Smith")).toBeVisible();
   },
 };
 export const ImportedScheduleOnly: Story = {

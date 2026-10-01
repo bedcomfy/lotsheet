@@ -60,6 +60,7 @@ const DDL: string[] = [
   `CREATE TABLE IF NOT EXISTS ${T("pm_inspections")} (id BIGSERIAL PRIMARY KEY, bus TEXT NOT NULL, kind TEXT NOT NULL, type TEXT, miles INTEGER NOT NULL, done_at TEXT, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS ${T("pm_inspections_bus_idx")} ON ${T("pm_inspections")} (bus, id DESC)`,
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS foreman_sr TEXT`,
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS odometer INTEGER`,
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS request_id TEXT`,
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS before_state JSONB`,

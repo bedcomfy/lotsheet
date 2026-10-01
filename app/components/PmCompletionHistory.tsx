@@ -51,7 +51,7 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
 
   const rows = useMemo(() => completedBusRows(buses, entries).filter((row) => {
     const bus = buses.find((item) => item.num === row.bus);
-    return `${row.bus} ${label(row.bus)} ${bus?.model || ""}`.toLowerCase().includes(query.trim().toLowerCase());
+    return `${row.bus} ${label(row.bus)} ${bus?.model || ""} ${row.entry?.foremanSr || ""}`.toLowerCase().includes(query.trim().toLowerCase());
   }), [buses, entries, label, query]);
 
   async function confirmUndo() {
@@ -79,13 +79,14 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
         ? <EmptyState title="No buses match" description="Try another bus number or name." />
         : <div className={styles.table} role="table" aria-label="Completed inspections">
           <div className={`${styles.row} ${styles.head}`} role="row">
-            {["Bus", "Last completed PM", "Completed", "Recorded mileage", "Info"].map((title) => <span key={title} role="columnheader">{title}</span>)}
+            {["Bus", "Last completed PM", "Completed", "Recorded mileage", "Foreman / SR", "Info"].map((title) => <span key={title} role="columnheader">{title}</span>)}
           </div>
           {rows.map((row) => <div className={styles.row} role="row" aria-label={`Completed work for bus ${row.bus}`} key={row.bus}>
             <div role="cell" data-label="Bus"><strong>{label(row.bus)}</strong></div>
             <div role="cell" data-label="Last completed PM">{row.kind === "trans" ? "Trans PM" : row.type || "No completion recorded"}</div>
             <div role="cell" data-label="Completed">{row.entry ? completionDateText(row.completedAt) : "—"}</div>
             <div role="cell" data-label="Recorded mileage">{row.miles === null ? "—" : formatMiles(row.miles)}</div>
+            <div role="cell" data-label="Foreman / SR">{row.entry ? row.entry.foremanSr || "Not recorded" : "—"}</div>
             <div role="cell" data-label="Info"><IconButton variant="quiet" aria-label={`Completion info for bus ${row.bus}`} onPress={() => setSelectedBus(row.bus)}><Info aria-hidden="true" /></IconButton></div>
           </div>)}
         </div>}
@@ -103,6 +104,7 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
         <strong>{entry.kind === "trans" ? "Trans PM" : entry.type || "Inspection"}{entry.undoneAt ? " · Undone" : ""}</strong>
         <p>{completionDateText(completionTimestamp(entry))}</p>
         <p>Recorded mileage: {formatMiles(entry.miles)}</p>
+        <p>Foreman / SR: {entry.foremanSr || "Not recorded"}</p>
         {entry.canUndo ? <Button onPress={() => setUndo(entry)}>Undo completion</Button>
           : !entry.undoneAt && <p className={styles.muted}>{entry.undoReason}</p>}
       </article>)}

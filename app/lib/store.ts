@@ -591,6 +591,7 @@ interface CompletionOptions {
   requestId: string;
   expectedSchedule: string;
   completedAt: string;
+  foremanSr?: string;
   clearFlag: boolean;
   admin: boolean;
 }
@@ -624,6 +625,7 @@ export async function completePm(
       throw new PmConflictError("Only the scheduled PM can be completed here. Ask an admin to correct its schedule first.");
     }
     const completedAt = new Date(options.completedAt);
+    const foremanSr = options.foremanSr?.trim() || null;
     const date = chicagoDateShort(completedAt);
     const next = applyCompletion(before, { ...completion, date });
     const fields = pmScheduleFields(completion.kind);
@@ -641,10 +643,11 @@ export async function completePm(
       bus, kind: completion.kind, type: completion.kind === "inspection" ? after.lastInspType : null,
       miles: (completion.kind === "inspection" ? after.lastInspMiles : after.lastTransMiles)!,
       odometer: completion.miles, doneAt: date, completedAt, requestId: options.requestId,
+      foremanSr,
       beforeState: before, afterState: after, clearedFlag, actor: actor || null,
     }).returning({ id: pmInspections.id });
     await logOdometerIfChanged(tx, before, after, actor);
-    await tx.insert(auditEvents).values({ kind: "pm_complete", actor, details: { id: String(entry.id), bus, kind: completion.kind, completedAt: options.completedAt, odometer: completion.miles, flagCleared: Boolean(clearedFlag) } });
+    await tx.insert(auditEvents).values({ kind: "pm_complete", actor, details: { id: String(entry.id), bus, kind: completion.kind, completedAt: options.completedAt, foremanSr, odometer: completion.miles, flagCleared: Boolean(clearedFlag) } });
     await bumpPulse(tx);
     return { before, after, flagCleared: Boolean(clearedFlag) };
   });
@@ -671,6 +674,7 @@ async function mapPmInspections(rows: InspectionRow[]): Promise<PmInspectionEntr
     const reason = undoReason(row, records[row.bus] || emptyPmRecord(row.bus), ids.get(`${row.bus}:${row.kind}`));
     return { id: String(row.id), bus: row.bus, kind: row.kind as PmKind, type: row.type || null,
       miles: row.miles, odometer: row.odometer, doneAt: row.doneAt || null, completedAt: isoOrNull(row.completedAt),
+      foremanSr: row.foremanSr || null,
       actor: row.actor || undefined, createdAt: isoOrNull(row.createdAt), undoneAt: isoOrNull(row.undoneAt),
       canUndo: reason === null, undoReason: reason };
   });

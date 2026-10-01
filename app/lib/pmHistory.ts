@@ -11,6 +11,7 @@ export interface PmInspectionEntry {
   doneAt: string | null;
   completedAt: string | null;
   actor?: string;
+  foremanSr: string | null;
   createdAt: string | null;
   undoneAt: string | null;
   canUndo: boolean;

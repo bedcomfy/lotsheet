@@ -100,6 +100,10 @@ export const CrewComplete: Story = {
     await expect(form.getByRole("textbox", { name: "Date" })).not.toHaveValue("");
     await expect(form.getByRole("textbox", { name: "Time (Chicago)" })).not.toHaveValue("");
     await expect(form.getByRole("textbox", { name: "Odometer now" })).toHaveValue("");
+    const foreman = form.getByRole("textbox", { name: "Foreman / SR" });
+    await expect(foreman).toHaveValue("");
+    await userEvent.type(foreman, "Jordan Smith");
+    await expect(foreman).toHaveValue("Jordan Smith");
     await userEvent.click(form.getByRole("button", { name: "Confirm completion" }));
     await expect(form.getByRole("alert")).toHaveTextContent("Enter the odometer reading");
     await userEvent.type(form.getByRole("textbox", { name: "Odometer now" }), "100050");
