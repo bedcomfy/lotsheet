@@ -81,10 +81,17 @@ export const pmCompletePayloadSchema = z.object({
   kind: z.enum(["inspection", "trans"]),
   type: textField, // inspection type that was done; defaults to the one that was next
   miles: z.union([z.number(), z.string()]),
-  date: textField,
+  completedAt: z.string().datetime({ offset: true }),
+  requestId: z.string().uuid(),
+  expectedSchedule: z.string().min(1).max(1000),
   clearFlag: z.boolean().optional(), // also remove the bus's Inspection flag
   actor: z.string().catch("").default(""),
-});
+}).strict();
+
+export const pmUndoPayloadSchema = z.object({
+  id: z.string().regex(/^[1-9]\d*$/),
+  actor: z.string().default(""),
+}).strict();
 
 // POST /api/pm-mileage/readings — a reviewed batch of odometer readings.
 export const pmReadingsPayloadSchema = z.object({

@@ -171,9 +171,9 @@
     minmax(8rem, 0.9fr)
     minmax(6rem, 0.8fr)
     minmax(5.5rem, 0.7fr)
-    minmax(7rem, auto)
     minmax(6.5rem, auto)
-    minmax(6rem, 1fr);
+    minmax(6rem, 1fr)
+    minmax(7rem, auto);
   align-items: center;
   gap: var(--ui-space-2);
   padding: var(--ui-space-2) var(--ui-space-4);
@@ -629,3 +629,5 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.viewTabs { margin-bottom: var(--ui-space-4); }

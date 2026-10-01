@@ -59,6 +59,15 @@ const DDL: string[] = [
   `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_service_miles INTEGER`,
   `CREATE TABLE IF NOT EXISTS ${T("pm_inspections")} (id BIGSERIAL PRIMARY KEY, bus TEXT NOT NULL, kind TEXT NOT NULL, type TEXT, miles INTEGER NOT NULL, done_at TEXT, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS ${T("pm_inspections_bus_idx")} ON ${T("pm_inspections")} (bus, id DESC)`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS odometer INTEGER`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS request_id TEXT`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS before_state JSONB`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS after_state JSONB`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS cleared_flag JSONB`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS undone_at TIMESTAMPTZ`,
+  `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS undone_by TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS ${T("pm_inspections_request_id_unique")} ON ${T("pm_inspections")} (request_id) WHERE request_id IS NOT NULL`,
 ];
 
 let _dbPromise: Promise<DB> | undefined;

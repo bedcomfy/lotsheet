@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.45.0 — 2026-10-01
+
+- Let crews complete scheduled inspections and Trans PMs without Admin Tools, with the current date/time and a required odometer reading.
+- Move PM actions after notes and add a Completed view showing every active PM bus, newest completion first.
+- Add completion details and undo with saved prior schedules, exact completion times, and separate actual odometer readings. Undo preserves mileage, other PMs, notes, and status, and safely restores cleared inspection flags.
+- Protect completion and undo against retries, concurrent changes, and later schedule corrections.
+- Limit PM printouts to overdue work and PMs due within 1,000 miles, with tighter vertical spacing, a smaller header, and centered grayscale columns.
+
 ## 0.44.4 - 2026-10-01
 
 - Split Odometer and Last serviced into separate printable PM columns, removed

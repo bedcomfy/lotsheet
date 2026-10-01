@@ -38,6 +38,23 @@ type Story = StoryObj<typeof meta>;
 export const Typical: Story = {};
 export const Dark: Story = { globals: { theme: "dark" } };
 export const Empty: Story = { args: { items: [] } };
+export const PrintCutoff: Story = {
+  args: { items: pmWorkItems([
+    { ...emptyPmRecord("1"), odometer: 100000, nextInspType: "A-3", nextInspMiles: 99000 },
+    { ...emptyPmRecord("2"), odometer: 100000, nextInspType: "A-3", nextInspMiles: 101000, nextTransMiles: 101001 },
+    { ...emptyPmRecord("3"), odometer: 100000, nextInspType: "A-3", nextInspMiles: 101001, disposition: "shop" },
+    emptyPmRecord("4"),
+  ], DEFAULT_PM_SETTINGS) },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll("tbody tr")).toHaveLength(2);
+    await expect(canvasElement.querySelector('[data-pm-id="1:inspection"]')).toHaveTextContent("-1,000");
+    await expect(canvasElement.querySelector('[data-pm-id="2:inspection"]')).toHaveTextContent("+1,000");
+    await expect(canvasElement).not.toHaveTextContent("+1,001");
+    await expect(canvasElement.querySelector('[data-pm-id="2:trans"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-pm-id="3:inspection"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-pm-id="4:inspection"]')).toBeNull();
+  },
+};
 export const LongContent: Story = { args: {
   items: pmWorkItems(records.map((record) => ({ ...record, note: "Follow up with the next shift about the transmission parts and return to service after the remaining work is complete. ".repeat(4) })), DEFAULT_PM_SETTINGS),
 } };

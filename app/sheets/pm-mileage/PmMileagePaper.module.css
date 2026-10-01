@@ -4,28 +4,27 @@
   width: 8.5in;
   min-height: 11in;
   margin: 0 auto;
-  padding: 0.5in 0.35in 0.35in;
+  padding: 0.35in;
   background: #fff;
   color: #000;
   color-scheme: light;
-  font: 10pt/1.3 Arial, Helvetica, sans-serif;
+  font: 9.5pt/1.12 Arial, Helvetica, sans-serif;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
-.title { margin: 0 0 0.16in; }
-.title h1 { margin: 0 0 0.06in; font-size: 19pt; line-height: 1.15; }
-.title p { margin: 0.025in 0; font-size: 9pt; }
+.title { margin: 0 0 0.08in; }
+.title h1 { margin: 0 0 0.025in; font-size: 15pt; line-height: 1.1; }
+.title p { margin: 0.015in 0; font-size: 8.5pt; }
 .scope { font-weight: 700; }
-.table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 0.2in; }
-.table th, .table td { border: 0.75pt solid #000; padding: 0.065in; text-align: center; vertical-align: middle; }
-.table th { font-size: 9pt; background: #eee; color: #000; }
-.table .section { border-top: 2pt solid #000; background: #fff; font-size: 11pt; padding: 0.08in 0.065in; }
+.table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0 0 0.1in; }
+.table th, .table td { border: 0.75pt solid #000; padding: 0.025in 0.045in; text-align: center; vertical-align: middle; }
+.table th { font-size: 8.5pt; background: #eee; color: #000; }
+.table .section { border-top: 1.5pt solid #000; background: #fff; font-size: 10pt; padding: 0.04in; }
 .section span { font-size: 9pt; font-weight: 400; }
-.table td span { display: block; margin-top: 0.025in; font-size: 8.5pt; }
+.table td span { display: block; margin-top: 0.01in; font-size: 8.5pt; }
 .table td span:first-child { margin-top: 0; }
-.table .urgency { font-size: 8pt; font-weight: 700; text-transform: uppercase; }
-.note + .note { margin-top: 0.06in; }
+.note + .note { margin-top: 0.025in; }
 .busColumn { width: 9%; }
 .odometerColumn { width: 13%; }
 .serviceColumn { width: 20%; }
@@ -33,7 +32,7 @@
 .milesColumn { width: 12%; }
 
 @media print {
-  @page pm-mileage { size: letter portrait; margin: 0.5in 0.35in 0.35in; }
+  @page pm-mileage { size: letter portrait; margin: 0.35in; }
   .paper { page: pm-mileage; width: 100%; min-height: 0; margin: 0; padding: 0; }
   .table { break-inside: auto; }
   .table thead { display: table-header-group; }

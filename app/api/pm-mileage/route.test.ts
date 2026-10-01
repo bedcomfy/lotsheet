@@ -6,6 +6,7 @@ import { PATCH, PUT } from "./route";
 import { POST as importReport } from "./import/route";
 import { POST as applyReadings } from "./readings/route";
 import { POST as complete } from "./complete/route";
+import { pmScheduleToken } from "../../lib/pmHistory";
 
 function request(method: string, body: unknown, admin = false) {
   return new Request("http://localhost/api/pm-mileage", {
@@ -90,15 +91,16 @@ describe("PM API access and independent schedules", { timeout: 20_000 }, () => {
     expect(nextInspection(record)?.miles).toBe(100_025);
     expect(transNextDue(record)).toBe(100_250);
 
-    const body = { bus: "6417", kind: "inspection", miles: 100_030, date: "10/1/26" };
-    expect((await complete(request("POST", body))).status).toBe(401);
-    expect((await complete(request("POST", body, true))).status).toBe(200);
+    const body = { bus: "6417", kind: "inspection", miles: 100_030, completedAt: new Date().toISOString(), requestId: crypto.randomUUID(), expectedSchedule: pmScheduleToken(record, "inspection") };
+    expect((await complete(request("POST", body))).status).toBe(200);
+    expect((await complete(request("POST", body))).status).toBe(200);
     record = (await getPmMileage())["6417"];
     expect(nextInspection(record)?.miles).toBe(103_025);
     expect(transNextDue(record)).toBe(100_250);
     expect((await listPmInspections("6417"))).toMatchObject([{ kind: "inspection", type: "A-3", miles: 100_025 }]);
     await setBusFlags("6417", { flags: ["inspection"], inspOption: "B-6" });
-    expect((await complete(request("POST", { bus: "6417", kind: "trans", miles: 100_260, clearFlag: true }, true))).status).toBe(200);
+    expect((await complete(request("POST", { bus: "6417", kind: "trans", miles: 100_260, clearFlag: true,
+      completedAt: new Date().toISOString(), requestId: crypto.randomUUID(), expectedSchedule: pmScheduleToken(record, "trans") }))).status).toBe(200);
     record = (await getPmMileage())["6417"];
     expect(transNextDue(record)).toBe(175_250);
     expect(nextInspection(record)?.miles).toBe(103_025);

@@ -9,11 +9,12 @@ import { AlertTriangle, CheckCircle2, FileDown, FileUp, Gauge, Lock, RefreshCw }
 import { openSheetPdf } from "../lib/pdf";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import { pmScheduleToken } from "../lib/pmHistory";
 import type { MileageSyncStatus } from "../lib/fleetwatch";
 import { serviceTimeParts } from "../lib/vehicleServiceReport";
 import { readPdfTextInBrowser } from "../lib/pdfTextClient";
 import { getDeviceActor } from "../lib/deviceActor";
-import { inspectionOptionFromText } from "../lib/grid";
+import { inspectionOptionFromText, removeInspection } from "../lib/grid";
 import {
   DEFAULT_PM_SETTINGS,
   INSPECTION_CYCLE,
@@ -57,10 +58,12 @@ import {
   SearchField,
   SelectField,
   StatusBadge,
+  TabBar,
   TextField,
 } from "../ui";
 import AdminLogoutButton from "./AdminLogoutButton";
 import AdminUnlockButton from "./AdminUnlockButton";
+import PmCompletionHistory from "./PmCompletionHistory";
 import { useBusMaster } from "./BusMasterProvider";
 import SaveStatus, { useSaveState } from "./SaveStatus";
 import TypeCodes from "./TypeCodes";
@@ -191,6 +194,7 @@ export default function PmMileagePage() {
   const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<"upcoming" | "completed">("upcoming");
   const [saveState, markSave] = useSaveState();
   const [saveError, setSaveError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
@@ -208,7 +212,6 @@ export default function PmMileagePage() {
     if (!unlocked) {
       setEditing(null);
       setEditingNext(null);
-      setCompleting(null);
       setImportOpen(false);
     }
   }, [unlocked]);
@@ -328,10 +331,10 @@ export default function PmMileagePage() {
           <div className={styles.headerActions}>
             <SaveStatus state={saveState} />
             <AdminLogoutButton />
-            <Button variant="secondary" isDisabled={!loaded || !fleetReady || !!loadError || saveState === "saving" || savingStatus.size > 0}
+            {view === "upcoming" && <Button variant="secondary" isDisabled={!loaded || !fleetReady || !!loadError || saveState === "saving" || savingStatus.size > 0}
               onPress={() => { void openSheetPdf({ path: "/pm-mileage", params: { pmFilter: filter, pmQuery: query } }); }}>
               <FileDown aria-hidden="true" /> Print PDF
-            </Button>
+            </Button>}
             <Button variant="secondary" isDisabled={syncing || saveState === "saving"} onPress={updateMileageNow}>
               <RefreshCw aria-hidden="true" /> {syncing ? "Updating mileage…" : "Update mileage now"}
             </Button>
@@ -362,11 +365,15 @@ export default function PmMileagePage() {
 
       {!unlocked && (
         <div className={styles.lockNotice}>
-          <Lock aria-hidden="true" /> Anyone can update bus status or fetch Fleetwatch mileage. Unlock Admin Tools to edit mileage, schedules, or notes, import reports, or complete a PM.
+          <Lock aria-hidden="true" /> Anyone can complete PMs, undo accidental completions, update bus status, or fetch Fleetwatch mileage. Unlock Admin Tools to edit mileage, schedules, or notes, or import reports.
         </div>
       )}
 
-      <div className={styles.tiles} role="group" aria-label="PM work counts and filters">
+      <TabBar className={styles.viewTabs} label="PM view" selectedKey={view}
+        onSelectionChange={(key) => setView(key as "upcoming" | "completed")}
+        items={[{ id: "upcoming", label: "Upcoming" }, { id: "completed", label: "Completed" }]} />
+
+      {view === "upcoming" && <div className={styles.tiles} role="group" aria-label="PM work counts and filters">
         {(["overdue", "due-soon", "ok", "unknown"] as PmStatus[]).map((status) => (
           <Pressable
             aria-pressed={filter === status}
@@ -384,7 +391,7 @@ export default function PmMileagePage() {
           Inspections every <strong>3,000</strong> mi · trans PM every <strong>{formatMiles(TRANS_PM_INTERVAL)}</strong> mi
           · due soon within <strong>{formatMiles(settings.dueSoonMiles)}</strong> mi
         </div>
-      </div>
+      </div>}
 
       {(loadError || saveError) && (
         <div className={styles.errorBanner} role="alert">
@@ -392,7 +399,12 @@ export default function PmMileagePage() {
         </div>
       )}
 
-      <Panel className={styles.panel} title="Upcoming work" description={`${rows.length} of ${work.length} PMs · ${active.length} active buses · Service / odometer reading times are shown in Chicago time`}>
+      {view === "completed" ? <PmCompletionHistory buses={active} records={records} label={label}
+        onUpdated={(record) => {
+          ++loadVersion.current;
+          setRecords((cur) => ({ ...cur, [record.bus]: record }));
+          void load();
+        }} /> : <Panel className={styles.panel} title="Upcoming work" description={`${rows.length} of ${work.length} PMs · ${active.length} active buses · Service / odometer reading times are shown in Chicago time`}>
         <div className={styles.toolbar}>
           <SearchField
             label="Search buses"
@@ -420,9 +432,9 @@ export default function PmMileagePage() {
               <span role="columnheader">Last serviced / last odometer reading time</span>
               <span role="columnheader">Next PM</span>
               <span role="columnheader">Miles left</span>
-              <span role="columnheader">Actions</span>
               <span role="columnheader">Bus status</span>
               <span role="columnheader">Note</span>
+              <span role="columnheader">Actions</span>
             </div>
             {groups.map((group) => (
               <div role="rowgroup" aria-label={group.title} key={group.id}>
@@ -469,8 +481,21 @@ export default function PmMileagePage() {
                   <div role="cell" data-label="Miles left" className={styles.derived}>
                     <StatusBadge className={styles.mileageBadge} tone={TONE[item.status]} size="sm">{milesLeftLabel(item.milesLeft)}</StatusBadge>
                   </div>
+                  <div role="cell" data-label="Bus status" data-disposition={r.disposition || undefined}>
+                    <SelectField className={styles.typeSelect} label={`Bus ${r.bus} ${workLabel} status`} labelHidden
+                      selectedKey={r.disposition} isDisabled={savingStatus.has(r.bus)}
+                      onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
+                  </div>
+                  <div role="cell" data-label="Note">
+                    {item.kind === "trans" && <div className={styles.standardNote}>{TRANS_PM_NOTE}</div>}
+                    {(unlocked || r.note || item.kind !== "trans") && (
+                      <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
+                        value={r.note || ""} placeholder={item.kind === "trans" ? "Additional bus note" : "note"}
+                        onCommit={(v) => save(r.bus, "note", v)} />
+                    )}
+                  </div>
                   <div role="cell" data-label="Actions" className={styles.actionCell}>
-                    {!unlocked ? <span className={styles.muted}><Lock aria-hidden="true" className={styles.lockIcon} /> locked</span> : (
+                    {!unlocked ? <Button size="sm" onPress={() => setCompleting({ bus: r.bus, kind: item.kind })} isDisabled={item.dueMiles === null}>Complete</Button> : (
                       <ActionMenu label="Actions" buttonSize="sm" placement="bottom end"
                         items={[
                           { id: "complete", label: `Complete ${workLabel}`, description: "Record this PM as done" },
@@ -489,19 +514,6 @@ export default function PmMileagePage() {
                         }} />
                     )}
                   </div>
-                  <div role="cell" data-label="Bus status" data-disposition={r.disposition || undefined}>
-                    <SelectField className={styles.typeSelect} label={`Bus ${r.bus} ${workLabel} status`} labelHidden
-                      selectedKey={r.disposition} isDisabled={savingStatus.has(r.bus)}
-                      onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
-                  </div>
-                  <div role="cell" data-label="Note">
-                    {item.kind === "trans" && <div className={styles.standardNote}>{TRANS_PM_NOTE}</div>}
-                    {(unlocked || r.note || item.kind !== "trans") && (
-                      <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
-                        value={r.note || ""} placeholder={item.kind === "trans" ? "Additional bus note" : "note"}
-                        onCommit={(v) => save(r.bus, "note", v)} />
-                    )}
-                  </div>
                 </div>
               );
             })}
@@ -509,7 +521,7 @@ export default function PmMileagePage() {
             ))}
           </div>
         )}
-      </Panel>
+      </Panel>}
 
       <ImportDialog
         isOpen={importOpen}
@@ -542,8 +554,9 @@ export default function PmMileagePage() {
           }}
         />
       )}
-      {unlocked && completing && completingRecord && (
+      {completing && completingRecord && (
         <CompleteDialog
+          admin={unlocked}
           target={completing}
           record={completingRecord}
           busLabel={label(completing.bus)}
@@ -551,6 +564,7 @@ export default function PmMileagePage() {
           hasFlag={hasInspectionFlag(flags, completing.bus)}
           onClose={() => setCompleting(null)}
           onDone={(record, flagCleared) => {
+            ++loadVersion.current;
             setRecords((cur) => ({ ...cur, [record.bus]: record }));
             if (flagCleared) {
               setFlags((cur) => {
@@ -558,7 +572,7 @@ export default function PmMileagePage() {
                 if (!entry) return cur;
                 return {
                   ...cur,
-                  [record.bus]: { ...entry, flags: entry.flags.filter((id) => id !== "inspection"), inspOption: "" },
+                  [record.bus]: { ...removeInspection(entry), inspMiles: null },
                 };
               });
             }
@@ -731,6 +745,7 @@ function EditInspectionDialog({
 
 // ---------- Complete a PM ----------
 function CompleteDialog({
+  admin,
   target,
   record,
   busLabel,
@@ -739,6 +754,7 @@ function CompleteDialog({
   onClose,
   onDone,
 }: {
+  admin: boolean;
   target: CompleteTarget;
   record: PmRecord;
   busLabel: string;
@@ -750,13 +766,16 @@ function CompleteDialog({
   const isInspection = target.kind === "inspection";
   const next = nextInspection(record);
   const [type, setType] = useState<string>(next?.type ?? flaggedType ?? "");
-  const [miles, setMiles] = useState(record.odometer === null ? "" : String(record.odometer));
-  const [date, setDate] = useState(chicagoDateShort());
+  const [miles, setMiles] = useState("");
+  const [completedAt] = useState(() => new Date().toISOString());
+  const [requestId] = useState(() => crypto.randomUUID());
+  const [expectedSchedule] = useState(() => pmScheduleToken(record, target.kind));
   const [clearFlag, setClearFlag] = useState(hasFlag);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const milesValue = toMiles(miles);
+  const enteredMiles = Number(miles.replace(/[,\s]/g, ""));
+  const milesValue = Number.isSafeInteger(enteredMiles) && enteredMiles > 0 && enteredMiles <= 2_147_483_647 ? enteredMiles : null;
   const after = useMemo(() => {
     if (milesValue === null) return null;
     if (!isInspection) {
@@ -789,7 +808,9 @@ function CompleteDialog({
           kind: target.kind,
           type: isInspection ? type : null,
           miles: milesValue,
-          date: date.trim() || null,
+          completedAt,
+          requestId,
+          expectedSchedule,
           clearFlag: isInspection && hasFlag && clearFlag,
           actor: getDeviceActor(),
         }),
@@ -821,13 +842,13 @@ function CompleteDialog({
         <div className={styles.dialogFooter}>
           <Button variant="quiet" onPress={onClose} isDisabled={busy}>Cancel</Button>
           <Button variant="primary" onPress={submit} isDisabled={busy}>
-            {busy ? "Saving…" : "Mark complete"}
+            {busy ? "Saving…" : "Confirm completion"}
           </Button>
         </div>
       }
     >
       <div className={styles.settingsBody}>
-        {isInspection && (
+        {isInspection && (admin ? (
           <SelectField
             label="Inspection done"
             description={
@@ -841,9 +862,11 @@ function CompleteDialog({
             onSelectionChange={(key) => setType(String(key ?? ""))}
             options={TYPE_OPTIONS.filter((o) => o.id !== "")}
           />
-        )}
-        <TextField label="Odometer now" inputMode="numeric" value={miles} onChange={setMiles} placeholder="miles" />
-        <TextField label="Date" value={date} onChange={setDate} placeholder="mm/dd/yy" />
+        ) : <TextField label="Inspection done" value={type} isReadOnly />)}
+        <TextField label="Date" value={chicagoDateShort(new Date(completedAt))} isReadOnly />
+        <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
+        <TextField label="Odometer now" inputMode="numeric" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
+          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatMiles(record.odometer)} mi`} />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>
             Also clear the Inspection flag on the sheet

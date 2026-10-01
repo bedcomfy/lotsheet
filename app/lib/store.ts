@@ -5,7 +5,7 @@
 // PGlite database in local dev (see ./db). The API surface below is unchanged;
 // callers don't know or care which database is behind it.
 
-import { asc, desc, eq, gt, inArray, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, max, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import type { DB } from "./db";
 import { appState, auditEvents, busFlags, lotSheetOps, pmInspections, pmMileage, pmMileageLog, sheetHistory, TABLE_SUFFIX } from "./db/schema";
@@ -15,20 +15,28 @@ import {
   type LotSheetOp,
   type LotSheetOpRecord,
 } from "./lotSheetOps";
-import type { FlagEntry, FlagMap, LotSheet } from "./types";
+import type { BusMaster, FlagEntry, FlagMap, LotSheet } from "./types";
 import {
   applyCompletion,
   emptyPmRecord,
   isInspectionType,
+  isPmFleetBus,
+  nextInspection,
   normalizeDisposition,
   normalizePmSettings,
   toMiles as toPmMiles,
+  transNextDue,
   type PmCompletion,
+  type PmKind,
   type PmReading,
   type PmRecord,
   type PmSettings,
 } from "./pmMileage";
-import { inspectionOptionFromText, setInspectionOption } from "./grid";
+import { inspectionOptionFromText, removeInspection, setInspectionOption } from "./grid";
+import { DEFAULT_MASTER, normalizeBusMaster } from "./buses";
+import { chicagoDateShort } from "./chicagoTime";
+import { pmScheduleToken, type PmInspectionEntry } from "./pmHistory";
+export type { PmInspectionEntry } from "./pmHistory";
 
 // Shared by the database and a transaction, so status and flag writes commit together.
 type StoreWriter = Pick<DB, "select" | "insert" | "delete" | "execute">;
@@ -571,43 +579,101 @@ async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor
   return saved;
 }
 
-// Mark an inspection or transmission PM as done at a mileage: it becomes the
-// bus's last PM (so the next one moves forward) and is kept in the history.
+export class PmConflictError extends Error {}
+
+function pmScheduleFields(kind: PmKind): string[] {
+  return kind === "inspection"
+    ? ["lastInspType", "lastInspMiles", "lastInspDate", "nextInspType", "nextInspMiles"]
+    : ["lastTransMiles", "lastTransDate", "nextTransMiles"];
+}
+
+interface CompletionOptions {
+  requestId: string;
+  expectedSchedule: string;
+  completedAt: string;
+  clearFlag: boolean;
+  admin: boolean;
+}
+
+// Lock the bus, check the schedule the crew saw, then commit the schedule,
+// completion receipt, optional flag removal, and audit together. A retry of
+// the same request never advances the inspection cycle a second time.
 export async function completePm(
   bus: string,
   completion: PmCompletion,
-  actor = "",
-): Promise<{ before: PmRecord; after: PmRecord }> {
+  actor: string,
+  options: CompletionOptions,
+): Promise<{ before: PmRecord; after: PmRecord; flagCleared: boolean }> {
   const db = await getDb();
-  const before = await readPmRecord(db, bus);
-  const next = applyCompletion(before, completion);
-  const fields = completion.kind === "inspection"
-    ? ["lastInspType", "lastInspMiles", "lastInspDate", "nextInspType", "nextInspMiles"]
-    : ["lastTransMiles", "lastTransDate", "nextTransMiles"];
-  if (next.odometer !== before.odometer) fields.push("odometer", "odometerDate");
-  const after = await writePmRecord(db, next, fields);
-  await db.insert(pmInspections).values({
-    bus,
-    kind: completion.kind,
-    type: completion.kind === "inspection" ? after.lastInspType : null,
-    miles: completion.kind === "inspection" ? (after.lastInspMiles as number) : (after.lastTransMiles as number),
-    doneAt: completion.date,
-    actor: actor || null,
+  return db.transaction(async (tx) => {
+    const [master] = await tx.select().from(appState).where(eq(appState.key, "bus_master"));
+    const fleet = normalizeBusMaster((master?.value as BusMaster | null) || DEFAULT_MASTER).buses;
+    if (!fleet.some((item) => item.num === bus && isPmFleetBus(item))) throw new PmConflictError("This bus is not in the PM fleet.");
+    await tx.insert(pmMileage).values({ bus }).onConflictDoNothing();
+    const [row] = await tx.select().from(pmMileage).where(eq(pmMileage.bus, bus)).for("update");
+    const before = pmRowToRecord(row);
+    const [duplicate] = await tx.select().from(pmInspections).where(eq(pmInspections.requestId, options.requestId));
+    if (duplicate) {
+      if (duplicate.bus !== bus || duplicate.kind !== completion.kind || duplicate.undoneAt) throw new PmConflictError("This completion request has already been used. Refresh the PM page.");
+      return { before, after: before, flagCleared: Boolean(duplicate.clearedFlag) };
+    }
+    if (pmScheduleToken(before, completion.kind) !== options.expectedSchedule) throw new PmConflictError("This PM changed while you were confirming. Close this window and refresh the PM page.");
+    const scheduled = nextInspection(before);
+    const due = completion.kind === "inspection" ? scheduled?.miles ?? null : transNextDue(before);
+    if (!options.admin && (due === null || (completion.kind === "inspection" && completion.type && completion.type !== scheduled?.type))) {
+      throw new PmConflictError("Only the scheduled PM can be completed here. Ask an admin to correct its schedule first.");
+    }
+    const completedAt = new Date(options.completedAt);
+    const date = chicagoDateShort(completedAt);
+    const next = applyCompletion(before, { ...completion, date });
+    const fields = pmScheduleFields(completion.kind);
+    if (next.odometer !== before.odometer) fields.push("odometer", "odometerDate");
+    const after = await writePmRecord(tx, next, fields);
+    let clearedFlag: FlagEntry | null = null;
+    if (completion.kind === "inspection" && options.clearFlag) {
+      const [flagRow] = await tx.select().from(busFlags).where(eq(busFlags.bus, bus)).for("update");
+      if (flagRow?.flag?.split(",").includes("inspection")) {
+        clearedFlag = toEntry({ ...flagRow, flags: flagRow.flag.split(","), retorqueTires: flagRow.retorqueTires?.split(",") || [] });
+        await tx.update(busFlags).set({ flag: removeInspection(clearedFlag).flags.join(","), inspOption: "", inspMiles: null, updatedAt: sql`now()` }).where(eq(busFlags.bus, bus));
+      }
+    }
+    const [entry] = await tx.insert(pmInspections).values({
+      bus, kind: completion.kind, type: completion.kind === "inspection" ? after.lastInspType : null,
+      miles: (completion.kind === "inspection" ? after.lastInspMiles : after.lastTransMiles)!,
+      odometer: completion.miles, doneAt: date, completedAt, requestId: options.requestId,
+      beforeState: before, afterState: after, clearedFlag, actor: actor || null,
+    }).returning({ id: pmInspections.id });
+    await logOdometerIfChanged(tx, before, after, actor);
+    await tx.insert(auditEvents).values({ kind: "pm_complete", actor, details: { id: String(entry.id), bus, kind: completion.kind, completedAt: options.completedAt, odometer: completion.miles, flagCleared: Boolean(clearedFlag) } });
+    await bumpPulse(tx);
+    return { before, after, flagCleared: Boolean(clearedFlag) };
   });
-  await logOdometerIfChanged(db, before, after, actor);
-  await bumpPulse(db);
-  return { before, after };
 }
 
-export interface PmInspectionEntry {
-  id: string;
-  bus: string;
-  kind: string;
-  type: string | null;
-  miles: number;
-  doneAt: string | null;
-  actor?: string;
-  createdAt: string | null;
+type InspectionRow = typeof pmInspections.$inferSelect;
+function undoReason(row: InspectionRow, current: PmRecord, latestId: number | undefined): string | null {
+  if (row.undoneAt) return "This completion was undone.";
+  if (!row.beforeState || !row.afterState) return "Undo is unavailable for older records without a saved prior schedule.";
+  if (row.id !== latestId) return "Undo the newer completion of this PM first.";
+  if (pmScheduleToken(current, row.kind as PmKind) !== pmScheduleToken(row.afterState, row.kind as PmKind)) return "This PM schedule has been edited since completion. Ask an admin to review it.";
+  return null;
+}
+
+async function mapPmInspections(rows: InspectionRow[]): Promise<PmInspectionEntry[]> {
+  const db = await getDb();
+  const [records, latest] = await Promise.all([
+    getPmMileage(),
+    db.selectDistinctOn([pmInspections.bus, pmInspections.kind]).from(pmInspections).where(isNull(pmInspections.undoneAt))
+      .orderBy(asc(pmInspections.bus), asc(pmInspections.kind), desc(pmInspections.id)),
+  ]);
+  const ids = new Map(latest.map((item) => [`${item.bus}:${item.kind}`, item.id]));
+  return rows.map((row) => {
+    const reason = undoReason(row, records[row.bus] || emptyPmRecord(row.bus), ids.get(`${row.bus}:${row.kind}`));
+    return { id: String(row.id), bus: row.bus, kind: row.kind as PmKind, type: row.type || null,
+      miles: row.miles, odometer: row.odometer, doneAt: row.doneAt || null, completedAt: isoOrNull(row.completedAt),
+      actor: row.actor || undefined, createdAt: isoOrNull(row.createdAt), undoneAt: isoOrNull(row.undoneAt),
+      canUndo: reason === null, undoReason: reason };
+  });
 }
 
 export async function listPmInspections(bus?: string, limit = 200): Promise<PmInspectionEntry[]> {
@@ -615,16 +681,49 @@ export async function listPmInspections(bus?: string, limit = 200): Promise<PmIn
   const db = await getDb();
   const base = db.select().from(pmInspections);
   const rows = await (bus ? base.where(eq(pmInspections.bus, bus)) : base).orderBy(desc(pmInspections.id)).limit(n);
-  return rows.map((row) => ({
-    id: String(row.id),
-    bus: row.bus,
-    kind: row.kind,
-    type: row.type || null,
-    miles: row.miles,
-    doneAt: row.doneAt || null,
-    actor: row.actor || undefined,
-    createdAt: isoOrNull(row.createdAt),
-  }));
+  return mapPmInspections(rows);
+}
+
+export async function latestPmInspections(): Promise<PmInspectionEntry[]> {
+  const db = await getDb();
+  const rows = await db.selectDistinctOn([pmInspections.bus, pmInspections.kind]).from(pmInspections)
+    .where(isNull(pmInspections.undoneAt)).orderBy(asc(pmInspections.bus), asc(pmInspections.kind), desc(pmInspections.id));
+  return mapPmInspections(rows);
+}
+
+export async function undoPmInspection(id: number, actor = ""): Promise<PmRecord> {
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const [found] = await tx.select().from(pmInspections).where(eq(pmInspections.id, id));
+    if (!found) throw new PmConflictError("This completion could not be found.");
+    const [row] = await tx.select().from(pmMileage).where(eq(pmMileage.bus, found.bus)).for("update");
+    if (!row) throw new PmConflictError("This bus no longer has a PM record.");
+    const current = pmRowToRecord(row);
+    const [entry] = await tx.select().from(pmInspections).where(eq(pmInspections.id, id));
+    if (entry.undoneAt) return current;
+    const [latest] = await tx.select().from(pmInspections).where(and(eq(pmInspections.bus, entry.bus), eq(pmInspections.kind, entry.kind), isNull(pmInspections.undoneAt))).orderBy(desc(pmInspections.id)).limit(1);
+    const reason = undoReason(entry, current, latest?.id);
+    if (reason) throw new PmConflictError(reason);
+    if (entry.clearedFlag) {
+      await tx.insert(busFlags).values({ bus: entry.bus }).onConflictDoNothing();
+      const [flags] = await tx.select().from(busFlags).where(eq(busFlags.bus, entry.bus)).for("update");
+      const hasInspection = flags.flag?.split(",").includes("inspection");
+      if (hasInspection && ((flags.inspOption || "") !== entry.clearedFlag.inspOption || flags.inspMiles !== entry.clearedFlag.inspMiles)) throw new PmConflictError("The inspection flag was changed after completion. Ask an admin to review it.");
+      if (!hasInspection) {
+        const restoredFlags = setInspectionOption({ ...entry.clearedFlag, flags: [...(flags.flag?.split(",").filter(Boolean) || []), "inspection"] }, entry.clearedFlag.inspOption);
+        await tx.update(busFlags).set({ flag: restoredFlags.flags.join(","),
+          inspOption: entry.clearedFlag.inspOption, inspMiles: entry.clearedFlag.inspMiles, updatedAt: sql`now()`,
+        }).where(eq(busFlags.bus, entry.bus));
+      }
+    }
+    // Only the selected PM is rewound. A confirmed odometer reading remains
+    // valid even if the inspection was marked complete by mistake.
+    const restored = await writePmRecord(tx, entry.beforeState!, pmScheduleFields(entry.kind as PmKind));
+    await tx.update(pmInspections).set({ undoneAt: sql`now()`, undoneBy: actor }).where(eq(pmInspections.id, id));
+    await tx.insert(auditEvents).values({ kind: "pm_completion_undo", actor, details: { id: String(id), bus: entry.bus, kind: entry.kind } });
+    await bumpPulse(tx);
+    return restored;
+  });
 }
 
 // Apply a reviewed report. Odometer-only readings preserve both PM schedules;

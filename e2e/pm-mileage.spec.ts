@@ -59,7 +59,9 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   expect(record.nextTransMiles).toBe(100_250);
   await corrected.getByRole("button", { name: "Actions", exact: true }).click();
   await page.getByRole("menuitem", { name: "Complete A-9", exact: false }).click();
-  await page.getByRole("dialog", { name: "Complete inspection · Bus 6404" }).getByRole("button", { name: "Mark complete" }).click();
+  const complete = page.getByRole("dialog", { name: "Complete inspection · Bus 6404" });
+  await complete.getByLabel("Odometer now").fill("100000");
+  await complete.getByRole("button", { name: "Confirm completion" }).click();
   const next = page.getByRole("row", { name: "Bus 6404 B-12", exact: true });
   await expect(next.getByText("at 103,100")).toBeVisible();
   await expect(trans.getByText("at 100,250")).toBeVisible();
@@ -105,6 +107,67 @@ test("Admin Tools exposes logout and clears the password after locking", async (
   await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
 });
 
+test("crew completes both PMs, sees every bus in history, and undoes through Info without unlocking", async ({ page, context }) => {
+  const api = context.request;
+  await api.post("/api/admin/session", { data: { password: process.env.ADMIN_PASSWORD || "ride" } });
+  expect((await api.put("/api/pm-mileage", { data: {
+    bus: "6457", odometer: 100000, lastInspType: null, lastInspMiles: null, lastInspDate: null,
+    lastTransMiles: null, lastTransDate: null, nextInspType: "A-3", nextInspMiles: 100025, nextTransMiles: 100250,
+  } })).ok()).toBe(true);
+  await api.delete("/api/admin/session");
+  await page.goto("/pm-mileage");
+  const headers = page.getByRole("table", { name: "Upcoming PM work" }).getByRole("columnheader");
+  await expect(headers.last()).toHaveText("Actions");
+  await expect(headers.nth(6)).toHaveText("Note");
+  await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6457");
+  const regular = page.getByRole("row", { name: "Bus 6457 A-3", exact: true });
+  await regular.getByRole("button", { name: "Complete", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Complete inspection · Bus 6457" });
+  await expect(dialog.getByLabel("Date", { exact: true })).not.toHaveValue("");
+  await expect(dialog.getByLabel("Time (Chicago)", { exact: true })).not.toHaveValue("");
+  await expect(dialog.getByLabel("Odometer now")).toHaveValue("");
+  await expect(dialog.getByLabel("Inspection done")).toHaveAttribute("readonly", "");
+  await dialog.getByRole("button", { name: "Confirm completion" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Enter the odometer reading");
+  await dialog.getByLabel("Odometer now").fill("100050");
+  await page.screenshot({ path: "test-results/pm-crew-complete-desktop.png", animations: "disabled" });
+  await dialog.getByRole("button", { name: "Confirm completion" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("row", { name: "Bus 6457 B-6", exact: true })).toContainText("at 103,025");
+  const trans = page.getByRole("row", { name: "Bus 6457 Trans PM", exact: true });
+  await expect(trans).toContainText("at 100,250");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await trans.getByRole("button", { name: "Complete", exact: true }).click();
+  const transDialog = page.getByRole("dialog", { name: "Complete trans PM · Bus 6457" });
+  await transDialog.getByLabel("Odometer now").fill("100260");
+  await page.screenshot({ path: "test-results/pm-crew-complete-phone.png", animations: "disabled" });
+  await transDialog.getByRole("button", { name: "Confirm completion" }).click();
+  await expect(transDialog).toBeHidden();
+  await page.getByRole("radio", { name: "Completed", exact: true }).click();
+  const completed = page.getByRole("table", { name: "Completed inspections" });
+  await expect(completed.getByRole("row", { name: /^Completed work for bus/ }).first()).toHaveAttribute("aria-label", "Completed work for bus 6457");
+  const buses = (await (await api.get("/api/buses")).json()).master.buses;
+  expect(await completed.getByRole("row", { name: /^Completed work for bus/ }).count()).toBe(buses.filter((bus: { num: string; status: string }) => bus.status !== "retired" && bus.num !== "9690").length);
+  await expect(completed.getByRole("row", { name: "Completed work for bus 6457", exact: true })).toContainText("Trans PM");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  await completed.getByRole("row", { name: /^Completed work for bus/ }).first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/pm-completed-phone.png", animations: "disabled" });
+  await page.getByRole("button", { name: "Completion info for bus 6457" }).click();
+  const info = page.getByRole("dialog", { name: "Completion history · Bus 6457" });
+  await info.getByRole("button", { name: "Undo completion", exact: true }).first().click();
+  await page.getByRole("dialog", { name: "Undo Trans PM completion?" }).getByRole("button", { name: "Undo completion" }).click();
+  await expect(info.getByText("Trans PM · Undone").first()).toBeVisible();
+  await info.getByRole("button", { name: "Undo completion", exact: true }).click();
+  await page.getByRole("dialog", { name: "Undo A-3 completion?" }).getByRole("button", { name: "Undo completion" }).click();
+  await expect(info.getByText("A-3 · Undone").first()).toBeVisible();
+  await info.getByRole("button", { name: "Close", exact: true }).last().click();
+  await page.getByRole("radio", { name: "Upcoming", exact: true }).click();
+  await expect(regular).toContainText("at 100,025");
+  await expect(regular).toContainText("100,260");
+  await expect(trans).toContainText("at 100,250");
+  await expect(page.getByRole("button", { name: "Unlock to edit" })).toBeVisible();
+});
+
 test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printing", async ({ page, context }) => {
   test.setTimeout(120_000);
   const api = context.request;
@@ -113,9 +176,16 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
     { bus: "6404", left: 25, disposition: "" },
     { bus: "6417", left: 50, disposition: "hold" },
     { bus: "6435", left: 75, disposition: "split" },
-    { bus: "6450", left: 2000, disposition: "shop" },
-    { bus: "6451", left: 3000, disposition: "follow-up" },
+    { bus: "6450", left: 500, disposition: "shop" },
+    { bus: "6451", left: 600, disposition: "follow-up" },
+    { bus: "6466", left: 1000, disposition: "" },
+    { bus: "6449", left: 1001, disposition: "" },
   ];
+  // Enough qualifying rows to verify repeated headers and page breaks even
+  // after the compact print layout excludes work beyond 1,000 miles.
+  const fleet = (await (await api.get("/api/buses")).json()).master.buses as Array<{ num: string; status: string }>;
+  fixtures.push(...fleet.filter((bus) => bus.status !== "retired" && bus.num !== "9690" && !fixtures.some((item) => item.bus === bus.num))
+    .slice(0, 30).map((bus) => ({ bus: bus.num, left: 900, disposition: "" })));
   expect((await api.post("/api/flags", { data: { bus: "6404", flags: [], note: "FLAG NOTE ONLY" } })).ok()).toBe(true);
   for (const fixture of fixtures) {
     expect((await api.put("/api/pm-mileage", { data: {
@@ -138,7 +208,7 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   const queue = table.getByRole("rowgroup", { name: "Upcoming work" });
   await expect(shop.getByRole("row", { name: "Bus 6450 A-3", exact: true })).toBeVisible();
   await expect(shop.getByRole("row", { name: "Bus 6451 Trans PM", exact: true })).toBeVisible();
-  const queueNames = await queue.locator('[role="row"][aria-label]').evaluateAll((rows) => rows.slice(0, 6).map((row) => row.getAttribute("aria-label")));
+  const queueNames = await queue.locator('[role="row"][aria-label]').evaluateAll((rows) => rows.map((row) => row.getAttribute("aria-label")).filter((name) => /^Bus (6404|6417|6435) /.test(name || "")));
   expect(queueNames).toEqual(["Bus 6404 A-3", "Bus 6417 A-3", "Bus 6435 A-3", "Bus 6404 Trans PM", "Bus 6417 Trans PM", "Bus 6435 Trans PM"]);
   expect(await table.getByRole("rowgroup").evaluateAll((groups) => groups.map((group) => group.getAttribute("aria-label"))))
     .toEqual(["In shop / Follow up", "Upcoming work"]);
@@ -148,6 +218,10 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   await page.emulateMedia({ media: "print" });
   await expect(page.locator("[data-pm-paper]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Print PDF" })).toBeHidden();
+  await expect(page.locator('[data-pm-paper] [data-pm-id="6466:inspection"]')).toBeVisible();
+  await expect(page.locator('[data-pm-paper] [data-pm-id="6466:trans"]')).toHaveCount(0);
+  await expect(page.locator('[data-pm-paper] [data-pm-id="6449:inspection"]')).toHaveCount(0);
+  expect(await page.locator('[data-pm-paper] [data-pm-id="6404:inspection"]').evaluate((row) => row.getBoundingClientRect().height)).toBeLessThan(45);
   const paperTables = page.locator("[data-pm-paper] table");
   expect(await paperTables.evaluateAll((tables) => tables.map((table) =>
     [...table.querySelectorAll('th[scope="col"]')].map((cell) => cell.textContent),
@@ -189,6 +263,9 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(text).not.toContain("SPLIT");
   expect(text).toContain("+25");
   expect(text).toContain("+250");
+  expect(text).toContain("+1,000");
+  expect(text).not.toContain("6449");
+  expect(text).not.toContain("+1,001");
   expect(text).not.toContain("Unlock to edit");
   expect(text).not.toContain("Dark Mode");
   expect(text).not.toContain("9690");

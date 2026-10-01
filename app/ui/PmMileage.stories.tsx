@@ -89,6 +89,29 @@ export const CrewStatus: Story = {
   },
 };
 
+export const CrewComplete: Story = {
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    await userEvent.click(within(row).getByRole("button", { name: "Complete" }));
+    const dialog = await screen.findByRole("dialog", { name: "Complete inspection · Bus 6404" });
+    const form = within(dialog);
+    await expect(form.getByRole("textbox", { name: "Inspection done" })).toHaveValue("A-3");
+    await expect(form.getByRole("textbox", { name: "Date" })).not.toHaveValue("");
+    await expect(form.getByRole("textbox", { name: "Time (Chicago)" })).not.toHaveValue("");
+    await expect(form.getByRole("textbox", { name: "Odometer now" })).toHaveValue("");
+    await userEvent.click(form.getByRole("button", { name: "Confirm completion" }));
+    await expect(form.getByRole("alert")).toHaveTextContent("Enter the odometer reading");
+    await userEvent.type(form.getByRole("textbox", { name: "Odometer now" }), "100050");
+    await expect(form.getByText(/Next inspection B-6/)).toHaveTextContent("103,025");
+  },
+};
+
+export const CrewCompletePhone: Story = {
+  ...CrewComplete,
+  globals: { safeArea: "phone", viewport: { value: "phoneSmall", isRotated: false } },
+};
+
 export const UpdateMileage: Story = {
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);

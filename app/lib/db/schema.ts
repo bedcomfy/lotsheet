@@ -6,6 +6,8 @@
 // exactly as the old raw-SQL store did.
 
 import { bigserial, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import type { PmRecord } from "../pmMileage";
+import type { FlagEntry } from "../types";
 
 const ENV = process.env.VERCEL_ENV || "";
 export const TABLE_SUFFIX = ENV && ENV !== "production" ? "_" + ENV.replace(/[^a-z]/gi, "") : "";
@@ -89,6 +91,14 @@ export const pmInspections = pgTable(`pm_inspections${TABLE_SUFFIX}`, {
   type: text("type"), // A-3 … C-24 for inspections
   miles: integer("miles").notNull(),
   doneAt: text("done_at"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  odometer: integer("odometer"),
+  requestId: text("request_id"),
+  beforeState: jsonb("before_state").$type<PmRecord>(),
+  afterState: jsonb("after_state").$type<PmRecord>(),
+  clearedFlag: jsonb("cleared_flag").$type<FlagEntry>(),
+  undoneAt: timestamp("undone_at", { withTimezone: true }),
+  undoneBy: text("undone_by"),
   actor: text("actor"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
