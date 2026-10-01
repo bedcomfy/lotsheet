@@ -202,6 +202,54 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Locked: values read as plain text in the same footprint as the inputs. */
+.readCell {
+  display: flex;
+  align-items: center;
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.readCell[data-empty] {
+  color: var(--ui-text-subtle);
+}
+
+.readStatus {
+  font-weight: var(--ui-weight-semibold);
+}
+
+[data-disposition="shop"] .readStatus { color: var(--ui-accent); }
+[data-disposition="hold"] .readStatus { color: var(--ui-danger); }
+[data-disposition="follow-up"] .readStatus,
+[data-disposition="split"] .readStatus { color: var(--ui-warning); }
+
+.lockIcon {
+  width: 0.9rem;
+  height: 0.9rem;
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
+.lockNotice {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  margin: 0 0 var(--ui-space-4);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-left: 3px solid var(--ui-accent);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: var(--ui-accent-soft);
+  font-size: var(--ui-font-size-sm);
+}
+
+.lockNotice svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
 /* Cells with two inputs (type + miles, miles + date) and a derived line below. */
 .stack {
   display: grid;

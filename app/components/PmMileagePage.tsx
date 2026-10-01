@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
-import { AlertTriangle, CheckCircle2, FileUp, Gauge, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { getDeviceActor } from "../lib/deviceActor";
 import { inspectionOptionFromText } from "../lib/grid";
@@ -123,6 +123,7 @@ function Cell({
   placeholder,
   label,
   numeric,
+  readOnly,
   onCommit,
 }: {
   value: string;
@@ -130,10 +131,19 @@ function Cell({
   placeholder?: string;
   label: string;
   numeric?: boolean;
+  readOnly?: boolean;
   onCommit: (next: string) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? display ?? value;
+  if (readOnly) {
+    const text = display ?? value;
+    return (
+      <span className={styles.readCell} data-empty={text ? undefined : ""} aria-label={label}>
+        {text || "—"}
+      </span>
+    );
+  }
   function commit() {
     if (draft !== null && draft.trim() !== value.trim()) onCommit(draft.trim());
     setDraft(null);
@@ -241,6 +251,7 @@ export default function PmMileagePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bus, [field]: value === "" ? null : value, actor: getDeviceActor() }),
       });
+      if (r.status === 401) throw new Error("Admin Tools are locked");
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       if (d.record) setRecords((cur) => ({ ...cur, [bus]: d.record }));
@@ -261,16 +272,27 @@ export default function PmMileagePage() {
         description="Current mileage, the last inspection, and the miles left before the next one. Inspections run A-3 through C-24 every 3,000 miles; transmission PMs every 75,000. Mark a PM complete to move the bus to its next one."
         actions={
           <div className={styles.headerActions}>
-            <SaveStatus state={saveState} />
+            {unlocked ? <SaveStatus state={saveState} /> : null}
             <Button variant="quiet" onPress={load} aria-label="Refresh">
               <RefreshCw aria-hidden="true" /> Refresh
             </Button>
-            <Button variant="primary" onPress={() => setImportOpen(true)}>
-              <FileUp aria-hidden="true" /> Import PDF
-            </Button>
+            {unlocked ? (
+              <Button variant="primary" onPress={() => setImportOpen(true)}>
+                <FileUp aria-hidden="true" /> Import PDF
+              </Button>
+            ) : (
+              <AdminUnlockButton label="Unlock to edit" onSubmit={tryUnlock} />
+            )}
           </div>
         }
       />
+
+      {!unlocked && (
+        <div className={styles.lockNotice}>
+          <Lock aria-hidden="true" /> The PM list is read-only until Admin Tools are unlocked. Mileage, inspections,
+          status, notes, imports, and completions all need the admin password.
+        </div>
+      )}
 
       <div className={styles.tiles} role="list" aria-label="PM status counts">
         {(["overdue", "due-soon", "ok", "unknown"] as PmStatus[]).map((status) => (
@@ -354,6 +376,7 @@ export default function PmMileagePage() {
                   </div>
                   <div role="cell" data-label="Odometer">
                     <Cell
+                      readOnly={!unlocked}
                       label={`Bus ${r.bus} odometer`}
                       numeric
                       value={r.odometer === null ? "" : String(r.odometer)}
@@ -364,6 +387,7 @@ export default function PmMileagePage() {
                   </div>
                   <div role="cell" data-label="As of">
                     <Cell
+                      readOnly={!unlocked}
                       label={`Bus ${r.bus} reading date`}
                       value={r.odometerDate || ""}
                       placeholder="date"
@@ -372,15 +396,22 @@ export default function PmMileagePage() {
                   </div>
                   <div role="cell" data-label="Last inspection" className={styles.stack}>
                     <div className={`${styles.stackRow} ${styles.typeRow}`}>
-                      <SelectField
-                        className={styles.typeSelect}
-                        label={`Bus ${r.bus} last inspection type`}
-                        labelHidden
-                        selectedKey={r.lastInspType ?? ""}
-                        onSelectionChange={(key) => save(r.bus, "lastInspType", String(key ?? ""))}
-                        options={TYPE_OPTIONS}
-                      />
+                      {unlocked ? (
+                        <SelectField
+                          className={styles.typeSelect}
+                          label={`Bus ${r.bus} last inspection type`}
+                          labelHidden
+                          selectedKey={r.lastInspType ?? ""}
+                          onSelectionChange={(key) => save(r.bus, "lastInspType", String(key ?? ""))}
+                          options={TYPE_OPTIONS}
+                        />
+                      ) : (
+                        <span className={styles.readCell} data-empty={r.lastInspType ? undefined : ""}>
+                          {r.lastInspType || "—"}
+                        </span>
+                      )}
                       <Cell
+                        readOnly={!unlocked}
                         label={`Bus ${r.bus} last inspection mileage`}
                         numeric
                         value={r.lastInspMiles === null ? "" : String(r.lastInspMiles)}
@@ -390,6 +421,7 @@ export default function PmMileagePage() {
                       />
                     </div>
                     <Cell
+                      readOnly={!unlocked}
                       label={`Bus ${r.bus} last inspection date`}
                       value={r.lastInspDate || ""}
                       placeholder="date"
@@ -419,6 +451,7 @@ export default function PmMileagePage() {
                   <div role="cell" data-label="Trans PM" className={styles.stack}>
                     <div className={styles.stackRow}>
                       <Cell
+                        readOnly={!unlocked}
                         label={`Bus ${r.bus} last transmission PM mileage`}
                         numeric
                         value={r.lastTransMiles === null ? "" : String(r.lastTransMiles)}
@@ -427,6 +460,7 @@ export default function PmMileagePage() {
                         onCommit={(v) => save(r.bus, "lastTransMiles", v)}
                       />
                       <Cell
+                        readOnly={!unlocked}
                         label={`Bus ${r.bus} last transmission PM date`}
                         value={r.lastTransDate || ""}
                         placeholder="date"
@@ -443,6 +477,11 @@ export default function PmMileagePage() {
                     </StatusBadge>
                   </div>
                   <div role="cell" data-label="Done" className={styles.actionCell}>
+                    {!unlocked ? (
+                      <span className={styles.muted}>
+                        <Lock aria-hidden="true" className={styles.lockIcon} /> locked
+                      </span>
+                    ) : (
                     <ActionMenu
                       label={
                         <>
@@ -457,19 +496,27 @@ export default function PmMileagePage() {
                       ]}
                       onAction={(key) => setCompleting({ bus: r.bus, kind: key === "trans" ? "trans" : "inspection" })}
                     />
+                    )}
                   </div>
                   <div role="cell" data-label="Status" data-disposition={r.disposition || undefined}>
-                    <SelectField
-                      className={styles.typeSelect}
-                      label={`Bus ${r.bus} status`}
-                      labelHidden
-                      selectedKey={r.disposition}
-                      onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))}
-                      options={DISPOSITION_OPTIONS}
-                    />
+                    {unlocked ? (
+                      <SelectField
+                        className={styles.typeSelect}
+                        label={`Bus ${r.bus} status`}
+                        labelHidden
+                        selectedKey={r.disposition}
+                        onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))}
+                        options={DISPOSITION_OPTIONS}
+                      />
+                    ) : (
+                      <span className={`${styles.readCell} ${styles.readStatus}`} data-empty={r.disposition ? undefined : ""}>
+                        {PM_DISPOSITION_LABEL[r.disposition]}
+                      </span>
+                    )}
                   </div>
                   <div role="cell" data-label="Note">
                     <Cell
+                      readOnly={!unlocked}
                       label={`Bus ${r.bus} note`}
                       value={r.note || ""}
                       placeholder="note"
@@ -490,7 +537,7 @@ export default function PmMileagePage() {
         tryUnlock={tryUnlock}
         onApplied={load}
       />
-      {completing && completingRecord && (
+      {unlocked && completing && completingRecord && (
         <CompleteDialog
           target={completing}
           record={completingRecord}
@@ -584,6 +631,7 @@ function CompleteDialog({
         }),
       });
       const d = await r.json().catch(() => ({}));
+      if (r.status === 401) throw new Error("Admin Tools are locked — unlock and try again.");
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
       onDone(d.record as PmRecord, Boolean(d.flagCleared));
     } catch (err) {

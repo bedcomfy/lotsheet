@@ -13,6 +13,9 @@
 - Import PDF: every reading is selected by default, warnings and starred
   (not serviced) rows included; the sheets come in daily, so a reading
   that looks off is corrected by the next one.
+- PM Mileage is admin-locked: the list reads as plain text until Admin
+  Tools are unlocked, and the server refuses edits, completions, and
+  imports without the admin session (401).
 
 ## 0.38.0 - 2026-10-01
 
