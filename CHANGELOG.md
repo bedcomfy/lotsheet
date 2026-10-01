@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.45.10 - 2026-10-01
+
+- Work Order: operation and part descriptions wrap and grow with their text
+  in the on-screen preview instead of being cut off at the cell edge, matching
+  the printed layout.
+- Work Order: typing a vehicle number fills the vehicle description (year,
+  make and model from the fleet list, with the length) and the odometer
+  reading (the latest on PM Mileage). A different bus replaces both; the same
+  bus only fills blanks, so values typed by hand are left alone.
+- Work Order: the Object Code box suggests codes as you type either the
+  code or words from its description; picking one fills the code and the
+  line's description. A description you typed yourself stays, and the
+  filled one can be edited into something more detailed.
+
 ## 0.45.9 - 2026-10-01
 
 - Remove the extra Work Order / Vehicle / Employee labels above the operation and parts tables.

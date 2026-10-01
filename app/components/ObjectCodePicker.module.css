@@ -232,3 +232,16 @@
     transform: translateY(0);
   }
 }
+
+/* Work order operation line: the combobox sits inside a paper cell, so it
+   takes the cell's own input styling and only brings the popover. */
+.woCombo {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.woPopover {
+  width: max(var(--trigger-width, 0px), 30rem);
+  max-width: min(36rem, calc(100vw - 2rem));
+}
