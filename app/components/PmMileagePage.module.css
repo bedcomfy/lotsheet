@@ -118,7 +118,7 @@
 /* Wide enough that every column stays readable; the panel scrolls sideways
    on mid-size screens instead of squeezing the inputs. */
 .table > .row {
-  min-width: 83rem;
+  min-width: 71rem;
 }
 
 .row {
@@ -127,7 +127,6 @@
     minmax(8rem, 1fr)
     minmax(6rem, 0.8fr)
     minmax(5.25rem, 0.7fr)
-    minmax(12rem, 1.5fr)
     minmax(6rem, 0.8fr)
     minmax(5.5rem, 0.7fr)
     minmax(11rem, 1.4fr)
@@ -383,7 +382,6 @@
   }
 
   .row > [data-label="Note"],
-  .row > [data-label="Last inspection"],
   .row > [data-label="Trans PM"],
   .row > [data-label="Done"] {
     grid-column: 1 / -1;

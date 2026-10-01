@@ -57,15 +57,34 @@ describe("transmission PM", () => {
     expect(transMilesRemaining(r)).toBe(5_000);
   });
 
+  it("comes due at an inspection mark, never ahead of the next inspection", () => {
+    // Next inspection B-6 at 197,000; raw trans mark 195,000 → done at that inspection.
+    const base = { ...emptyPmRecord("6435"), odometer: 195_300, lastInspType: "A-3" as const, lastInspMiles: 194_000 };
+    expect(transNextDue({ ...base, lastTransMiles: 120_000 })).toBe(197_000);
+    expect(transMilesRemaining({ ...base, lastTransMiles: 120_000 })).toBe(1_700);
+    // Raw mark 200,000 → the next inspection mark at or after it: 200,000.
+    expect(transNextDue({ ...base, lastTransMiles: 125_000 })).toBe(200_000);
+    // Raw mark 198,500 → 200,000.
+    expect(transNextDue({ ...base, lastTransMiles: 123_500 })).toBe(200_000);
+    // Far past due (bad data or long gap): still only as overdue as the next inspection.
+    const stale = { ...base, lastTransMiles: 20_000 };
+    expect(transNextDue(stale)).toBe(197_000);
+    expect(pmStatus(stale, S)).toBe(pmStatus({ ...base, lastTransMiles: null }, S));
+  });
+
   it("the bus's status is whichever PM needs attention first", () => {
     const r = {
       ...emptyPmRecord("6435"),
       odometer: 195_300,
       lastInspType: "A-3" as const,
       lastInspMiles: 194_000, // next B-6 at 197,000 → 1,700 left → ok
-      lastTransMiles: 120_000, // next at 195,000 → 300 over → overdue
+      lastTransMiles: 120_000, // raw 195,000, done at B-6 → also 1,700 left
     };
-    expect(pmStatus(r, S)).toBe("overdue");
+    expect(pmStatus(r, S)).toBe("ok");
+    expect(pmStatus({ ...r, odometer: 196_600 }, S)).toBe("due-soon");
+    expect(pmStatus({ ...r, odometer: 197_400 }, S)).toBe("overdue"); // both 400 over, never trans alone
+    // No inspection on record: the trans PM stands on its own and can be overdue.
+    expect(pmStatus({ ...emptyPmRecord("1"), odometer: 195_300, lastTransMiles: 120_000 }, S)).toBe("overdue");
   });
 });
 
@@ -103,8 +122,8 @@ describe("completing a PM", () => {
   it("completes a transmission PM without touching the inspection record", () => {
     const r = { ...emptyPmRecord("6435"), odometer: 195_300, lastInspType: "A-3" as const, lastInspMiles: 194_000, lastTransMiles: 120_000 };
     const done = applyCompletion(r, { kind: "trans", miles: 195_300, date: "10/1/26" });
-    expect(done.lastTransMiles).toBe(195_000); // the mark it was due at
-    expect(transNextDue(done)).toBe(270_000);
+    expect(done.lastTransMiles).toBe(197_000); // the inspection mark it was due at
+    expect(transNextDue(done)).toBe(272_000);
     const first = applyCompletion({ ...emptyPmRecord("6436"), odometer: 90_000 }, { kind: "trans", miles: 90_000, date: null });
     expect(first.lastTransMiles).toBe(90_000);
     expect(done.lastInspType).toBe("A-3");

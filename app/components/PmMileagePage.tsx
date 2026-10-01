@@ -191,6 +191,7 @@ export default function PmMileagePage() {
   const [saveError, setSaveError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [completing, setCompleting] = useState<CompleteTarget | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -347,7 +348,6 @@ export default function PmMileagePage() {
               <span role="columnheader">Bus</span>
               <span role="columnheader">Odometer</span>
               <span role="columnheader">As of</span>
-              <span role="columnheader">Last inspection</span>
               <span role="columnheader">Next inspection</span>
               <span role="columnheader">Miles left</span>
               <span role="columnheader">Trans PM</span>
@@ -392,40 +392,6 @@ export default function PmMileagePage() {
                       value={r.odometerDate || ""}
                       placeholder="date"
                       onCommit={(v) => save(r.bus, "odometerDate", v)}
-                    />
-                  </div>
-                  <div role="cell" data-label="Last inspection" className={styles.stack}>
-                    <div className={`${styles.stackRow} ${styles.typeRow}`}>
-                      {unlocked ? (
-                        <SelectField
-                          className={styles.typeSelect}
-                          label={`Bus ${r.bus} last inspection type`}
-                          labelHidden
-                          selectedKey={r.lastInspType ?? ""}
-                          onSelectionChange={(key) => save(r.bus, "lastInspType", String(key ?? ""))}
-                          options={TYPE_OPTIONS}
-                        />
-                      ) : (
-                        <span className={styles.readCell} data-empty={r.lastInspType ? undefined : ""}>
-                          {r.lastInspType || "—"}
-                        </span>
-                      )}
-                      <Cell
-                        readOnly={!unlocked}
-                        label={`Bus ${r.bus} last inspection mileage`}
-                        numeric
-                        value={r.lastInspMiles === null ? "" : String(r.lastInspMiles)}
-                        display={formatMiles(r.lastInspMiles)}
-                        placeholder="at miles"
-                        onCommit={(v) => save(r.bus, "lastInspMiles", v)}
-                      />
-                    </div>
-                    <Cell
-                      readOnly={!unlocked}
-                      label={`Bus ${r.bus} last inspection date`}
-                      value={r.lastInspDate || ""}
-                      placeholder="date"
-                      onCommit={(v) => save(r.bus, "lastInspDate", v)}
                     />
                   </div>
                   <div role="cell" data-label="Next inspection" className={styles.derived}>
@@ -493,8 +459,15 @@ export default function PmMileagePage() {
                       items={[
                         { id: "inspection", label: completeLabel, description: "Moves the bus to its next inspection" },
                         { id: "trans", label: "Complete trans PM", description: `Next due ${formatMiles(TRANS_PM_INTERVAL)} mi later` },
+                        {
+                          id: "edit",
+                          label: "Edit last inspection…",
+                          description: r.lastInspType ? `${r.lastInspType} at ${formatMiles(r.lastInspMiles)}` : "Nothing on record",
+                        },
                       ]}
-                      onAction={(key) => setCompleting({ bus: r.bus, kind: key === "trans" ? "trans" : "inspection" })}
+                      onAction={(key) =>
+                        key === "edit" ? setEditing(r.bus) : setCompleting({ bus: r.bus, kind: key === "trans" ? "trans" : "inspection" })
+                      }
                     />
                     )}
                   </div>
@@ -537,6 +510,17 @@ export default function PmMileagePage() {
         tryUnlock={tryUnlock}
         onApplied={load}
       />
+      {unlocked && editing && (
+        <EditInspectionDialog
+          record={records[editing] || emptyPmRecord(editing)}
+          busLabel={label(editing)}
+          onClose={() => setEditing(null)}
+          onSaved={(record) => {
+            setRecords((cur) => ({ ...cur, [record.bus]: record }));
+            setEditing(null);
+          }}
+        />
+      )}
       {unlocked && completing && completingRecord && (
         <CompleteDialog
           target={completing}
@@ -562,6 +546,89 @@ export default function PmMileagePage() {
         />
       )}
     </AppPage>
+  );
+}
+
+// ---------- Edit the last inspection on record ----------
+// The last inspection isn't a column any more (the next one is what the crew
+// reads), but it is what the next one is computed from, so admins can still
+// correct it here.
+function EditInspectionDialog({
+  record,
+  busLabel,
+  onClose,
+  onSaved,
+}: {
+  record: PmRecord;
+  busLabel: string;
+  onClose: () => void;
+  onSaved: (record: PmRecord) => void;
+}) {
+  const [type, setType] = useState<string>(record.lastInspType ?? "");
+  const [miles, setMiles] = useState(record.lastInspMiles === null ? "" : String(record.lastInspMiles));
+  const [date, setDate] = useState(record.lastInspDate ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const milesValue = toMiles(miles);
+  const preview = isInspectionType(type) && milesValue !== null ? nextInspection({ ...record, lastInspType: type, lastInspMiles: milesValue }) : null;
+
+  async function submit() {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await fetch("/api/pm-mileage", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bus: record.bus,
+          lastInspType: isInspectionType(type) ? type : null,
+          lastInspMiles: milesValue,
+          lastInspDate: date.trim() || null,
+          actor: getDeviceActor(),
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) throw new Error("Admin Tools are locked — unlock and try again.");
+      if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+      onSaved(d.record as PmRecord);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ResponsiveDialog
+      isOpen
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={`Last inspection · Bus ${busLabel}`}
+      description="The inspection this bus most recently had and the mileage it was recorded at. The next inspection and its due mileage follow from it."
+      size="sm"
+      footer={
+        <div className={styles.dialogFooter}>
+          <Button variant="quiet" onPress={onClose} isDisabled={busy}>Cancel</Button>
+          <Button variant="primary" onPress={submit} isDisabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+        </div>
+      }
+    >
+      <div className={styles.settingsBody}>
+        <SelectField label="Inspection" selectedKey={type} onSelectionChange={(key) => setType(String(key ?? ""))} options={TYPE_OPTIONS} />
+        <TextField label="Recorded at (miles)" inputMode="numeric" value={miles} onChange={setMiles} placeholder="miles" />
+        <TextField label="Date" value={date} onChange={setDate} placeholder="mm/dd/yy" />
+        {preview && (
+          <div className={styles.preview}>
+            Next inspection {preview.type} at <strong>{formatMiles(preview.miles)}</strong>
+          </div>
+        )}
+        {error && (
+          <div className={styles.errorBanner} role="alert">
+            <AlertTriangle aria-hidden="true" /> {error}
+          </div>
+        )}
+      </div>
+    </ResponsiveDialog>
   );
 }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.40.0 - 2026-10-01
+
+- PM Mileage: the Last inspection column is gone from the list. The record
+  stays on the site (it is what the next inspection is computed from) and
+  admins can correct it from each row's menu, "Edit last inspection…".
+- PM Mileage: a trans PM comes due at an inspection mark — the first one at
+  or after last + 75,000 — so it can never be due, or overdue, ahead of the
+  next inspection. Completing a trans PM records it at that mark.
+
 ## 0.39.0 - 2026-10-01
 
 - PM Mileage: completing an inspection records it at the mileage it was
