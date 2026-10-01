@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.37.0 - 2026-10-01
+
+- PM Mileage: "Import PDF" reads the garage's Total Fleet PM Status Report
+  directly from the PDF's text layer — no AI and no API cost. Each line's
+  bus, miles since / until, PM activity, current mileage and due-at mileage
+  are reconstructed from the scanned page (rotated pages included) and
+  cross-checked arithmetically so OCR noise is dropped rather than
+  imported. Per bus it fills current mileage, the next inspection and its
+  due mileage (so the last inspection follows from the cycle), and the
+  next transmission PM. The report date becomes the reading date.
+- The AI reader is now only a fallback for picture-only scans with no text
+  layer, and only when `ANTHROPIC_API_KEY` is set; otherwise the import
+  explains what to do instead.
+- Review list shows each bus's next inspection / trans PM alongside the
+  mileage change, and how the file was read.
+- Adds `pdfjs-dist` (server only).
+
 ## 0.36.0 - 2026-10-01
 
 - PM Mileage: intervals follow the inspection cycle instead of one editable
