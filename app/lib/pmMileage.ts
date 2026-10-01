@@ -275,13 +275,16 @@ export function groupPmWorkItems(items: PmWorkItem[]) {
   ].filter((group) => group.items.length > 0);
 }
 
-// One row per kind of work, including unknown schedules so they can be set up.
+// Keep an inspection row for every bus so missing inspections can be set up.
+// Transmission work only belongs in the queue once its due mileage is known.
 // Counts and filters describe PMs, not distinct buses.
 export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkItem[] {
   return records.filter((record) => !isPmExcluded(record.bus)).flatMap((record): PmWorkItem[] => {
     const inspection = nextInspection(record);
-    return (["inspection", "trans"] as const).map((kind) => {
-      const dueMiles = kind === "inspection" ? inspection?.miles ?? null : transNextDue(record);
+    const transDue = transNextDue(record);
+    const kinds: PmKind[] = transDue === null ? ["inspection"] : ["inspection", "trans"];
+    return kinds.map((kind) => {
+      const dueMiles = kind === "inspection" ? inspection?.miles ?? null : transDue;
       const milesLeft = dueMiles === null || record.odometer === null ? null : dueMiles - record.odometer;
       return {
         id: `${record.bus}:${kind}`, record, kind,

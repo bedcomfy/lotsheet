@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.44.2 - 2026-10-01
+
+- Transmission PMs without a recorded due mileage no longer appear as upcoming
+  work or inflate PM counts, including shop rows and printed sheets. Admins can
+  add a missing transmission schedule from the inspection row's Actions menu.
+
 ## 0.44.1 - 2026-09-30
 
 - Excluded 9690 (JUDI, the tow truck) from regular inspection and Trans PM

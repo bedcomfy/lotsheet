@@ -29,7 +29,7 @@ describe("PM fleet scope", () => {
   it("excludes 9690 from both PM kinds and imports while keeping regular active buses", () => {
     const fleet = [{ num: "9690", status: "active" as const }, { num: "2771", status: "active" as const }, { num: "2772", status: "retired" as const }];
     expect(fleet.filter(isPmFleetBus).map((bus) => bus.num)).toEqual(["2771"]);
-    const records = [emptyPmRecord("9690"), emptyPmRecord("2771")];
+    const records = ["9690", "2771"].map((bus) => ({ ...emptyPmRecord(bus), nextTransMiles: 100000 }));
     expect(pmWorkItems(records, S).map((item) => item.id)).toEqual(["2771:inspection", "2771:trans"]);
     expect(reviewReadings([{ bus: "009690", odometer: 100000 }], fleet, {}).rejected).toEqual([
       { bus: "9690", odometer: 100000, reason: "Excluded from the bus PM program" },
@@ -87,6 +87,20 @@ describe("inspection cycle", () => {
 });
 
 describe("transmission PM", () => {
+  it("omits unscheduled transmission work, but keeps explicit or derived schedules even without an odometer", () => {
+    const records = [
+      { ...emptyPmRecord("6388"), disposition: "shop" as const, odometer: 383796, nextInspType: "A-3" as const, nextInspMiles: 384000 },
+      { ...emptyPmRecord("6461"), nextTransMiles: 480000 },
+      { ...emptyPmRecord("6404"), odometer: 100000, lastTransMiles: 25250 },
+    ];
+    const work = pmWorkItems(records, S);
+    expect(work.filter((item) => item.record.bus === "6388").map((item) => item.kind)).toEqual(["inspection"]);
+    expect(groupPmWorkItems(work)[0].items.map((item) => item.id)).toEqual(["6388:inspection"]);
+    expect(work.filter((item) => item.kind === "trans").map((item) => [item.id, item.dueMiles, item.milesLeft])).toEqual([
+      ["6404:trans", 100250, 250], ["6461:trans", 480000, null],
+    ]);
+  });
+
   it("runs on a fixed 75,000-mile interval off the odometer", () => {
     const r = { ...emptyPmRecord("6435"), odometer: 190_000, lastTransMiles: 120_000 };
     expect(TRANS_PM_INTERVAL).toBe(75_000);
@@ -241,7 +255,7 @@ describe("explicit next work", () => {
     ];
     const items = pmWorkItems(records, S);
     expect(items.map((r) => [r.id, r.milesLeft])).toEqual([
-      ["6404:inspection", 25], ["6405:inspection", 100], ["6404:trans", 250], ["6405:trans", null],
+      ["6404:inspection", 25], ["6405:inspection", 100], ["6404:trans", 250],
     ]);
     expect(items.filter((r) => r.status === "due-soon")).toHaveLength(3);
     const progressed = { ...records[0], odometer: 100_050 };

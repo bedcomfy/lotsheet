@@ -476,10 +476,14 @@ export default function PmMileagePage() {
                           { id: "complete", label: `Complete ${workLabel}`, description: "Record this PM as done" },
                           { id: "next", label: item.kind === "inspection" ? "Edit next inspection…" : "Edit next trans PM…", description: "Set the type and due mileage directly" },
                           { id: "last", label: item.kind === "inspection" ? "Edit last inspection…" : "Edit last trans PM…", description: "Correct the completed PM on record" },
+                          ...(item.kind === "inspection" && transNextDue(r) === null ? [
+                            { id: "setup-trans", label: "Set next trans PM…", description: "Add its due mileage to the PM queue" },
+                          ] : []),
                         ]}
                         onAction={(key) => {
                           const target = { bus: r.bus, kind: item.kind };
                           if (key === "next") setEditingNext(target);
+                          else if (key === "setup-trans") setEditingNext({ bus: r.bus, kind: "trans" });
                           else if (key === "last") setEditing(target);
                           else setCompleting(target);
                         }} />

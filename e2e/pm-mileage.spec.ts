@@ -223,3 +223,54 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: "test-results/pm-print-phone.png", fullPage: true });
 });
+
+test("unscheduled Trans PM stays out of the queue and printouts until an admin adds its due mileage", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const api = context.request;
+  const password = process.env.ADMIN_PASSWORD || "ride";
+  expect((await api.post("/api/admin/session", { data: { password } })).ok()).toBe(true);
+  expect((await api.put("/api/pm-mileage", { data: {
+    bus: "6388", odometer: 383796, disposition: "shop", nextInspType: "C-24", nextInspMiles: 384000,
+    lastTransMiles: null, lastTransDate: null, nextTransMiles: null,
+  } })).ok()).toBe(true);
+  await api.delete("/api/admin/session");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/pm-mileage");
+  await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6388");
+  const inspection = page.getByRole("row", { name: "Bus 6388 C-24", exact: true });
+  const trans = page.getByRole("row", { name: "Bus 6388 Trans PM", exact: true });
+  await expect(inspection).toBeVisible();
+  await expect(inspection.getByRole("button", { name: /status/ })).toContainText("Shop");
+  await expect(trans).toHaveCount(0);
+  await expect(page.getByText(/^1 of \d+ PMs/)).toBeVisible();
+  await expect(page.locator('[data-pm-paper] [data-pm-id="6388:trans"]')).toHaveCount(0);
+
+  const response = await api.get("/api/pdf", { params: { path: "/pm-mileage", pmQuery: "6388" }, timeout: 90_000 });
+  expect(response.ok()).toBe(true);
+  const pages = await pdfText(await response.body());
+  expect(pages).toHaveLength(1);
+  expect(pages[0]).toContain("1 PMs");
+  expect(pages[0]).toContain("C-24");
+  expect(pages[0]).not.toContain("Trans PM");
+  expect(pages[0]).not.toContain("Change front hub fluid.");
+
+  await page.getByRole("button", { name: "Unlock to edit" }).click();
+  const unlock = page.getByRole("dialog", { name: "Unlock editing" });
+  await unlock.getByLabel("Password").fill(password);
+  await unlock.getByRole("button", { name: "Unlock", exact: true }).click();
+  await inspection.getByRole("button", { name: "Actions", exact: true }).click();
+  await page.getByRole("menuitem", { name: /Set next trans PM/ }).click();
+  const edit = page.getByRole("dialog", { name: "Next trans PM · Bus 6388" });
+  await edit.getByLabel("Due at (miles)").fill("384500");
+  await edit.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(trans).toBeVisible();
+  await expect(trans.getByText("at 384,500")).toBeVisible();
+  await expect(trans.getByText("704", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^2 of \d+ PMs/)).toBeVisible();
+  await expect(inspection.getByText("at 384,000")).toBeVisible();
+  const record = (await (await api.get("/api/pm-mileage")).json()).records["6388"];
+  expect(record.lastTransMiles).toBeNull();
+  expect(record.nextTransMiles).toBe(384500);
+  expect(record.nextInspMiles).toBe(384000);
+});
