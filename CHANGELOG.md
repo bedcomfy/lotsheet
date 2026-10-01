@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.4 - 2026-10-01
+
+- Add an admin-protected correction endpoint for the Foreman / SR name on saved PM completions, with an audit trail and protection against overwriting another name edit.
+- Preserve original completion dates, mileages, schedules, and undo state when correcting a name.
+
 ## 0.45.3 - 2026-10-01
 
 - Enable undo for older site PM completions, including 6402 and 6510, by returning their saved inspection and due mileage to upcoming work without inventing prior completion history.

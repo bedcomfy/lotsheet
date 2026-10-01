@@ -94,6 +94,14 @@ export const pmUndoPayloadSchema = z.object({
   actor: z.string().default(""),
 }).strict();
 
+export const pmCompletionNamePayloadSchema = z.object({
+  id: z.string().regex(/^[1-9]\d*$/).refine((id) => Number.isSafeInteger(Number(id))),
+  bus: z.string().trim().min(1),
+  foremanSr: z.string().trim().min(1).max(120),
+  expectedForemanSr: z.string().max(120).nullable(),
+  actor: z.string().default(""),
+}).strict();
+
 // POST /api/pm-mileage/readings — a reviewed batch of odometer readings.
 export const pmReadingsPayloadSchema = z.object({
   readings: z

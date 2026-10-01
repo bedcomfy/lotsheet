@@ -719,6 +719,24 @@ export async function latestPmInspections(): Promise<PmInspectionEntry[]> {
   return mapPmInspections(rows);
 }
 
+export async function updatePmCompletionName(id: number, bus: string, foremanSr: string, expectedForemanSr: string | null, actor = "") {
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const [entry] = await tx.select().from(pmInspections).where(and(eq(pmInspections.id, id), eq(pmInspections.bus, bus))).for("update");
+    if (!entry) throw new PmConflictError("This completion could not be found for this bus.");
+    const name = foremanSr.trim();
+    if (entry.foremanSr === name) return { id: String(id), bus, foremanSr: name };
+    if (entry.foremanSr !== expectedForemanSr) throw new PmConflictError("The Foreman / SR name changed. Refresh the completion before editing it.");
+    // Correct only the attribution: keep the receipt, schedule snapshots,
+    // completion times, device actor, and undo state exactly as recorded.
+    await tx.update(pmInspections).set({ foremanSr: name }).where(eq(pmInspections.id, id));
+    await tx.insert(auditEvents).values({ kind: "pm_completion_update", actor,
+      details: { id: String(id), bus, before: { foremanSr: entry.foremanSr }, after: { foremanSr: name } } });
+    await bumpPulse(tx);
+    return { id: String(id), bus, foremanSr: name };
+  });
+}
+
 export async function undoPmInspection(id: number, actor = ""): Promise<PmRecord> {
   const db = await getDb();
   return db.transaction(async (tx) => {
