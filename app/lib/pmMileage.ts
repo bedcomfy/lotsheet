@@ -6,6 +6,16 @@
 
 import type { MasterBus } from "./types";
 
+// 9690 (JUDI, the tow truck) stays in the fleet but is outside this bus PM
+// program. Keep this rule shared by queues, counts, reports, and imports.
+export function isPmExcluded(bus: string): boolean {
+  return bus === "9690";
+}
+
+export function isPmFleetBus(bus: Pick<MasterBus, "num" | "status">): boolean {
+  return bus.status !== "retired" && !isPmExcluded(bus.num);
+}
+
 // The inspection cycle, in order. The number is the mile mark within the
 // cycle (A-3 = 3,000 miles after the cycle starts), so the interval to the
 // next inspection is the gap between marks: B-12 → A-15 is 3,000 miles. After
@@ -268,7 +278,7 @@ export function groupPmWorkItems(items: PmWorkItem[]) {
 // One row per kind of work, including unknown schedules so they can be set up.
 // Counts and filters describe PMs, not distinct buses.
 export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkItem[] {
-  return records.flatMap((record): PmWorkItem[] => {
+  return records.filter((record) => !isPmExcluded(record.bus)).flatMap((record): PmWorkItem[] => {
     const inspection = nextInspection(record);
     return (["inspection", "trans"] as const).map((kind) => {
       const dueMiles = kind === "inspection" ? inspection?.miles ?? null : transNextDue(record);
@@ -390,6 +400,10 @@ export function reviewReadings(
     const odometer = toMiles(row.odometer);
     if (!bus || !known.has(bus)) {
       rejected.push({ bus: String(row.bus ?? "").trim() || "?", odometer, reason: "Not in the fleet list" });
+      continue;
+    }
+    if (isPmExcluded(bus)) {
+      rejected.push({ bus, odometer, reason: "Excluded from the bus PM program" });
       continue;
     }
     if (odometer === null || odometer === 0) {

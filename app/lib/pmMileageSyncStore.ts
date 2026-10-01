@@ -7,6 +7,7 @@ import type { MasterBus } from "./types";
 import { FLEETWATCH_SOURCE, type MileageSyncStatus } from "./fleetwatch";
 import type { OdometerReportParse } from "./odometerReport";
 import type { VehicleServiceReading } from "./vehicleServiceReport";
+import { isPmFleetBus } from "./pmMileage";
 
 export const MILEAGE_SYNC_KEY = "pm_mileage_fleetwatch_sync";
 interface StoredSync extends MileageSyncStatus { token?: string }
@@ -59,7 +60,7 @@ export async function finishMileageSync(
       const [master] = await tx.select().from(appState).where(eq(appState.key, "bus_master"));
       const value = master?.value as { buses?: MasterBus[] } | null;
       const fleet = normalizeBusMaster(value && Array.isArray(value.buses) ? { buses: value.buses } : DEFAULT_MASTER).buses;
-      const active = new Set(fleet.filter((bus) => bus.status !== "retired").map((bus) => bus.num));
+      const active = new Set(fleet.filter(isPmFleetBus).map((bus) => bus.num));
       const before = new Map((await tx.select().from(pmMileage)).map((record) => [record.bus, record]));
       let updated = 0;
       let unchanged = 0;

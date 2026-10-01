@@ -24,7 +24,7 @@ export const SHEET_DEFINITIONS = [
     title: "PM Mileage",
     path: "/pm-mileage",
     dataVersion: 1,
-    renderVersion: 3,
+    renderVersion: 4,
     paper: LETTER_PORTRAIT,
     expectedPages: { min: 1, max: 100 },
     variants: ["current"],

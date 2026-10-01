@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.44.1 - 2026-09-30
+
+- Excluded 9690 (JUDI, the tow truck) from regular inspection and Trans PM
+  queues, counts, printed sheets, and mileage imports. Its fleet entry remains
+  available for other operations.
+
 ## 0.44.0 - 2026-09-30
 
 - The automatic and manual Fleetwatch update now also reads the Vehicle Service

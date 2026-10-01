@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { busHelpers } from "../lib/buses";
 import { chicagoDateShort } from "../lib/chicagoTime";
-import { DEFAULT_PM_SETTINGS, emptyPmRecord, filterPmWorkItems, pmWorkItems, type PmFilter } from "../lib/pmMileage";
+import { DEFAULT_PM_SETTINGS, emptyPmRecord, filterPmWorkItems, isPmFleetBus, pmWorkItems, type PmFilter } from "../lib/pmMileage";
 import { PmMileagePaper, type PmMileagePaperProps } from "../sheets/pm-mileage/PmMileagePaper";
 
 export default function PmMileagePrintView({ filter, query }: { filter: PmFilter; query: string }) {
@@ -19,7 +19,7 @@ export default function PmMileagePrintView({ filter, query }: { filter: PmFilter
       if (!alive) return;
       if (!Array.isArray(fleet.master?.buses) || !pm.records) throw new Error("Missing sheet data");
       const { buses, label } = busHelpers(fleet.master);
-      const active = buses.filter((bus) => bus.status !== "retired");
+      const active = buses.filter(isPmFleetBus);
       const settings = pm.settings || DEFAULT_PM_SETTINGS;
       const work = pmWorkItems(active.map((bus) => pm.records[bus.num] || emptyPmRecord(bus.num)), settings);
       setData({

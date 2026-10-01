@@ -28,6 +28,7 @@ import {
   filterPmWorkItems,
   groupPmWorkItems,
   isInspectionType,
+  isPmFleetBus,
   nextInspection,
   pmWorkItems,
   toMiles,
@@ -270,7 +271,7 @@ export default function PmMileagePage() {
     } finally { setSyncing(false); }
   }
 
-  const active = useMemo(() => buses.filter((b) => b.status !== "retired"), [buses]);
+  const active = useMemo(() => buses.filter(isPmFleetBus), [buses]);
   const work = useMemo(() => pmWorkItems(
     active.map((b) => records[b.num] || emptyPmRecord(b.num)), settings,
   ), [active, records, settings]);

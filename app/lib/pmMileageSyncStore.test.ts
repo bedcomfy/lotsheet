@@ -30,6 +30,7 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
     await setState(MILEAGE_SYNC_KEY, {});
     await setState("bus_master", { buses: [
       { num: "6404", status: "active" }, { num: "6435", status: "active" }, { num: "6500", status: "retired" },
+      { num: "9690", status: "active" },
     ] });
   });
 
@@ -39,9 +40,10 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
     await setBusFlags("6404", { flags: ["hold"], note: "Flag note", holdReason: "Parts" });
     const before = (await getPmMileage())["6404"];
     const flags = await getFlags();
-    const status = await finishMileageSync(await start(), result([reading("6404", 100030), reading("6435", 80000, true), reading("6500", 90000), reading("9999", 10000)]));
+    const status = await finishMileageSync(await start(), result([reading("6404", 100030), reading("6435", 80000, true), reading("6500", 90000), reading("9999", 10000), reading("9690", 100000)]));
     expect(status.updated).toBe(2);
-    expect(status.skipped).toHaveLength(2);
+    expect(status.skipped).toHaveLength(3);
+    expect((await getPmMileage())["9690"]).toBeUndefined();
     const after = (await getPmMileage())["6404"];
     expect(after).toMatchObject({ ...before, odometer: 100030, odometerDate: "9/30/26", source: "Fleetwatch · Division 0043", updatedAt: after.updatedAt });
     expect((await getPmMileage())["6435"].odometerDate).toBeNull();

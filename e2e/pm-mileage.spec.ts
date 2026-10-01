@@ -133,6 +133,7 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
 
   await page.goto("/pm-mileage");
   const table = page.getByRole("table", { name: "Upcoming PM work" });
+  await expect(table.getByRole("row", { name: /^Bus 9690 / })).toHaveCount(0);
   const shop = table.getByRole("rowgroup", { name: "In shop / Follow up" });
   const queue = table.getByRole("rowgroup", { name: "Upcoming work" });
   await expect(shop.getByRole("row", { name: "Bus 6450 A-3", exact: true })).toBeVisible();
@@ -176,6 +177,7 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(text).toContain("+250");
   expect(text).not.toContain("Unlock to edit");
   expect(text).not.toContain("Dark Mode");
+  expect(text).not.toContain("9690");
   await mkdir("test-results", { recursive: true });
   await writeFile("test-results/pm-mileage-full.pdf", fullBytes);
 

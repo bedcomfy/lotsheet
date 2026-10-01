@@ -8,6 +8,7 @@ import {
   filterPmWorkItems,
   groupPmWorkItems,
   inspMilesRemaining,
+  isPmFleetBus,
   inspectionInterval,
   nextInspection,
   nextInspectionType,
@@ -23,6 +24,18 @@ import {
 } from "./pmMileage";
 
 const S = DEFAULT_PM_SETTINGS;
+
+describe("PM fleet scope", () => {
+  it("excludes 9690 from both PM kinds and imports while keeping regular active buses", () => {
+    const fleet = [{ num: "9690", status: "active" as const }, { num: "2771", status: "active" as const }, { num: "2772", status: "retired" as const }];
+    expect(fleet.filter(isPmFleetBus).map((bus) => bus.num)).toEqual(["2771"]);
+    const records = [emptyPmRecord("9690"), emptyPmRecord("2771")];
+    expect(pmWorkItems(records, S).map((item) => item.id)).toEqual(["2771:inspection", "2771:trans"]);
+    expect(reviewReadings([{ bus: "009690", odometer: 100000 }], fleet, {}).rejected).toEqual([
+      { bus: "9690", odometer: 100000, reason: "Excluded from the bus PM program" },
+    ]);
+  });
+});
 
 describe("PM queue sections", () => {
   it("moves only Shop and Follow up to the top section, preserving each PM's mileage order", () => {
@@ -162,6 +175,7 @@ describe("report readings review", () => {
   const fleet = [
     { num: "6404", status: "active" },
     { num: "6435", status: "active" },
+    { num: "6436", status: "active" },
     { num: "2771", status: "retired" },
     { num: "9690", status: "active" },
   ];
@@ -186,7 +200,7 @@ describe("report readings review", () => {
         { bus: "6435", odometer: 89_500 },
         { bus: "2771", odometer: 300_000 },
         { bus: "7777", odometer: 10 },
-        { bus: "9690", odometer: 0 },
+        { bus: "6436", odometer: 0 },
       ],
       fleet,
       current,
@@ -198,7 +212,7 @@ describe("report readings review", () => {
     expect(rejected.map((r) => [r.bus, r.reason])).toEqual([
       ["2771", "Bus is retired"],
       ["7777", "Not in the fleet list"],
-      ["9690", "No usable odometer reading"],
+      ["6436", "No usable odometer reading"],
     ]);
   });
 });
