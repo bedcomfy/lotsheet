@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
 import { Plus, Trash2, UserPlus } from "lucide-react";
 import WorkOrderHistory from "./WorkOrderHistory";
@@ -8,6 +8,10 @@ import WorkOrderToolbar from "./WorkOrderToolbar";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { Button, Chip, ConfirmDialog, IconButton } from "../ui";
+import WorkOrderObjectCode from "./WorkOrderObjectCode";
+import { OBJECT_CODES } from "../lib/objectCodes";
+import { formatMiles } from "../lib/pmMileage";
+import { useBusMaster } from "./BusMasterProvider";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -16,6 +20,39 @@ import { WorkOrderPaper } from "../sheets/workorder/WorkOrderPaper";
 import type { WorkOrder, WOEmployee, WOOperation, WOPart } from "../sheets/workorder/types";
 
 const STORAGE_KEY = "workorder";
+
+// A description box that wraps and grows with its text instead of clipping
+// it at the cell edge, so the preview shows what the printed sheet will.
+function WrapInput({
+  value,
+  onChange,
+  readOnly,
+  ariaLabel,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  readOnly?: boolean;
+  ariaLabel?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${Math.max(20, el.scrollHeight)}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      className="wo-in wo-in--wrap"
+      rows={1}
+      value={value}
+      readOnly={readOnly}
+      aria-label={ariaLabel}
+      onChange={(e) => onChange(e.target.value.replace(/\r?\n/g, " "))}
+    />
+  );
+}
 
 // Random ids for user-added rows (deterministic seed ids below keep SSR stable).
 function uid(prefix: string): string {
@@ -154,6 +191,76 @@ export default function WorkOrderSheet() {
     return () => clearTimeout(saveTimer.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, loaded, printMode]);
+
+  // ---- vehicle autofill ----
+  // Typing a bus number fills the vehicle description (year make model from
+  // the fleet list) and the odometer (latest reading on PM Mileage). Only
+  // fields that are empty or still hold the previous autofill are touched, so
+  // a hand-typed value stays.
+  const { buses } = useBusMaster();
+  const pmOdometers = useRef<Record<string, number | null> | null>(null);
+  const lastAuto = useRef<{ bus: string; description: string; odometer: string }>({ bus: "", description: "", odometer: "" });
+  useEffect(() => {
+    if (!loaded || printMode || blankMode) return;
+    const num = data.vehicleNumber.replace(/\D/g, "").replace(/^0+/, "");
+    if (!lastAuto.current.bus && num) {
+      // First run after load: the saved sheet's own bus is not an edit to redo.
+      lastAuto.current = { bus: num, description: data.vehicleDescription, odometer: data.vehicleOdometer };
+      return;
+    }
+    const bus = num ? buses.find((b) => b.num === num) : undefined;
+    if (!bus) return;
+    let alive = true;
+    const fill = (odometer: number | null) => {
+      if (!alive) return;
+      const description = [bus.model, bus.length ? `${bus.length}` : ""].filter(Boolean).join(" · ");
+      const miles = odometer === null ? "" : formatMiles(odometer);
+      // A different bus than last time: its description and odometer replace
+      // whatever was there, since those belonged to the old bus. The same bus
+      // again only fills blanks, so an edit made since stays.
+      const newBus = lastAuto.current.bus !== bus.num;
+      setData((d) => {
+        const next = { ...d };
+        if (newBus || !d.vehicleDescription || d.vehicleDescription === lastAuto.current.description) next.vehicleDescription = description;
+        if (miles && (newBus || !d.vehicleOdometer || d.vehicleOdometer === lastAuto.current.odometer)) next.vehicleOdometer = miles;
+        return next;
+      });
+      lastAuto.current = { bus: bus.num, description, odometer: miles || lastAuto.current.odometer };
+    };
+    if (pmOdometers.current) {
+      fill(pmOdometers.current[bus.num] ?? null);
+    } else {
+      fetch("/api/pm-mileage", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const map: Record<string, number | null> = {};
+          for (const [k, v] of Object.entries((d?.records || {}) as Record<string, { odometer?: number | null }>)) map[k] = v?.odometer ?? null;
+          pmOdometers.current = map;
+          fill(map[bus.num] ?? null);
+        })
+        .catch(() => fill(null));
+    }
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.vehicleNumber, loaded, printMode, blankMode, buses]);
+
+  // An object code picked from the list fills the line's description unless
+  // the crew already typed their own (or edited the last suggested one).
+  const autoOpDescription = useRef<Record<string, string>>({});
+  function pickObjectCode(opId: string, code: string, description: string) {
+    setData((d) => ({
+      ...d,
+      operations: d.operations.map((o) => {
+        if (o.id !== opId) return o;
+        const current = o.description.trim();
+        const keepTyped = current && current !== autoOpDescription.current[opId] && !OBJECT_CODES.some((x) => x.description === current);
+        return { ...o, objectCode: code, description: keepTyped ? o.description : description };
+      }),
+    }));
+    autoOpDescription.current[opId] = description;
+  }
 
   // ---- edits ----
   function setField(field: keyof WorkOrder, value: string) {
@@ -384,8 +491,19 @@ export default function WorkOrderSheet() {
             {ops.map((o) => (
               <tr className="wo-oprow" key={o.id}>
                 <td><input className="wo-in" aria-label="Operation number" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
-                <td><input className="wo-in" aria-label="Object code" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
-                <td><input className="wo-in" aria-label="Operation description" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
+                <td>
+                  {printMode ? (
+                    <input className="wo-in" value={o.objectCode} readOnly aria-label="Object code" />
+                  ) : (
+                    <WorkOrderObjectCode
+                      ariaLabel="Object code"
+                      value={o.objectCode}
+                      onChange={(code) => setOperation(o.id, { objectCode: code })}
+                      onPick={(item) => pickObjectCode(o.id, item.code, item.description)}
+                    />
+                  )}
+                </td>
+                <td><WrapInput value={o.description} onChange={(v) => setOperation(o.id, { description: v })} ariaLabel="Operation description" /></td>
                 <td>
                   {blankMode ? (
                     <input className="wo-in wo-in--c" value="" readOnly aria-label="Operation date" />
@@ -482,13 +600,13 @@ export default function WorkOrderSheet() {
           <tbody>
             {partRows.map((p, i) => (
               <tr key={p.id}>
-                <td><input className="wo-in" value={p.partNo} onChange={(e) => setPart(emp.id, p.id, { partNo: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in" value={p.description} onChange={(e) => setPart(emp.id, p.id, { description: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in wo-in--c" value={p.qty} onChange={(e) => setPart(emp.id, p.id, { qty: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in" value={p.serial} onChange={(e) => setPart(emp.id, p.id, { serial: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in" value={p.locator} onChange={(e) => setPart(emp.id, p.id, { locator: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in wo-in--c" value={p.operationNum} onChange={(e) => setPart(emp.id, p.id, { operationNum: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
-                <td><input className="wo-in" value={p.issuedBy} onChange={(e) => setPart(emp.id, p.id, { issuedBy: e.target.value })} readOnly={printMode && i >= parts.length} /></td>
+                <td><input className="wo-in" value={p.partNo} onChange={(e) => setPart(emp.id, p.id, { partNo: e.target.value })} /></td>
+                <td><WrapInput value={p.description} onChange={(v) => setPart(emp.id, p.id, { description: v })} ariaLabel="Part description" /></td>
+                <td><input className="wo-in wo-in--c" value={p.qty} onChange={(e) => setPart(emp.id, p.id, { qty: e.target.value })} /></td>
+                <td><input className="wo-in" value={p.serial} onChange={(e) => setPart(emp.id, p.id, { serial: e.target.value })} /></td>
+                <td><input className="wo-in" value={p.locator} onChange={(e) => setPart(emp.id, p.id, { locator: e.target.value })} /></td>
+                <td><input className="wo-in wo-in--c" value={p.operationNum} onChange={(e) => setPart(emp.id, p.id, { operationNum: e.target.value })} /></td>
+                <td><input className="wo-in" value={p.issuedBy} onChange={(e) => setPart(emp.id, p.id, { issuedBy: e.target.value })} /></td>
                 {!printMode && i < parts.length && (
                   <td className="wo-opact no-print">
                     <IconButton

@@ -74,6 +74,17 @@
   text-align: center;
 }
 
+/* Descriptions wrap and grow with their text instead of clipping. */
+.wo-in--wrap {
+  display: block;
+  min-height: 20px;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .wo-in::placeholder {
   color: #111;
   opacity: 1;
