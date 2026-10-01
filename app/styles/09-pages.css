@@ -79,6 +79,22 @@
   opacity: 1;
 }
 
+/* Hours / Activity: a write-on line drawn near the bottom of the box (was a
+   row of underscores floating mid-cell). */
+.wo-ops td.wo-linecell {
+  padding-bottom: 7px;
+  vertical-align: bottom;
+}
+
+.wo-in--line {
+  display: block;
+  width: 88%;
+  min-height: 18px;
+  margin: 0 auto;
+  border-bottom: 1px solid #111;
+  border-radius: 0;
+}
+
 .wo-ops,
 .wo-parts {
   width: 100%;

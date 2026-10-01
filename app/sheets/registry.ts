@@ -122,7 +122,7 @@ export const SHEET_DEFINITIONS = [
     path: "/workorder",
     stateKey: "workorder",
     dataVersion: 1,
-    renderVersion: 9,
+    renderVersion: 10,
     paper: LETTER_PORTRAIT,
     expectedPages: { min: 1, max: 50 },
     variants: ["current", "blank"],

@@ -435,8 +435,8 @@ export default function WorkOrderSheet() {
                     <DatePickerField className="wo-in wo-in--c" value={o.date} onValueChange={(value) => setOperation(o.id, { date: value })} ariaLabel={`Operation ${o.num || "date"}`} />
                   )}
                 </td>
-                <td><input className="wo-in wo-in--c" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} placeholder="____.__" /></td>
-                <td><input className="wo-in wo-in--c" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} placeholder="__________" /></td>
+                <td className="wo-linecell"><input className="wo-in wo-in--c wo-in--line" value={o.hours} onChange={(e) => setOperation(o.id, { hours: e.target.value })} aria-label="Hours" /></td>
+                <td className="wo-linecell"><input className="wo-in wo-in--c wo-in--line" value={o.activity} onChange={(e) => setOperation(o.id, { activity: e.target.value })} aria-label="Activity" /></td>
                 {!printMode && (
                   <td className="wo-opact no-print">
                     <IconButton
