@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.44.3 - 2026-10-01
+
+- Fixed work-order fields losing focus after every keystroke. Typing and
+  autosaving now preserve the existing employee forms and input cursors.
+- Moved Print blank and Clear onto the work-order toolbar. Clear still asks
+  for confirmation, and blank printing preserves the current form's layout.
+
 ## 0.44.2 - 2026-10-01
 
 - Transmission PMs without a recorded due mileage no longer appear as upcoming

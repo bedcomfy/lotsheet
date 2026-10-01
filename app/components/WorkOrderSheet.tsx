@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { openSheetPdf } from "../lib/pdf";
-import { Eraser, FileDown, FileText, Plus, Trash2, UserPlus, Save, FolderOpen, MoreHorizontal } from "lucide-react";
+import { Plus, Trash2, UserPlus } from "lucide-react";
 import WorkOrderHistory from "./WorkOrderHistory";
+import WorkOrderToolbar from "./WorkOrderToolbar";
 import DatePickerField from "./DatePickerField";
 import { chicagoDateShort } from "../lib/chicagoTime";
-import { ActionMenu, Button, Chip, ConfirmDialog, IconButton, SplitButton, Toolbar, ToolbarGroup } from "../ui";
+import { Button, Chip, ConfirmDialog, IconButton } from "../ui";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
 import chromeStyles from "./SheetChrome.module.css";
@@ -322,7 +323,9 @@ export default function WorkOrderSheet() {
   }
 
   // ---- one employee's 1:1 sheet ----
-  function EmployeeSheet({ emp, index }: { emp: WOEmployee; index: number }) {
+  // Render keyed elements directly. A component defined inside WorkOrderSheet
+  // gets a new identity on every edit and remounts the inputs, dropping focus.
+  function renderEmployeeSheet(emp: WOEmployee, index: number) {
     const ops = data.operations.filter((o) => o.assignedTo.includes(emp.id));
     const parts = data.parts[emp.id] || [];
     // A live print pads the parts list to five lines; a blank form keeps exactly
@@ -333,6 +336,7 @@ export default function WorkOrderSheet() {
     const others = data.employees.filter((e) => e.id !== emp.id);
     return (
       <div
+        key={emp.id}
         className="wo-sheet"
         data-paper-page=""
         data-paper-profile="letter-portrait"
@@ -375,8 +379,8 @@ export default function WorkOrderSheet() {
               <td className="wo-lbl">Today&apos;s Date:</td>
             </tr>
             <tr>
-              <td><input className="wo-in" value={data.workOrderNumber} onChange={(e) => setField("workOrderNumber", e.target.value)} /></td>
-              <td><input className="wo-in" value={data.vehicleNumber} onChange={(e) => setField("vehicleNumber", e.target.value)} /></td>
+              <td><input className="wo-in" aria-label="Work order number" value={data.workOrderNumber} onChange={(e) => setField("workOrderNumber", e.target.value)} /></td>
+              <td><input className="wo-in" aria-label="Vehicle number" value={data.vehicleNumber} onChange={(e) => setField("vehicleNumber", e.target.value)} /></td>
               <td>
                 {blankMode ? (
                   <input className="wo-in" value="" readOnly aria-label="Today's date" />
@@ -394,7 +398,7 @@ export default function WorkOrderSheet() {
                   ) : field === "workOrderCreationDate" ? (
                     <DatePickerField className="wo-in" value={String(data[field] || "")} onValueChange={(value) => setField(field, value)} ariaLabel="Work order creation date" />
                   ) : (
-                    <input className="wo-in" value={String(data[field] || "")} onChange={(e) => setField(field, e.target.value)} />
+                    <input className="wo-in" aria-label={label.replace(/:$/, "")} value={String(data[field] || "")} onChange={(e) => setField(field, e.target.value)} />
                   )}
                 </td>
               </tr>
@@ -425,9 +429,9 @@ export default function WorkOrderSheet() {
           <tbody>
             {ops.map((o) => (
               <tr className="wo-oprow" key={o.id}>
-                <td><input className="wo-in" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
-                <td><input className="wo-in" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
-                <td><input className="wo-in" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
+                <td><input className="wo-in" aria-label="Operation number" value={o.num} onChange={(e) => setOperation(o.id, { num: e.target.value })} /></td>
+                <td><input className="wo-in" aria-label="Object code" value={o.objectCode} onChange={(e) => setOperation(o.id, { objectCode: e.target.value })} /></td>
+                <td><input className="wo-in" aria-label="Operation description" value={o.description} onChange={(e) => setOperation(o.id, { description: e.target.value })} /></td>
                 <td>
                   {blankMode ? (
                     <input className="wo-in wo-in--c" value="" readOnly aria-label="Operation date" />
@@ -487,11 +491,11 @@ export default function WorkOrderSheet() {
             <tr className="wo-badge">
               <td className="wo-lbl wo-badge__lbl" colSpan={3}>
                 <span>Badge Number</span>
-                <input className="wo-in" value={emp.badge} onChange={(e) => setEmployee(emp.id, { badge: e.target.value })} />
+                <input className="wo-in" aria-label="Badge number" value={emp.badge} onChange={(e) => setEmployee(emp.id, { badge: e.target.value })} />
               </td>
               <td className="wo-lbl wo-badge__lbl" colSpan={printMode ? 3 : 4}>
                 <span>Employee Name</span>
-                <input className="wo-in" value={emp.name} onChange={(e) => setEmployee(emp.id, { name: e.target.value })} />
+                <input className="wo-in" aria-label="Employee name" value={emp.name} onChange={(e) => setEmployee(emp.id, { name: e.target.value })} />
               </td>
             </tr>
           </tbody>
@@ -569,46 +573,11 @@ export default function WorkOrderSheet() {
     <div className={chromeStyles.page}>
       <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.3in 0.5in 0.3in; }" }} />
 
-      <Toolbar className={`${chromeStyles.toolbar} no-print`}>
-        <ToolbarGroup className={chromeStyles.actions}>
-          <Button onPress={() => setHistOpen(true)}>
-            <FolderOpen aria-hidden="true" /> Saved
-          </Button>
-          <Button onPress={saveToArchive}>
-            <Save aria-hidden="true" /> {savedFlash ? "Saved ✓" : "Save"}
-          </Button>
-          <ActionMenu
-            label={<><MoreHorizontal size={16} /> More</>}
-            items={[
-              {
-                id: "clear",
-                label: "Clear work order",
-                icon: <Eraser size={16} />,
-                tone: "danger",
-              },
-            ]}
-            onAction={(key) => {
-              if (key === "clear") setClearOpen(true);
-            }}
-          />
-          <SplitButton
-            variant="primary"
-            onPress={printPdf}
-            menuLabel="Print options"
-            items={[{ id: "blank", label: "Print blank form", icon: <FileText size={16} /> }]}
-            onAction={(key) => {
-              if (key === "blank") printBlank();
-            }}
-          >
-            <FileDown aria-hidden="true" /> Print PDF
-          </SplitButton>
-        </ToolbarGroup>
-      </Toolbar>
+      <WorkOrderToolbar savedFlash={savedFlash} onOpenSaved={() => setHistOpen(true)}
+        onSave={saveToArchive} onClear={() => setClearOpen(true)} onPrintBlank={printBlank} onPrintPdf={printPdf} />
 
       <PaperViewport profile={LETTER_PORTRAIT} fitOnMobile label="Work Order paper preview">
-        {data.employees.map((emp, i) => (
-          <EmployeeSheet key={emp.id} emp={emp} index={i} />
-        ))}
+        {data.employees.map(renderEmployeeSheet)}
 
         {!printMode && (
           <div className={`${workOrderChromeStyles.addEmployee} no-print`}>
