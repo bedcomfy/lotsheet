@@ -230,6 +230,35 @@ export interface PmWorkItem {
   status: PmStatus;
 }
 
+export type PmFilter = "all" | PmStatus;
+export function normalizePmFilter(value: unknown): PmFilter {
+  return value === "overdue" || value === "due-soon" || value === "ok" || value === "unknown" ? value : "all";
+}
+
+export function filterPmWorkItems(
+  items: PmWorkItem[], filter: PmFilter, query: string, buses: MasterBus[], label: (bus: string) => string,
+): PmWorkItem[] {
+  const q = query.trim().toLowerCase();
+  const models = new Map(buses.map((bus) => [bus.num, bus.model || ""]));
+  return items.filter(({ record, status }) => (filter === "all" || status === filter) &&
+    (!q || record.bus.toLowerCase().includes(q) || label(record.bus).toLowerCase().includes(q) ||
+      models.get(record.bus)?.toLowerCase().includes(q)));
+}
+
+// Partition the mileage-ordered queue without changing the order within either
+// section. Hold and Split remain in the normal queue, even when overdue.
+export function groupPmWorkItems(items: PmWorkItem[]) {
+  const shop: PmWorkItem[] = [];
+  const queue: PmWorkItem[] = [];
+  for (const item of items) {
+    (item.record.disposition === "shop" || item.record.disposition === "follow-up" ? shop : queue).push(item);
+  }
+  return [
+    { id: "shop", title: "In shop / Follow up", items: shop },
+    { id: "queue", title: "Upcoming work", items: queue },
+  ].filter((group) => group.items.length > 0);
+}
+
 // One row per kind of work, including unknown schedules so they can be set up.
 // Counts and filters describe PMs, not distinct buses.
 export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkItem[] {

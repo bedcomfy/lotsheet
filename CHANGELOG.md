@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.42.0 - 2026-09-30
+
+- Added Print PDF to PM Mileage, using the current search and PM filter. Both
+  PDF export and browser printing use a Letter-size black-and-white sheet with
+  written urgency labels, clear borders, repeated table headings, and notes
+  that can continue across pages. PDF caching includes PM records, settings,
+  bus flags, fleet data, and the selected view.
+- Shop and Follow up buses now appear in a separate section above the normal
+  PM queue on screen and on paper. Hold and Split remain in their original
+  mileage order. Inspections and transmission PMs still have separate rows.
+- Selecting Hold or Split also adds the corresponding shared bus flag. Status
+  and flag changes commit together without overwriting other flags or their
+  notes and details. Shared flags remain until explicitly cleared.
+
 ## 0.41.0 - 2026-09-30
 
 - Added Log out of admin to Admin Tools, PM Mileage, the desktop sidebar,

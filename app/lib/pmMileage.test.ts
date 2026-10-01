@@ -5,6 +5,8 @@ import {
   TRANS_PM_INTERVAL,
   applyCompletion,
   emptyPmRecord,
+  filterPmWorkItems,
+  groupPmWorkItems,
   inspMilesRemaining,
   inspectionInterval,
   nextInspection,
@@ -21,6 +23,27 @@ import {
 } from "./pmMileage";
 
 const S = DEFAULT_PM_SETTINGS;
+
+describe("PM queue sections", () => {
+  it("moves only Shop and Follow up to the top section, preserving each PM's mileage order", () => {
+    const records = (["", "hold", "split", "shop", "follow-up"] as const).map((disposition, index) => ({
+      ...emptyPmRecord(String(6400 + index)), disposition, odometer: 100_000,
+      nextInspType: "A-3" as const, nextInspMiles: 99_950 + index * 25, nextTransMiles: 100_250 + index * 25,
+    }));
+    const work = pmWorkItems(records, S);
+    const groups = groupPmWorkItems(work);
+    expect(groups.map((g) => g.id)).toEqual(["shop", "queue"]);
+    expect(groups[0].items.map((i) => i.record.bus)).toEqual(["6403", "6404", "6403", "6404"]);
+    expect(groups[1].items.map((i) => [i.record.bus, i.milesLeft])).toEqual([
+      ["6400", -50], ["6401", -25], ["6402", 0], ["6400", 250], ["6401", 275], ["6402", 300],
+    ]);
+    expect(work[0].record.bus).toBe("6400"); // partition never mutates the source order
+    const filtered = filterPmWorkItems(work, "due-soon", "6403", [], (bus) => bus);
+    expect(groupPmWorkItems(filtered).map((g) => g.id)).toEqual(["shop"]);
+    expect(filtered.map((i) => i.milesLeft)).toEqual([25, 325]);
+    expect(groupPmWorkItems([])).toEqual([]);
+  });
+});
 
 describe("inspection cycle", () => {
   it("steps through the cycle and wraps after C-24", () => {

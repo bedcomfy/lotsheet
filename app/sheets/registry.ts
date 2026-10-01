@@ -20,6 +20,17 @@ function defineSheet<T>(definition: SheetDefinition<T>): SheetDefinition<T> {
 
 export const SHEET_DEFINITIONS = [
   defineSheet({
+    id: "pm-mileage",
+    title: "PM Mileage",
+    path: "/pm-mileage",
+    dataVersion: 1,
+    renderVersion: 2,
+    paper: LETTER_PORTRAIT,
+    expectedPages: { min: 1, max: 100 },
+    variants: ["current"],
+    description: "Black-and-white PM queue with a separate shop section and independent inspection and transmission rows.",
+  }),
+  defineSheet({
     id: "lot",
     title: "Lot Sheet",
     path: "/",

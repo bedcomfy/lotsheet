@@ -7,7 +7,8 @@
 // request just returns the stored file.
 
 import { createHash } from "crypto";
-import { getSheet, getFlags, getState, getPdfCache, setPdfCache } from "../../lib/store";
+import { getSheet, getFlags, getState, getPdfCache, setPdfCache, getPmMileage, getPmSettings } from "../../lib/store";
+import { normalizePmFilter } from "../../lib/pmMileage";
 import { chicagoDateShort, chicagoMinuteKey } from "../../lib/chicagoTime";
 import { pdfSignature } from "../../lib/pdfSignature";
 import { DEFAULT_MASTER } from "../../lib/buses";
@@ -36,6 +37,12 @@ function signature(data: unknown, maint: boolean): string {
 // The data a sheet's PDF is built from — used for the cache signature so a
 // cached PDF is reused until the underlying sheet actually changes.
 async function sheetData(path: string, blank: boolean) {
+  if (path === "/pm-mileage") {
+    const [records, settings, flags, busMaster] = await Promise.all([
+      getPmMileage(), getPmSettings(), getFlags(), getState("bus_master"),
+    ]);
+    return { records, settings, flags, busMaster: busMaster.value || null };
+  }
   if (blank) {
     const [busMaster, flagConfig, busTypeConfig] = await Promise.all([
       getState("bus_master"),
@@ -149,7 +156,9 @@ function printSnapshotResponses(path: string, snapshot: unknown): Map<string, un
     updatedAt: null,
   });
 
-  if (path === "/") {
+  if (path === "/pm-mileage") {
+    responses.set("/api/pm-mileage", { records: data.records, settings: data.settings });
+  } else if (path === "/") {
     responses.set("/api/sheet", {
       sheet: data.sheet || null,
       revision: Number(data.revision || 0),
@@ -262,7 +271,7 @@ async function renderPdf(
   variant: string,
   paper: PaperProfile,
   snapshot: unknown,
-  overrides: { timeOverride?: string; dateOverride?: string }
+  overrides: { timeOverride?: string; dateOverride?: string; pmFilter?: string; pmQuery?: string }
 ): Promise<Buffer> {
   const host = req.headers.get("host");
   const proto =
@@ -274,7 +283,8 @@ async function renderPdf(
     (blank ? "&blank=1" : "") +
     (variant ? `&variant=${variant}` : "") +
     (overrides.timeOverride ? `&timeOverride=${encodeURIComponent(overrides.timeOverride)}` : "") +
-    (overrides.dateOverride ? `&dateOverride=${encodeURIComponent(overrides.dateOverride)}` : "");
+    (overrides.dateOverride ? `&dateOverride=${encodeURIComponent(overrides.dateOverride)}` : "") +
+    (path === "/pm-mileage" ? `&pmFilter=${overrides.pmFilter || "all"}&pmQuery=${encodeURIComponent(overrides.pmQuery || "")}` : "");
 
   // On a cold start the chromium binary is still being extracted to /tmp when we
   // try to spawn it, which fails with "spawn ETXTBSY" (text file busy). Retry a
@@ -363,6 +373,10 @@ export async function GET(req: Request) {
   const overrides = {
     timeOverride: url.searchParams.get("timeOverride") || undefined,
     dateOverride: url.searchParams.get("dateOverride") || undefined,
+    ...(url.searchParams.get("path") === "/pm-mileage" ? {
+      pmFilter: normalizePmFilter(url.searchParams.get("pmFilter")),
+      pmQuery: url.searchParams.get("pmQuery") || "",
+    } : {}),
   };
   let path = url.searchParams.get("path") || "/";
   if (!isPrintableSheetPath(path)) path = "/";

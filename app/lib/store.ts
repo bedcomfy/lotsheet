@@ -30,6 +30,9 @@ import {
 } from "./pmMileage";
 import { inspectionOptionFromText, setInspectionOption } from "./grid";
 
+// Shared by the database and a transaction, so status and flag writes commit together.
+type StoreWriter = Pick<DB, "select" | "insert" | "delete" | "execute">;
+
 // ---------- flag-entry normalisation (unchanged) ----------
 function toMiles(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -72,7 +75,7 @@ function isEmpty(e: FlagEntry): boolean {
 // The /api/live long-poll watches it so clients refetch the instant anything
 // changes — without each client hammering the DB on a fixed interval.
 const PULSE_KEY = "__pulse";
-async function bumpPulse(db: DB): Promise<void> {
+async function bumpPulse(db: StoreWriter): Promise<void> {
   await db.execute(sql`
     INSERT INTO ${appState} (key, value, updated_at)
     VALUES (${PULSE_KEY}, to_jsonb(1), now())
@@ -436,7 +439,7 @@ function pmRecordToRow(r: PmRecord) {
   };
 }
 
-async function writePmRecord(db: DB, next: PmRecord, fields: string[]): Promise<PmRecord> {
+async function writePmRecord(db: StoreWriter, next: PmRecord, fields: string[]): Promise<PmRecord> {
   const row = pmRecordToRow(next);
   // Update only the requested columns: a simultaneous crew status edit must
   // survive an admin mileage edit or completion based on an older record.
@@ -449,7 +452,7 @@ async function writePmRecord(db: DB, next: PmRecord, fields: string[]): Promise<
   return pmRowToRecord(rows[0]);
 }
 
-async function logOdometerIfChanged(db: DB, before: PmRecord, next: PmRecord, actor: string): Promise<void> {
+async function logOdometerIfChanged(db: StoreWriter, before: PmRecord, next: PmRecord, actor: string): Promise<void> {
   if (next.odometer !== null && next.odometer !== before.odometer) {
     await db.insert(pmMileageLog).values({
       bus: next.bus,
@@ -480,7 +483,7 @@ export async function getPmMileage(): Promise<Record<string, PmRecord>> {
   return out;
 }
 
-async function readPmRecord(db: DB, bus: string): Promise<PmRecord> {
+async function readPmRecord(db: StoreWriter, bus: string): Promise<PmRecord> {
   const existing = (await db.select().from(pmMileage).where(eq(pmMileage.bus, bus)))[0];
   return existing ? pmRowToRecord(existing) : emptyPmRecord(bus);
 }
@@ -508,6 +511,28 @@ const textOrNull = (v: string | null | undefined) => (v ? String(v).trim() || nu
 // the reading log so reports can show history.
 export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): Promise<PmRecord> {
   const db = await getDb();
+  return db.transaction(async (tx) => {
+    const record = await patchPmRecord(tx, bus, patch, actor);
+    if (patch.disposition !== undefined && (record.disposition === "hold" || record.disposition === "split")) {
+      const flag = record.disposition;
+      // Add at the database row, never rewrite a fetched flag entry. Concurrent
+      // flags and all reason/inspection/note fields survive this narrow update.
+      // Operational flags are cleared explicitly, not by changing PM status.
+      await tx.insert(busFlags).values({ bus, flag, updatedAt: sql`now()` }).onConflictDoUpdate({
+        target: busFlags.bus,
+        set: {
+          flag: sql`CASE WHEN ${flag} = ANY(string_to_array(COALESCE(${busFlags.flag}, ''), ','))
+            THEN ${busFlags.flag} ELSE concat_ws(',', NULLIF(${busFlags.flag}, ''), ${flag}::text) END`,
+          updatedAt: sql`now()`,
+        },
+      });
+    }
+    await bumpPulse(tx);
+    return record;
+  });
+}
+
+async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor: string): Promise<PmRecord> {
   const before = await readPmRecord(db, bus);
   const fields = Object.keys(patch);
   // Explicitly correcting the historical PM resumes the schedule derived
@@ -539,7 +564,6 @@ export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): 
   };
   const saved = await writePmRecord(db, next, fields);
   if (patch.odometer !== undefined) await logOdometerIfChanged(db, before, saved, actor);
-  await bumpPulse(db);
   return saved;
 }
 

@@ -16,6 +16,31 @@ function request(method: string, body: unknown, admin = false) {
 }
 
 describe("PM API access and independent schedules", { timeout: 20_000 }, () => {
+  it("adds Hold and Split flags from crew and admin status edits without losing flag details", async () => {
+    const details = { flags: ["inspection", "retorque", "hold"], note: "Keep this note", holdReason: "Awaiting parts", inspOption: "A-3", retorqueTires: ["rf"] };
+    await setBusFlags("6450", details);
+    const before = (await getFlags())["6450"];
+    expect((await PATCH(request("PATCH", { bus: "6450", disposition: "hold" }))).status).toBe(200);
+    expect((await getFlags())["6450"]).toEqual(before);
+    expect((await PUT(request("PUT", { bus: "6450", disposition: "split" }, true))).status).toBe(200);
+    const afterSplit = (await getFlags())["6450"];
+    expect(afterSplit).toEqual({ ...before, flags: expect.arrayContaining([...before.flags, "split"]) });
+    expect(afterSplit.flags).toHaveLength(before.flags.length + 1);
+    await PATCH(request("PATCH", { bus: "6450", disposition: "split" }));
+    expect((await getFlags())["6450"].flags.filter((flag) => flag === "split")).toHaveLength(1);
+    await PATCH(request("PATCH", { bus: "6450", disposition: "" }));
+    expect((await getFlags())["6450"].flags).toContain("hold");
+    expect((await getFlags())["6450"].flags).toContain("split");
+
+    await Promise.all([
+      PATCH(request("PATCH", { bus: "6451", disposition: "hold" })),
+      PATCH(request("PATCH", { bus: "6451", disposition: "split" })),
+      PUT(request("PUT", { bus: "6451", odometer: 123456 }, true)),
+    ]);
+    expect((await getFlags())["6451"].flags.sort()).toEqual(["hold", "split"]);
+    expect((await getPmMileage())["6451"].odometer).toBe(123456);
+  });
+
   it("allows crew status edits but rejects protected fields and malformed statuses", async () => {
     const initial = { bus: "6404", odometer: 100_000, nextInspType: "A-3", nextInspMiles: 100_025, nextTransMiles: 100_250 };
     expect((await PUT(request("PUT", initial))).status).toBe(401);

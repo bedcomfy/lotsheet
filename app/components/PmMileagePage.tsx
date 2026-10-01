@@ -5,7 +5,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
-import { AlertTriangle, CheckCircle2, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileDown, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
+import { openSheetPdf } from "../lib/pdf";
+import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
 import { readPdfTextInBrowser } from "../lib/pdfTextClient";
 import { getDeviceActor } from "../lib/deviceActor";
@@ -20,6 +22,8 @@ import {
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
+  filterPmWorkItems,
+  groupPmWorkItems,
   isInspectionType,
   nextInspection,
   pmWorkItems,
@@ -27,6 +31,7 @@ import {
   transNextDue,
   type InspectionType,
   type PmKind,
+  type PmFilter,
   type PmReadingRejection,
   type PmReadingReview,
   type PmRecord,
@@ -57,7 +62,7 @@ import SaveStatus, { useSaveState } from "./SaveStatus";
 import TypeCodes from "./TypeCodes";
 import styles from "./PmMileagePage.module.css";
 
-type Filter = "all" | "overdue" | "due-soon" | "ok" | "unknown";
+type Filter = PmFilter;
 type EditableField =
   | "odometer"
   | "odometerDate"
@@ -229,16 +234,8 @@ export default function PmMileagePage() {
   const work = useMemo(() => pmWorkItems(
     active.map((b) => records[b.num] || emptyPmRecord(b.num)), settings,
   ), [active, records, settings]);
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return work.filter((item) => {
-      if (filter !== "all" && item.status !== filter) return false;
-      const r = item.record;
-      const bus = active.find((b) => b.num === r.bus);
-      return !q || r.bus.includes(q) || label(r.bus).toLowerCase().includes(q) ||
-        (bus?.model || "").toLowerCase().includes(q);
-    });
-  }, [work, query, filter, active, label]);
+  const rows = useMemo(() => filterPmWorkItems(work, filter, query, active, label), [work, query, filter, active, label]);
+  const groups = useMemo(() => groupPmWorkItems(rows), [rows]);
 
   const counts = useMemo(() => {
     const c: Record<PmStatus, number> = { overdue: 0, "due-soon": 0, ok: 0, unknown: 0 };
@@ -261,6 +258,12 @@ export default function PmMileagePage() {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
       if (d.record) setRecords((cur) => ({ ...cur, [bus]: d.record }));
+      if (d.flagEntry !== undefined) setFlags((cur) => {
+        const next = { ...cur };
+        if (d.flagEntry) next[bus] = d.flagEntry;
+        else delete next[bus];
+        return next;
+      });
       markSave("saved");
     } catch (err) {
       markSave("error");
@@ -273,15 +276,20 @@ export default function PmMileagePage() {
   const completingRecord = completing ? records[completing.bus] || emptyPmRecord(completing.bus) : null;
 
   return (
+    <>
     <AppPage className={styles.page}>
       <PageHeader
         eyebrow="Preventive Maintenance"
         title="PM Mileage"
-        description="Inspections and transmission PMs, ordered by miles left. Each bus has a separate row for each kind of work; its status and odometer are shared."
+        description="Shop and Follow up buses appear first. All other inspections and transmission PMs stay in mileage order, including Hold and Split. Each PM keeps its own row."
         actions={
           <div className={styles.headerActions}>
             <SaveStatus state={saveState} />
             <AdminLogoutButton />
+            <Button variant="secondary" isDisabled={!loaded || !fleetReady || !!loadError || saveState === "saving" || savingStatus.size > 0}
+              onPress={() => { void openSheetPdf({ path: "/pm-mileage", params: { pmFilter: filter, pmQuery: query } }); }}>
+              <FileDown aria-hidden="true" /> Print PDF
+            </Button>
             <Button variant="quiet" onPress={load} aria-label="Refresh">
               <RefreshCw aria-hidden="true" /> Refresh
             </Button>
@@ -360,7 +368,12 @@ export default function PmMileagePage() {
               <span role="columnheader">Bus status</span>
               <span role="columnheader">Note</span>
             </div>
-            {rows.map((item) => {
+            {groups.map((group) => (
+              <div role="rowgroup" aria-label={group.title} key={group.id}>
+                <div className={styles.groupHeading} role="row">
+                  <div role="cell" aria-colspan={8}><strong>{group.title}</strong><span>{group.items.length} PMs</span></div>
+                </div>
+            {group.items.map((item) => {
               const r = item.record;
               const bus = active.find((b) => b.num === r.bus);
               const flagged = item.kind === "inspection" ? flaggedInspection(flags, r.bus) : null;
@@ -422,6 +435,8 @@ export default function PmMileagePage() {
                 </div>
               );
             })}
+              </div>
+            ))}
           </div>
         )}
       </Panel>
@@ -482,6 +497,13 @@ export default function PmMileagePage() {
         />
       )}
     </AppPage>
+    {loaded && fleetReady && !loadError && (
+      <div className={styles.printOnly}>
+        <PmMileagePaper items={rows} labels={Object.fromEntries(active.map((bus) => [bus.num, label(bus.num)]))}
+          flags={flags} settings={settings} date={chicagoDateShort()} filter={filter} query={query} />
+      </div>
+    )}
+    </>
   );
 }
 

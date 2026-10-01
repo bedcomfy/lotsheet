@@ -3,6 +3,13 @@
   margin: 0 auto;
 }
 
+.printOnly { display: none; }
+
+@media print {
+  .page { display: none; }
+  .printOnly { display: block; }
+}
+
 .headerActions {
   display: flex;
   flex-wrap: wrap;
@@ -117,8 +124,27 @@
 
 /* Wide enough that every column stays readable; the panel scrolls sideways
    on mid-size screens instead of squeezing the inputs. */
-.table > .row {
+.table .row {
   min-width: 61rem;
+}
+
+.groupHeading {
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border-top: 2px solid var(--ui-border-strong);
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.groupHeading > div {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space-3);
+}
+
+.groupHeading span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
 }
 
 .row {
@@ -360,7 +386,7 @@
   }
 
   .row,
-  .table > .row {
+  .table .row {
     grid-template-columns: 1fr 1fr;
     gap: var(--ui-space-2) var(--ui-space-3);
     padding: var(--ui-space-3);

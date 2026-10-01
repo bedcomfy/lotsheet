@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import PmMileagePage from "../components/PmMileagePage";
 import { BusMasterProvider } from "../components/BusMasterProvider";
 import { DEFAULT_PM_SETTINGS, emptyPmRecord, type PmRecord } from "../lib/pmMileage";
@@ -17,7 +17,9 @@ const meta = {
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
-    await expect(screen.getAllByRole("row", { hidden: true })).toHaveLength(5);
+    await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getAllByRole("row", { hidden: true })).toHaveLength(7);
+    await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).toHaveTextContent("6435");
+    await waitFor(() => expect(screen.getByRole("button", { name: "Print PDF" })).toBeEnabled());
   },
   beforeEach: ({ args }) => {
     useAdminUnlock.setState({ unlocked: args.unlocked, locking: false, lockError: "" });
@@ -64,6 +66,8 @@ export const CrewStatus: Story = {
     await userEvent.click(await screen.findByRole("option", { name: "Hold" }));
     await expect(within(row).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
     await expect(within(trans).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
+    await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);
+    await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).not.toContainElement(row);
     await expect(within(row).queryByRole("button", { name: "Actions" })).not.toBeInTheDocument();
   },
 };

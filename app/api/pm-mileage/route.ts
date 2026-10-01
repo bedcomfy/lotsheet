@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isAdminRequest, unauthorized } from "../../lib/adminAuth";
-import { getPmMileage, getPmSettings, recordAuditEvent, updatePmMileage } from "../../lib/store";
+import { getFlags, getPmMileage, getPmSettings, recordAuditEvent, updatePmMileage } from "../../lib/store";
 import { parseBody, pmDispositionPayloadSchema, pmMileagePatchSchema } from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export async function PUT(req: Request) {
   const before = (await getPmMileage())[bus] || null;
   const record = await updatePmMileage(bus, patch, actor);
   await recordAuditEvent("pm_mileage_update", { bus, before, after: record }, actor);
-  return NextResponse.json({ ok: true, record });
+  return NextResponse.json({ ok: true, record, ...(patch.disposition !== undefined ? { flagEntry: (await getFlags())[bus] || null } : {}) });
 }
 
 // The crew can change bus status without an admin session. The strict schema
@@ -35,5 +35,5 @@ export async function PATCH(req: Request) {
   const before = (await getPmMileage())[bus] || null;
   const record = await updatePmMileage(bus, { disposition }, actor);
   await recordAuditEvent("pm_mileage_update", { bus, before, after: record }, actor);
-  return NextResponse.json({ ok: true, record });
+  return NextResponse.json({ ok: true, record, flagEntry: (await getFlags())[bus] || null });
 }
