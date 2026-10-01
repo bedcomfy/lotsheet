@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { INSPECTION_CYCLE, PM_DISPOSITIONS } from "./pmMileage";
 
 // ---------- flags ----------
 // POST /api/flags — set one bus's flags. Field-level shape is well defined.
@@ -53,11 +54,26 @@ export const pmMileagePatchSchema = z.object({
   lastInspDate: textField,
   lastTransMiles: milesField,
   lastTransDate: textField,
+  nextInspType: z.enum(INSPECTION_CYCLE).nullable().optional(),
+  nextInspMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
+  nextTransMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
   disposition: textField, // shop / follow-up / hold / split / ""
   note: z.string().optional(),
   actor: z.string().catch("").default(""),
-});
+}).refine((v) => {
+  if (v.nextInspType === undefined && v.nextInspMiles === undefined) return true;
+  return v.nextInspType !== undefined && v.nextInspMiles !== undefined &&
+    (v.nextInspType === null) === (v.nextInspMiles === null);
+}, { message: "Send the next inspection type and due mileage together." });
 export type PmMileagePatch = z.infer<typeof pmMileagePatchSchema>;
+
+// Status is shared crew input. Reject extra fields so this route cannot be
+// used to change the admin-protected mileage or inspection schedule.
+export const pmDispositionPayloadSchema = z.object({
+  bus: z.string().trim().min(1),
+  disposition: z.enum(PM_DISPOSITIONS),
+  actor: z.string().default(""),
+}).strict();
 
 // POST /api/pm-mileage/complete — an inspection or transmission PM was done.
 export const pmCompletePayloadSchema = z.object({
@@ -78,6 +94,9 @@ export const pmReadingsPayloadSchema = z.object({
         bus: z.string().trim().min(1),
         odometer: z.number().int().nonnegative(),
         readAt: z.union([z.string(), z.null()]).optional(),
+        nextInspType: z.enum(INSPECTION_CYCLE).nullable().optional(),
+        nextInspDue: z.number().int().nonnegative().nullable().optional(),
+        transDue: z.number().int().nonnegative().nullable().optional(),
         // From a PM status report: which inspection / trans PM was last done.
         lastInspType: z.union([z.string(), z.null()]).optional(),
         lastInspMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   let flagCleared = false;
-  if (clearFlag) {
+  if (kind === "inspection" && clearFlag) {
     const entry = (await getFlags())[bus];
     if (entry && (entry.flags || []).includes("inspection")) {
       const after = removeInspection(entry);
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       bus,
       kind,
       type: kind === "inspection" ? result.after.lastInspType : null,
-      miles: Number(String(miles).replace(/[,\s]/g, "")),
+      miles: kind === "inspection" ? result.after.lastInspMiles : result.after.lastTransMiles,
       date: date || null,
       flagCleared,
     },

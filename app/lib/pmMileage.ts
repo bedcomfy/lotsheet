@@ -1,8 +1,8 @@
 // Preventive-maintenance mileage: one record per bus with its latest odometer
 // reading, the last inspection it had (type + mileage), and the last
-// transmission PM. Everything else — which inspection is next, the miles at
-// which it is due, miles left or past — is derived here, never stored or
-// edited, so the page, the API, and reports all agree.
+// transmission PM. Explicit next-due values can come from a report or a
+// correction without inventing a completed inspection. Older records still
+// derive their next work from the last completed PM.
 
 import type { MasterBus } from "./types";
 
@@ -72,6 +72,9 @@ export interface PmRecord {
   lastInspDate: string | null;
   lastTransMiles: number | null; // odometer at the last transmission PM
   lastTransDate: string | null;
+  nextInspType: InspectionType | null;
+  nextInspMiles: number | null;
+  nextTransMiles: number | null;
   disposition: PmDisposition; // shop / follow-up / hold / split, or none
   note: string;
   source: string; // "manual" | "pdf" | ""
@@ -96,6 +99,9 @@ export function emptyPmRecord(bus: string): PmRecord {
     lastInspDate: null,
     lastTransMiles: null,
     lastTransDate: null,
+    nextInspType: null,
+    nextInspMiles: null,
+    nextTransMiles: null,
     disposition: "",
     note: "",
     source: "",
@@ -124,9 +130,12 @@ export interface NextInspection {
   interval: number;
 }
 
-// Which inspection comes next and at what mileage. Unknown until the last
-// inspection (type + miles) is on record.
+// Use an explicit next inspection when supplied; otherwise derive it from
+// the last completed inspection. Neither path invents a completion date.
 export function nextInspection(record: PmRecord): NextInspection | null {
+  if (record.nextInspType && record.nextInspMiles != null) {
+    return { type: record.nextInspType, miles: record.nextInspMiles, interval: INSPECTION_STEP };
+  }
   if (!record.lastInspType || record.lastInspMiles === null) return null;
   const type = nextInspectionType(record.lastInspType);
   if (!type) return null;
@@ -142,17 +151,12 @@ export function inspMilesRemaining(record: PmRecord): number | null {
 }
 
 // ---------- transmission PM ----------
-// A trans PM is done at an inspection, so its due mileage is the first
-// inspection mark at or after last + 75,000: it can never come due (or go
-// overdue) ahead of the next inspection. Without an inspection on record
-// the raw mark is used.
+// Transmission PM keeps its own due mileage, even when an inspection is
+// nearby. Completing or correcting an inspection must not move this mark.
 export function transNextDue(record: PmRecord): number | null {
+  if (record.nextTransMiles != null) return record.nextTransMiles;
   if (record.lastTransMiles === null) return null;
-  const raw = record.lastTransMiles + TRANS_PM_INTERVAL;
-  const next = nextInspection(record);
-  if (!next) return raw;
-  if (raw <= next.miles) return next.miles;
-  return next.miles + Math.ceil((raw - next.miles) / INSPECTION_STEP) * INSPECTION_STEP;
+  return record.lastTransMiles + TRANS_PM_INTERVAL;
 }
 
 export function transMilesRemaining(record: PmRecord): number | null {
@@ -216,6 +220,38 @@ export function sortPmRecords(records: PmRecord[], settings: PmSettings): PmReco
   });
 }
 
+export interface PmWorkItem {
+  id: string;
+  record: PmRecord;
+  kind: PmKind;
+  type: InspectionType | null;
+  dueMiles: number | null;
+  milesLeft: number | null;
+  status: PmStatus;
+}
+
+// One row per kind of work, including unknown schedules so they can be set up.
+// Counts and filters describe PMs, not distinct buses.
+export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkItem[] {
+  return records.flatMap((record): PmWorkItem[] => {
+    const inspection = nextInspection(record);
+    return (["inspection", "trans"] as const).map((kind) => {
+      const dueMiles = kind === "inspection" ? inspection?.miles ?? null : transNextDue(record);
+      const milesLeft = dueMiles === null || record.odometer === null ? null : dueMiles - record.odometer;
+      return {
+        id: `${record.bus}:${kind}`, record, kind,
+        type: kind === "inspection" ? inspection?.type ?? null : null,
+        dueMiles, milesLeft, status: statusForMiles(milesLeft, settings),
+      };
+    });
+  }).sort((a, b) =>
+    STATUS_RANK[a.status] - STATUS_RANK[b.status] ||
+    (a.milesLeft !== null && b.milesLeft !== null ? a.milesLeft - b.milesLeft : 0) ||
+    a.record.bus.localeCompare(b.record.bus, undefined, { numeric: true }) ||
+    a.kind.localeCompare(b.kind),
+  );
+}
+
 export function formatMiles(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
   return n.toLocaleString("en-US");
@@ -243,13 +279,13 @@ export function applyCompletion(record: PmRecord, completion: PmCompletion): PmR
   const odometerDate = record.odometer === null || miles > record.odometer ? completion.date : record.odometerDate;
   if (completion.kind === "trans") {
     const due = transNextDue(record);
-    return { ...record, odometer, odometerDate, lastTransMiles: due ?? miles, lastTransDate: completion.date };
+    return { ...record, odometer, odometerDate, lastTransMiles: due ?? miles, lastTransDate: completion.date, nextTransMiles: null };
   }
   const next = nextInspection(record);
   const type = completion.type ?? next?.type ?? null;
   if (!type) throw new Error("Pick which inspection was done — this bus has no inspection on record yet.");
   const recordedAt = next && next.type === type ? next.miles : miles;
-  return { ...record, odometer, odometerDate, lastInspType: type, lastInspMiles: recordedAt, lastInspDate: completion.date };
+  return { ...record, odometer, odometerDate, lastInspType: type, lastInspMiles: recordedAt, lastInspDate: completion.date, nextInspType: null, nextInspMiles: null };
 }
 
 // The mileage a completion will be recorded at (for previews).

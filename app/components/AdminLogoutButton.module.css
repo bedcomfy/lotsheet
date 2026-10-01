@@ -1,0 +1,11 @@
+.control {
+  display: grid;
+  min-width: 0;
+  gap: var(--ui-space-2);
+}
+
+.error {
+  color: var(--ui-danger);
+  font-size: var(--ui-font-size-sm);
+  overflow-wrap: anywhere;
+}

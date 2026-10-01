@@ -12,6 +12,7 @@ import {
   normalizePmSettings,
   normalizeReportBus,
   pmStatus,
+  pmWorkItems,
   reviewReadings,
   sortPmRecords,
   toMiles,
@@ -57,35 +58,16 @@ describe("transmission PM", () => {
     expect(transMilesRemaining(r)).toBe(5_000);
   });
 
-  it("comes due at an inspection mark, never ahead of the next inspection", () => {
-    // Next inspection B-6 at 197,000; raw trans mark 195,000 → done at that inspection.
-    const base = { ...emptyPmRecord("6435"), odometer: 195_300, lastInspType: "A-3" as const, lastInspMiles: 194_000 };
-    expect(transNextDue({ ...base, lastTransMiles: 120_000 })).toBe(197_000);
-    expect(transMilesRemaining({ ...base, lastTransMiles: 120_000 })).toBe(1_700);
-    // Raw mark 200,000 → the next inspection mark at or after it: 200,000.
-    expect(transNextDue({ ...base, lastTransMiles: 125_000 })).toBe(200_000);
-    // Raw mark 198,500 → 200,000.
-    expect(transNextDue({ ...base, lastTransMiles: 123_500 })).toBe(200_000);
-    // Far past due (bad data or long gap): still only as overdue as the next inspection.
-    const stale = { ...base, lastTransMiles: 20_000 };
-    expect(transNextDue(stale)).toBe(197_000);
-    expect(pmStatus(stale, S)).toBe(pmStatus({ ...base, lastTransMiles: null }, S));
+  it("keeps its due mileage independent of the inspection schedule", () => {
+    const r = { ...emptyPmRecord("6435"), odometer: 195_300,
+      lastInspType: "A-3" as const, lastInspMiles: 194_000, lastTransMiles: 120_000 };
+    expect(transNextDue(r)).toBe(195_000);
+    expect(transMilesRemaining(r)).toBe(-300);
+    expect(pmStatus(r, S)).toBe("overdue");
+    const inspectionDone = applyCompletion(r, { kind: "inspection", miles: 197_100, date: null });
+    expect(transNextDue(inspectionDone)).toBe(195_000);
   });
 
-  it("the bus's status is whichever PM needs attention first", () => {
-    const r = {
-      ...emptyPmRecord("6435"),
-      odometer: 195_300,
-      lastInspType: "A-3" as const,
-      lastInspMiles: 194_000, // next B-6 at 197,000 → 1,700 left → ok
-      lastTransMiles: 120_000, // raw 195,000, done at B-6 → also 1,700 left
-    };
-    expect(pmStatus(r, S)).toBe("ok");
-    expect(pmStatus({ ...r, odometer: 196_600 }, S)).toBe("due-soon");
-    expect(pmStatus({ ...r, odometer: 197_400 }, S)).toBe("overdue"); // both 400 over, never trans alone
-    // No inspection on record: the trans PM stands on its own and can be overdue.
-    expect(pmStatus({ ...emptyPmRecord("1"), odometer: 195_300, lastTransMiles: 120_000 }, S)).toBe("overdue");
-  });
 });
 
 describe("completing a PM", () => {
@@ -122,8 +104,8 @@ describe("completing a PM", () => {
   it("completes a transmission PM without touching the inspection record", () => {
     const r = { ...emptyPmRecord("6435"), odometer: 195_300, lastInspType: "A-3" as const, lastInspMiles: 194_000, lastTransMiles: 120_000 };
     const done = applyCompletion(r, { kind: "trans", miles: 195_300, date: "10/1/26" });
-    expect(done.lastTransMiles).toBe(197_000); // the inspection mark it was due at
-    expect(transNextDue(done)).toBe(272_000);
+    expect(done.lastTransMiles).toBe(195_000); // its own due mark
+    expect(transNextDue(done)).toBe(270_000);
     const first = applyCompletion({ ...emptyPmRecord("6436"), odometer: 90_000 }, { kind: "trans", miles: 90_000, date: null });
     expect(first.lastTransMiles).toBe(90_000);
     expect(done.lastInspType).toBe("A-3");
@@ -195,5 +177,37 @@ describe("report readings review", () => {
       ["7777", "Not in the fleet list"],
       ["9690", "No usable odometer reading"],
     ]);
+  });
+});
+
+
+describe("explicit next work", () => {
+  it("sets the next inspection without inventing history and advances it on completion", () => {
+    const r = { ...emptyPmRecord("6404"), odometer: 100_000, nextInspType: "A-3" as const,
+      nextInspMiles: 100_025, nextTransMiles: 100_250 };
+    expect(r.lastInspType).toBeNull();
+    expect(nextInspection(r)).toEqual({ type: "A-3", miles: 100_025, interval: 3000 });
+    const done = applyCompletion(r, { kind: "inspection", miles: 100_030, date: "10/1/26" });
+    expect(nextInspection(done)).toEqual({ type: "B-6", miles: 103_025, interval: 3000 });
+    expect(done.lastInspMiles).toBe(100_025);
+    expect(done.nextInspMiles).toBeNull();
+    expect(transNextDue(done)).toBe(100_250);
+    const transDone = applyCompletion(r, { kind: "trans", miles: 100_260, date: null });
+    expect(transNextDue(transDone)).toBe(175_250);
+    expect(nextInspection(transDone)).toEqual(nextInspection(r));
+  });
+
+  it("sorts each PM independently, with two distinct rows for the same bus", () => {
+    const records = [
+      { ...emptyPmRecord("6404"), odometer: 100_000, nextInspType: "A-3" as const, nextInspMiles: 100_025, nextTransMiles: 100_250 },
+      { ...emptyPmRecord("6405"), odometer: 100_000, nextInspType: "B-6" as const, nextInspMiles: 100_100 },
+    ];
+    const items = pmWorkItems(records, S);
+    expect(items.map((r) => [r.id, r.milesLeft])).toEqual([
+      ["6404:inspection", 25], ["6405:inspection", 100], ["6404:trans", 250], ["6405:trans", null],
+    ]);
+    expect(items.filter((r) => r.status === "due-soon")).toHaveLength(3);
+    const progressed = { ...records[0], odometer: 100_050 };
+    expect(pmWorkItems([progressed], S).map((r) => r.status)).toEqual(["overdue", "due-soon"]);
   });
 });

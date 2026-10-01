@@ -169,8 +169,13 @@ export function summarizeReportRows(rows: PmReportRow[]): PmReportBus[] {
     const odometer = Math.max(...list.map((r) => r.current));
     const notes: string[] = [];
     if (new Set(list.map((r) => r.current)).size > 1) notes.push("rows disagree on the current mileage; kept the highest");
-    const insp = list.filter((r) => r.mark !== null && r.current === odometer);
-    const trans = list.filter((r) => r.mark === null && r.current === odometer);
+    const latestForKind = (inspection: boolean) => {
+      const candidates = list.filter((r) => (r.mark !== null) === inspection);
+      const latest = Math.max(...candidates.map((r) => r.current));
+      return candidates.filter((r) => r.current === latest);
+    };
+    const insp = latestForKind(true);
+    const trans = latestForKind(false);
     let nextInspType: InspectionType | null = null;
     let nextInspDue: number | null = null;
     if (insp.length) {

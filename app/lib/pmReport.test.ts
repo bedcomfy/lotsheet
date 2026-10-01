@@ -52,6 +52,14 @@ describe("summarizeReportRows", () => {
     expect(bus.odometer).toBe(400100);
     expect(bus.note).toMatch(/disagree/);
   });
+
+  it("does not discard a transmission schedule when its line has an older odometer", () => {
+    const rows = [
+      parseReportLine("6417 2,975 25 PM-A 3000 MILES 2120110 100,000 100,025"),
+      parseReportLine("6417 74,740 260 TRANS P.M. 75000 2120111 99,990 100,250"),
+    ].filter((row) => row !== null);
+    expect(summarizeReportRows(rows)[0]).toMatchObject({ odometer: 100_000, nextInspType: "A-3", nextInspDue: 100_025, transDue: 100_250 });
+  });
 });
 
 describe("linesFromText / parsePmReport", () => {

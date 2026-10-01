@@ -13,6 +13,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
 
   async function unlock() {
     if (!(await tryUnlock(password))) setError(true);
+    else setPassword("");
   }
 
   if (unlocked) return <>{children}</>;

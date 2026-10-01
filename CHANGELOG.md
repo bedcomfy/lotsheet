@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.41.0 - 2026-09-30
+
+- Added Log out of admin to Admin Tools, PM Mileage, the desktop sidebar,
+  and the phone Pages menu. It clears the admin session, locks editing in
+  other open tabs, and reports a failed logout so it can be retried.
+- PM Mileage now lists inspections and transmission PMs together under
+  Next PM, with a separate row and miles-left figure for each. A bus can
+  appear twice, and each row sorts and filters by its own due mileage.
+  Transmission PMs keep their own mileage instead of moving to an inspection
+  mark; completing one kind of PM leaves the other schedule and flag alone.
+- Admins can use Actions → Edit next inspection to set the inspection type
+  and due mileage directly, even with no last inspection on record. The
+  transmission row also supports editing its next due mileage. Corrections
+  appear in the Audit Log, and completing a PM advances from its due mark.
+- Anyone can change Bus status (Shop, Follow up, Hold, or Split). It is shared
+  by both rows for the bus; mileage, schedules, notes, imports, and completing
+  work still require Admin Tools. Concurrent status and mileage edits preserve
+  each other's fields.
+- PM report imports retain both schedules and their exact due mileages,
+  including when the two report lines carry different odometer readings.
+  Daily odometer-only imports leave the inspection schedules in place.
+
 ## 0.40.1 - 2026-10-01
 
 - Import PDF: the browser now reads the PDF's text layer itself and sends

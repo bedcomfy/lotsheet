@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Bus, Flag } from "lucide-react";
 import AdminGate from "./AdminGate";
+import AdminLogoutButton from "./AdminLogoutButton";
 import { AppPage, PageHeader, TabBar } from "../ui";
 import styles from "./SectionShell.module.css";
 
@@ -25,6 +26,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           eyebrow="Admin Tools"
           title="Sheet Configuration"
           description="Protected controls for shared fleet data and display rules."
+          actions={<AdminLogoutButton />}
         />
 
         <TabBar

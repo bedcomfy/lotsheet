@@ -11,7 +11,7 @@ const dirname =
 
 export default defineConfig({
   optimizeDeps: {
-    include: ["next/link", "@tanstack/react-query", "zod"],
+    include: ["next/link", "@tanstack/react-query", "zod", "pdfjs-dist", "zustand"],
   },
   test: {
     projects: [

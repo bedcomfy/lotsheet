@@ -1,10 +1,7 @@
 "use client";
 
-// PM Mileage: every active bus with its current odometer, the last inspection
-// it had (type + mileage), the next one in the cycle and the mileage it is due
-// at, plus the transmission PM on its own 75,000-mile interval. The intervals
-// are fixed by the cycle and never edited here; "Complete" records a PM as
-// done, which moves the bus to its next inspection and down the list.
+// PM Mileage lists each inspection and transmission PM as separate work,
+// sorted by its own miles left. The bus status is shared across its rows.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
@@ -23,16 +20,11 @@ import {
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
-  inspMilesRemaining,
-  inspStatus,
   isInspectionType,
   nextInspection,
-  pmStatus,
-  sortPmRecords,
+  pmWorkItems,
   toMiles,
-  transMilesRemaining,
   transNextDue,
-  transStatus,
   type InspectionType,
   type PmKind,
   type PmReadingRejection,
@@ -51,12 +43,14 @@ import {
   EmptyState,
   PageHeader,
   Panel,
+  Pressable,
   ResponsiveDialog,
   SearchField,
   SelectField,
   StatusBadge,
   TextField,
 } from "../ui";
+import AdminLogoutButton from "./AdminLogoutButton";
 import AdminUnlockButton from "./AdminUnlockButton";
 import { useBusMaster } from "./BusMasterProvider";
 import SaveStatus, { useSaveState } from "./SaveStatus";
@@ -77,7 +71,7 @@ type EditableField =
 const MILES_FIELDS: ReadonlySet<EditableField> = new Set(["odometer", "lastInspMiles", "lastTransMiles"]);
 
 const FILTER_OPTIONS: Array<{ id: Filter; label: string }> = [
-  { id: "all", label: "All buses" },
+  { id: "all", label: "All PMs" },
   { id: "overdue", label: "Overdue" },
   { id: "due-soon", label: "Due soon" },
   { id: "ok", label: "OK" },
@@ -192,7 +186,18 @@ export default function PmMileagePage() {
   const [saveError, setSaveError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [completing, setCompleting] = useState<CompleteTarget | null>(null);
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<CompleteTarget | null>(null);
+  const [editingNext, setEditingNext] = useState<CompleteTarget | null>(null);
+  const [savingStatus, setSavingStatus] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!unlocked) {
+      setEditing(null);
+      setEditingNext(null);
+      setCompleting(null);
+      setImportOpen(false);
+    }
+  }, [unlocked]);
 
   const load = useCallback(async () => {
     try {
@@ -221,37 +226,36 @@ export default function PmMileagePage() {
   }, [load]);
 
   const active = useMemo(() => buses.filter((b) => b.status !== "retired"), [buses]);
+  const work = useMemo(() => pmWorkItems(
+    active.map((b) => records[b.num] || emptyPmRecord(b.num)), settings,
+  ), [active, records, settings]);
   const rows = useMemo(() => {
-    const all = active.map((b) => records[b.num] || emptyPmRecord(b.num));
     const q = query.trim().toLowerCase();
-    const filtered = all.filter((r) => {
-      if (filter !== "all" && pmStatus(r, settings) !== filter) return false;
-      if (!q) return true;
+    return work.filter((item) => {
+      if (filter !== "all" && item.status !== filter) return false;
+      const r = item.record;
       const bus = active.find((b) => b.num === r.bus);
-      return (
-        r.bus.includes(q) ||
-        label(r.bus).toLowerCase().includes(q) ||
-        (bus?.model || "").toLowerCase().includes(q)
-      );
+      return !q || r.bus.includes(q) || label(r.bus).toLowerCase().includes(q) ||
+        (bus?.model || "").toLowerCase().includes(q);
     });
-    return sortPmRecords(filtered, settings);
-  }, [active, records, query, filter, settings, label]);
+  }, [work, query, filter, active, label]);
 
   const counts = useMemo(() => {
     const c: Record<PmStatus, number> = { overdue: 0, "due-soon": 0, ok: 0, unknown: 0 };
-    for (const b of active) c[pmStatus(records[b.num] || emptyPmRecord(b.num), settings)] += 1;
+    for (const item of work) c[item.status] += 1;
     return c;
-  }, [active, records, settings]);
+  }, [work]);
 
   async function save(bus: string, field: EditableField, raw: string) {
     markSave("saving");
     setSaveError("");
+    if (field === "disposition") setSavingStatus((cur) => new Set(cur).add(bus));
     const value = MILES_FIELDS.has(field) ? toMiles(raw) : raw;
     try {
       const r = await fetch("/api/pm-mileage", {
-        method: "PUT",
+        method: field === "disposition" ? "PATCH" : "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bus, [field]: value === "" ? null : value, actor: getDeviceActor() }),
+        body: JSON.stringify({ bus, [field]: field === "disposition" ? value : value === "" ? null : value, actor: getDeviceActor() }),
       });
       if (r.status === 401) throw new Error("Admin Tools are locked");
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -261,6 +265,8 @@ export default function PmMileagePage() {
     } catch (err) {
       markSave("error");
       setSaveError(`Bus ${bus} didn't save (${err instanceof Error ? err.message : "error"}). Try again.`);
+    } finally {
+      if (field === "disposition") setSavingStatus((cur) => { const next = new Set(cur); next.delete(bus); return next; });
     }
   }
 
@@ -271,10 +277,11 @@ export default function PmMileagePage() {
       <PageHeader
         eyebrow="Preventive Maintenance"
         title="PM Mileage"
-        description="Current mileage, the last inspection, and the miles left before the next one. Inspections run A-3 through C-24 every 3,000 miles; transmission PMs every 75,000. Mark a PM complete to move the bus to its next one."
+        description="Inspections and transmission PMs, ordered by miles left. Each bus has a separate row for each kind of work; its status and odometer are shared."
         actions={
           <div className={styles.headerActions}>
-            {unlocked ? <SaveStatus state={saveState} /> : null}
+            <SaveStatus state={saveState} />
+            <AdminLogoutButton />
             <Button variant="quiet" onPress={load} aria-label="Refresh">
               <RefreshCw aria-hidden="true" /> Refresh
             </Button>
@@ -291,25 +298,23 @@ export default function PmMileagePage() {
 
       {!unlocked && (
         <div className={styles.lockNotice}>
-          <Lock aria-hidden="true" /> The PM list is read-only until Admin Tools are unlocked. Mileage, inspections,
-          status, notes, imports, and completions all need the admin password.
+          <Lock aria-hidden="true" /> Anyone can update bus status. Unlock Admin Tools to edit mileage, schedules, or notes, import reports, or complete a PM.
         </div>
       )}
 
-      <div className={styles.tiles} role="list" aria-label="PM status counts">
+      <div className={styles.tiles} role="group" aria-label="PM work counts and filters">
         {(["overdue", "due-soon", "ok", "unknown"] as PmStatus[]).map((status) => (
-          <button
-            type="button"
-            role="listitem"
+          <Pressable
+            aria-pressed={filter === status}
             key={status}
             className={styles.tile}
             data-tone={TONE[status]}
             data-active={filter === status || undefined}
-            onClick={() => setFilter((cur) => (cur === status ? "all" : status))}
+            onPress={() => setFilter((cur) => (cur === status ? "all" : status))}
           >
             <strong>{counts[status]}</strong>
             <span>{PM_STATUS_LABEL[status]}</span>
-          </button>
+          </Pressable>
         ))}
         <div className={styles.tileNote}>
           Inspections every <strong>3,000</strong> mi · trans PM every <strong>{formatMiles(TRANS_PM_INTERVAL)}</strong> mi
@@ -323,7 +328,7 @@ export default function PmMileagePage() {
         </div>
       )}
 
-      <Panel className={styles.panel} title="Fleet" description={`${rows.length} of ${active.length} active buses`}>
+      <Panel className={styles.panel} title="Upcoming work" description={`${rows.length} of ${work.length} PMs · ${active.length} active buses`}>
         <div className={styles.toolbar}>
           <SearchField
             label="Search buses"
@@ -342,32 +347,26 @@ export default function PmMileagePage() {
         </div>
 
         {loaded && fleetReady && rows.length === 0 ? (
-          <EmptyState title="No buses match" description="Try another filter or search." />
+          <EmptyState title="No PMs match" description="Try another filter or search." />
         ) : (
-          <div className={styles.table} role="table" aria-label="PM mileage by bus">
+          <div className={styles.table} role="table" aria-label="Upcoming PM work">
             <div className={`${styles.row} ${styles.head}`} role="row">
               <span role="columnheader">Bus</span>
               <span role="columnheader">Odometer</span>
               <span role="columnheader">As of</span>
-              <span role="columnheader">Next inspection</span>
+              <span role="columnheader">Next PM</span>
               <span role="columnheader">Miles left</span>
-              <span role="columnheader">Trans PM</span>
-              <span role="columnheader">Trans left</span>
-              <span role="columnheader">Done</span>
-              <span role="columnheader">Status</span>
+              <span role="columnheader">Actions</span>
+              <span role="columnheader">Bus status</span>
               <span role="columnheader">Note</span>
             </div>
-            {rows.map((r) => {
-              const status = pmStatus(r, settings);
-              const next = nextInspection(r);
-              const inspLeft = inspMilesRemaining(r);
-              const transDue = transNextDue(r);
-              const transLeft = transMilesRemaining(r);
+            {rows.map((item) => {
+              const r = item.record;
               const bus = active.find((b) => b.num === r.bus);
-              const flagged = flaggedInspection(flags, r.bus);
-              const completeLabel = next ? `Complete ${next.type}` : flagged ? `Complete ${flagged}` : "Complete inspection";
+              const flagged = item.kind === "inspection" ? flaggedInspection(flags, r.bus) : null;
+              const workLabel = item.kind === "trans" ? "Trans PM" : item.type ?? flagged ?? "Inspection";
               return (
-                <div className={styles.row} role="row" key={r.bus} data-status={status}>
+                <div className={styles.row} role="row" key={item.id} data-status={item.status} aria-label={`Bus ${r.bus} ${workLabel}`}>
                   <div className={styles.busCell} role="cell">
                     <strong>{label(r.bus)}</strong>
                     <span className={styles.model}>
@@ -376,126 +375,49 @@ export default function PmMileagePage() {
                     </span>
                   </div>
                   <div role="cell" data-label="Odometer">
-                    <Cell
-                      readOnly={!unlocked}
-                      label={`Bus ${r.bus} odometer`}
-                      numeric
-                      value={r.odometer === null ? "" : String(r.odometer)}
-                      display={formatMiles(r.odometer)}
-                      placeholder="miles"
-                      onCommit={(v) => save(r.bus, "odometer", v)}
-                    />
+                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric
+                      value={r.odometer === null ? "" : String(r.odometer)} display={formatMiles(r.odometer)}
+                      placeholder="miles" onCommit={(v) => save(r.bus, "odometer", v)} />
                   </div>
                   <div role="cell" data-label="As of">
-                    <Cell
-                      readOnly={!unlocked}
-                      label={`Bus ${r.bus} reading date`}
-                      value={r.odometerDate || ""}
-                      placeholder="date"
-                      onCommit={(v) => save(r.bus, "odometerDate", v)}
-                    />
+                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} reading date`}
+                      value={r.odometerDate || ""} placeholder="date" onCommit={(v) => save(r.bus, "odometerDate", v)} />
                   </div>
-                  <div role="cell" data-label="Next inspection" className={styles.derived}>
-                    {next ? (
-                      <div className={styles.nextCell}>
-                        <strong>{next.type}</strong>
-                        <span>at {formatMiles(next.miles)}</span>
-                      </div>
-                    ) : flagged ? (
-                      <div className={styles.nextCell}>
-                        <strong>{flagged}</strong>
-                        <span className={styles.muted}>flagged · no mileage yet</span>
-                      </div>
-                    ) : (
-                      <span className={styles.muted}>—</span>
-                    )}
+                  <div role="cell" data-label="Next PM" className={styles.derived}>
+                    <div className={styles.nextCell}>
+                      <strong>{workLabel}</strong>
+                      <span className={item.dueMiles === null ? styles.muted : undefined}>
+                        {item.dueMiles === null ? "No due mileage" : `at ${formatMiles(item.dueMiles)}`}
+                      </span>
+                    </div>
                   </div>
                   <div role="cell" data-label="Miles left" className={styles.derived}>
-                    <StatusBadge tone={TONE[inspStatus(r, settings)]} size="sm">
-                      {milesLeftLabel(inspLeft)}
-                    </StatusBadge>
+                    <StatusBadge className={styles.mileageBadge} tone={TONE[item.status]} size="sm">{milesLeftLabel(item.milesLeft)}</StatusBadge>
                   </div>
-                  <div role="cell" data-label="Trans PM" className={styles.stack}>
-                    <div className={styles.stackRow}>
-                      <Cell
-                        readOnly={!unlocked}
-                        label={`Bus ${r.bus} last transmission PM mileage`}
-                        numeric
-                        value={r.lastTransMiles === null ? "" : String(r.lastTransMiles)}
-                        display={formatMiles(r.lastTransMiles)}
-                        placeholder="last at"
-                        onCommit={(v) => save(r.bus, "lastTransMiles", v)}
-                      />
-                      <Cell
-                        readOnly={!unlocked}
-                        label={`Bus ${r.bus} last transmission PM date`}
-                        value={r.lastTransDate || ""}
-                        placeholder="date"
-                        onCommit={(v) => save(r.bus, "lastTransDate", v)}
-                      />
-                    </div>
-                    <span className={`${styles.derived} ${styles.subline}`}>
-                      {transDue === null ? "next: —" : `next at ${formatMiles(transDue)}`}
-                    </span>
-                  </div>
-                  <div role="cell" data-label="Trans left" className={styles.derived}>
-                    <StatusBadge tone={TONE[transStatus(r, settings)]} size="sm">
-                      {milesLeftLabel(transLeft)}
-                    </StatusBadge>
-                  </div>
-                  <div role="cell" data-label="Done" className={styles.actionCell}>
-                    {!unlocked ? (
-                      <span className={styles.muted}>
-                        <Lock aria-hidden="true" className={styles.lockIcon} /> locked
-                      </span>
-                    ) : (
-                    <ActionMenu
-                      label={
-                        <>
-                          <CheckCircle2 aria-hidden="true" /> Complete
-                        </>
-                      }
-                      buttonSize="sm"
-                      placement="bottom end"
-                      items={[
-                        { id: "inspection", label: completeLabel, description: "Moves the bus to its next inspection" },
-                        { id: "trans", label: "Complete trans PM", description: `Next due ${formatMiles(TRANS_PM_INTERVAL)} mi later` },
-                        {
-                          id: "edit",
-                          label: "Edit last inspection…",
-                          description: r.lastInspType ? `${r.lastInspType} at ${formatMiles(r.lastInspMiles)}` : "Nothing on record",
-                        },
-                      ]}
-                      onAction={(key) =>
-                        key === "edit" ? setEditing(r.bus) : setCompleting({ bus: r.bus, kind: key === "trans" ? "trans" : "inspection" })
-                      }
-                    />
+                  <div role="cell" data-label="Actions" className={styles.actionCell}>
+                    {!unlocked ? <span className={styles.muted}><Lock aria-hidden="true" className={styles.lockIcon} /> locked</span> : (
+                      <ActionMenu label="Actions" buttonSize="sm" placement="bottom end"
+                        items={[
+                          { id: "complete", label: `Complete ${workLabel}`, description: "Record this PM as done" },
+                          { id: "next", label: item.kind === "inspection" ? "Edit next inspection…" : "Edit next trans PM…", description: "Set the type and due mileage directly" },
+                          { id: "last", label: item.kind === "inspection" ? "Edit last inspection…" : "Edit last trans PM…", description: "Correct the completed PM on record" },
+                        ]}
+                        onAction={(key) => {
+                          const target = { bus: r.bus, kind: item.kind };
+                          if (key === "next") setEditingNext(target);
+                          else if (key === "last") setEditing(target);
+                          else setCompleting(target);
+                        }} />
                     )}
                   </div>
-                  <div role="cell" data-label="Status" data-disposition={r.disposition || undefined}>
-                    {unlocked ? (
-                      <SelectField
-                        className={styles.typeSelect}
-                        label={`Bus ${r.bus} status`}
-                        labelHidden
-                        selectedKey={r.disposition}
-                        onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))}
-                        options={DISPOSITION_OPTIONS}
-                      />
-                    ) : (
-                      <span className={`${styles.readCell} ${styles.readStatus}`} data-empty={r.disposition ? undefined : ""}>
-                        {PM_DISPOSITION_LABEL[r.disposition]}
-                      </span>
-                    )}
+                  <div role="cell" data-label="Bus status" data-disposition={r.disposition || undefined}>
+                    <SelectField className={styles.typeSelect} label={`Bus ${r.bus} ${workLabel} status`} labelHidden
+                      selectedKey={r.disposition} isDisabled={savingStatus.has(r.bus)}
+                      onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
                   </div>
                   <div role="cell" data-label="Note">
-                    <Cell
-                      readOnly={!unlocked}
-                      label={`Bus ${r.bus} note`}
-                      value={r.note || ""}
-                      placeholder="note"
-                      onCommit={(v) => save(r.bus, "note", v)}
-                    />
+                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
+                      value={r.note || ""} placeholder="note" onCommit={(v) => save(r.bus, "note", v)} />
                   </div>
                 </div>
               );
@@ -513,12 +435,25 @@ export default function PmMileagePage() {
       />
       {unlocked && editing && (
         <EditInspectionDialog
-          record={records[editing] || emptyPmRecord(editing)}
-          busLabel={label(editing)}
+          record={records[editing.bus] || emptyPmRecord(editing.bus)}
+          kind={editing.kind}
+          busLabel={label(editing.bus)}
           onClose={() => setEditing(null)}
           onSaved={(record) => {
             setRecords((cur) => ({ ...cur, [record.bus]: record }));
             setEditing(null);
+          }}
+        />
+      )}
+      {unlocked && editingNext && (
+        <EditNextPmDialog
+          record={records[editingNext.bus] || emptyPmRecord(editingNext.bus)}
+          kind={editingNext.kind}
+          busLabel={label(editingNext.bus)}
+          onClose={() => setEditingNext(null)}
+          onSaved={(record) => {
+            setRecords((cur) => ({ ...cur, [record.bus]: record }));
+            setEditingNext(null);
           }}
         />
       )}
@@ -550,28 +485,96 @@ export default function PmMileagePage() {
   );
 }
 
+// ---------- Correct the next PM without requiring a completed one ----------
+function EditNextPmDialog({ record, kind, busLabel, onClose, onSaved }: {
+  record: PmRecord;
+  kind: PmKind;
+  busLabel: string;
+  onClose: () => void;
+  onSaved: (record: PmRecord) => void;
+}) {
+  const isInspection = kind === "inspection";
+  const next = nextInspection(record);
+  const due = isInspection ? next?.miles ?? null : transNextDue(record);
+  const [type, setType] = useState<string>(next?.type ?? "");
+  const [miles, setMiles] = useState(due === null ? "" : String(due));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit() {
+    const dueMiles = toMiles(miles);
+    if (dueMiles === null || dueMiles > 2_147_483_647 || (isInspection && !isInspectionType(type))) {
+      setError(isInspection ? "Choose the next inspection and enter its due mileage." : "Enter the transmission PM due mileage.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/pm-mileage", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bus: record.bus,
+          ...(isInspection ? { nextInspType: type, nextInspMiles: dueMiles } : { nextTransMiles: dueMiles }),
+          actor: getDeviceActor(),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) throw new Error("Admin Tools are locked — unlock and try again.");
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      onSaved(data.record as PmRecord);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't save the next PM.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ResponsiveDialog isOpen onOpenChange={(open) => { if (!open) onClose(); }}
+      title={`Next ${isInspection ? "inspection" : "trans PM"} · Bus ${busLabel}`}
+      description="Enter the work that is due and its odometer mileage. You do not need a last-PM record."
+      size="sm"
+      footer={<div className={styles.dialogFooter}>
+        <Button variant="quiet" onPress={onClose} isDisabled={busy}>Cancel</Button>
+        <Button variant="primary" onPress={submit} isDisabled={busy}>{busy ? "Saving…" : "Save"}</Button>
+      </div>}
+    >
+      <div className={styles.settingsBody}>
+        {isInspection && <SelectField label="Next inspection" selectedKey={type}
+          onSelectionChange={(key) => setType(String(key ?? ""))} options={TYPE_OPTIONS.filter((option) => option.id !== "")} />}
+        <TextField label="Due at (miles)" inputMode="numeric" value={miles} onChange={setMiles} placeholder="Odometer when due" />
+        {error && <div className={styles.errorBanner} role="alert"><AlertTriangle aria-hidden="true" /> {error}</div>}
+      </div>
+    </ResponsiveDialog>
+  );
+}
+
 // ---------- Edit the last inspection on record ----------
 // The last inspection isn't a column any more (the next one is what the crew
 // reads), but it is what the next one is computed from, so admins can still
 // correct it here.
 function EditInspectionDialog({
   record,
+  kind,
   busLabel,
   onClose,
   onSaved,
 }: {
   record: PmRecord;
+  kind: PmKind;
   busLabel: string;
   onClose: () => void;
   onSaved: (record: PmRecord) => void;
 }) {
+  const isInspection = kind === "inspection";
+  const lastMiles = isInspection ? record.lastInspMiles : record.lastTransMiles;
   const [type, setType] = useState<string>(record.lastInspType ?? "");
-  const [miles, setMiles] = useState(record.lastInspMiles === null ? "" : String(record.lastInspMiles));
-  const [date, setDate] = useState(record.lastInspDate ?? "");
+  const [miles, setMiles] = useState(lastMiles === null ? "" : String(lastMiles));
+  const [date, setDate] = useState((isInspection ? record.lastInspDate : record.lastTransDate) ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const milesValue = toMiles(miles);
-  const preview = isInspectionType(type) && milesValue !== null ? nextInspection({ ...record, lastInspType: type, lastInspMiles: milesValue }) : null;
+  const preview = isInspection && isInspectionType(type) && milesValue !== null ? nextInspection({ ...record, lastInspType: type, lastInspMiles: milesValue, nextInspType: null, nextInspMiles: null }) : null;
 
   async function submit() {
     setBusy(true);
@@ -582,9 +585,10 @@ function EditInspectionDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bus: record.bus,
-          lastInspType: isInspectionType(type) ? type : null,
-          lastInspMiles: milesValue,
-          lastInspDate: date.trim() || null,
+          ...(isInspection ? {
+            lastInspType: isInspectionType(type) ? type : null,
+            lastInspMiles: milesValue, lastInspDate: date.trim() || null,
+          } : { lastTransMiles: milesValue, lastTransDate: date.trim() || null }),
           actor: getDeviceActor(),
         }),
       });
@@ -604,8 +608,8 @@ function EditInspectionDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={`Last inspection · Bus ${busLabel}`}
-      description="The inspection this bus most recently had and the mileage it was recorded at. The next inspection and its due mileage follow from it."
+      title={`Last ${isInspection ? "inspection" : "trans PM"} · Bus ${busLabel}`}
+      description="Correct the completed PM on record. Saving replaces any directly entered next-due schedule for this kind of PM with the schedule calculated from this record."
       size="sm"
       footer={
         <div className={styles.dialogFooter}>
@@ -615,7 +619,7 @@ function EditInspectionDialog({
       }
     >
       <div className={styles.settingsBody}>
-        <SelectField label="Inspection" selectedKey={type} onSelectionChange={(key) => setType(String(key ?? ""))} options={TYPE_OPTIONS} />
+        {isInspection && <SelectField label="Inspection" selectedKey={type} onSelectionChange={(key) => setType(String(key ?? ""))} options={TYPE_OPTIONS} />}
         <TextField label="Recorded at (miles)" inputMode="numeric" value={miles} onChange={setMiles} placeholder="miles" />
         <TextField label="Date" value={date} onChange={setDate} placeholder="mm/dd/yy" />
         {preview && (
@@ -669,7 +673,7 @@ function CompleteDialog({
     }
     if (!isInspectionType(type)) return null;
     const recordedAt = completionRecordedAt(record, "inspection", type, milesValue);
-    const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: recordedAt });
+    const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: recordedAt, nextInspType: null, nextInspMiles: null });
     return preview ? { label: `Next inspection ${preview.type}`, at: preview.miles, recordedAt } : null;
   }, [isInspection, type, milesValue, record]);
 
@@ -694,7 +698,7 @@ function CompleteDialog({
           type: isInspection ? type : null,
           miles: milesValue,
           date: date.trim() || null,
-          clearFlag: hasFlag && clearFlag,
+          clearFlag: isInspection && hasFlag && clearFlag,
           actor: getDeviceActor(),
         }),
       });
@@ -863,6 +867,9 @@ function ImportDialog({
         bus: x.bus,
         odometer: x.odometer,
         readAt: x.readAt,
+        nextInspType: x.nextInspType ?? null,
+        nextInspDue: x.nextInspDue ?? null,
+        transDue: x.transDue ?? null,
         lastInspType: x.lastInspType ?? null,
         lastInspMiles: x.lastInspMiles ?? null,
         lastTransMiles: x.lastTransMiles ?? null,

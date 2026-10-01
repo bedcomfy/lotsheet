@@ -118,7 +118,7 @@
 /* Wide enough that every column stays readable; the panel scrolls sideways
    on mid-size screens instead of squeezing the inputs. */
 .table > .row {
-  min-width: 71rem;
+  min-width: 61rem;
 }
 
 .row {
@@ -128,8 +128,6 @@
     minmax(6rem, 0.8fr)
     minmax(5.25rem, 0.7fr)
     minmax(6rem, 0.8fr)
-    minmax(5.5rem, 0.7fr)
-    minmax(11rem, 1.4fr)
     minmax(5.5rem, 0.7fr)
     minmax(7rem, auto)
     minmax(6.5rem, auto)
@@ -307,18 +305,18 @@
 }
 
 [data-disposition="shop"] .typeSelect button {
-  color: var(--ui-accent);
+  color: var(--ui-text);
   background: var(--ui-accent-soft);
 }
 
 [data-disposition="hold"] .typeSelect button {
-  color: var(--ui-danger);
+  color: var(--ui-text);
   background: var(--ui-danger-soft);
 }
 
 [data-disposition="follow-up"] .typeSelect button,
 [data-disposition="split"] .typeSelect button {
-  color: var(--ui-warning);
+  color: var(--ui-text);
   background: var(--ui-warning-soft, var(--ui-surface-muted));
 }
 
@@ -341,7 +339,11 @@
 }
 
 .muted {
-  color: var(--ui-text-subtle);
+  color: var(--ui-text-muted);
+}
+
+.row .mileageBadge {
+  color: var(--ui-text);
 }
 
 @media (max-width: 900px) {
@@ -382,8 +384,7 @@
   }
 
   .row > [data-label="Note"],
-  .row > [data-label="Trans PM"],
-  .row > [data-label="Done"] {
+  .row > [data-label="Actions"] {
     grid-column: 1 / -1;
   }
 
@@ -394,6 +395,11 @@
   .actionCell > * {
     width: 100%;
   }
+}
+
+.row > [role="cell"] {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ---- dialogs ---- */

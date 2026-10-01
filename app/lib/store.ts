@@ -407,6 +407,9 @@ function pmRowToRecord(row: typeof pmMileage.$inferSelect): PmRecord {
     lastInspDate: row.lastInspDate || null,
     lastTransMiles: row.lastTransMiles ?? null,
     lastTransDate: row.lastTransDate || null,
+    nextInspType: isInspectionType(row.nextInspType) ? row.nextInspType : null,
+    nextInspMiles: row.nextInspMiles ?? null,
+    nextTransMiles: row.nextTransMiles ?? null,
     disposition: normalizeDisposition(row.disposition),
     note: row.note || "",
     source: row.source || "",
@@ -423,6 +426,9 @@ function pmRecordToRow(r: PmRecord) {
     lastInspDate: r.lastInspDate,
     lastTransMiles: r.lastTransMiles,
     lastTransDate: r.lastTransDate,
+    nextInspType: r.nextInspType,
+    nextInspMiles: r.nextInspMiles,
+    nextTransMiles: r.nextTransMiles,
     disposition: r.disposition || null,
     note: r.note,
     source: r.source,
@@ -430,12 +436,15 @@ function pmRecordToRow(r: PmRecord) {
   };
 }
 
-async function writePmRecord(db: DB, next: PmRecord): Promise<PmRecord> {
+async function writePmRecord(db: DB, next: PmRecord, fields: string[]): Promise<PmRecord> {
   const row = pmRecordToRow(next);
+  // Update only the requested columns: a simultaneous crew status edit must
+  // survive an admin mileage edit or completion based on an older record.
+  const set = Object.fromEntries(Object.entries(row).filter(([key]) => fields.includes(key) || key === "updatedAt"));
   const rows = await db
     .insert(pmMileage)
     .values({ bus: next.bus, ...row })
-    .onConflictDoUpdate({ target: pmMileage.bus, set: row })
+    .onConflictDoUpdate({ target: pmMileage.bus, set })
     .returning();
   return pmRowToRecord(rows[0]);
 }
@@ -485,6 +494,9 @@ export interface PmPatch {
   lastInspDate?: string | null;
   lastTransMiles?: number | string | null;
   lastTransDate?: string | null;
+  nextInspType?: string | null;
+  nextInspMiles?: number | null;
+  nextTransMiles?: number | null;
   disposition?: string | null;
   note?: string;
   source?: string;
@@ -497,6 +509,18 @@ const textOrNull = (v: string | null | undefined) => (v ? String(v).trim() || nu
 export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): Promise<PmRecord> {
   const db = await getDb();
   const before = await readPmRecord(db, bus);
+  const fields = Object.keys(patch);
+  // Explicitly correcting the historical PM resumes the schedule derived
+  // from that correction. A next-due edit, in contrast, leaves history alone.
+  if (patch.lastInspType !== undefined || patch.lastInspMiles !== undefined) {
+    patch = { nextInspType: null, nextInspMiles: null, ...patch };
+    fields.push("nextInspType", "nextInspMiles");
+  }
+  if (patch.lastTransMiles !== undefined) {
+    patch = { nextTransMiles: null, ...patch };
+    fields.push("nextTransMiles");
+  }
+  if (patch.odometer !== undefined) fields.push("source");
   const next: PmRecord = {
     ...before,
     ...(patch.odometer !== undefined ? { odometer: toPmMiles(patch.odometer) } : {}),
@@ -506,12 +530,15 @@ export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): 
     ...(patch.lastInspDate !== undefined ? { lastInspDate: textOrNull(patch.lastInspDate) } : {}),
     ...(patch.lastTransMiles !== undefined ? { lastTransMiles: toPmMiles(patch.lastTransMiles) } : {}),
     ...(patch.lastTransDate !== undefined ? { lastTransDate: textOrNull(patch.lastTransDate) } : {}),
+    ...(patch.nextInspType !== undefined ? { nextInspType: isInspectionType(patch.nextInspType) ? patch.nextInspType : null } : {}),
+    ...(patch.nextInspMiles !== undefined ? { nextInspMiles: toPmMiles(patch.nextInspMiles) } : {}),
+    ...(patch.nextTransMiles !== undefined ? { nextTransMiles: toPmMiles(patch.nextTransMiles) } : {}),
     ...(patch.disposition !== undefined ? { disposition: normalizeDisposition(patch.disposition) } : {}),
     ...(patch.note !== undefined ? { note: String(patch.note ?? "").trim() } : {}),
     source: patch.source ?? (patch.odometer !== undefined ? "manual" : before.source),
   };
-  const saved = await writePmRecord(db, next);
-  await logOdometerIfChanged(db, before, saved, actor);
+  const saved = await writePmRecord(db, next, fields);
+  if (patch.odometer !== undefined) await logOdometerIfChanged(db, before, saved, actor);
   await bumpPulse(db);
   return saved;
 }
@@ -526,7 +553,11 @@ export async function completePm(
   const db = await getDb();
   const before = await readPmRecord(db, bus);
   const next = applyCompletion(before, completion);
-  const after = await writePmRecord(db, { ...next, source: before.source || "manual" });
+  const fields = completion.kind === "inspection"
+    ? ["lastInspType", "lastInspMiles", "lastInspDate", "nextInspType", "nextInspMiles"]
+    : ["lastTransMiles", "lastTransDate", "nextTransMiles"];
+  if (next.odometer !== before.odometer) fields.push("odometer", "odometerDate");
+  const after = await writePmRecord(db, next, fields);
   await db.insert(pmInspections).values({
     bus,
     kind: completion.kind,
@@ -568,8 +599,8 @@ export async function listPmInspections(bus?: string, limit = 200): Promise<PmIn
   }));
 }
 
-// Apply a reviewed batch of readings (a PDF import). Only the odometer and its
-// date change; the last-PM records stay as they are.
+// Apply a reviewed report. Odometer-only readings preserve both PM schedules;
+// PM status reports also update the independent due marks they contain.
 const SAME_PM_TOLERANCE = 500; // miles; the report's "done at" and the crew's reading differ a little
 
 function samePm(typeA: string | null, milesA: number | null, typeB: string | null, milesB: number | null): boolean {
@@ -594,6 +625,15 @@ export async function applyPmReadings(
     // describes the same PM (same type, mileage within a few hundred).
     const pm: Partial<typeof pmMileage.$inferInsert> = {};
     const existing = await readPmRecord(db, reading.bus);
+    // Keep both schedules at the exact due mileages printed on the report.
+    // An odometer-only report must not erase either schedule.
+    const nextInspDue = toPmMiles(reading.nextInspDue);
+    if (isInspectionType(reading.nextInspType) && nextInspDue !== null) {
+      pm.nextInspType = reading.nextInspType;
+      pm.nextInspMiles = nextInspDue;
+    }
+    const transDue = toPmMiles(reading.transDue);
+    if (transDue !== null) pm.nextTransMiles = transDue;
     const lastInspMiles = toPmMiles(reading.lastInspMiles);
     if (isInspectionType(reading.lastInspType) && lastInspMiles !== null) {
       pm.lastInspType = reading.lastInspType;
