@@ -4,13 +4,14 @@ import { parseBody, pmMileagePatchSchema } from "../../lib/schemas";
 
 export const dynamic = "force-dynamic";
 
-// Every bus's PM mileage record plus the shared settings (default interval).
+// Every bus's PM mileage record plus the shared settings (due-soon window).
 export async function GET() {
   const [records, settings] = await Promise.all([getPmMileage(), getPmSettings()]);
   return NextResponse.json({ records, settings });
 }
 
-// Edit one bus: odometer, its date, last PM mark, interval override, note.
+// Edit one bus: odometer and its date, last inspection (type/miles/date), last
+// transmission PM (miles/date), note. Intervals are fixed, never edited.
 // Only the fields sent change. Like flags, no password — it's crew data.
 export async function PUT(req: Request) {
   const { data, error } = await parseBody(req, pmMileagePatchSchema);

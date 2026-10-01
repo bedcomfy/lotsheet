@@ -32,6 +32,7 @@ export interface SelectFieldProps
     "children" | "className" | "items"
   > {
   label: ReactNode;
+  labelHidden?: boolean;
   options: SelectOption[];
   description?: ReactNode;
   errorMessage?: ReactNode;
@@ -40,6 +41,7 @@ export interface SelectFieldProps
 
 export function SelectField({
   label,
+  labelHidden = false,
   options,
   description,
   errorMessage,
@@ -58,7 +60,7 @@ export function SelectField({
       }}
       className={cx(styles.field, className)}
     >
-      <Label className={styles.label}>{label}</Label>
+      <Label className={cx(styles.label, labelHidden && styles.visuallyHidden)}>{label}</Label>
       <AriaButton className={styles.trigger}>
         <SelectValue className={styles.value} />
         <ChevronDown className={styles.chevron} aria-hidden="true" />

@@ -11,6 +11,18 @@
   font-weight: var(--ui-weight-medium);
 }
 
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 .trigger {
   display: flex;
   width: 100%;

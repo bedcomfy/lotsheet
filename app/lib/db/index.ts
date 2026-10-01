@@ -48,6 +48,11 @@ const DDL: string[] = [
   `CREATE TABLE IF NOT EXISTS ${T("pm_mileage")} (bus TEXT PRIMARY KEY, odometer INTEGER, odometer_date TEXT, last_pm_miles INTEGER, last_pm_date TEXT, interval INTEGER, note TEXT, source TEXT, updated_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE TABLE IF NOT EXISTS ${T("pm_mileage_log")} (id BIGSERIAL PRIMARY KEY, bus TEXT NOT NULL, odometer INTEGER NOT NULL, read_at TEXT, source TEXT, batch TEXT, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
   `CREATE INDEX IF NOT EXISTS ${T("pm_mileage_log_bus_idx")} ON ${T("pm_mileage_log")} (bus, id DESC)`,
+  `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_insp_type TEXT`,
+  `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_trans_miles INTEGER`,
+  `ALTER TABLE ${T("pm_mileage")} ADD COLUMN IF NOT EXISTS last_trans_date TEXT`,
+  `CREATE TABLE IF NOT EXISTS ${T("pm_inspections")} (id BIGSERIAL PRIMARY KEY, bus TEXT NOT NULL, kind TEXT NOT NULL, type TEXT, miles INTEGER NOT NULL, done_at TEXT, actor TEXT, created_at TIMESTAMPTZ DEFAULT now())`,
+  `CREATE INDEX IF NOT EXISTS ${T("pm_inspections_bus_idx")} ON ${T("pm_inspections")} (bus, id DESC)`,
 ];
 
 let _dbPromise: Promise<DB> | undefined;

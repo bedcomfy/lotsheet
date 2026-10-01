@@ -115,18 +115,25 @@
   overflow-x: auto;
 }
 
+/* Wide enough that every column stays readable; the panel scrolls sideways
+   on mid-size screens instead of squeezing the inputs. */
+.table > .row {
+  min-width: 76rem;
+}
+
 .row {
   display: grid;
   grid-template-columns:
-    minmax(9rem, 1.2fr)
-    minmax(6.5rem, 1fr)
-    minmax(6rem, 0.9fr)
-    minmax(6.5rem, 1fr)
-    minmax(6rem, 0.9fr)
-    minmax(5.5rem, 0.8fr)
-    minmax(6rem, 0.9fr)
-    minmax(6.5rem, 0.9fr)
-    minmax(9rem, 1.4fr);
+    minmax(8rem, 1fr)
+    minmax(6rem, 0.8fr)
+    minmax(5.25rem, 0.7fr)
+    minmax(12rem, 1.5fr)
+    minmax(6rem, 0.8fr)
+    minmax(5.5rem, 0.7fr)
+    minmax(11rem, 1.4fr)
+    minmax(5.5rem, 0.7fr)
+    minmax(7rem, auto)
+    minmax(6rem, 1fr);
   align-items: center;
   gap: var(--ui-space-2);
   padding: var(--ui-space-2) var(--ui-space-4);
@@ -194,6 +201,76 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Cells with two inputs (type + miles, miles + date) and a derived line below. */
+.stack {
+  display: grid;
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+
+.stackRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ui-space-1);
+  min-width: 0;
+}
+
+.typeRow {
+  grid-template-columns: 5.75rem minmax(0, 1fr);
+}
+
+.typeSelect {
+  gap: 0;
+}
+
+.typeSelect button {
+  min-height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-2);
+}
+
+.subline {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs);
+  padding-left: var(--ui-space-1);
+}
+
+.nextCell {
+  display: grid;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.nextCell strong {
+  font-weight: var(--ui-weight-semibold);
+}
+
+.nextCell span {
+  font-size: var(--ui-font-size-xs);
+}
+
+.actionCell {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.actionCell svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.preview {
+  padding: var(--ui-space-3);
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+  font-size: var(--ui-font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.preview strong {
+  color: var(--ui-text);
+}
+
 .muted {
   color: var(--ui-text-subtle);
 }
@@ -211,10 +288,12 @@
     display: none;
   }
 
-  .row {
+  .row,
+  .table > .row {
     grid-template-columns: 1fr 1fr;
     gap: var(--ui-space-2) var(--ui-space-3);
     padding: var(--ui-space-3);
+    min-width: 0;
   }
 
   .busCell {
@@ -233,8 +312,19 @@
     font-weight: var(--ui-weight-medium);
   }
 
-  .row > [data-label="Note"] {
+  .row > [data-label="Note"],
+  .row > [data-label="Last inspection"],
+  .row > [data-label="Trans PM"],
+  .row > [data-label="Done"] {
     grid-column: 1 / -1;
+  }
+
+  .actionCell {
+    justify-content: stretch;
+  }
+
+  .actionCell > * {
+    width: 100%;
   }
 }
 

@@ -129,20 +129,29 @@ function miles(n: unknown): string {
 }
 
 function pmMileageDetails(details: unknown): { title: string; detail: string; badge: string } {
-  const d = (details || {}) as {
-    bus?: string;
-    before?: { odometer?: number | null; lastPmMiles?: number | null; interval?: number | null } | null;
-    after?: { odometer?: number | null; lastPmMiles?: number | null; interval?: number | null } | null;
-  };
+  type R = { odometer?: number | null; lastInspType?: string | null; lastInspMiles?: number | null; lastTransMiles?: number | null } | null;
+  const d = (details || {}) as { bus?: string; before?: R; after?: R };
   const parts: string[] = [];
   const b = d.before || {};
   const a = d.after || {};
   if ((b.odometer ?? null) !== (a.odometer ?? null)) parts.push(`odometer ${miles(b.odometer ?? null)} → ${miles(a.odometer ?? null)}`);
-  if ((b.lastPmMiles ?? null) !== (a.lastPmMiles ?? null)) parts.push(`last PM ${miles(b.lastPmMiles ?? null)} → ${miles(a.lastPmMiles ?? null)}`);
-  if ((b.interval ?? null) !== (a.interval ?? null)) parts.push(`interval ${miles(b.interval ?? null)} → ${miles(a.interval ?? null)}`);
+  if ((b.lastInspType ?? null) !== (a.lastInspType ?? null) || (b.lastInspMiles ?? null) !== (a.lastInspMiles ?? null)) {
+    parts.push(`last inspection ${b.lastInspType || "—"} @ ${miles(b.lastInspMiles ?? null)} → ${a.lastInspType || "—"} @ ${miles(a.lastInspMiles ?? null)}`);
+  }
+  if ((b.lastTransMiles ?? null) !== (a.lastTransMiles ?? null)) parts.push(`last trans PM ${miles(b.lastTransMiles ?? null)} → ${miles(a.lastTransMiles ?? null)}`);
   return {
     title: `PM mileage · ${d.bus || "bus"}`,
     detail: parts.length ? parts.join(" · ") : "details edited",
+    badge: "PM",
+  };
+}
+
+function pmCompleteDetails(details: unknown): { title: string; detail: string; badge: string } {
+  const d = (details || {}) as { bus?: string; kind?: string; type?: string | null; miles?: number | null; date?: string | null; flagCleared?: boolean };
+  const what = d.kind === "trans" ? "Transmission PM" : `${d.type || "Inspection"} inspection`;
+  return {
+    title: `${what} completed · ${d.bus || "bus"}`,
+    detail: `at ${miles(d.miles ?? null)} mi${d.date ? ` on ${d.date}` : ""}${d.flagCleared ? " · inspection flag cleared" : ""}`,
     badge: "PM",
   };
 }
@@ -217,9 +226,11 @@ export default function AuditLog() {
               ? pmMileageDetails(event.details)
               : event.kind === "pm_mileage_import"
                 ? pmImportDetails(event.details)
-                : event.kind === "pm_settings_update"
-                  ? { title: "PM interval settings changed", detail: "", badge: "PM" }
-                  : { title: event.kind, detail: "", badge: "Audit" };
+                : event.kind === "pm_complete"
+                  ? pmCompleteDetails(event.details)
+                  : event.kind === "pm_settings_update"
+                    ? { title: "PM due-soon window changed", detail: "", badge: "PM" }
+                    : { title: event.kind, detail: "", badge: "Audit" };
       return {
         id: `audit-${event.id}`,
         at: event.createdAt,
