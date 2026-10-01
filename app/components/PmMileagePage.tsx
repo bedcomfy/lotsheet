@@ -19,6 +19,7 @@ import {
   PM_DISPOSITION_LABEL,
   PM_STATUS_LABEL,
   TRANS_PM_INTERVAL,
+  TRANS_PM_NOTE,
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
@@ -429,8 +430,12 @@ export default function PmMileagePage() {
                       onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
                   </div>
                   <div role="cell" data-label="Note">
-                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
-                      value={r.note || ""} placeholder="note" onCommit={(v) => save(r.bus, "note", v)} />
+                    {item.kind === "trans" && <div className={styles.standardNote}>{TRANS_PM_NOTE}</div>}
+                    {(unlocked || r.note || item.kind !== "trans") && (
+                      <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
+                        value={r.note || ""} placeholder={item.kind === "trans" ? "Additional bus note" : "note"}
+                        onCommit={(v) => save(r.bus, "note", v)} />
+                    )}
                   </div>
                 </div>
               );

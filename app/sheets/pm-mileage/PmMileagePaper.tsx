@@ -1,5 +1,5 @@
 import {
-  PM_DISPOSITION_LABEL, PM_STATUS_LABEL, formatMiles, groupPmWorkItems,
+  PM_DISPOSITION_LABEL, PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, groupPmWorkItems,
   type PmFilter, type PmSettings, type PmWorkItem,
 } from "../../lib/pmMileage";
 import type { FlagMap } from "../../lib/types";
@@ -56,7 +56,10 @@ export function PmMileagePaper({ items, labels, flags, settings, date, filter, q
                   <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatMiles(item.dueMiles)}`}</span></td>
                   <td><strong>{item.milesLeft === null ? "Unknown" : `${item.milesLeft > 0 ? "+" : ""}${formatMiles(item.milesLeft)}`}</strong><span className={styles.urgency}>{PM_STATUS_LABEL[item.status]}</span></td>
                   <td className={styles.status}>{statuses.length ? statuses.join(" / ") : "-"}</td>
-                  <td>{r.note || "-"}</td>
+                  <td>
+                    {item.kind === "trans" && <div className={styles.note}>{TRANS_PM_NOTE}</div>}
+                    {r.note ? <div className={styles.note}>{r.note}</div> : item.kind !== "trans" ? "-" : null}
+                  </td>
                 </tr>
               );
             })}

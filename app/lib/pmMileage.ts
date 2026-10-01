@@ -15,6 +15,8 @@ export type InspectionType = (typeof INSPECTION_CYCLE)[number];
 
 // Transmission PMs run on their own fixed interval, off the same odometer.
 export const TRANS_PM_INTERVAL = 75_000;
+// PM work instructions only; never written to the bus's shared flag notes.
+export const TRANS_PM_NOTE = "Change front hub fluid. Change differential fluid.";
 const INSPECTION_STEP = 3_000; // every inspection mark is 3,000 miles on
 export const DEFAULT_DUE_SOON_MILES = 500; // "due soon" once this close
 

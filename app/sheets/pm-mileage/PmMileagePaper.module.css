@@ -25,6 +25,7 @@
 .table td span { display: block; margin-top: 0.025in; font-size: 8.5pt; }
 .table .urgency { font-size: 8pt; font-weight: 700; text-transform: uppercase; }
 .status { font-size: 9pt; font-weight: 700; }
+.note + .note { margin-top: 0.06in; }
 .busColumn { width: 9%; }
 .odometerColumn { width: 16%; }
 .workColumn { width: 16%; }

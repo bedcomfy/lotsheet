@@ -116,17 +116,20 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
     { bus: "6450", left: 2000, disposition: "shop" },
     { bus: "6451", left: 3000, disposition: "follow-up" },
   ];
+  expect((await api.post("/api/flags", { data: { bus: "6404", flags: [], note: "FLAG NOTE ONLY" } })).ok()).toBe(true);
   for (const fixture of fixtures) {
     expect((await api.put("/api/pm-mileage", { data: {
       bus: fixture.bus, disposition: fixture.disposition, odometer: 100_000, odometerDate: "9/30/26",
       nextInspType: "A-3", nextInspMiles: 100_000 + fixture.left, nextTransMiles: 100_225 + fixture.left,
-      note: fixture.bus === "6450" ? "Inspect transmission lines and confirm all parts arrived. ".repeat(18) + "END OF SHOP NOTE" : "",
+      note: fixture.bus === "6450" ? "Inspect transmission lines and confirm all parts arrived. ".repeat(18) + "END OF SHOP NOTE"
+        : fixture.bus === "6404" ? "PM NOTE ONLY" : "",
     } })).ok()).toBe(true);
   }
   await api.delete("/api/admin/session");
   const flags = (await (await api.get("/api/flags")).json()).flags;
   expect(flags["6417"].flags).toContain("hold");
   expect(flags["6435"].flags).toContain("split");
+  expect(flags["6404"].note).toBe("FLAG NOTE ONLY");
 
   await page.goto("/pm-mileage");
   const table = page.getByRole("table", { name: "Upcoming PM work" });
@@ -192,6 +195,10 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(filteredPages[0]).toContain("2 PMs");
   expect(filteredPages[0]).toContain("6404");
   expect(filteredPages[0]).toContain("Trans PM");
+  expect(filteredPages[0]).toContain("Change front hub fluid.");
+  expect(filteredPages[0]).toContain("Change differential fluid.");
+  expect(filteredPages[0]).toContain("PM NOTE ONLY");
+  expect(filteredPages[0]).not.toContain("FLAG NOTE ONLY");
   expect(filteredPages[0]).not.toContain("6450");
   await writeFile("test-results/pm-mileage-filtered.pdf", filteredBytes);
   await popup.close();
@@ -202,6 +209,8 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(nativePages).toHaveLength(1);
   expect(nativePages[0]).toContain("+25");
   expect(nativePages[0]).toContain("+250");
+  expect(nativePages[0]).toContain("Change front hub fluid.");
+  expect(nativePages[0]).toContain("Change differential fluid.");
   expect(nativePages[0]).not.toContain("Unlock to edit");
   expect(nativePages[0]).not.toContain("Dark Mode");
   await writeFile("test-results/pm-mileage-native.pdf", nativeBytes);

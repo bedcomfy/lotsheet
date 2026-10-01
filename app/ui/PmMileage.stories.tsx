@@ -17,6 +17,9 @@ const meta = {
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    const standardNote = "Change front hub fluid. Change differential fluid.";
+    await expect(within(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).getByText(standardNote)).toBeVisible();
+    await expect(within(screen.getByRole("row", { name: "Bus 6404 A-3" })).queryByText(standardNote)).not.toBeInTheDocument();
     await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getAllByRole("row", { hidden: true })).toHaveLength(7);
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).toHaveTextContent("6435");
     await waitFor(() => expect(screen.getByRole("button", { name: "Print PDF" })).toBeEnabled());

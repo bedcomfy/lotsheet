@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.42.1 - 2026-09-30
+
+- Every Trans PM row now automatically includes "Change front hub fluid" and
+  "Change differential fluid" in its note, on screen and in both PDF and browser
+  printing. These instructions stay separate from editable PM notes and shared
+  flag notes, and do not appear on the regular inspection row.
+
 ## 0.42.0 - 2026-09-30
 
 - Added Print PDF to PM Mileage, using the current search and PM filter. Both
