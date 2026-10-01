@@ -91,7 +91,7 @@ export const CrewStatus: Story = {
     await expect(within(row).getByText("25")).toBeInTheDocument();
     await expect(within(trans).getByText("250")).toBeInTheDocument();
     await userEvent.click(within(row).getByRole("button", { name: /status/ }));
-    await userEvent.click(await screen.findByRole("option", { name: "Hold · Inspection" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Hold" }));
     await expect(within(row).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
     await expect(within(trans).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
     await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);

@@ -33,7 +33,7 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   await expect(inspection.getByText("25", { exact: true })).toBeVisible();
   await expect(trans.getByText("250", { exact: true })).toBeVisible();
   await inspection.getByRole("button", { name: /status/ }).click();
-  await page.getByRole("option", { name: "Hold · Inspection", exact: true }).click();
+  await page.getByRole("option", { name: "Hold", exact: true }).click();
   await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold");
   await page.reload();
   await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
@@ -133,13 +133,13 @@ test("shared Split and Inspection Hold appear only in Bus status without changin
   const expectedOrder = ["Bus 6404 A-3", "Bus 6417 A-3", "Bus 6435 A-3", "Bus 6404 Trans PM", "Bus 6417 Trans PM", "Bus 6435 Trans PM"];
   expect(await order()).toEqual(expectedOrder);
   await regular.getByRole("button", { name: /status/ }).click();
-  await page.getByRole("option", { name: "Hold · Inspection", exact: true }).click();
-  await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+  await page.getByRole("option", { name: "Hold", exact: true }).click();
+  await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold");
   const flag = (await (await api.get("/api/flags")).json()).flags["6404"];
   expect(flag).toMatchObject({ flags: expect.arrayContaining(["hold", "split"]), holdReason: "Inspection", note: "Flag note only" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
-  await expect(regular.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+  await expect(regular.getByRole("button", { name: /status/ })).toContainText("Hold");
   await expect(regular.getByRole("cell").first()).not.toContainText("Hold");
   await expect(regular.getByRole("group", { name: "PM flags for bus 6404" })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
@@ -155,7 +155,7 @@ test("shared Split and Inspection Hold appear only in Bus status without changin
   await page.reload();
   for (const kind of ["A-3", "Trans PM"]) {
     const row = table.getByRole("row", { name: `Bus 6417 ${kind}`, exact: true });
-    await expect(row.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+    await expect(row.getByRole("button", { name: /status/ })).toContainText("Hold");
     await expect(row.getByRole("cell").first()).not.toContainText("Hold");
   }
 });

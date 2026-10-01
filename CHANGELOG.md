@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.45.7 - 2026-10-01
+
+- Shorten the PM Bus status label to Hold; continue showing it only for Holds with the Inspection reason.
+
 ## 0.45.6 - 2026-10-01
 
 - Remove the PM flag chips. Show shared Split and Inspection Hold values only in the existing Bus status control, including when they were set from the lot sheet.

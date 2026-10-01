@@ -40,7 +40,7 @@ export const PM_DISPOSITION_LABEL: Record<PmDisposition, string> = {
   "": "—",
   shop: "Shop",
   "follow-up": "Follow up",
-  hold: "Hold · Inspection",
+  hold: "Hold",
   split: "Split",
 };
 
