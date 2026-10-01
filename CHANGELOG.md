@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.35.2 - 2026-10-01
+
+- Work Order "Print blank form" now mirrors the work order on screen: the same
+  employee sheets with the same number of operation and part boxes on each,
+  just emptied (it used to print a fixed five-and-five form). Unsaved edits are
+  saved first so the blank matches what you see.
+- Work Order side margins widen from 0.35in to 0.5in; top and bottom stay at
+  0.3in. The on-screen sheet matches.
+
 ## 0.35.1 - 2026-09-30
 
 - Work Order printing: margins are now 0.3in top/bottom and 0.35in on the

@@ -5,7 +5,7 @@
   max-width: 816px;
   min-height: 1056px;
   margin: 14px auto;
-  padding: 29px 34px 44px;
+  padding: 29px 48px 44px;
   color: var(--ink);
   background: var(--paper);
   box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
@@ -161,7 +161,7 @@
 }
 
 @media print {
-  /* @page margins (0.3in top/bottom, 0.35in sides — see WorkOrderSheet) leave
+  /* @page margins (0.3in top/bottom, 0.5in sides — see WorkOrderSheet) leave
      10.4in of printable height; each sheet is exactly one page. Nothing may
      grow past that or the footer lands on a second page. */
   .wo-sheet {

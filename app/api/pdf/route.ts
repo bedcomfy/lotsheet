@@ -42,11 +42,15 @@ async function sheetData(path: string, blank: boolean) {
       getState("flag_config"),
       getState("bus_type_config"),
     ]);
+    // A blank work order keeps the saved order's shape (sheets and line
+    // counts), so its snapshot — and cache key — includes that order.
+    const value = path === "/workorder" ? (await getState("workorder")).value || null : undefined;
     return {
       blank: true,
       busMaster: busMaster.value || null,
       flagConfig: flagConfig.value || null,
       busTypeConfig: busTypeConfig.value || null,
+      ...(value !== undefined ? { value } : {}),
     };
   }
   if (path === "/") {

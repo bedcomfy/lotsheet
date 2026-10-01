@@ -14,9 +14,6 @@ import workOrderChromeStyles from "./WorkOrderChrome.module.css";
 
 const STORAGE_KEY = "workorder";
 const PRINT_PART_ROWS = 5;
-// A blank form prints this many empty operation lines (a live print keeps its
-// real rows).
-const BLANK_OP_ROWS = 5;
 
 // ---- data model ----
 // One Work Order shared header, a list of employees (one printed sheet each), a
@@ -86,6 +83,29 @@ function emptyWorkOrder(): WorkOrder {
   };
 }
 
+// The saved work order with every value emptied but its shape kept: the same
+// employee sheets, the same number of operation and part lines on each. That is
+// what "Print blank form" prints, so the blank mirrors what's on screen.
+function blankWorkOrder(wo: WorkOrder): WorkOrder {
+  return {
+    ...emptyWorkOrder(),
+    employees: wo.employees.map((e) => ({ id: e.id, badge: "", name: "" })),
+    operations: wo.operations.map((o) => ({
+      id: o.id,
+      num: "",
+      objectCode: "",
+      description: "",
+      date: "",
+      hours: "",
+      activity: "",
+      assignedTo: [...o.assignedTo],
+    })),
+    parts: Object.fromEntries(
+      Object.entries(wo.parts).map(([empId, parts]) => [empId, parts.map((p) => blankPart(p.id))]),
+    ),
+  };
+}
+
 function param(name: string): string | null {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get(name);
@@ -104,7 +124,8 @@ export default function WorkOrderSheet() {
   const [loaded, setLoaded] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [printMode, setPrintMode] = useState(false);
-  // ?blank=1 prints an empty form: no saved data, no auto-filled date.
+  // ?blank=1 prints the current work order's shape with every value emptied
+  // (same sheets, same number of lines) and no auto-filled date.
   const [blankMode, setBlankMode] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -118,19 +139,17 @@ export default function WorkOrderSheet() {
     setBlankMode(param("blank") === "1");
   }, []);
 
-  // Load the saved work order (a blank print starts from the empty form).
+  // Load the saved work order. A blank print loads it too, then empties the
+  // values so the printed form has the same boxes as the preview.
   useEffect(() => {
     let alive = true;
-    if (param("blank") === "1") {
-      setLoaded(true);
-      return () => {
-        alive = false;
-      };
-    }
+    const blank = param("blank") === "1";
     fetch(`/api/state/${STORAGE_KEY}`)
       .then((r) => r.json())
       .then((d) => {
-        if (alive && d && d.value) setData({ ...emptyWorkOrder(), ...d.value });
+        if (!alive || !d || !d.value) return;
+        const saved: WorkOrder = { ...emptyWorkOrder(), ...d.value };
+        setData(blank ? blankWorkOrder(saved) : saved);
       })
       .catch(() => {})
       .finally(() => alive && setLoaded(true));
@@ -277,7 +296,18 @@ export default function WorkOrderSheet() {
     setHistOpen(false);
   }
   function printBlank() {
-    openSheetPdf({ path: `/${STORAGE_KEY}`, maint: false, params: { blank: 1 } });
+    // Save first so the blank mirrors the sheets and lines on screen right now.
+    openSheetPdf({
+      path: `/${STORAGE_KEY}`,
+      maint: false,
+      params: { blank: 1 },
+      flush: () =>
+        fetch(`/api/state/${STORAGE_KEY}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: data }),
+        }),
+    });
   }
   function printPdf() {
     openSheetPdf({
@@ -293,13 +323,11 @@ export default function WorkOrderSheet() {
 
   // ---- one employee's 1:1 sheet ----
   function EmployeeSheet({ emp, index }: { emp: WOEmployee; index: number }) {
-    const assignedOps = data.operations.filter((o) => o.assignedTo.includes(emp.id));
-    const ops = blankMode
-      ? Array.from({ length: Math.max(BLANK_OP_ROWS, assignedOps.length) }, (_, i) =>
-          assignedOps[i] || { id: `blank-op-${i}`, num: "", objectCode: "", description: "", date: "", hours: "", activity: "", assignedTo: [emp.id] })
-      : assignedOps;
+    const ops = data.operations.filter((o) => o.assignedTo.includes(emp.id));
     const parts = data.parts[emp.id] || [];
-    const partRows = printMode
+    // A live print pads the parts list to five lines; a blank form keeps exactly
+    // the lines the preview has.
+    const partRows = printMode && !blankMode
       ? Array.from({ length: Math.max(PRINT_PART_ROWS, parts.length) }, (_, i) => parts[i] || blankPart(`print-${i}`))
       : parts;
     const others = data.employees.filter((e) => e.id !== emp.id);
@@ -539,7 +567,7 @@ export default function WorkOrderSheet() {
 
   return (
     <div className={chromeStyles.page}>
-      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.3in 0.35in 0.3in; }" }} />
+      <style dangerouslySetInnerHTML={{ __html: "@page { size: letter portrait; margin: 0.3in 0.5in 0.3in; }" }} />
 
       <Toolbar className={`${chromeStyles.toolbar} no-print`}>
         <ToolbarGroup className={chromeStyles.actions}>
