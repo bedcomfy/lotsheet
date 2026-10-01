@@ -16,14 +16,41 @@ import {
   normalizeReportBus,
   pmStatus,
   pmWorkItems,
+  pmOperationalFlags,
+  pmDisplayDisposition,
   reviewReadings,
   sortPmRecords,
   toMiles,
   transMilesRemaining,
   transNextDue,
 } from "./pmMileage";
+import { emptyFlagEntry } from "./serviceLaneSetup";
 
 const S = DEFAULT_PM_SETTINGS;
+
+describe("shared flags on PM Mileage", () => {
+  it("shows every Split but only Holds with the exact Inspection reason, ignoring case and whitespace", () => {
+    const entry = { ...emptyFlagEntry(), flags: ["split", "hold", "inspection"], holdReason: "  INSPECTION  " };
+    expect(pmOperationalFlags(entry)).toEqual(["split", "hold"]);
+    for (const holdReason of ["", "Parade", "Cubs Bus", "Inspection parts", "Awaiting inspection"]) {
+      expect(pmOperationalFlags({ ...entry, holdReason })).toEqual(["split"]);
+    }
+    expect(pmOperationalFlags({ ...entry, flags: [], holdReason: "Inspection" })).toEqual([]);
+    expect(pmOperationalFlags()).toEqual([]);
+  });
+
+  it("hides old PM Hold/Split selections once their shared flag no longer qualifies", () => {
+    const hold = { ...emptyPmRecord("6404"), disposition: "hold" as const };
+    const entry = { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Inspection" };
+    expect(pmDisplayDisposition(hold, entry)).toBe("hold");
+    expect(pmDisplayDisposition(hold, { ...entry, holdReason: "Movement" })).toBe("");
+    expect(pmDisplayDisposition(hold, { ...entry, flags: [] })).toBe("");
+    expect(pmDisplayDisposition({ ...hold, disposition: "split" }, { ...entry, flags: ["split"] })).toBe("split");
+    expect(pmDisplayDisposition({ ...hold, disposition: "split" }, { ...entry, flags: [] })).toBe("");
+    expect(pmDisplayDisposition({ ...hold, disposition: "shop" }, entry)).toBe("shop");
+    expect(pmDisplayDisposition({ ...hold, disposition: "follow-up" }, entry)).toBe("follow-up");
+  });
+});
 
 describe("PM fleet scope", () => {
   it("excludes 9690 from both PM kinds and imports while keeping regular active buses", () => {

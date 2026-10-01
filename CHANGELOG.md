@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.5 - 2026-10-01
+
+- Show shared Split flags and Holds whose reason is Inspection on both inspection and Trans PM rows, without changing mileage order or the printed report.
+- Add Inspection to the hold-reason choices. Selecting Hold from PM Mileage saves that reason, while unrelated Holds remain on the lot sheet.
+
 ## 0.45.4 - 2026-10-01
 
 - Add an admin-protected correction endpoint for the Foreman / SR name on saved PM completions, with an audit trail and protection against overwriting another name edit.

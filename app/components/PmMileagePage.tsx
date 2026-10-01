@@ -32,6 +32,8 @@ import {
   isPmFleetBus,
   nextInspection,
   pmWorkItems,
+  pmOperationalFlags,
+  pmDisplayDisposition,
   toMiles,
   transNextDue,
   type InspectionType,
@@ -326,7 +328,7 @@ export default function PmMileagePage() {
       <PageHeader
         eyebrow="Preventive Maintenance"
         title="PM Mileage"
-        description="Shop and Follow up buses appear first. All other inspections and transmission PMs stay in mileage order, including Hold and Split. Each PM keeps its own row."
+        description="Shop and Follow up buses appear first. Split and Hold for Inspection flags appear on each PM row without changing mileage order. Each PM keeps its own row."
         actions={
           <div className={styles.headerActions}>
             <SaveStatus state={saveState} />
@@ -443,6 +445,8 @@ export default function PmMileagePage() {
                 </div>
             {group.items.map((item) => {
               const r = item.record;
+              const sharedFlags = pmOperationalFlags(flags[r.bus]);
+              const disposition = pmDisplayDisposition(r, flags[r.bus]);
               const serviceTime = serviceTimeParts(r.lastServiceAt);
               const bus = active.find((b) => b.num === r.bus);
               const flagged = item.kind === "inspection" ? flaggedInspection(flags, r.bus) : null;
@@ -455,6 +459,11 @@ export default function PmMileagePage() {
                       <TypeCodes num={r.bus} variant="ui" />
                       {bus?.model ? <span>{bus.model}</span> : null}
                     </span>
+                    {sharedFlags.length > 0 && <div className={styles.pmFlags} role="group" aria-label={`PM flags for bus ${r.bus}`}>
+                      {sharedFlags.map((flag) => <StatusBadge key={flag} size="sm" tone={flag === "hold" ? "danger" : "warning"}>
+                        {PM_DISPOSITION_LABEL[flag]}
+                      </StatusBadge>)}
+                    </div>}
                   </div>
                   <div role="cell" data-label="Odometer">
                     <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric
@@ -481,9 +490,9 @@ export default function PmMileagePage() {
                   <div role="cell" data-label="Miles left" className={styles.derived}>
                     <StatusBadge className={styles.mileageBadge} tone={TONE[item.status]} size="sm">{milesLeftLabel(item.milesLeft)}</StatusBadge>
                   </div>
-                  <div role="cell" data-label="Bus status" data-disposition={r.disposition || undefined}>
+                  <div role="cell" data-label="Bus status" data-disposition={disposition || undefined}>
                     <SelectField className={styles.typeSelect} label={`Bus ${r.bus} ${workLabel} status`} labelHidden
-                      selectedKey={r.disposition} isDisabled={savingStatus.has(r.bus)}
+                      selectedKey={disposition} isDisabled={savingStatus.has(r.bus)}
                       onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
                   </div>
                   <div role="cell" data-label="Note">

@@ -4,7 +4,7 @@
 // correction without inventing a completed inspection. Older records still
 // derive their next work from the last completed PM.
 
-import type { MasterBus } from "./types";
+import type { FlagEntry, MasterBus } from "./types";
 
 // 9690 (JUDI, the tow truck) stays in the fleet but is outside this bus PM
 // program. Keep this rule shared by queues, counts, reports, and imports.
@@ -40,9 +40,25 @@ export const PM_DISPOSITION_LABEL: Record<PmDisposition, string> = {
   "": "—",
   shop: "Shop",
   "follow-up": "Follow up",
-  hold: "Hold",
+  hold: "Hold · Inspection",
   split: "Split",
 };
+
+// Shared lot-sheet flags shown on PM rows. Other Hold reasons remain on the
+// lot sheet; neither flag changes the PM's mileage order or shop grouping.
+export function pmOperationalFlags(entry?: FlagEntry): Array<"split" | "hold"> {
+  const visible: Array<"split" | "hold"> = [];
+  if (entry?.flags.includes("split")) visible.push("split");
+  if (entry?.flags.includes("hold") && entry.holdReason.trim().toLowerCase() === "inspection") visible.push("hold");
+  return visible;
+}
+
+export function pmDisplayDisposition(record: PmRecord, entry?: FlagEntry): PmDisposition {
+  if (record.disposition === "hold" || record.disposition === "split") {
+    return pmOperationalFlags(entry).includes(record.disposition) ? record.disposition : "";
+  }
+  return record.disposition;
+}
 export function isPmDisposition(value: unknown): value is PmDisposition {
   return typeof value === "string" && (PM_DISPOSITIONS as readonly string[]).includes(value);
 }

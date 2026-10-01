@@ -409,7 +409,7 @@ export const ALL_FLAGS: FlagDef[] = [...FLAGS, ...OBJECT_CODE_FLAGS];
 // A Hold bus has a reason. These are the quick-picks; a free-text box also
 // allows anything else. (Movement used to be its own flag — a movement bus is
 // always a hold, so it's now a hold reason.)
-export const HOLD_REASONS = ["Cubs Bus", "Movement", "Soldier Field", "Parade"];
+export const HOLD_REASONS = ["Inspection", "Cubs Bus", "Movement", "Soldier Field", "Parade"];
 // A Cards bus carries a reason the same way. No quick-picks yet — add common
 // ones here and the pickers show them automatically.
 export const CARDS_REASONS: string[] = [];

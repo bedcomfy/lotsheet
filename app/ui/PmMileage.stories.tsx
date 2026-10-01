@@ -5,8 +5,10 @@ import { BusMasterProvider } from "../components/BusMasterProvider";
 import { DEFAULT_PM_SETTINGS, emptyPmRecord, type PmRecord } from "../lib/pmMileage";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import type { MileageSyncStatus } from "../lib/fleetwatch";
+import type { FlagMap } from "../lib/types";
+import { emptyFlagEntry } from "../lib/serviceLaneSetup";
 
-function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean }) {
+function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean; sharedFlags: boolean }) {
   return <BusMasterProvider><PmMileagePage /></BusMasterProvider>;
 }
 
@@ -14,7 +16,7 @@ const meta = {
   title: "Patterns/PM Mileage",
   component: Fixture,
   parameters: { layout: "fullscreen" },
-  args: { unlocked: false, longContent: false, failLogout: false, failSync: false },
+  args: { unlocked: false, longContent: false, failLogout: false, failSync: false, sharedFlags: false },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
@@ -32,6 +34,10 @@ const meta = {
     useAdminUnlock.setState({ unlocked: args.unlocked, locking: false, lockError: "" });
     const originalFetch = window.fetch;
     let sync: MileageSyncStatus = {};
+    const flags: FlagMap = args.sharedFlags ? {
+      "6404": { ...emptyFlagEntry(), flags: ["split", "hold"], holdReason: "Inspection", note: "Flag note stays separate" },
+      "6435": { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Parade" },
+    } : {};
     const records: Record<string, PmRecord> = {
       "6404": { ...emptyPmRecord("6404"), odometer: 100_000, odometerDate: "10/1/26", nextInspType: "A-3", nextInspMiles: 100_025, nextTransMiles: 100_250,
         lastServiceAt: "2026-09-30T01:20:46", lastServiceMiles: 100000,
@@ -45,7 +51,7 @@ const meta = {
         { num: "6404", status: "active", model: args.longContent ? "Long fleet model description with operational details" : "40-foot" },
         { num: "6435", status: "active", model: "40-foot" },
       ] } });
-      if (path === "/api/flags") return Response.json({ flags: {} });
+      if (path === "/api/flags") return Response.json({ flags });
       if (path === "/api/pm-mileage/sync") {
         if (args.failSync) return Response.json({ ok: false, error: "Fleetwatch did not return a PDF. Try again shortly." }, { status: 502 });
         records["6404"].odometer = 100010;
@@ -58,7 +64,12 @@ const meta = {
         if (!init?.method) return Response.json({ records, settings: DEFAULT_PM_SETTINGS, sync });
         const { bus, actor: _actor, ...patch } = JSON.parse(String(init.body));
         records[bus] = { ...records[bus], ...patch };
-        return Response.json({ ok: true, record: records[bus] });
+        if (patch.disposition === "hold" || patch.disposition === "split") {
+          const entry = flags[bus] || emptyFlagEntry();
+          flags[bus] = { ...entry, flags: [...new Set([...entry.flags, patch.disposition])],
+            holdReason: patch.disposition === "hold" ? "Inspection" : entry.holdReason };
+        }
+        return Response.json({ ok: true, record: records[bus], flagEntry: flags[bus] || null });
       }
       return originalFetch(input, init);
     };
@@ -80,12 +91,28 @@ export const CrewStatus: Story = {
     await expect(within(row).getByText("25")).toBeInTheDocument();
     await expect(within(trans).getByText("250")).toBeInTheDocument();
     await userEvent.click(within(row).getByRole("button", { name: /status/ }));
-    await userEvent.click(await screen.findByRole("option", { name: "Hold" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Hold · Inspection" }));
     await expect(within(row).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
     await expect(within(trans).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
     await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).not.toContainElement(row);
     await expect(within(row).queryByRole("button", { name: "Actions" })).not.toBeInTheDocument();
+  },
+};
+
+export const SharedFlags: Story = {
+  args: { sharedFlags: true },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement);
+    for (const name of ["Bus 6404 A-3", "Bus 6404 Trans PM"]) {
+      const row = await screen.findByRole("row", { name });
+      const flags = await within(row).findByRole("group", { name: "PM flags for bus 6404" });
+      await expect(within(flags).getByText("Split")).toBeVisible();
+      await expect(within(flags).getByText("Hold · Inspection")).toBeVisible();
+      await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);
+    }
+    await expect(within(screen.getByRole("row", { name: "Bus 6435 B-6" })).queryByRole("group", { name: "PM flags for bus 6435" })).not.toBeInTheDocument();
+    await expect(screen.queryByText("Flag note stays separate")).not.toBeInTheDocument();
   },
 };
 
@@ -179,10 +206,10 @@ export const LogoutFailure: Story = {
   },
 };
 
-export const Light: Story = { args: { unlocked: true } };
-export const Dark: Story = { args: { unlocked: true }, globals: { theme: "dark" } };
-export const LongContent: Story = { args: { unlocked: true, longContent: true } };
+export const Light: Story = { args: { unlocked: true, sharedFlags: true } };
+export const Dark: Story = { args: { unlocked: true, sharedFlags: true }, globals: { theme: "dark" } };
+export const LongContent: Story = { args: { unlocked: true, longContent: true, sharedFlags: true } };
 export const PhoneSafeArea: Story = {
-  args: { unlocked: true, longContent: true },
+  args: { unlocked: true, longContent: true, sharedFlags: true },
   globals: { safeArea: "phone", viewport: { value: "phoneSmall", isRotated: false } },
 };

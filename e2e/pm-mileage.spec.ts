@@ -33,7 +33,7 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   await expect(inspection.getByText("25", { exact: true })).toBeVisible();
   await expect(trans.getByText("250", { exact: true })).toBeVisible();
   await inspection.getByRole("button", { name: /status/ }).click();
-  await page.getByRole("option", { name: "Hold", exact: true }).click();
+  await page.getByRole("option", { name: "Hold · Inspection", exact: true }).click();
   await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold");
   await page.reload();
   await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
@@ -95,6 +95,60 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   record = (await (await api.get("/api/pm-mileage")).json()).records["6404"];
   expect(record.lastInspMiles).toBe(100_100);
   await secondTab.close();
+});
+
+test("shared Split and Inspection Hold flags appear on both PM rows without changing order", async ({ page, context }) => {
+  const api = context.request;
+  await api.post("/api/admin/session", { data: { password: process.env.ADMIN_PASSWORD || "ride" } });
+  for (const [index, bus] of ["6404", "6417", "6435"].entries()) {
+    expect((await api.put("/api/pm-mileage", { data: { bus, odometer: 100000, nextInspType: "A-3",
+      nextInspMiles: 100025 + index * 25, nextTransMiles: 100250 + index * 25,
+      disposition: bus === "6435" ? "hold" : "", note: "PM note" } })).ok()).toBe(true);
+  }
+  await api.delete("/api/admin/session");
+  for (const data of [
+    { bus: "6404", flags: ["split", "hold"], holdReason: "Inspection", note: "Flag note only" },
+    { bus: "6417", flags: ["hold"], holdReason: "Parade" },
+    { bus: "6435", flags: ["hold"], holdReason: "Movement" },
+  ]) expect((await api.post("/api/flags", { data })).ok()).toBe(true);
+  await page.goto("/pm-mileage");
+  const table = page.getByRole("table", { name: "Upcoming PM work" });
+  const regular = table.getByRole("row", { name: "Bus 6404 A-3", exact: true });
+  const trans = table.getByRole("row", { name: "Bus 6404 Trans PM", exact: true });
+  for (const row of [regular, trans]) {
+    const badges = row.getByRole("group", { name: "PM flags for bus 6404" });
+    await expect(badges.getByText("Split", { exact: true })).toBeVisible();
+    await expect(badges.getByText("Hold · Inspection", { exact: true })).toBeVisible();
+    await expect(row).not.toContainText("Flag note only");
+  }
+  for (const bus of ["6417", "6435"]) for (const kind of ["A-3", "Trans PM"]) {
+    const row = table.getByRole("row", { name: `Bus ${bus} ${kind}`, exact: true });
+    await expect(row).toBeVisible();
+    await expect(row.getByRole("group", { name: `PM flags for bus ${bus}` })).toHaveCount(0);
+    await expect(row.getByRole("button", { name: /status/ })).not.toContainText("Hold");
+  }
+  const order = () => table.getByRole("rowgroup", { name: "Upcoming work", exact: true })
+    .locator('[role="row"][aria-label]').evaluateAll(rows => rows.map(row => row.getAttribute("aria-label"))
+      .filter(name => /^Bus (6404|6417|6435) /.test(name || "")));
+  const expectedOrder = ["Bus 6404 A-3", "Bus 6417 A-3", "Bus 6435 A-3", "Bus 6404 Trans PM", "Bus 6417 Trans PM", "Bus 6435 Trans PM"];
+  expect(await order()).toEqual(expectedOrder);
+  await regular.getByRole("button", { name: /status/ }).click();
+  await page.getByRole("option", { name: "Hold · Inspection", exact: true }).click();
+  await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold · Inspection");
+  const flag = (await (await api.get("/api/flags")).json()).flags["6404"];
+  expect(flag).toMatchObject({ flags: expect.arrayContaining(["hold", "split"]), holdReason: "Inspection", note: "Flag note only" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
+  await expect(regular.getByRole("group", { name: "PM flags for bus 6404" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: "test-results/pm-shared-flags-phone.png", fullPage: true });
+  await api.post("/api/flags", { data: { bus: "6404", flags: ["hold"], holdReason: "Cubs Bus", note: "Flag note only" } });
+  await page.reload();
+  await expect(regular.getByRole("group", { name: "PM flags for bus 6404" })).toHaveCount(0);
+  await expect(trans.getByRole("button", { name: /status/ })).not.toContainText("Hold");
+  expect(await order()).toEqual(expectedOrder);
+  await expect(regular).toContainText("at 100,025");
+  await expect(trans).toContainText("at 100,250");
 });
 
 test("Admin Tools exposes logout and clears the password after locking", async ({ page }) => {

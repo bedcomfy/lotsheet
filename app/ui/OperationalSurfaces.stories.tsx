@@ -150,6 +150,15 @@ export const RetorquePresets: Story = {
   },
 };
 
+export const InspectionHoldReason: Story = {
+  render: () => <WorkspaceFixture initialEntry={{ ...EMPTY_ENTRY, flags: ["hold"] }} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Inspection" }));
+    await expect(canvas.getByText("Hold · Inspection")).toBeVisible();
+  },
+};
+
 export const RetorqueSelectionPreservesScroll: Story = {
   render: () => <ScrollingRetorqueFixture />,
   play: async ({ canvasElement }) => {

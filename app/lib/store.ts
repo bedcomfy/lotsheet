@@ -528,13 +528,15 @@ export async function updatePmMileage(bus: string, patch: PmPatch, actor = ""): 
     if (patch.disposition !== undefined && (record.disposition === "hold" || record.disposition === "split")) {
       const flag = record.disposition;
       // Add at the database row, never rewrite a fetched flag entry. Concurrent
-      // flags and all reason/inspection/note fields survive this narrow update.
+      // flags, inspection details and notes survive this narrow update.
       // Operational flags are cleared explicitly, not by changing PM status.
-      await tx.insert(busFlags).values({ bus, flag, updatedAt: sql`now()` }).onConflictDoUpdate({
+      await tx.insert(busFlags).values({ bus, flag, ...(flag === "hold" ? { holdReason: "Inspection" } : {}), updatedAt: sql`now()` }).onConflictDoUpdate({
         target: busFlags.bus,
         set: {
           flag: sql`CASE WHEN ${flag} = ANY(string_to_array(COALESCE(${busFlags.flag}, ''), ','))
             THEN ${busFlags.flag} ELSE concat_ws(',', NULLIF(${busFlags.flag}, ''), ${flag}::text) END`,
+          // Choosing Hold on PM Mileage explicitly means an inspection hold.
+          ...(flag === "hold" ? { holdReason: "Inspection" } : {}),
           updatedAt: sql`now()`,
         },
       });

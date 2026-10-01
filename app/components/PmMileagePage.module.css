@@ -217,6 +217,18 @@
   font-weight: var(--ui-weight-semibold);
 }
 
+.pmFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-1);
+}
+
+.pmFlags > span {
+  color: var(--ui-text);
+  white-space: normal;
+  line-height: 1.25;
+}
+
 .model {
   display: flex;
   flex-wrap: wrap;

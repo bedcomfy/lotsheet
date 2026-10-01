@@ -22,10 +22,11 @@ describe("PM API access and independent schedules", { timeout: 20_000 }, () => {
     await setBusFlags("6450", details);
     const before = (await getFlags())["6450"];
     expect((await PATCH(request("PATCH", { bus: "6450", disposition: "hold" }))).status).toBe(200);
-    expect((await getFlags())["6450"]).toEqual(before);
+    const inspectionHold = { ...before, holdReason: "Inspection" };
+    expect((await getFlags())["6450"]).toEqual(inspectionHold);
     expect((await PUT(request("PUT", { bus: "6450", disposition: "split" }, true))).status).toBe(200);
     const afterSplit = (await getFlags())["6450"];
-    expect(afterSplit).toEqual({ ...before, flags: expect.arrayContaining([...before.flags, "split"]) });
+    expect(afterSplit).toEqual({ ...inspectionHold, flags: expect.arrayContaining([...before.flags, "split"]) });
     expect(afterSplit.flags).toHaveLength(before.flags.length + 1);
     await PATCH(request("PATCH", { bus: "6450", disposition: "split" }));
     expect((await getFlags())["6450"].flags.filter((flag) => flag === "split")).toHaveLength(1);
@@ -39,6 +40,7 @@ describe("PM API access and independent schedules", { timeout: 20_000 }, () => {
       PUT(request("PUT", { bus: "6451", odometer: 123456 }, true)),
     ]);
     expect((await getFlags())["6451"].flags.sort()).toEqual(["hold", "split"]);
+    expect((await getFlags())["6451"].holdReason).toBe("Inspection");
     expect((await getPmMileage())["6451"].odometer).toBe(123456);
   });
 
