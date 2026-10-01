@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.40.1 - 2026-10-01
+
+- Import PDF: the browser now reads the PDF's text layer itself and sends
+  only that to the server, so big scans (the 16-page PM status report is
+  7.7 MB) no longer hit the hosting request-size limit ("HTTP 413"). A PDF
+  the browser can't read is still uploaded whole when it is under 4 MB.
+
 ## 0.40.0 - 2026-10-01
 
 - PM Mileage: the Last inspection column is gone from the list. The record
