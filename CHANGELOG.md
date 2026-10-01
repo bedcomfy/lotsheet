@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.46.0 - 2026-10-01
+
+- The whole site now sits behind a decoy: browsers without the unlock cookie
+  see a plain typing-speed test on every page, and every API path and file
+  answers 404. Typing the passphrase into the test box and pressing Enter
+  unlocks the real site in place for a year on that browser. See
+  docs/site-gate.md. Set SITE_GATE_PASSPHRASE to change the passphrase, which
+  also signs every browser out.
+- The automatic Fleetwatch update, the PDF renderer, and the admin unlock keep
+  working behind the gate.
+
 ## 0.45.10 - 2026-10-01
 
 - Work Order: operation and part descriptions wrap and grow with their text
