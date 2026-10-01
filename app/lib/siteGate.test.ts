@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   GATE_COOKIE,
+  GATE_SESSION_SECONDS,
   cookieFromHeader,
   gateKey,
+  gateSessionExpiry,
   gateToken,
   isGateTokenValid,
   isUnlockedRequest,
@@ -27,22 +29,36 @@ describe("site gate", () => {
     expect(await phraseMatches("the quick brown fox")).toBe(false);
   });
 
-  it("issues a stable token that only the active passphrase validates", async () => {
+  it("issues a signed, timed token that only the active passphrase validates", async () => {
     vi.stubEnv("SITE_GATE_PASSPHRASE", "open sesame 42");
-    const token = await gateToken();
-    expect(token).toMatch(/^[0-9a-f]{64}$/);
-    expect(await gateToken()).toBe(token);
-    expect(await isGateTokenValid(token)).toBe(true);
-    expect(await isGateTokenValid(token.slice(1) + "0")).toBe(false);
-    expect(await isGateTokenValid("")).toBe(false);
-    expect(await isGateTokenValid(undefined)).toBe(false);
-    const req = new Request("http://localhost/", { headers: { cookie: `theme=dark; ${GATE_COOKIE}=${token}` } });
+    const issuedAt = 1_790_000_000_000;
+    const token = await gateToken(issuedAt);
+    expect(token).toMatch(/^1790000000000\.[0-9a-f]{64}$/);
+    expect(await gateToken(issuedAt)).toBe(token);
+    expect(await isGateTokenValid(token, issuedAt)).toBe(true);
+    expect(await gateSessionExpiry(token, issuedAt)).toBe(issuedAt + GATE_SESSION_SECONDS * 1000);
+    // The session ends 30 minutes after unlock, whatever the browser does.
+    expect(await isGateTokenValid(token, issuedAt + 29 * 60_000)).toBe(true);
+    expect(await isGateTokenValid(token, issuedAt + 30 * 60_000)).toBe(false);
+    // The issue time is covered by the signature, so it cannot be moved.
+    const [, signature] = token.split(".");
+    expect(await isGateTokenValid(`${issuedAt + 60 * 60_000}.${signature}`, issuedAt + 31 * 60_000)).toBe(false);
+    expect(await isGateTokenValid(`${issuedAt}.${signature.slice(1)}0`, issuedAt)).toBe(false);
+    // Issued "in the future" beyond clock skew is forged or broken.
+    expect(await isGateTokenValid(token, issuedAt - 2 * 60_000)).toBe(false);
+    expect(await isGateTokenValid(token, issuedAt - 30_000)).toBe(true);
+    expect(await isGateTokenValid("", issuedAt)).toBe(false);
+    expect(await isGateTokenValid(undefined, issuedAt)).toBe(false);
+    expect(await isGateTokenValid(signature, issuedAt)).toBe(false);
+    const fresh = await gateToken();
+    const req = new Request("http://localhost/", { headers: { cookie: `theme=dark; ${GATE_COOKIE}=${fresh}` } });
     expect(await isUnlockedRequest(req)).toBe(true);
     expect(await isUnlockedRequest(new Request("http://localhost/"))).toBe(false);
 
     // Rotating the passphrase signs every browser out.
     vi.stubEnv("SITE_GATE_PASSPHRASE", "rotated phrase");
-    expect(await isGateTokenValid(token)).toBe(false);
+    expect(await isGateTokenValid(token, issuedAt)).toBe(false);
+    expect(await isGateTokenValid(fresh)).toBe(false);
   });
 
   it("normalizes phrases and reads cookies", () => {

@@ -6,8 +6,9 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { ADMIN_COOKIE } from "./siteSession";
 
-export const ADMIN_COOKIE = "pace_admin";
+export { ADMIN_COOKIE };
 export const ADMIN_COOKIE_MAX_AGE = 12 * 60 * 60; // seconds — one long shift
 const FALLBACK_PASSWORD = "ride";
 

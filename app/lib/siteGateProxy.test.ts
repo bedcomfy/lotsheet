@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import proxy from "../../proxy";
-import { GATE_COOKIE, gateToken } from "./siteGate";
+import { ADMIN_COOKIE, GATE_COOKIE, gateToken } from "./siteGate";
 
 function request(path: string, init?: { method?: string; cookie?: string }) {
   return new NextRequest(`http://localhost${path}`, {
@@ -20,6 +20,9 @@ describe("site gate proxy", () => {
       expect(res.status, path).toBe(200);
       expect(res.headers.get("content-type")).toContain("text/html");
       expect(res.headers.get("cache-control")).toBe("no-store");
+      // Locked means no session: both cookies are dropped.
+      expect(res.cookies.get(GATE_COOKIE)).toMatchObject({ value: "", maxAge: 0, path: "/" });
+      expect(res.cookies.get(ADMIN_COOKIE)).toMatchObject({ value: "", maxAge: 0, path: "/" });
       const html = await res.text();
       expect(html).toContain("Typing Speed Test");
       expect(html).not.toMatch(/\bpace\b|garage|fleet|maintenance|\bbus\b|lot sheet|work order|turnover/i);
@@ -74,5 +77,17 @@ describe("site gate proxy", () => {
     const stale = await proxy(request("/pm-mileage", { cookie: `${GATE_COOKIE}=${token}` }));
     expect(stale.status).toBe(200);
     expect(await stale.text()).toContain("Typing Speed Test");
+  });
+
+  it("locks a session that is more than 30 minutes old", async () => {
+    vi.stubEnv("SITE_GATE_PASSPHRASE", "open sesame 42");
+    const old = await gateToken(Date.now() - 31 * 60_000);
+    const res = await proxy(request("/pm-mileage", { cookie: `${GATE_COOKIE}=${old}` }));
+    expect(res.headers.get("x-middleware-next")).toBeNull();
+    expect(await res.text()).toContain("Typing Speed Test");
+    const api = await proxy(request("/api/pm-mileage", { cookie: `${GATE_COOKIE}=${old}` }));
+    expect(api.status).toBe(404);
+    const recent = await gateToken(Date.now() - 29 * 60_000);
+    expect((await proxy(request("/pm-mileage", { cookie: `${GATE_COOKIE}=${recent}` }))).headers.get("x-middleware-next")).toBe("1");
   });
 });

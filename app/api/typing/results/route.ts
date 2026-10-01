@@ -1,5 +1,14 @@
 import { NextResponse } from "next/server";
-import { GATE_COOKIE, gateCookieOptions, gateToken, phraseMatches } from "../../../lib/siteGate";
+import {
+  ADMIN_COOKIE,
+  GATE_COOKIE,
+  clearedCookieOptions,
+  cookieFromHeader,
+  gateCookieOptions,
+  gateSessionExpiry,
+  gateToken,
+  phraseMatches,
+} from "../../../lib/siteGate";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +26,20 @@ export async function POST(req: Request) {
   }
   const response = NextResponse.json({ ok: true, personalBest: true });
   response.cookies.set(GATE_COOKIE, await gateToken(), gateCookieOptions());
+  return response;
+}
+
+// When does this browser's site session end? Null when it has none. The
+// unlocked app polls this to reload into the decoy at the right moment.
+export async function GET(req: Request) {
+  const expiresAt = await gateSessionExpiry(cookieFromHeader(req.headers.get("cookie"), GATE_COOKIE));
+  return NextResponse.json({ ok: true, session: expiresAt === null ? null : { expiresAt } });
+}
+
+// Log out: drop the site cookie and the admin cookie with it.
+export async function DELETE() {
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(GATE_COOKIE, "", clearedCookieOptions());
+  response.cookies.set(ADMIN_COOKIE, "", clearedCookieOptions());
   return response;
 }

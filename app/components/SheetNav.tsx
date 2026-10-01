@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import AdminLogoutButton from "./AdminLogoutButton";
+import SiteLogoutButton from "./SiteLogoutButton";
 import GlobalBusSearch from "./GlobalBusSearch";
 import BusSearchDialog from "./BusSearchDialog";
 import { useMobileNav } from "./MobileNavContext";
@@ -139,6 +140,7 @@ export default function SheetNav() {
         </div>
         <div className={styles.bottom}>
           <AdminLogoutButton compact={railCollapsed} />
+          <SiteLogoutButton compact={railCollapsed} />
           {!railCollapsed && <ThemeToggle />}
           <Pressable
             className={styles.railToggle}
@@ -177,6 +179,7 @@ export default function SheetNav() {
         footer={
           <div className={styles.hubFooter}>
             <AdminLogoutButton />
+            <SiteLogoutButton />
             <ThemeToggle />
             <span>v{APP_VERSION}</span>
           </div>
