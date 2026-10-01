@@ -112,6 +112,29 @@ export function PaperViewport({
     const visualViewport = window.visualViewport;
     observer.observe(viewport);
     observer.observe(canvas);
+    // The viewer height is measured from the viewport's top to the mobile
+    // navigation. Content above the viewport (the "Saving… / Saved" status,
+    // a notice, a wrapped toolbar) can grow after that measure and push the
+    // viewport down without resizing it, leaving it under the bar. Watching
+    // every ancestor catches those shifts.
+    for (let ancestor = viewport.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      observer.observe(ancestor);
+    }
+    // The mobile navigation mounts after hydration (it sits in a Suspense
+    // boundary), often after the first measure. Re-measure when it appears
+    // and whenever its size changes, or the viewer keeps the full height
+    // and runs underneath the bar on a slow load.
+    let observedNavigation: Element | null = null;
+    const watchNavigation = () => {
+      const navigation = document.querySelector("[data-mobile-navigation]");
+      if (!navigation || navigation === observedNavigation) return;
+      observedNavigation = navigation;
+      observer.observe(navigation);
+      measure();
+    };
+    const mutations = new MutationObserver(watchNavigation);
+    mutations.observe(document.body, { childList: true, subtree: true });
+    watchNavigation();
     visualViewport?.addEventListener("resize", measure);
     visualViewport?.addEventListener("scroll", measure);
     window.addEventListener("orientationchange", measure);
@@ -119,6 +142,7 @@ export function PaperViewport({
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      mutations.disconnect();
       visualViewport?.removeEventListener("resize", measure);
       visualViewport?.removeEventListener("scroll", measure);
       window.removeEventListener("orientationchange", measure);

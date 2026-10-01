@@ -11,6 +11,7 @@ import { getSheet, getFlags, getState, getPdfCache, setPdfCache, getPmMileage, g
 import { normalizePmFilter } from "../../lib/pmMileage";
 import { chicagoDateShort, chicagoMinuteKey } from "../../lib/chicagoTime";
 import { pdfSignature } from "../../lib/pdfSignature";
+import { GATE_COOKIE, gateToken } from "../../lib/siteGate";
 import { DEFAULT_MASTER } from "../../lib/buses";
 import {
   editableBusModelRows,
@@ -315,6 +316,9 @@ async function renderPdf(
           });
         });
       }
+      // The site gate (proxy.ts) would otherwise hand this headless browser the
+      // decoy page. Give it the same unlock cookie a crew browser holds.
+      await page.setCookie({ name: GATE_COOKIE, value: await gateToken(), url: pageUrl });
       // Don't wait for full network idle — a sheet may keep a background request
       // alive. The page exposes #print-ready once its data is loaded, which is the
       // real "safe to snapshot" signal.
