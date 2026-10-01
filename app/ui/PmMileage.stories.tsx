@@ -24,7 +24,7 @@ const meta = {
     await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getAllByRole("row", { hidden: true })).toHaveLength(6);
     await expect(screen.queryByRole("row", { name: "Bus 6435 Trans PM" })).not.toBeInTheDocument();
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).toHaveTextContent("6435");
-    await expect(screen.getByRole("columnheader", { name: "Last serviced / last odometer reading time", hidden: true })).toBeInTheDocument();
+    await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getByRole("columnheader", { name: "Last serviced / last odometer reading time", hidden: true })).toBeInTheDocument();
     await expect(within(screen.getByRole("row", { name: "Bus 6404 A-3" })).getByText("1:20:46 AM")).toBeVisible();
     await waitFor(() => expect(screen.getByRole("button", { name: "Print PDF" })).toBeEnabled());
   },

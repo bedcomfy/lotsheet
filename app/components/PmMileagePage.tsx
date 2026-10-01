@@ -570,7 +570,7 @@ export default function PmMileagePage() {
     {loaded && fleetReady && !loadError && (
       <div className={styles.printOnly}>
         <PmMileagePaper items={rows} labels={Object.fromEntries(active.map((bus) => [bus.num, label(bus.num)]))}
-          flags={flags} settings={settings} date={chicagoDateShort()} filter={filter} query={query} />
+          settings={settings} date={chicagoDateShort()} filter={filter} query={query} />
       </div>
     )}
     </>

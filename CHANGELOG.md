@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.44.4 - 2026-10-01
+
+- Split Odometer and Last serviced into separate printable PM columns, removed
+  the Status / Flags column, and centered all table cells horizontally and
+  vertically. The In shop / Follow up and Upcoming work groups remain separate
+  in both browser printing and PDF exports.
+
 ## 0.44.3 - 2026-10-01
 
 - Fixed work-order fields losing focus after every keystroke. Typing and

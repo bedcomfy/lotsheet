@@ -148,6 +148,19 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   await page.emulateMedia({ media: "print" });
   await expect(page.locator("[data-pm-paper]")).toBeVisible();
   await expect(page.getByRole("button", { name: "Print PDF" })).toBeHidden();
+  const paperTables = page.locator("[data-pm-paper] table");
+  expect(await paperTables.evaluateAll((tables) => tables.map((table) =>
+    [...table.querySelectorAll('th[scope="col"]')].map((cell) => cell.textContent),
+  ))).toEqual([
+    ["Bus", "Odometer", "Last serviced / last odometer reading time", "Next PM / Due at", "Miles left", "Note"],
+    ["Bus", "Odometer", "Last serviced / last odometer reading time", "Next PM / Due at", "Miles left", "Note"],
+  ]);
+  expect(await page.locator("[data-pm-paper]").evaluate((paper) => [...new Set(
+    [...paper.querySelectorAll("th, td")].map((cell) => {
+      const style = getComputedStyle(cell);
+      return `${style.textAlign}:${style.verticalAlign}`;
+    }),
+  )])).toEqual(["center:middle"]);
   const colors = await page.locator("[data-pm-paper]").evaluate((paper) => [...new Set(
     [paper, ...paper.querySelectorAll("*")].flatMap((element) => {
       const style = getComputedStyle(element);
@@ -171,8 +184,9 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   const text = pages.join(" ");
   expect(text.indexOf("In shop / Follow up")).toBeLessThan(text.indexOf("Upcoming work"));
   expect(text).toContain("END OF SHOP NOTE");
-  expect(text).toContain("HOLD");
-  expect(text).toContain("SPLIT");
+  expect(text).not.toContain("Status / Flags");
+  expect(text).not.toContain("HOLD");
+  expect(text).not.toContain("SPLIT");
   expect(text).toContain("+25");
   expect(text).toContain("+250");
   expect(text).not.toContain("Unlock to edit");

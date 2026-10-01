@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect } from "storybook/test";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { DEFAULT_PM_SETTINGS, emptyPmRecord, pmWorkItems } from "../lib/pmMileage";
 
@@ -14,8 +15,21 @@ const meta = {
   component: PmMileagePaper,
   parameters: { layout: "fullscreen" },
   args: {
-    items: pmWorkItems(records, DEFAULT_PM_SETTINGS), labels: {}, flags: {},
+    items: pmWorkItems(records, DEFAULT_PM_SETTINGS), labels: {},
     settings: DEFAULT_PM_SETTINGS, date: "9/30/26", filter: "all", query: "",
+  },
+  play: async ({ canvasElement, args }) => {
+    if (!args.items.length) return;
+    const printedRow = canvasElement.querySelector('[data-pm-id="6400:inspection"]')!;
+    await expect(printedRow.children).toHaveLength(6);
+    await expect(printedRow.children[1]).toHaveTextContent("100,000");
+    await expect(printedRow.children[1]).not.toHaveTextContent("1:20:46 AM");
+    await expect(printedRow.children[2]).toHaveTextContent("1:20:46 AM");
+    await expect(printedRow.children[2]).not.toHaveTextContent("100,000");
+    for (const cell of canvasElement.querySelectorAll("th, td")) {
+      await expect(getComputedStyle(cell).textAlign).toBe("center");
+      await expect(getComputedStyle(cell).verticalAlign).toBe("middle");
+    }
   },
 } satisfies Meta<typeof PmMileagePaper>;
 

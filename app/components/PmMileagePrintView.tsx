@@ -11,11 +11,11 @@ export default function PmMileagePrintView({ filter, query }: { filter: PmFilter
   const [error, setError] = useState("");
   useEffect(() => {
     let alive = true;
-    Promise.all(["/api/pm-mileage", "/api/buses", "/api/flags"].map(async (path) => {
+    Promise.all(["/api/pm-mileage", "/api/buses"].map(async (path) => {
       const response = await fetch(path, { cache: "no-store" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.json();
-    })).then(([pm, fleet, flags]) => {
+    })).then(([pm, fleet]) => {
       if (!alive) return;
       if (!Array.isArray(fleet.master?.buses) || !pm.records) throw new Error("Missing sheet data");
       const { buses, label } = busHelpers(fleet.master);
@@ -25,7 +25,7 @@ export default function PmMileagePrintView({ filter, query }: { filter: PmFilter
       setData({
         items: filterPmWorkItems(work, filter, query, active, label),
         labels: Object.fromEntries(active.map((bus) => [bus.num, label(bus.num)])),
-        flags: flags.flags || {}, settings, date: chicagoDateShort(), filter, query,
+        settings, date: chicagoDateShort(), filter, query,
       });
     }).catch(() => { if (alive) setError("Couldn't load the PM sheet. Reload to try again."); });
     return () => { alive = false; };
