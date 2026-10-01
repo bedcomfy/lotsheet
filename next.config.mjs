@@ -10,6 +10,9 @@ const nextConfig = {
   // "libnss3.so: cannot open shared object file" failures on Vercel.
   outputFileTracingIncludes: {
     "/api/pdf": ["./node_modules/@sparticuz/chromium/**"],
+    // pdf.js loads its worker and canvas support dynamically; the serverless
+    // tracer cannot discover those imports from the report reader alone.
+    "/api/pm-mileage/sync": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", "./node_modules/@napi-rs/canvas*/**"],
   },
 };
 

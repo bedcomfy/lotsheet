@@ -3,12 +3,13 @@
 // PM Mileage lists each inspection and transmission PM as separate work,
 // sorted by its own miles left. The bus status is shared across its rows.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { AlertTriangle, CheckCircle2, FileDown, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
 import { openSheetPdf } from "../lib/pdf";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import type { MileageSyncStatus } from "../lib/fleetwatch";
 import { readPdfTextInBrowser } from "../lib/pdfTextClient";
 import { getDeviceActor } from "../lib/deviceActor";
 import { inspectionOptionFromText } from "../lib/grid";
@@ -195,6 +196,11 @@ export default function PmMileagePage() {
   const [editing, setEditing] = useState<CompleteTarget | null>(null);
   const [editingNext, setEditingNext] = useState<CompleteTarget | null>(null);
   const [savingStatus, setSavingStatus] = useState<Set<string>>(new Set());
+  const [sync, setSync] = useState<MileageSyncStatus>({});
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [showSyncSkipped, setShowSyncSkipped] = useState(false);
+  const loadVersion = useRef(0);
 
   useEffect(() => {
     if (!unlocked) {
@@ -206,6 +212,7 @@ export default function PmMileagePage() {
   }, [unlocked]);
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     try {
       const [r, f] = await Promise.all([
         fetch("/api/pm-mileage", { cache: "no-store" }),
@@ -213,10 +220,13 @@ export default function PmMileagePage() {
       ]);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
+      if (version !== loadVersion.current) return;
       setRecords(d.records || {});
       setSettings(d.settings || DEFAULT_PM_SETTINGS);
+      setSync(d.sync || {});
       if (f && f.ok) {
         const fd = await f.json().catch(() => ({}));
+        if (version !== loadVersion.current) return;
         setFlags(fd.flags || {});
       }
       setLoadError("");
@@ -230,6 +240,34 @@ export default function PmMileagePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Background jobs run on the server even with every browser closed. This
+  // only refreshes the open sheet; never replace data underneath an edit.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.hidden || saveState === "saving" || syncing || editing || editingNext || completing || importOpen) return;
+      if (document.activeElement?.closest("input, textarea, [role=dialog], [role=listbox]")) return;
+      void load();
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [load, saveState, syncing, editing, editingNext, completing, importOpen]);
+
+  async function updateMileageNow() {
+    setSyncing(true);
+    setSyncMessage("");
+    loadVersion.current += 1;
+    try {
+      const response = await fetch("/api/pm-mileage/sync", { method: "POST" });
+      const result = await response.json();
+      if (result.status) setSync(result.status);
+      if (!response.ok || !result.ok) throw new Error(result.error || "Couldn't update mileage. Try again.");
+      setSyncMessage(result.busy ? "An update is already running. This sheet will refresh when it finishes."
+        : result.cooldown ? "Mileage was just checked. Wait one minute before requesting another report." : "");
+      await load();
+    } catch (error) {
+      setSyncMessage(error instanceof Error ? error.message : "Couldn't update mileage. Try again.");
+    } finally { setSyncing(false); }
+  }
 
   const active = useMemo(() => buses.filter((b) => b.status !== "retired"), [buses]);
   const work = useMemo(() => pmWorkItems(
@@ -245,6 +283,7 @@ export default function PmMileagePage() {
   }, [work]);
 
   async function save(bus: string, field: EditableField, raw: string) {
+    loadVersion.current += 1;
     markSave("saving");
     setSaveError("");
     if (field === "disposition") setSavingStatus((cur) => new Set(cur).add(bus));
@@ -291,8 +330,8 @@ export default function PmMileagePage() {
               onPress={() => { void openSheetPdf({ path: "/pm-mileage", params: { pmFilter: filter, pmQuery: query } }); }}>
               <FileDown aria-hidden="true" /> Print PDF
             </Button>
-            <Button variant="quiet" onPress={load} aria-label="Refresh">
-              <RefreshCw aria-hidden="true" /> Refresh
+            <Button variant="secondary" isDisabled={syncing || saveState === "saving"} onPress={updateMileageNow}>
+              <RefreshCw aria-hidden="true" /> {syncing ? "Updating mileage…" : "Update mileage now"}
             </Button>
             {unlocked ? (
               <Button variant="primary" onPress={() => setImportOpen(true)}>
@@ -305,9 +344,22 @@ export default function PmMileagePage() {
         }
       />
 
+      <div className={styles.syncNotice} role="status" aria-live="polite">
+        <span><strong>Fleetwatch mileage</strong> · Previous 24 hours · Scheduled every 30 minutes</span>
+        {sync.lastSuccessAt ? <span>Last successful check: {new Date(sync.lastSuccessAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
+          {` · ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged`}</span>
+          : <span>No successful check yet. Use Update mileage now to fetch the latest report.</span>}
+        {sync.runningUntil && Date.parse(sync.runningUntil) > Date.now() && <span>Fetching the latest report…</span>}
+        {(syncMessage || sync.error) && <span className={styles.syncWarning}>{syncMessage || sync.error}</span>}
+        {!!sync.skipped?.length && <div>
+          <Button variant="quiet" aria-expanded={showSyncSkipped} aria-controls="mileage-sync-skipped" onPress={() => setShowSyncSkipped((value) => !value)}>{sync.skipped.length} readings skipped</Button>
+          {showSyncSkipped && <ul id="mileage-sync-skipped">{sync.skipped.map((entry) => <li key={entry.bus}>Bus {entry.bus}: {entry.reason}</li>)}</ul>}
+        </div>}
+      </div>
+
       {!unlocked && (
         <div className={styles.lockNotice}>
-          <Lock aria-hidden="true" /> Anyone can update bus status. Unlock Admin Tools to edit mileage, schedules, or notes, import reports, or complete a PM.
+          <Lock aria-hidden="true" /> Anyone can update bus status or fetch Fleetwatch mileage. Unlock Admin Tools to edit mileage, schedules, or notes, import reports, or complete a PM.
         </div>
       )}
 

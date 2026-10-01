@@ -18,6 +18,22 @@
   gap: var(--ui-space-2);
 }
 
+.syncNotice {
+  display: grid;
+  gap: var(--ui-space-2);
+  margin-bottom: var(--ui-space-4);
+  padding: var(--ui-space-3) var(--ui-space-4);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-sm);
+}
+
+.syncNotice strong { color: var(--ui-text); }
+.syncWarning { color: var(--ui-danger); }
+.syncNotice ul { margin: var(--ui-space-2) 0; padding-left: var(--ui-space-5); }
+
 /* Status tiles double as filters. */
 .tiles {
   display: grid;

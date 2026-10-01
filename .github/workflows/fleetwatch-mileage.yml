@@ -1,0 +1,27 @@
+name: Update Fleetwatch mileage
+
+on:
+  schedule:
+    # Every 30 minutes, away from the busiest start of the hour.
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: fleetwatch-mileage
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'bedcomfy/lotsheet'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The crew's public button calls this same fixed-source endpoint. It
+      # accepts no mileage payload or report URL and has a shared DB cooldown.
+      - name: Fetch the latest rolling 24-hour mileage report
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --connect-timeout 15 --max-time 150 \
+            --request POST https://nwmaint.app/api/pm-mileage/sync

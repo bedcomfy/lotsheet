@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.43.0 - 2026-09-30
+
+- PM Mileage now downloads Fleetwatch's division 0043 odometer PDF for the
+  previous 24 hours ending at the current Chicago time. A server update is
+  scheduled every 30 minutes through GitHub Actions, with an Update mileage now
+  button available to the crew and a visible last successful check and result.
+- Automatic imports validate the report and preserve both PM schedules, service
+  history, statuses, PM notes, and flag notes. Equal readings do not create
+  duplicate history; lower mileage, large jumps, inactive buses, and edits made
+  during the download are skipped and listed for review. A shared database lease
+  prevents overlapping updates and all mileage writes commit together.
+- Open PM sheets refresh the stored results while idle. Failed updates keep the
+  prior mileage and show a retry message. The manual PDF import remains available.
+
 ## 0.42.1 - 2026-09-30
 
 - Every Trans PM row now automatically includes "Change front hub fluid" and

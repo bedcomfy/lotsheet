@@ -4,8 +4,9 @@ import PmMileagePage from "../components/PmMileagePage";
 import { BusMasterProvider } from "../components/BusMasterProvider";
 import { DEFAULT_PM_SETTINGS, emptyPmRecord, type PmRecord } from "../lib/pmMileage";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
+import type { MileageSyncStatus } from "../lib/fleetwatch";
 
-function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean }) {
+function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean }) {
   return <BusMasterProvider><PmMileagePage /></BusMasterProvider>;
 }
 
@@ -13,7 +14,7 @@ const meta = {
   title: "Patterns/PM Mileage",
   component: Fixture,
   parameters: { layout: "fullscreen" },
-  args: { unlocked: false, longContent: false, failLogout: false },
+  args: { unlocked: false, longContent: false, failLogout: false, failSync: false },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
@@ -27,6 +28,7 @@ const meta = {
   beforeEach: ({ args }) => {
     useAdminUnlock.setState({ unlocked: args.unlocked, locking: false, lockError: "" });
     const originalFetch = window.fetch;
+    let sync: MileageSyncStatus = {};
     const records: Record<string, PmRecord> = {
       "6404": { ...emptyPmRecord("6404"), odometer: 100_000, odometerDate: "10/1/26", nextInspType: "A-3", nextInspMiles: 100_025, nextTransMiles: 100_250,
         note: args.longContent ? "Follow up with the second shift about the transmission inspection and the parts requested for this bus." : "" },
@@ -40,8 +42,14 @@ const meta = {
         { num: "6435", status: "active", model: "40-foot" },
       ] } });
       if (path === "/api/flags") return Response.json({ flags: {} });
+      if (path === "/api/pm-mileage/sync") {
+        if (args.failSync) return Response.json({ ok: false, error: "Fleetwatch did not return a PDF. Try again shortly." }, { status: 502 });
+        records["6404"].odometer = 100010;
+        sync = { lastSuccessAt: "2026-10-01T04:30:00Z", updated: 1, unchanged: 1, skipped: [{ bus: "6435", reason: "Below saved mileage" }] };
+        return Response.json({ ok: true, status: sync });
+      }
       if (path === "/api/pm-mileage") {
-        if (!init?.method) return Response.json({ records, settings: DEFAULT_PM_SETTINGS });
+        if (!init?.method) return Response.json({ records, settings: DEFAULT_PM_SETTINGS, sync });
         const { bus, actor: _actor, ...patch } = JSON.parse(String(init.body));
         records[bus] = { ...records[bus], ...patch };
         return Response.json({ ok: true, record: records[bus] });
@@ -72,6 +80,32 @@ export const CrewStatus: Story = {
     await expect(screen.getByRole("rowgroup", { name: "Upcoming work" })).toContainElement(row);
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).not.toContainElement(row);
     await expect(within(row).queryByRole("button", { name: "Actions" })).not.toBeInTheDocument();
+  },
+};
+
+export const UpdateMileage: Story = {
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement);
+    const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    await userEvent.click(screen.getByRole("button", { name: "Update mileage now" }));
+    await waitFor(() => expect(row).toHaveTextContent("100,010"));
+    await expect(row).toHaveTextContent("15");
+    await expect(screen.getByText(/Last successful check/)).toHaveTextContent("1 updated");
+    await userEvent.click(screen.getByRole("button", { name: "1 readings skipped" }));
+    await expect(screen.getByText("Bus 6435: Below saved mileage")).toBeVisible();
+    await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
+  },
+};
+
+export const UpdateMileageFailure: Story = {
+  args: { failSync: true },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement);
+    const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    await userEvent.click(screen.getByRole("button", { name: "Update mileage now" }));
+    await expect(await screen.findByText("Fleetwatch did not return a PDF. Try again shortly.")).toBeVisible();
+    await expect(row).toHaveTextContent("100,000");
+    await expect(screen.getByRole("button", { name: "Update mileage now" })).toBeEnabled();
   },
 };
 

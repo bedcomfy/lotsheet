@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { isAdminRequest, unauthorized } from "../../lib/adminAuth";
 import { getFlags, getPmMileage, getPmSettings, recordAuditEvent, updatePmMileage } from "../../lib/store";
 import { parseBody, pmDispositionPayloadSchema, pmMileagePatchSchema } from "../../lib/schemas";
+import { getMileageSyncStatus } from "../../lib/pmMileageSyncStore";
 
 export const dynamic = "force-dynamic";
 
 // Every bus's PM mileage record plus the shared settings (due-soon window).
 export async function GET() {
-  const [records, settings] = await Promise.all([getPmMileage(), getPmSettings()]);
-  return NextResponse.json({ records, settings });
+  const [records, settings, sync] = await Promise.all([getPmMileage(), getPmSettings(), getMileageSyncStatus()]);
+  return NextResponse.json({ records, settings, sync });
 }
 
 // Edit one bus: odometer and its date, last inspection (type/miles/date), last
