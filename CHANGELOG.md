@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.38.0 - 2026-10-01
+
+- PM Mileage: "Import PDF" also reads the Vehicles Monthly Miles to Date
+  Report (with last odometer) — the sheet the garage pulls for odometers.
+  Every vehicle line's number (leading zeros dropped), odometer, MPG and
+  miles run are read from the PDF text; a starred vehicle (not serviced in
+  the period) still imports its last reading, with a note saying so. The
+  period's end date becomes the reading date. The import tries the PM
+  status layout first, then this one, then (only with a key) the AI reader.
+
 ## 0.37.0 - 2026-10-01
 
 - PM Mileage: "Import PDF" reads the garage's Total Fleet PM Status Report

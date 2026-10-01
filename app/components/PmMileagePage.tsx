@@ -641,6 +641,7 @@ interface ImportResult {
   reportDate: string | null;
   notes: string | null;
   method: "text" | "ai";
+  format: "pm-status" | "monthly-miles" | "ai";
   model: string | null;
   fileName: string;
   rawCount: number;
@@ -756,8 +757,8 @@ function ImportDialog({
     <ResponsiveDialog
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      title="Import a PM status report"
-      description="Upload the report PDF. Each bus's current mileage, next inspection, and trans PM are listed for review before anything changes."
+      title="Import a fleet report"
+      description="Upload the PM status report (inspections due) or the monthly miles report (odometers). What it says about each bus is listed for review before anything changes."
       size="lg"
       footer={<div className={styles.dialogFooter}>{footer}</div>}
     >
@@ -773,9 +774,10 @@ function ImportDialog({
           </div>
         ) : !result ? (
           <label className={styles.filePick}>
-            <span>PM status report (PDF)</span>
+            <span>Report PDF</span>
             <span className={styles.fileHint}>
-              The report&apos;s own text is read directly — no AI, no cost. Picture-only scans need the AI reader.
+              Total Fleet PM Status Report or Vehicles Monthly Miles to Date Report. The PDF&apos;s own text is read
+              directly — no AI, no cost. Picture-only scans need the AI reader.
             </span>
             <input
               type="file"
@@ -794,7 +796,14 @@ function ImportDialog({
               <strong>{result.fileName}</strong>
               {result.reportDate ? <span> · report dated {result.reportDate}</span> : null}
               <span> · {result.rawCount} row{result.rawCount === 1 ? "" : "s"} found</span>
-              <span> · {result.method === "text" ? "read from the PDF text" : `read by AI (${result.model || "model"})`}</span>
+              <span>
+                {" · "}
+                {result.format === "pm-status"
+                  ? "PM status report, read from the PDF text"
+                  : result.format === "monthly-miles"
+                    ? "monthly miles report, read from the PDF text"
+                    : `read by AI (${result.model || "model"})`}
+              </span>
               {result.notes ? <p>{result.notes}</p> : null}
             </div>
             {result.accepted.length === 0 ? (

@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { isAdminRequest, unauthorized } from "../../../lib/adminAuth";
 import { DEFAULT_MASTER, normalizeBusMaster } from "../../../lib/buses";
 import { extractOdometerReadings, PM_EXTRACT_MODEL, pmExtractConfigured } from "../../../lib/pmExtract";
+import { parseOdometerReport } from "../../../lib/odometerReport";
 import { reviewReadings } from "../../../lib/pmMileage";
-import { parsePmReportPdf } from "../../../lib/pmReportPdf";
+import { parsePmReport } from "../../../lib/pmReport";
+import { readPdfText } from "../../../lib/pmReportPdf";
 import { getPmMileage, getState } from "../../../lib/store";
 import type { MasterBus } from "../../../lib/types";
 
@@ -12,12 +14,14 @@ export const maxDuration = 120; // the AI fallback on a multi-page scan can take
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
 
-// Read a PM status report (or any mileage list) PDF and return what it says
-// about each bus, reviewed against the fleet list and the mileage on file.
-// The PDF's own text layer is read first — free, instant, and exact for the
-// garage's PM status report. Only a PDF with no readable text (a photo-only
-// scan) goes to the AI reader, and only when a key is configured. Nothing is
-// saved here; the page shows the review and POSTs accepted rows to /readings.
+// Read a fleet report PDF and return what it says about each bus, reviewed
+// against the fleet list and the mileage on file. The PDF's own text layer
+// is read first — free, instant, and exact for the two reports the garage
+// prints: the Total Fleet PM Status Report (inspections due) and the
+// Vehicles Monthly Miles to Date Report (odometers). Only a PDF with no
+// readable text (a photo-only scan) goes to the AI reader, and only when a
+// key is configured. Nothing is saved here; the page shows the review and
+// POSTs accepted rows to /readings.
 export async function POST(req: Request) {
   if (!isAdminRequest(req)) return unauthorized();
   const form = await req.formData().catch(() => null);
@@ -34,17 +38,18 @@ export async function POST(req: Request) {
   ).buses;
   const current = await getPmMileage();
 
-  // 1. The text layer.
+  // 1. The text layer: the PM status report, else the monthly miles report.
   let textLines = 0;
   try {
-    const report = await parsePmReportPdf(pdf);
-    textLines = report.lineCount;
-    if (report.buses.length) {
+    const pages = await readPdfText(pdf);
+    const pm = parsePmReport(pages);
+    textLines = pm.lineCount;
+    if (pm.buses.length) {
       const review = reviewReadings(
-        report.buses.map((b) => ({
+        pm.buses.map((b) => ({
           bus: b.bus,
           odometer: b.odometer,
-          readAt: report.reportDate,
+          readAt: pm.reportDate,
           note: b.note,
           nextInspType: b.nextInspType,
           nextInspDue: b.nextInspDue,
@@ -58,12 +63,36 @@ export async function POST(req: Request) {
       );
       return NextResponse.json({
         ...review,
-        reportDate: report.reportDate,
+        reportDate: pm.reportDate,
         notes: null,
         method: "text",
+        format: "pm-status",
         model: null,
         fileName: file.name,
-        rawCount: report.rows.length,
+        rawCount: pm.rows.length,
+      });
+    }
+    const od = parseOdometerReport(pages);
+    if (od.rows.length) {
+      const review = reviewReadings(
+        od.rows.map((r) => ({
+          bus: r.bus,
+          odometer: r.odometer,
+          readAt: od.reportDate,
+          note: r.notServiced ? "not serviced this period; reading is from its last service" : null,
+        })),
+        fleet,
+        current,
+      );
+      return NextResponse.json({
+        ...review,
+        reportDate: od.reportDate,
+        notes: null,
+        method: "text",
+        format: "monthly-miles",
+        model: null,
+        fileName: file.name,
+        rawCount: od.rows.length,
       });
     }
   } catch (err) {
@@ -76,7 +105,7 @@ export async function POST(req: Request) {
       {
         error:
           textLines > 0
-            ? "This PDF has text, but none of it looks like the PM status report (bus, miles since/until, PM activity, current mileage, due at). Reading other layouts needs the AI key (ANTHROPIC_API_KEY) on the server."
+            ? "This PDF has text, but none of it looks like the PM status report or the monthly miles report. Reading other layouts needs the AI key (ANTHROPIC_API_KEY) on the server."
             : "This PDF has no readable text — it's a picture-only scan. Re-scan with OCR/searchable PDF turned on, or add ANTHROPIC_API_KEY on the server so the AI reader can look at the pages.",
       },
       { status: 422 },
@@ -95,6 +124,7 @@ export async function POST(req: Request) {
     reportDate: extracted.reportDate,
     notes: extracted.notes,
     method: "ai",
+    format: "ai",
     model: PM_EXTRACT_MODEL,
     fileName: file.name,
     rawCount: extracted.readings.length,
