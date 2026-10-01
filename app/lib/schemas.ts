@@ -53,6 +53,7 @@ export const pmMileagePatchSchema = z.object({
   lastInspDate: textField,
   lastTransMiles: milesField,
   lastTransDate: textField,
+  disposition: textField, // shop / follow-up / hold / split / ""
   note: z.string().optional(),
   actor: z.string().catch("").default(""),
 });

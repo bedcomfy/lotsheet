@@ -118,7 +118,7 @@
 /* Wide enough that every column stays readable; the panel scrolls sideways
    on mid-size screens instead of squeezing the inputs. */
 .table > .row {
-  min-width: 76rem;
+  min-width: 83rem;
 }
 
 .row {
@@ -133,6 +133,7 @@
     minmax(11rem, 1.4fr)
     minmax(5.5rem, 0.7fr)
     minmax(7rem, auto)
+    minmax(6.5rem, auto)
     minmax(6rem, 1fr);
   align-items: center;
   gap: var(--ui-space-2);
@@ -251,6 +252,27 @@
 .actionCell {
   display: flex;
   justify-content: flex-start;
+}
+
+/* A set status tints its select so it reads at a glance. */
+[data-disposition] .typeSelect button {
+  font-weight: var(--ui-weight-semibold);
+}
+
+[data-disposition="shop"] .typeSelect button {
+  color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+[data-disposition="hold"] .typeSelect button {
+  color: var(--ui-danger);
+  background: var(--ui-danger-soft);
+}
+
+[data-disposition="follow-up"] .typeSelect button,
+[data-disposition="split"] .typeSelect button {
+  color: var(--ui-warning);
+  background: var(--ui-warning-soft, var(--ui-surface-muted));
 }
 
 .actionCell svg {

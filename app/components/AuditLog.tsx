@@ -129,7 +129,7 @@ function miles(n: unknown): string {
 }
 
 function pmMileageDetails(details: unknown): { title: string; detail: string; badge: string } {
-  type R = { odometer?: number | null; lastInspType?: string | null; lastInspMiles?: number | null; lastTransMiles?: number | null } | null;
+  type R = { odometer?: number | null; lastInspType?: string | null; lastInspMiles?: number | null; lastTransMiles?: number | null; disposition?: string | null } | null;
   const d = (details || {}) as { bus?: string; before?: R; after?: R };
   const parts: string[] = [];
   const b = d.before || {};
@@ -139,6 +139,7 @@ function pmMileageDetails(details: unknown): { title: string; detail: string; ba
     parts.push(`last inspection ${b.lastInspType || "—"} @ ${miles(b.lastInspMiles ?? null)} → ${a.lastInspType || "—"} @ ${miles(a.lastInspMiles ?? null)}`);
   }
   if ((b.lastTransMiles ?? null) !== (a.lastTransMiles ?? null)) parts.push(`last trans PM ${miles(b.lastTransMiles ?? null)} → ${miles(a.lastTransMiles ?? null)}`);
+  if ((b.disposition || "") !== (a.disposition || "")) parts.push(`status ${b.disposition || "—"} → ${a.disposition || "—"}`);
   return {
     title: `PM mileage · ${d.bus || "bus"}`,
     detail: parts.length ? parts.join(" · ") : "details edited",

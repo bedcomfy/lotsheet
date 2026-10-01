@@ -15,8 +15,11 @@ import { inspectionOptionFromText } from "../lib/grid";
 import {
   DEFAULT_PM_SETTINGS,
   INSPECTION_CYCLE,
+  PM_DISPOSITIONS,
+  PM_DISPOSITION_LABEL,
   PM_STATUS_LABEL,
   TRANS_PM_INTERVAL,
+  completionRecordedAt,
   emptyPmRecord,
   formatMiles,
   inspMilesRemaining,
@@ -68,6 +71,7 @@ type EditableField =
   | "lastInspDate"
   | "lastTransMiles"
   | "lastTransDate"
+  | "disposition"
   | "note";
 const MILES_FIELDS: ReadonlySet<EditableField> = new Set(["odometer", "lastInspMiles", "lastTransMiles"]);
 
@@ -83,6 +87,8 @@ const TYPE_OPTIONS = [
   { id: "", label: "—" },
   ...INSPECTION_CYCLE.map((type) => ({ id: type, label: type })),
 ];
+
+const DISPOSITION_OPTIONS = PM_DISPOSITIONS.map((id) => ({ id, label: PM_DISPOSITION_LABEL[id] }));
 
 const TONE: Record<PmStatus, "danger" | "warning" | "success" | "neutral"> = {
   overdue: "danger",
@@ -325,6 +331,7 @@ export default function PmMileagePage() {
               <span role="columnheader">Trans PM</span>
               <span role="columnheader">Trans left</span>
               <span role="columnheader">Done</span>
+              <span role="columnheader">Status</span>
               <span role="columnheader">Note</span>
             </div>
             {rows.map((r) => {
@@ -451,6 +458,16 @@ export default function PmMileagePage() {
                       onAction={(key) => setCompleting({ bus: r.bus, kind: key === "trans" ? "trans" : "inspection" })}
                     />
                   </div>
+                  <div role="cell" data-label="Status" data-disposition={r.disposition || undefined}>
+                    <SelectField
+                      className={styles.typeSelect}
+                      label={`Bus ${r.bus} status`}
+                      labelHidden
+                      selectedKey={r.disposition}
+                      onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))}
+                      options={DISPOSITION_OPTIONS}
+                    />
+                  </div>
                   <div role="cell" data-label="Note">
                     <Cell
                       label={`Bus ${r.bus} note`}
@@ -531,10 +548,14 @@ function CompleteDialog({
   const milesValue = toMiles(miles);
   const after = useMemo(() => {
     if (milesValue === null) return null;
-    if (!isInspection) return { label: "Next trans PM", at: milesValue + TRANS_PM_INTERVAL };
+    if (!isInspection) {
+      const recordedAt = completionRecordedAt(record, "trans", null, milesValue);
+      return { label: "Next trans PM", at: recordedAt + TRANS_PM_INTERVAL, recordedAt };
+    }
     if (!isInspectionType(type)) return null;
-    const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: milesValue });
-    return preview ? { label: `Next inspection ${preview.type}`, at: preview.miles } : null;
+    const recordedAt = completionRecordedAt(record, "inspection", type, milesValue);
+    const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: recordedAt });
+    return preview ? { label: `Next inspection ${preview.type}`, at: preview.miles, recordedAt } : null;
   }, [isInspection, type, milesValue, record]);
 
   async function submit() {
@@ -580,8 +601,8 @@ function CompleteDialog({
       title={isInspection ? `Complete inspection · Bus ${busLabel}` : `Complete trans PM · Bus ${busLabel}`}
       description={
         isInspection
-          ? "Records the inspection as done at this mileage. The bus moves to the next inspection in the cycle, 3,000 miles on."
-          : `Records the transmission PM as done at this mileage. The next one is due ${formatMiles(TRANS_PM_INTERVAL)} miles on.`
+          ? "Records the inspection at the mileage it was due, so the next one lands 3,000 miles after that mark. The odometer you enter only updates the bus's current mileage."
+          : `Records the transmission PM at the mileage it was due; the next one is ${formatMiles(TRANS_PM_INTERVAL)} miles after that mark.`
       }
       size="sm"
       footer={
@@ -609,7 +630,7 @@ function CompleteDialog({
             options={TYPE_OPTIONS.filter((o) => o.id !== "")}
           />
         )}
-        <TextField label="Odometer when done" inputMode="numeric" value={miles} onChange={setMiles} placeholder="miles" />
+        <TextField label="Odometer now" inputMode="numeric" value={miles} onChange={setMiles} placeholder="miles" />
         <TextField label="Date" value={date} onChange={setDate} placeholder="mm/dd/yy" />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>
@@ -618,7 +639,7 @@ function CompleteDialog({
         )}
         {after && (
           <div className={styles.preview}>
-            {after.label} at <strong>{formatMiles(after.at)}</strong>
+            Recorded at <strong>{formatMiles(after.recordedAt)}</strong> · {after.label} at <strong>{formatMiles(after.at)}</strong>
             {record.odometer !== null && milesValue !== null && milesValue < record.odometer
               ? ` · odometer stays at ${formatMiles(record.odometer)}`
               : ""}
@@ -689,7 +710,9 @@ function ImportDialog({
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
       setResult(d);
-      setPicked(new Set((d.accepted as PmReadingReview[]).filter((x) => !x.warning).map((x) => x.bus)));
+      // Everything is selected, warnings included: the sheets come in daily,
+      // so a reading that looks off is corrected by the next one.
+      setPicked(new Set((d.accepted as PmReadingReview[]).map((x) => x.bus)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed.");
     } finally {
