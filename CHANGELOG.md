@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.1 - 2026-10-01
+
+- Show last completed PMs only from inspections completed through the site, excluding imported and manually entered schedule history.
+- Display completion date and time, and show the PM due mileage as Recorded mileage without a Scheduled mark label.
+
 ## 0.45.0 — 2026-10-01
 
 - Let crews complete scheduled inspections and Trans PMs without Admin Tools, with the current date/time and a required odometer reading.

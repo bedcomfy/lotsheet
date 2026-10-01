@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { Button, ConfirmDialog, EmptyState, IconButton, Panel, ResponsiveDialog, SearchField } from "../ui";
-import { completedBusRows, completionDateText, type PmInspectionEntry } from "../lib/pmHistory";
+import { completedBusRows, completionDateText, completionTimestamp, type PmInspectionEntry } from "../lib/pmHistory";
 import { formatMiles, type PmRecord } from "../lib/pmMileage";
 import { getDeviceActor } from "../lib/deviceActor";
 import type { MasterBus } from "../lib/types";
@@ -49,10 +49,10 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
     return () => { alive = false; };
   }, [selectedBus, records]);
 
-  const rows = useMemo(() => completedBusRows(buses, records, entries).filter((row) => {
+  const rows = useMemo(() => completedBusRows(buses, entries).filter((row) => {
     const bus = buses.find((item) => item.num === row.bus);
     return `${row.bus} ${label(row.bus)} ${bus?.model || ""}`.toLowerCase().includes(query.trim().toLowerCase());
-  }), [buses, records, entries, label, query]);
+  }), [buses, entries, label, query]);
 
   async function confirmUndo() {
     if (!undo) return;
@@ -71,9 +71,8 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
     finally { setBusy(false); setUndo(null); }
   }
 
-  const selectedRecord = selectedBus ? records[selectedBus] : null;
   return <>
-    <Panel title="Recently completed inspections" description={`All ${buses.length} buses · Newest completions first · Times shown in Chicago time`}>
+    <Panel title="Recently completed inspections" description={`All ${buses.length} buses · Site completions only, newest first · Times shown in Chicago time`}>
       <SearchField label="Search completed buses" placeholder="Bus number, model, or name" value={query} onChange={setQuery} />
       {error && <p role="alert">{error} <Button variant="quiet" onPress={() => { void load().catch((err) => setError(err.message)); }}>Retry</Button></p>}
       {!loaded && !error ? <p role="status">Loading completed inspections…</p> : rows.length === 0
@@ -85,8 +84,8 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
           {rows.map((row) => <div className={styles.row} role="row" aria-label={`Completed work for bus ${row.bus}`} key={row.bus}>
             <div role="cell" data-label="Bus"><strong>{label(row.bus)}</strong></div>
             <div role="cell" data-label="Last completed PM">{row.kind === "trans" ? "Trans PM" : row.type || "No completion recorded"}</div>
-            <div role="cell" data-label="Completed">{completionDateText(row.completedAt, row.date)}</div>
-            <div role="cell" data-label="Recorded mileage">{row.miles === null ? "—" : <>{formatMiles(row.odometer ?? row.miles)}<span className={styles.muted}>{row.odometer === null ? "Scheduled mark" : "Odometer at completion"}</span></>}</div>
+            <div role="cell" data-label="Completed">{row.entry ? completionDateText(row.completedAt) : "—"}</div>
+            <div role="cell" data-label="Recorded mileage">{row.miles === null ? "—" : formatMiles(row.miles)}</div>
             <div role="cell" data-label="Info"><IconButton variant="quiet" aria-label={`Completion info for bus ${row.bus}`} onPress={() => setSelectedBus(row.bus)}><Info aria-hidden="true" /></IconButton></div>
           </div>)}
         </div>}
@@ -98,15 +97,12 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
       {historyError && <p role="alert">{historyError}</p>}
       {!history && !historyError && <p role="status">Loading history…</p>}
       {history?.length === 0 && <div className={styles.entry}>
-        <p>No completions have been recorded here for this bus yet.</p>
-        {selectedRecord?.lastInspType && <p>Existing inspection record: {selectedRecord.lastInspType} at {formatMiles(selectedRecord.lastInspMiles)} · {selectedRecord.lastInspDate || "Date not recorded"}</p>}
-        {selectedRecord?.lastTransMiles != null && <p>Existing Trans PM record: {formatMiles(selectedRecord.lastTransMiles)} · {selectedRecord.lastTransDate || "Date not recorded"}</p>}
-        <p className={styles.muted}>Imported history has no saved prior schedule to undo.</p>
+        <p>No PMs have been completed through this site for this bus yet.</p>
       </div>}
       {history?.map((entry) => <article className={styles.entry} key={entry.id}>
         <strong>{entry.kind === "trans" ? "Trans PM" : entry.type || "Inspection"}{entry.undoneAt ? " · Undone" : ""}</strong>
-        <p>{completionDateText(entry.completedAt, entry.doneAt)}</p>
-        <p>Odometer: {entry.odometer === null ? "Not recorded" : formatMiles(entry.odometer)} · Scheduled mark: {formatMiles(entry.miles)}</p>
+        <p>{completionDateText(completionTimestamp(entry))}</p>
+        <p>Recorded mileage: {formatMiles(entry.miles)}</p>
         {entry.canUndo ? <Button onPress={() => setUndo(entry)}>Undo completion</Button>
           : !entry.undoneAt && <p className={styles.muted}>{entry.undoReason}</p>}
       </article>)}

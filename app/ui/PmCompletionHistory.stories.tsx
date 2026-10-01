@@ -1,13 +1,14 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import PmCompletionHistory from "../components/PmCompletionHistory";
 import { emptyPmRecord } from "../lib/pmMileage";
 import type { PmInspectionEntry } from "../lib/pmHistory";
 
 const records = {
   "6404": { ...emptyPmRecord("6404"), lastInspType: "A-3" as const, lastInspMiles: 100025, lastInspDate: "10/1/26" },
-  "6435": emptyPmRecord("6435"),
+  // Imported schedules are intentionally not a site completion.
+  "6435": { ...emptyPmRecord("6435"), lastInspType: "B-6" as const, lastInspMiles: 120000, lastInspDate: "10/1/26", lastTransMiles: 75000, lastTransDate: "10/1/26" },
 };
 function Fixture({ longContent }: { longContent: boolean }) {
   const [saved, setSaved] = useState(records);
@@ -23,7 +24,8 @@ const meta = {
       doneAt: "10/1/26", completedAt: "2026-10-01T18:12:34Z", createdAt: "2026-10-01T18:12:34Z", undoneAt: null, canUndo: true, undoReason: null };
     window.fetch = async (input, init) => {
       const url = new URL(String(input), location.origin);
-      if (url.pathname === "/api/pm-mileage/history") return Response.json({ entries: url.search || !entry.undoneAt ? [entry] : [] });
+      if (url.pathname === "/api/pm-mileage/history") return Response.json({ entries: url.searchParams.has("bus")
+        ? url.searchParams.get("bus") === entry.bus ? [entry] : [] : !entry.undoneAt ? [entry] : [] });
       if (url.pathname === "/api/pm-mileage/undo" && init?.method === "POST") {
         entry = { ...entry, canUndo: false, undoneAt: "2026-10-01T18:15:00Z" };
         return Response.json({ record: emptyPmRecord("6404") });
@@ -36,7 +38,10 @@ const meta = {
     const screen = within(canvasElement);
     const row = await screen.findByRole("row", { name: "Completed work for bus 6404" });
     await expect(row).toHaveTextContent("1:12:34 PM");
-    await expect(row).toHaveTextContent("100,050");
+    await expect(row).toHaveTextContent("10/1/2026, 1:12:34 PM");
+    await expect(row).toHaveTextContent("100,025");
+    await expect(row).not.toHaveTextContent("100,050");
+    await expect(row).not.toHaveTextContent("Scheduled mark");
     await expect(screen.getByRole("row", { name: "Completed work for bus 6435" })).toHaveTextContent("No completion recorded");
   },
 } satisfies Meta<typeof Fixture>;
@@ -55,5 +60,19 @@ export const Undo: Story = {
     const confirm = await screen.findByRole("dialog", { name: "Undo A-3 completion?" });
     await userEvent.click(within(confirm).getByRole("button", { name: "Undo completion" }));
     await expect(await within(info).findByText("A-3 · Undone")).toBeVisible();
+  },
+};
+export const ImportedScheduleOnly: Story = {
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const row = await screen.findByRole("row", { name: "Completed work for bus 6435" });
+    await expect(row).toHaveTextContent("No completion recorded");
+    await expect(row).not.toHaveTextContent("B-6");
+    await expect(row).not.toHaveTextContent("120,000");
+    await userEvent.click(within(row).getByRole("button", { name: "Completion info for bus 6435" }));
+    const info = await screen.findByRole("dialog", { name: "Completion history · Bus 6435" });
+    await waitFor(() => expect(within(info).getByText("No PMs have been completed through this site for this bus yet.")).toBeVisible());
+    await expect(info).not.toHaveTextContent("B-6");
+    await expect(info).not.toHaveTextContent("Scheduled mark");
   },
 };

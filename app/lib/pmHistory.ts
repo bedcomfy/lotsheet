@@ -1,4 +1,4 @@
-import { emptyPmRecord, type PmKind, type PmRecord } from "./pmMileage";
+import type { PmKind, PmRecord } from "./pmMileage";
 import type { MasterBus } from "./types";
 
 export interface PmInspectionEntry {
@@ -25,19 +25,22 @@ export function pmScheduleToken(record: PmRecord, kind: PmKind): string {
     : [record.lastTransMiles, record.lastTransDate, record.nextTransMiles]);
 }
 
-export function completionDateText(timestamp: string | null, date: string | null): string {
-  if (!timestamp) return date || "Date not recorded";
+export function completionTimestamp(entry: PmInspectionEntry): string | null {
+  // Older site completions have the time the completion was saved, before
+  // the dedicated completedAt field was introduced.
+  return entry.completedAt ?? entry.createdAt;
+}
+
+export function completionDateText(timestamp: string | null): string {
+  if (!timestamp) return "Date and time not recorded";
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Chicago", year: "numeric", month: "numeric", day: "numeric",
     hour: "numeric", minute: "2-digit", second: "2-digit",
   }).format(new Date(timestamp));
 }
 
-function sortTime(timestamp: string | null, date: string | null): number {
-  if (timestamp) return Date.parse(timestamp) || 0;
-  const match = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/.exec(date || "");
-  if (!match) return 0;
-  return Date.UTC(Number(match[3]) + (match[3].length === 2 ? 2000 : 0), Number(match[1]) - 1, Number(match[2]));
+function sortTime(timestamp: string | null): number {
+  return timestamp ? Date.parse(timestamp) || 0 : 0;
 }
 
 export interface CompletedBusRow {
@@ -45,27 +48,23 @@ export interface CompletedBusRow {
   kind: PmKind | null;
   type: string | null;
   miles: number | null;
-  odometer: number | null;
   completedAt: string | null;
-  date: string | null;
   entry: PmInspectionEntry | null;
 }
 
-export function completedBusRows(buses: MasterBus[], records: Record<string, PmRecord>, entries: PmInspectionEntry[]): CompletedBusRow[] {
+export function completedBusRows(buses: MasterBus[], entries: PmInspectionEntry[]): CompletedBusRow[] {
+  // Only the site's completion log proves work was completed here. Imported
+  // or manually edited last-PM schedules must never create completion history.
+  const latest = new Map<string, PmInspectionEntry>();
+  for (const entry of entries) {
+    if (entry.undoneAt) continue;
+    const previous = latest.get(entry.bus);
+    const difference = sortTime(completionTimestamp(entry)) - sortTime(previous ? completionTimestamp(previous) : null);
+    if (!previous || difference > 0 || (difference === 0 && Number(entry.id) > Number(previous.id))) latest.set(entry.bus, entry);
+  }
   return buses.map((bus): CompletedBusRow => {
-    const record = records[bus.num] || emptyPmRecord(bus.num);
-    const candidates = (["inspection", "trans"] as const).flatMap((kind): CompletedBusRow[] => {
-      const entry = entries.find((item) => item.bus === bus.num && item.kind === kind && !item.undoneAt);
-      const miles = kind === "inspection" ? record.lastInspMiles : record.lastTransMiles;
-      const type = kind === "inspection" ? record.lastInspType : null;
-      const date = kind === "inspection" ? record.lastInspDate : record.lastTransDate;
-      if (miles === null || (kind === "inspection" && !type)) return [];
-      // A later import/admin correction may supersede the logged completion.
-      const matching = entry && entry.miles === miles && entry.type === type && entry.doneAt === date ? entry : null;
-      return [{ bus: bus.num, kind, type, miles, date, odometer: matching?.odometer ?? null,
-        completedAt: matching?.completedAt ?? null, entry: matching }];
-    });
-    candidates.sort((a, b) => sortTime(b.completedAt, b.date) - sortTime(a.completedAt, a.date));
-    return candidates[0] || { bus: bus.num, kind: null, type: null, miles: null, odometer: null, completedAt: null, date: null, entry: null };
-  }).sort((a, b) => sortTime(b.completedAt, b.date) - sortTime(a.completedAt, a.date) || a.bus.localeCompare(b.bus, undefined, { numeric: true }));
+    const entry = latest.get(bus.num) ?? null;
+    return { bus: bus.num, kind: entry?.kind ?? null, type: entry?.type ?? null,
+      miles: entry?.miles ?? null, completedAt: entry ? completionTimestamp(entry) : null, entry };
+  }).sort((a, b) => sortTime(b.completedAt) - sortTime(a.completedAt) || a.bus.localeCompare(b.bus, undefined, { numeric: true }));
 }

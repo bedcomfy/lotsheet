@@ -114,6 +114,10 @@ test("crew completes both PMs, sees every bus in history, and undoes through Inf
     bus: "6457", odometer: 100000, lastInspType: null, lastInspMiles: null, lastInspDate: null,
     lastTransMiles: null, lastTransDate: null, nextInspType: "A-3", nextInspMiles: 100025, nextTransMiles: 100250,
   } })).ok()).toBe(true);
+  expect((await api.put("/api/pm-mileage", { data: {
+    bus: "6460", lastInspType: "B-6", lastInspMiles: 120000, lastInspDate: "10/1/26",
+    lastTransMiles: 75000, lastTransDate: "10/1/26",
+  } })).ok()).toBe(true);
   await api.delete("/api/admin/session");
   await page.goto("/pm-mileage");
   const headers = page.getByRole("table", { name: "Upcoming PM work" }).getByRole("columnheader");
@@ -148,12 +152,22 @@ test("crew completes both PMs, sees every bus in history, and undoes through Inf
   await expect(completed.getByRole("row", { name: /^Completed work for bus/ }).first()).toHaveAttribute("aria-label", "Completed work for bus 6457");
   const buses = (await (await api.get("/api/buses")).json()).master.buses;
   expect(await completed.getByRole("row", { name: /^Completed work for bus/ }).count()).toBe(buses.filter((bus: { num: string; status: string }) => bus.status !== "retired" && bus.num !== "9690").length);
-  await expect(completed.getByRole("row", { name: "Completed work for bus 6457", exact: true })).toContainText("Trans PM");
+  const completedRow = completed.getByRole("row", { name: "Completed work for bus 6457", exact: true });
+  await expect(completedRow).toContainText("Trans PM");
+  await expect(completedRow.locator('[data-label="Recorded mileage"]')).toHaveText("100,250");
+  await expect(completedRow.locator('[data-label="Completed"]')).toHaveText(/\d+\/\d+\/\d{4}, \d+:\d{2}:\d{2} [AP]M/);
+  const importedRow = completed.getByRole("row", { name: "Completed work for bus 6460", exact: true });
+  await expect(importedRow).toContainText("No completion recorded");
+  await expect(importedRow.locator('[data-label="Completed"]')).toHaveText("—");
+  await expect(importedRow.locator('[data-label="Recorded mileage"]')).toHaveText("—");
+  await expect(completed).not.toContainText("Scheduled mark");
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await completed.getByRole("row", { name: /^Completed work for bus/ }).first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/pm-completed-phone.png", animations: "disabled" });
   await page.getByRole("button", { name: "Completion info for bus 6457" }).click();
   const info = page.getByRole("dialog", { name: "Completion history · Bus 6457" });
+  await expect(info.getByText("Recorded mileage: 100,250", { exact: true })).toBeVisible();
+  await expect(info).not.toContainText("Scheduled mark");
   await info.getByRole("button", { name: "Undo completion", exact: true }).first().click();
   await page.getByRole("dialog", { name: "Undo Trans PM completion?" }).getByRole("button", { name: "Undo completion" }).click();
   await expect(info.getByText("Trans PM · Undone").first()).toBeVisible();
