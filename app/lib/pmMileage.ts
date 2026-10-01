@@ -15,6 +15,7 @@ export type InspectionType = (typeof INSPECTION_CYCLE)[number];
 
 // Transmission PMs run on their own fixed interval, off the same odometer.
 export const TRANS_PM_INTERVAL = 75_000;
+const INSPECTION_STEP = 3_000; // every inspection mark is 3,000 miles on
 export const DEFAULT_DUE_SOON_MILES = 500; // "due soon" once this close
 
 export type PmKind = "inspection" | "trans";
@@ -141,8 +142,17 @@ export function inspMilesRemaining(record: PmRecord): number | null {
 }
 
 // ---------- transmission PM ----------
+// A trans PM is done at an inspection, so its due mileage is the first
+// inspection mark at or after last + 75,000: it can never come due (or go
+// overdue) ahead of the next inspection. Without an inspection on record
+// the raw mark is used.
 export function transNextDue(record: PmRecord): number | null {
-  return record.lastTransMiles === null ? null : record.lastTransMiles + TRANS_PM_INTERVAL;
+  if (record.lastTransMiles === null) return null;
+  const raw = record.lastTransMiles + TRANS_PM_INTERVAL;
+  const next = nextInspection(record);
+  if (!next) return raw;
+  if (raw <= next.miles) return next.miles;
+  return next.miles + Math.ceil((raw - next.miles) / INSPECTION_STEP) * INSPECTION_STEP;
 }
 
 export function transMilesRemaining(record: PmRecord): number | null {
