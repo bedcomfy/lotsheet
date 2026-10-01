@@ -654,11 +654,35 @@ export async function completePm(
 }
 
 type InspectionRow = typeof pmInspections.$inferSelect;
+function pmUndoStates(row: InspectionRow): { before: PmRecord; after: PmRecord } | null {
+  if (row.beforeState && row.afterState) return { before: row.beforeState, after: row.afterState };
+  // The original completion endpoint saved the completed PM's type, due mark
+  // and date, then cleared its explicit next schedule. That receipt is enough
+  // to requeue the same work, provided the current schedule still matches it.
+  // Do not guess a prior completion/date or accept a damaged modern receipt.
+  if (row.beforeState || row.afterState || row.requestId || row.completedAt || !Number.isInteger(row.miles) || row.miles < 0) return null;
+  const before = emptyPmRecord(row.bus);
+  const after = emptyPmRecord(row.bus);
+  if (row.kind === "inspection" && isInspectionType(row.type)) {
+    before.nextInspType = row.type;
+    before.nextInspMiles = row.miles;
+    after.lastInspType = row.type;
+    after.lastInspMiles = row.miles;
+    after.lastInspDate = row.doneAt;
+  } else if (row.kind === "trans") {
+    before.nextTransMiles = row.miles;
+    after.lastTransMiles = row.miles;
+    after.lastTransDate = row.doneAt;
+  } else return null;
+  return { before, after };
+}
+
 function undoReason(row: InspectionRow, current: PmRecord, latestId: number | undefined): string | null {
   if (row.undoneAt) return "This completion was undone.";
-  if (!row.beforeState || !row.afterState) return "Undo is unavailable for older records without a saved prior schedule.";
   if (row.id !== latestId) return "Undo the newer completion of this PM first.";
-  if (pmScheduleToken(current, row.kind as PmKind) !== pmScheduleToken(row.afterState, row.kind as PmKind)) return "This PM schedule has been edited since completion. Ask an admin to review it.";
+  const states = pmUndoStates(row);
+  if (!states) return "This completion is missing the information needed to restore its schedule. Ask an admin to review it.";
+  if (pmScheduleToken(current, row.kind as PmKind) !== pmScheduleToken(states.after, row.kind as PmKind)) return "This PM schedule has been edited since completion. Ask an admin to review it.";
   return null;
 }
 
@@ -722,7 +746,7 @@ export async function undoPmInspection(id: number, actor = ""): Promise<PmRecord
     }
     // Only the selected PM is rewound. A confirmed odometer reading remains
     // valid even if the inspection was marked complete by mistake.
-    const restored = await writePmRecord(tx, entry.beforeState!, pmScheduleFields(entry.kind as PmKind));
+    const restored = await writePmRecord(tx, pmUndoStates(entry)!.before, pmScheduleFields(entry.kind as PmKind));
     await tx.update(pmInspections).set({ undoneAt: sql`now()`, undoneBy: actor }).where(eq(pmInspections.id, id));
     await tx.insert(auditEvents).values({ kind: "pm_completion_undo", actor, details: { id: String(id), bus: entry.bus, kind: entry.kind } });
     await bumpPulse(tx);

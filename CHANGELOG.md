@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.45.3 - 2026-10-01
+
+- Enable undo for older site PM completions, including 6402 and 6510, by returning their saved inspection and due mileage to upcoming work without inventing prior completion history.
+- Keep current mileage, service readings, the other PM schedule, notes, status, and flags intact; continue blocking undo when newer work or schedule edits would be overwritten.
+
 ## 0.45.2 - 2026-10-01
 
 - Add Foreman / SR to the PM completion dialog and save the entered name with each inspection or Trans PM.

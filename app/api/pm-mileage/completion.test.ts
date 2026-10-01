@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import { getFlags, getPmMileage, listPmInspections, setBusFlags, setState, updatePmMileage } from "../../lib/store";
 import { emptyPmRecord, nextInspection, transNextDue, type PmKind } from "../../lib/pmMileage";
 import { pmScheduleToken } from "../../lib/pmHistory";
 import { POST as complete } from "./complete/route";
 import { POST as undo } from "./undo/route";
 import { GET as history } from "./history/route";
+import { getDb } from "../../lib/db";
+import { pmInspections, pmMileage } from "../../lib/db/schema";
 
 const req = (body: unknown, origin?: string) => new Request("http://localhost/api/pm-mileage", {
   method: "POST", headers: { "Content-Type": "application/json", ...(origin ? { origin } : {}) }, body: JSON.stringify(body),
@@ -19,6 +22,72 @@ async function seed(bus: string) {
 }
 
 describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
+  it.each([
+    { bus: "6402", type: "A-3" as const, miles: 495176, odometer: 495767 },
+    { bus: "6510", type: "B-12" as const, miles: 439618, odometer: 440230 },
+  ])("requeues the older site completion for $bus at its saved due mark", async ({ bus, type, miles, odometer }) => {
+    await updatePmMileage(bus, { odometer, odometerDate: "9/30/26",
+      lastInspType: type, lastInspMiles: miles, lastInspDate: "09/30/26", nextInspType: null, nextInspMiles: null,
+      lastTransMiles: null, lastTransDate: null, nextTransMiles: 452163, disposition: "shop", note: "Keep PM note" });
+    await setBusFlags(bus, { flags: ["hold"], holdReason: "Parts", note: "Keep flag note" });
+    const db = await getDb();
+    await db.update(pmMileage).set({ lastServiceAt: "2026-09-30T15:39:05", lastServiceMiles: odometer }).where(eq(pmMileage.bus, bus));
+    const [receipt] = await db.insert(pmInspections).values({ bus, kind: "inspection", type, miles, doneAt: "09/30/26", actor: "test-legacy-device" }).returning();
+    const before = (await getPmMileage())[bus];
+    const flags = (await getFlags())[bus];
+    const response = await history(new Request(`http://localhost/api/pm-mileage/history?bus=${bus}`));
+    expect((await response.json()).entries[0]).toMatchObject({ id: String(receipt.id), canUndo: true, undoReason: null });
+    expect((await undo(req({ id: String(receipt.id) }))).status).toBe(200);
+    const after = (await getPmMileage())[bus];
+    expect(after).toEqual({ ...before, lastInspType: null, lastInspMiles: null, lastInspDate: null,
+      nextInspType: type, nextInspMiles: miles, updatedAt: expect.any(String) });
+    expect(nextInspection(after)).toMatchObject({ type, miles });
+    expect((await getFlags())[bus]).toEqual(flags);
+    expect((await listPmInspections(bus))[0]).toMatchObject({ canUndo: false, undoneAt: expect.any(String) });
+    expect((await undo(req({ id: String(receipt.id) }))).status).toBe(200);
+    expect((await getPmMileage())[bus]).toEqual(after);
+  });
+
+  it("requeues an older Trans PM independently and preserves the regular inspection", async () => {
+    await seed("6403");
+    await updatePmMileage("6403", { lastTransMiles: 98000, lastTransDate: "9/30/26", nextTransMiles: null });
+    const db = await getDb();
+    const [receipt] = await db.insert(pmInspections).values({ bus: "6403", kind: "trans", miles: 98000, doneAt: "9/30/26" }).returning();
+    const before = (await getPmMileage())["6403"];
+    expect((await listPmInspections("6403"))[0].canUndo).toBe(true);
+    expect((await undo(req({ id: String(receipt.id) }))).status).toBe(200);
+    expect((await getPmMileage())["6403"]).toEqual({ ...before, lastTransMiles: null, lastTransDate: null,
+      nextTransMiles: 98000, updatedAt: expect.any(String) });
+  });
+
+  it("requires newer work to be undone first and protects later edits for older receipts too", async () => {
+    await seed("6405");
+    await updatePmMileage("6405", { lastInspType: "A-3", lastInspMiles: 100025, lastInspDate: "9/30/26", nextInspType: null, nextInspMiles: null });
+    const db = await getDb();
+    const [receipt] = await db.insert(pmInspections).values({ bus: "6405", kind: "inspection", type: "A-3", miles: 100025, doneAt: "9/30/26" }).returning();
+    expect((await complete(req(await payload("6405")))).status).toBe(200);
+    const [newer, older] = await listPmInspections("6405");
+    expect(older).toMatchObject({ canUndo: false, undoReason: "Undo the newer completion of this PM first." });
+    expect((await undo(req({ id: String(receipt.id) }))).status).toBe(409);
+    expect((await undo(req({ id: newer.id }))).status).toBe(200);
+    expect((await listPmInspections("6405")).find((e) => e.id === older.id)?.canUndo).toBe(true);
+    await updatePmMileage("6405", { nextInspType: "B-12", nextInspMiles: 120000 });
+    expect((await listPmInspections("6405")).find((e) => e.id === older.id)?.canUndo).toBe(false);
+    expect((await undo(req({ id: older.id }))).status).toBe(409);
+    expect(nextInspection((await getPmMileage())["6405"])).toMatchObject({ type: "B-12", miles: 120000 });
+    expect((await listPmInspections("6405")).find((e) => e.id === older.id)?.undoneAt).toBeNull();
+  });
+
+  it("does not use legacy recovery for an incomplete modern receipt", async () => {
+    await seed("6406");
+    await updatePmMileage("6406", { lastInspType: "A-3", lastInspMiles: 100025, lastInspDate: "9/30/26", nextInspType: null, nextInspMiles: null });
+    const db = await getDb();
+    const [receipt] = await db.insert(pmInspections).values({ bus: "6406", kind: "inspection", type: "A-3", miles: 100025,
+      doneAt: "9/30/26", requestId: crypto.randomUUID() }).returning();
+    expect((await listPmInspections("6406"))[0].canUndo).toBe(false);
+    expect((await undo(req({ id: String(receipt.id) }))).status).toBe(409);
+  });
+
   it("records the actual time/odometer once, and undo preserves later mileage, other PMs, status, notes and flags", async () => {
     await seed("6404");
     await setBusFlags("6404", { flags: ["inspection", "hold"], inspOption: "A-3", inspMiles: 100025, note: "Flag note", holdReason: "Parts" });
