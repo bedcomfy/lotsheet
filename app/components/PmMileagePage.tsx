@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ChangeEvent } from "react";
 import { AlertTriangle, CheckCircle2, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
 import { chicagoDateShort } from "../lib/chicagoTime";
+import { readPdfTextInBrowser } from "../lib/pdfTextClient";
 import { getDeviceActor } from "../lib/deviceActor";
 import { inspectionOptionFromText } from "../lib/grid";
 import {
@@ -819,10 +820,29 @@ function ImportDialog({
     setBusy(true);
     setError("");
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const r = await fetch("/api/pm-mileage/import", { method: "POST", body });
+      // The browser reads the PDF's text layer and sends just that: the scans
+      // run to several megabytes, more than the server will take in one
+      // request. If the browser can't read it, a small file is uploaded whole.
+      let r: Response;
+      try {
+        const pages = await readPdfTextInBrowser(file);
+        r = await fetch("/api/pm-mileage/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileName: file.name, pages }),
+        });
+      } catch (readErr) {
+        if (file.size > 4 * 1024 * 1024) {
+          throw new Error(
+            `Couldn't read this PDF in the browser (${readErr instanceof Error ? readErr.message : "error"}) and it is too big to upload whole.`,
+          );
+        }
+        const body = new FormData();
+        body.append("file", file);
+        r = await fetch("/api/pm-mileage/import", { method: "POST", body });
+      }
       const d = await r.json().catch(() => ({}));
+      if (r.status === 401) throw new Error("Admin Tools are locked — unlock and try again.");
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
       setResult(d);
       // Everything is selected, warnings included: the sheets come in daily,

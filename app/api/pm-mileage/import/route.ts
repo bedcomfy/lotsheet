@@ -4,7 +4,7 @@ import { DEFAULT_MASTER, normalizeBusMaster } from "../../../lib/buses";
 import { extractOdometerReadings, PM_EXTRACT_MODEL, pmExtractConfigured } from "../../../lib/pmExtract";
 import { parseOdometerReport } from "../../../lib/odometerReport";
 import { reviewReadings } from "../../../lib/pmMileage";
-import { parsePmReport } from "../../../lib/pmReport";
+import { parsePmReport, type PositionedText } from "../../../lib/pmReport";
 import { readPdfText } from "../../../lib/pmReportPdf";
 import { getPmMileage, getState } from "../../../lib/store";
 import type { MasterBus } from "../../../lib/types";
@@ -12,7 +12,32 @@ import type { MasterBus } from "../../../lib/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120; // the AI fallback on a multi-page scan can take a while
 
-const MAX_PDF_BYTES = 20 * 1024 * 1024;
+const MAX_PDF_BYTES = 4 * 1024 * 1024; // a serverless request carries ~4.5 MB; bigger scans are read in the browser
+const MAX_TEXT_ITEMS = 200_000;
+
+// The browser sends the PDF's positioned text when the file is too big to
+// upload: { fileName, pages: [[{ text, x, y, dirX, dirY }]] }.
+function pagesFromJson(body: unknown): { fileName: string; pages: PositionedText[][] } | null {
+  const b = body as { fileName?: unknown; pages?: unknown } | null;
+  if (!b || !Array.isArray(b.pages)) return null;
+  let count = 0;
+  const pages: PositionedText[][] = [];
+  for (const page of b.pages) {
+    if (!Array.isArray(page)) return null;
+    const items: PositionedText[] = [];
+    for (const it of page) {
+      const o = it as { text?: unknown; x?: unknown; y?: unknown; dirX?: unknown; dirY?: unknown };
+      if (typeof o?.text !== "string") continue;
+      const nums = [o.x, o.y, o.dirX, o.dirY].map(Number);
+      if (nums.some((n) => !Number.isFinite(n))) continue;
+      items.push({ text: o.text, x: nums[0], y: nums[1], dirX: nums[2], dirY: nums[3] });
+      count += 1;
+      if (count > MAX_TEXT_ITEMS) return null;
+    }
+    pages.push(items);
+  }
+  return { fileName: typeof b.fileName === "string" && b.fileName.trim() ? b.fileName.trim() : "report.pdf", pages };
+}
 
 // Read a fleet report PDF and return what it says about each bus, reviewed
 // against the fleet list and the mileage on file. The PDF's own text layer
@@ -24,13 +49,26 @@ const MAX_PDF_BYTES = 20 * 1024 * 1024;
 // POSTs accepted rows to /readings.
 export async function POST(req: Request) {
   if (!isAdminRequest(req)) return unauthorized();
-  const form = await req.formData().catch(() => null);
-  const file = form?.get("file");
-  if (!(file instanceof File)) return NextResponse.json({ error: "Attach a PDF as `file`." }, { status: 400 });
-  const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-  if (!isPdf) return NextResponse.json({ error: "Only PDF files can be scanned." }, { status: 400 });
-  if (file.size > MAX_PDF_BYTES) return NextResponse.json({ error: "That PDF is over 20 MB." }, { status: 413 });
-  const pdf = Buffer.from(await file.arrayBuffer());
+  let pdf: Buffer | null = null;
+  let pagesFromClient: PositionedText[][] | null = null;
+  let fileName = "report.pdf";
+  if ((req.headers.get("content-type") || "").includes("application/json")) {
+    const parsed = pagesFromJson(await req.json().catch(() => null));
+    if (!parsed) return NextResponse.json({ error: "Send { fileName, pages } with the PDF's positioned text." }, { status: 400 });
+    pagesFromClient = parsed.pages;
+    fileName = parsed.fileName;
+  } else {
+    const form = await req.formData().catch(() => null);
+    const file = form?.get("file");
+    if (!(file instanceof File)) return NextResponse.json({ error: "Attach a PDF as `file`." }, { status: 400 });
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf) return NextResponse.json({ error: "Only PDF files can be scanned." }, { status: 400 });
+    if (file.size > MAX_PDF_BYTES) {
+      return NextResponse.json({ error: "That PDF is too big to upload whole; the page reads it in the browser instead." }, { status: 413 });
+    }
+    pdf = Buffer.from(await file.arrayBuffer());
+    fileName = file.name;
+  }
 
   const masterValue = (await getState("bus_master")).value as { buses?: unknown } | null;
   const fleet = normalizeBusMaster(
@@ -41,7 +79,7 @@ export async function POST(req: Request) {
   // 1. The text layer: the PM status report, else the monthly miles report.
   let textLines = 0;
   try {
-    const pages = await readPdfText(pdf);
+    const pages = pagesFromClient ?? (await readPdfText(pdf as Buffer));
     const pm = parsePmReport(pages);
     textLines = pm.lineCount;
     if (pm.buses.length) {
@@ -68,7 +106,7 @@ export async function POST(req: Request) {
         method: "text",
         format: "pm-status",
         model: null,
-        fileName: file.name,
+        fileName,
         rawCount: pm.rows.length,
       });
     }
@@ -91,7 +129,7 @@ export async function POST(req: Request) {
         method: "text",
         format: "monthly-miles",
         model: null,
-        fileName: file.name,
+        fileName,
         rawCount: od.rows.length,
       });
     }
@@ -99,7 +137,19 @@ export async function POST(req: Request) {
     console.warn("[pm-import] text layer read failed:", err instanceof Error ? err.message : err);
   }
 
-  // 2. The AI reader, for scans with no usable text.
+  // 2. The AI reader, for scans with no usable text. It needs the PDF itself,
+  // which a text-only (browser-read) request doesn't carry.
+  if (!pdf) {
+    return NextResponse.json(
+      {
+        error:
+          textLines > 0
+            ? "This PDF has text, but none of it looks like the PM status report or the monthly miles report."
+            : "This PDF has no readable text — it's a picture-only scan. Re-scan with OCR/searchable PDF turned on.",
+      },
+      { status: 422 },
+    );
+  }
   if (!pmExtractConfigured()) {
     return NextResponse.json(
       {
@@ -113,7 +163,7 @@ export async function POST(req: Request) {
   }
   let extracted;
   try {
-    extracted = await extractOdometerReadings(pdf, file.name);
+    extracted = await extractOdometerReadings(pdf, fileName);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scan failed.";
     return NextResponse.json({ error: `Couldn't read that PDF: ${message}` }, { status: 502 });
@@ -126,7 +176,7 @@ export async function POST(req: Request) {
     method: "ai",
     format: "ai",
     model: PM_EXTRACT_MODEL,
-    fileName: file.name,
+    fileName,
     rawCount: extracted.readings.length,
   });
 }
