@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.4 - 2026-10-02
+
+- The typing test shows a "sponsored" popup a moment after load, once per
+  browser session. It closes with the x, No thanks, Escape, or its own
+  button, and puts the cursor back in the typing box.
+
 ## 0.46.3 - 2026-10-02
 
 - The browser tab and home-screen icon is no longer the Pace logo, which gave
