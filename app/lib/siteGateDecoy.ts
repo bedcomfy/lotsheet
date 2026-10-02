@@ -12,6 +12,7 @@
 // and recent results stay in the browser's localStorage.
 
 import { GATE_UNLOCK_PATH } from "./siteSession";
+import { DECOY_ICON_DATA_URI } from "./siteGateIcon";
 
 const PASSAGES = [
   // short
@@ -272,6 +273,7 @@ export function decoyPage(): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Typing Speed Test</title>
+<link rel="icon" type="image/png" href="${DECOY_ICON_DATA_URI}">
 <style>${STYLE}</style>
 </head>
 <body>

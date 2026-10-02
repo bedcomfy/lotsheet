@@ -22,9 +22,12 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Pace NW Sheets",
   },
+  // The tab and home-screen icon is deliberately not the Pace logo: the site
+  // sits behind a decoy (docs/site-gate.md), and a branded tab would give it
+  // away. The decoy embeds the same character.
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/tab-icon.png",
+    apple: "/apple-tab-icon.png",
   },
 };
 

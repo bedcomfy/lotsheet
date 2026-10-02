@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.3 - 2026-10-02
+
+- The browser tab and home-screen icon is no longer the Pace logo, which gave
+  the site away next to the typing test. Both the typing test and the
+  unlocked site now use the same neutral character icon.
+
 ## 0.46.2 - 2026-10-01
 
 - The typing test in front of the site behaves like a real one: the box
