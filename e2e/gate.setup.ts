@@ -10,6 +10,12 @@ setup("the decoy typing test hides the site until the passphrase is typed", asyn
   // Locked: any page is the typing test, with nothing that names the real site.
   await page.goto("/home");
   await expect(page.getByRole("heading", { name: "Typing Speed Test" })).toBeVisible();
+  // The "sponsored" popup shows a moment after load and must get out of the way.
+  const ad = page.getByRole("dialog", { name: "Sponsored" });
+  await expect(ad).toBeVisible({ timeout: 10000 });
+  await ad.getByRole("button", { name: "Close" }).click();
+  await expect(ad).toBeHidden();
+  await expect(page.getByRole("textbox", { name: "Type the text here" })).toBeFocused();
   const html = await page.content();
   expect(html).not.toMatch(/\bpace\b|garage|fleet|maintenance|lot sheet|work order/i);
   expect(html).not.toContain("/_next/");

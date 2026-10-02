@@ -110,6 +110,22 @@ const STYLE = `
   .history th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
   .history tr:last-child td { border-bottom: 0; }
   .history[hidden] { display: none; }
+  /* The "sponsored" popup: deliberately a little garish, like a cheap ad-supported site. */
+  .ad { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 18, 30, 0.55); }
+  .ad[hidden] { display: none; }
+  .ad-box { position: relative; width: 100%; max-width: 380px; background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35); animation: pop 220ms ease-out; }
+  @keyframes pop { from { transform: scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ad-tag { position: absolute; top: 10px; left: 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; }
+  .ad-close { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.92); color: #1f2430; font: 20px/30px system-ui, sans-serif; cursor: pointer; }
+  .ad-art { display: block; width: 100%; height: 190px; }
+  .ad-body { padding: 16px 18px 18px; text-align: center; }
+  .ad-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.06em; }
+  .ad-live i { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: blink 1.2s steps(2) infinite; }
+  .ad-body h2 { margin: 6px 0 4px; font-size: 22px; line-height: 1.2; }
+  .ad-body p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+  .ad-join { display: block; width: 100%; padding: 13px 16px; border: 0; border-radius: 10px; background: linear-gradient(135deg, #ff4d8d, #ff2d55); color: #fff; font: inherit; font-size: 17px; font-weight: 800; letter-spacing: 0.02em; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35); }
+  .ad-no { display: inline-block; margin-top: 12px; color: #9aa0ad; font-size: 13px; text-decoration: underline; background: none; border: 0; cursor: pointer; font-family: inherit; }
+  .ad-note { margin-top: 10px; font-size: 12px; color: var(--bad); min-height: 1em; }
   footer { margin-top: 36px; color: #9aa0ad; font-size: 13px; text-align: center; }
   footer a { color: inherit; text-decoration: none; margin: 0 6px; }
   @media (max-width: 560px) { h1 { font-size: 24px; } .passage { font-size: 17px; } .stats { grid-template-columns: repeat(2, 1fr); } .stat b { font-size: 22px; } nav a { margin-left: 12px; } .errnote { display: none !important; } }
@@ -262,6 +278,25 @@ const SCRIPT = `
   paintModes();
   renderHistory();
   pick();
+
+  // The "sponsored" popup: shows once per browser session, a moment after
+  // the page settles; closing it (x, No thanks, Escape, or its own button,
+  // which only ever fails) puts the cursor straight back in the box.
+  var ad = $('ad');
+  function adSeen() { try { return sessionStorage.getItem('kf:ad') === '1'; } catch (e) { return false; } }
+  function closeAd() {
+    ad.hidden = true;
+    try { sessionStorage.setItem('kf:ad', '1'); } catch (e) {}
+    if (!done) input.focus();
+  }
+  $('ad-close').addEventListener('click', closeAd);
+  $('ad-no').addEventListener('click', closeAd);
+  $('ad-join').addEventListener('click', function () {
+    $('ad-note').textContent = 'Could not connect. Please try again later.';
+    setTimeout(closeAd, 900);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !ad.hidden) closeAd(); });
+  if (!adSeen()) setTimeout(function () { if (!adSeen()) ad.hidden = false; }, 2500);
 })();
 `;
 
@@ -321,6 +356,47 @@ export function decoyPage(): string {
     </section>
   </main>
   <footer>keyflow · a simple typing practice tool · <a href="#">Privacy</a>·<a href="#">Terms</a>·<a href="#">Contact</a></footer>
+</div>
+<div class="ad" id="ad" role="dialog" aria-modal="true" aria-label="Sponsored" hidden>
+  <div class="ad-box">
+    <span class="ad-tag">Sponsored</span>
+    <button class="ad-close" id="ad-close" type="button" aria-label="Close">&times;</button>
+    <svg class="ad-art" viewBox="0 0 380 190" aria-hidden="true">
+      <defs>
+        <linearGradient id="adbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd6e7"/><stop offset="1" stop-color="#ffb3c7"/></linearGradient>
+        <linearGradient id="adsun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset="1" stop-color="#ffd166"/></linearGradient>
+      </defs>
+      <rect width="380" height="190" fill="url(#adbg)"/>
+      <circle cx="300" cy="46" r="34" fill="url(#adsun)"/>
+      <path d="M0 150 Q60 120 120 150 T240 150 T380 150 V190 H0Z" fill="#ff8fb1" opacity="0.6"/>
+      <g transform="translate(118 40)">
+        <circle cx="46" cy="42" r="30" fill="#f8c9a8"/>
+        <path d="M14 36 Q46 -6 78 36 Q70 20 46 18 Q22 20 14 36Z" fill="#5b3a29"/>
+        <path d="M6 120 Q46 78 86 120 L86 140 H6Z" fill="#ff5c8d"/>
+        <circle cx="36" cy="42" r="3" fill="#3b2a24"/><circle cx="56" cy="42" r="3" fill="#3b2a24"/>
+        <path d="M38 54 Q46 61 54 54" stroke="#b5533c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(196 58)">
+        <circle cx="46" cy="42" r="28" fill="#e8b48f"/>
+        <path d="M18 40 Q46 0 74 40 Q68 24 46 22 Q24 24 18 40Z" fill="#2b1b14"/>
+        <path d="M8 118 Q46 80 84 118 L84 134 H8Z" fill="#7c3aed"/>
+        <circle cx="37" cy="42" r="3" fill="#3b2a24"/><circle cx="55" cy="42" r="3" fill="#3b2a24"/>
+        <path d="M39 53 Q46 59 53 53" stroke="#9a4a3a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <path d="M62 60 l-9 -9 a7 7 0 0 1 10 -10 l-1 1 1 -1 a7 7 0 0 1 10 10z" fill="#ff2d55"/>
+      <path d="M330 120 l-6 -6 a5 5 0 0 1 7 -7 a5 5 0 0 1 7 7z" fill="#ff2d55"/>
+      <rect x="14" y="150" width="74" height="24" rx="12" fill="#fff" opacity="0.9"/>
+      <text x="51" y="166" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#16a34a">● 2.1 mi</text>
+    </svg>
+    <div class="ad-body">
+      <span class="ad-live"><i></i> 3 online now</span>
+      <h2>Hot singles near you</h2>
+      <p>Chat free · no sign-up · people in your area</p>
+      <button class="ad-join" id="ad-join" type="button">Say hi</button>
+      <button class="ad-no" id="ad-no" type="button">No thanks</button>
+      <div class="ad-note" id="ad-note" aria-live="polite"></div>
+    </div>
+  </div>
 </div>
 <script>${SCRIPT}</script>
 </body>
