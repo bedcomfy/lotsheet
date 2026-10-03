@@ -2,10 +2,14 @@ import { chicagoParts } from "./chicagoTime";
 import { parseOdometerReport } from "./odometerReport";
 import { linesFromText, type PositionedText } from "./pmReport";
 
+export { fleetwatchAutoSyncEnabled } from "./fleetwatchFlag";
+
 export const FLEETWATCH_INTERVAL_MINUTES = 30;
 export const FLEETWATCH_SOURCE = "Fleetwatch · Division 0043";
 
 export interface MileageSyncStatus {
+  // Whether automatic updates are switched on (see fleetwatchFlag.ts).
+  enabled?: boolean;
   startedAt?: string;
   runningUntil?: string | null;
   finishedAt?: string;

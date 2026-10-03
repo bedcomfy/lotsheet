@@ -44,12 +44,18 @@ describe("site gate proxy", () => {
     }
   });
 
-  it("lets the unlock route and the Fleetwatch sync through", async () => {
+  it("lets the unlock route through, and the Fleetwatch sync only while automatic updates are on", async () => {
     vi.stubEnv("SITE_GATE_PASSPHRASE", "open sesame 42");
+    vi.stubEnv("FLEETWATCH_AUTO_SYNC", "on");
     for (const path of ["/api/typing/results", "/api/pm-mileage/sync", "/api/pm-mileage/sync?from=github"]) {
       const res = await proxy(request(path, { method: "POST" }));
       expect(res.headers.get("x-middleware-next"), path).toBe("1");
     }
+    vi.stubEnv("FLEETWATCH_AUTO_SYNC", "");
+    const off = await proxy(request("/api/pm-mileage/sync", { method: "POST" }));
+    expect(off.headers.get("x-middleware-next")).toBeNull();
+    expect(off.status).toBe(404);
+    expect((await proxy(request("/api/typing/results", { method: "POST" }))).headers.get("x-middleware-next")).toBe("1");
     // Only the exact paths: a look-alike is still locked.
     for (const path of ["/api/typing/results/x", "/api/typing", "/api/pm-mileage/sync/x", "/api/pm-mileage/sync/../../state/lot"]) {
       const res = await proxy(request(path, { method: "POST" }));

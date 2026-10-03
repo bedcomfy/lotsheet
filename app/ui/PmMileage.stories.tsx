@@ -8,7 +8,7 @@ import type { MileageSyncStatus } from "../lib/fleetwatch";
 import type { FlagMap } from "../lib/types";
 import { emptyFlagEntry } from "../lib/serviceLaneSetup";
 
-function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean; sharedFlags: boolean }) {
+function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean; sharedFlags: boolean; autoSync: boolean }) {
   return <BusMasterProvider><PmMileagePage /></BusMasterProvider>;
 }
 
@@ -16,7 +16,10 @@ const meta = {
   title: "Patterns/PM Mileage",
   component: Fixture,
   parameters: { layout: "fullscreen" },
-  args: { unlocked: false, longContent: false, failLogout: false, failSync: false, sharedFlags: false },
+  // autoSync mirrors the FLEETWATCH_AUTO_SYNC switch the server reports; the
+  // stories default to "on" so the update flow stays covered while production
+  // runs with it off (see ManualUploadOnly).
+  args: { unlocked: false, longContent: false, failLogout: false, failSync: false, sharedFlags: false, autoSync: true },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
@@ -33,7 +36,7 @@ const meta = {
   beforeEach: ({ args }) => {
     useAdminUnlock.setState({ unlocked: args.unlocked, locking: false, lockError: "" });
     const originalFetch = window.fetch;
-    let sync: MileageSyncStatus = {};
+    let sync: MileageSyncStatus = { enabled: args.autoSync };
     const flags: FlagMap = args.sharedFlags ? {
       "6404": { ...emptyFlagEntry(), flags: ["split"], note: "Flag note stays separate" },
       "6435": { ...emptyFlagEntry(), flags: ["hold"], holdReason: "Parade" },
@@ -57,7 +60,7 @@ const meta = {
         records["6404"].odometer = 100010;
         records["6404"].lastServiceAt = "2026-09-30T23:19:08";
         records["6404"].lastServiceMiles = 100010;
-        sync = { lastSuccessAt: "2026-10-01T04:30:00Z", updated: 1, unchanged: 1, serviceUpdated: 1, skipped: [{ bus: "6435", reason: "Below saved mileage" }] };
+        sync = { enabled: true, lastSuccessAt: "2026-10-01T04:30:00Z", updated: 1, unchanged: 1, serviceUpdated: 1, skipped: [{ bus: "6435", reason: "Below saved mileage" }] };
         return Response.json({ ok: true, status: sync });
       }
       if (path === "/api/pm-mileage") {
@@ -156,6 +159,24 @@ export const UpdateMileage: Story = {
     await userEvent.click(screen.getByRole("button", { name: "1 readings skipped" }));
     await expect(screen.getByText("Bus 6435: Below saved mileage")).toBeVisible();
     await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
+  },
+};
+
+// Production state: automatic updates switched off, mileage comes from Import PDF.
+export const ManualUploadOnly: Story = {
+  args: { autoSync: false },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    await expect(screen.queryByRole("button", { name: "Update mileage now" })).not.toBeInTheDocument();
+    await expect(screen.queryByText(/Last successful check|No successful check/)).not.toBeInTheDocument();
+    await expect(screen.getByText(/Automatic updates are turned off/)).toBeVisible();
+    await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
+    await userEvent.click(screen.getByRole("button", { name: "Import PDF" }));
+    const dialog = await screen.findByRole("dialog", { name: "Import a fleet report" });
+    // The dialog animates in; wait for its content to settle.
+    await waitFor(() => expect(within(dialog).getByText(/Importing a report needs Admin Tools/)).toBeVisible());
+    await expect(within(dialog).getByRole("button", { name: "Scan PDF" })).toBeDisabled();
   },
 };
 

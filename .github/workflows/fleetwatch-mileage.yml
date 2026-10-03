@@ -1,9 +1,13 @@
 name: Update Fleetwatch mileage
 
+# Automatic updates are switched off (docs/fleetwatch-mileage.md). The
+# schedule below is kept commented out so it can be restored together with
+# FLEETWATCH_AUTO_SYNC=on; until then the endpoint answers 503 and a manual
+# run of this workflow fails with that message.
 on:
-  schedule:
-    # Every 30 minutes, away from the busiest start of the hour.
-    - cron: '7,37 * * * *'
+  # schedule:
+  #   # Every 30 minutes, away from the busiest start of the hour.
+  #   - cron: '7,37 * * * *'
   workflow_dispatch:
 
 permissions: {}

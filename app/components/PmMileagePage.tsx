@@ -204,6 +204,7 @@ export default function PmMileagePage() {
   const [editingNext, setEditingNext] = useState<CompleteTarget | null>(null);
   const [savingStatus, setSavingStatus] = useState<Set<string>>(new Set());
   const [sync, setSync] = useState<MileageSyncStatus>({});
+  const autoSync = sync.enabled === true;
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [showSyncSkipped, setShowSyncSkipped] = useState(false);
@@ -336,21 +337,25 @@ export default function PmMileagePage() {
               onPress={() => { void openSheetPdf({ path: "/pm-mileage", params: { pmFilter: filter, pmQuery: query } }); }}>
               <FileDown aria-hidden="true" /> Print PDF
             </Button>}
-            <Button variant="secondary" isDisabled={syncing || saveState === "saving"} onPress={updateMileageNow}>
+            {autoSync && <Button variant="secondary" isDisabled={syncing || saveState === "saving"} onPress={updateMileageNow}>
               <RefreshCw aria-hidden="true" /> {syncing ? "Updating mileage…" : "Update mileage now"}
+            </Button>}
+            <Button variant="primary" onPress={() => setImportOpen(true)}>
+              <FileUp aria-hidden="true" /> Import PDF
             </Button>
-            {unlocked ? (
-              <Button variant="primary" onPress={() => setImportOpen(true)}>
-                <FileUp aria-hidden="true" /> Import PDF
-              </Button>
-            ) : (
-              <AdminUnlockButton label="Unlock to edit" onSubmit={tryUnlock} />
-            )}
+            {!unlocked && <AdminUnlockButton label="Unlock to edit" onSubmit={tryUnlock} />}
           </div>
         }
       />
 
-      <div className={styles.syncNotice} role="status" aria-live="polite">
+      {/* Automatic Fleetwatch updates are switched off unless the server says
+          otherwise (FLEETWATCH_AUTO_SYNC=on). Off, mileage comes from Import PDF. */}
+      {!autoSync && (
+        <div className={styles.syncNotice} role="status">
+          <span><strong>Mileage source</strong> · Upload the Fleetwatch report with <strong>Import PDF</strong> (Admin Tools). Automatic updates are turned off.</span>
+        </div>
+      )}
+      {autoSync && <div className={styles.syncNotice} role="status" aria-live="polite">
         <span><strong>Fleetwatch mileage</strong> · Previous 24 hours · Scheduled every 30 minutes</span>
         {sync.lastSuccessAt ? <span>Last successful check: {new Date(sync.lastSuccessAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
           {` · Mileage: ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged${sync.serviceUpdated !== undefined ? ` · Service times: ${sync.serviceUpdated} updated` : ""}`}</span>
@@ -362,11 +367,11 @@ export default function PmMileagePage() {
           <Button variant="quiet" aria-expanded={showSyncSkipped} aria-controls="mileage-sync-skipped" onPress={() => setShowSyncSkipped((value) => !value)}>{sync.skipped.length} readings skipped</Button>
           {showSyncSkipped && <ul id="mileage-sync-skipped">{sync.skipped.map((entry) => <li key={`${entry.bus}:${entry.reason}`}>Bus {entry.bus}: {entry.reason}</li>)}</ul>}
         </div>}
-      </div>
+      </div>}
 
       {!unlocked && (
         <div className={styles.lockNotice}>
-          <Lock aria-hidden="true" /> Anyone can complete PMs, undo accidental completions, update bus status, or fetch Fleetwatch mileage. Unlock Admin Tools to edit mileage, schedules, or notes, or import reports.
+          <Lock aria-hidden="true" /> Anyone can complete PMs, undo accidental completions, {autoSync ? "update bus status, or fetch Fleetwatch mileage" : "or update bus status"}. Unlock Admin Tools to edit mileage, schedules, or notes, or import reports.
         </div>
       )}
 
