@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.47.0 - 2026-10-03
+
+- Automatic Fleetwatch mileage updates are switched off. PM Mileage no longer
+  shows Update mileage now or the check status, the half-hourly GitHub
+  schedule is paused, and the update endpoint answers "turned off" without
+  touching Fleetwatch. Import PDF is the main action again and is shown even
+  while Admin Tools is locked (it asks to unlock). Everything stays in place:
+  set FLEETWATCH_AUTO_SYNC=on and restore the workflow schedule to bring it
+  back (docs/fleetwatch-mileage.md).
+
 ## 0.46.4 - 2026-10-02
 
 - The typing test shows a "sponsored" popup a moment after load, once per

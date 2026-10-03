@@ -1,5 +1,20 @@
 # Automatic Fleetwatch mileage
 
+> **Currently switched off.** Mileage is updated by uploading the Fleetwatch
+> report on PM Mileage with **Import PDF** (Admin Tools). Nothing below runs
+> until it is switched back on:
+>
+> 1. On Vercel, add the environment variable `FLEETWATCH_AUTO_SYNC` with the
+>    value `on` for Production (and Preview if wanted) and redeploy. This
+>    turns the endpoint back on, lets it through the site gate, and brings
+>    back **Update mileage now** and the check status on PM Mileage.
+> 2. Restore the `schedule` block in `.github/workflows/fleetwatch-mileage.yml`
+>    (it is commented out) so the half-hourly run resumes.
+>
+> While off, `POST /api/pm-mileage/sync` answers 503 with a message, the site
+> gate treats it like any other API path, and the page shows a "Mileage
+> source" line pointing at Import PDF.
+
 PM Mileage fetches the division 0043 Vehicles Monthly Miles to Date PDF from
 Fleetwatch. Each request ends at the current minute and starts exactly 24 hours
 earlier, with both dates formatted in America/Chicago (including daylight saving

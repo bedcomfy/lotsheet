@@ -53,8 +53,11 @@ unlocked; it is cleared on site logout and whenever the gate locks a browser.
 ## What gets through without the cookie
 
 - `/api/typing/results`, the unlock endpoint.
-- `/api/pm-mileage/sync`, which GitHub Actions calls every 30 minutes with no
-  browser session. The route accepts no payload and has its own cooldown.
+- `/api/pm-mileage/sync`, which GitHub Actions calls with no browser session,
+  but only while automatic Fleetwatch updates are switched on
+  (`FLEETWATCH_AUTO_SYNC=on`, see docs/fleetwatch-mileage.md). Off, it is
+  locked like any other API path. The route accepts no payload and has its
+  own cooldown.
 
 The PDF route renders sheets with a headless browser against the public host
 and sets the unlock cookie on that browser first, so printing is unaffected.

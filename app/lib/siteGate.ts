@@ -6,16 +6,21 @@
 // runs in proxy.ts as well as in route handlers. See docs/site-gate.md.
 
 import { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH } from "./siteSession";
+import { fleetwatchAutoSyncEnabled } from "./fleetwatchFlag";
 
 export { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH };
 
+// The Fleetwatch sync endpoint. GitHub Actions posts here with no browser
+// session (.github/workflows/fleetwatch-mileage.yml); the route accepts no
+// payload. It is let through only while automatic updates are switched on.
+export const FLEETWATCH_SYNC_PATH = "/api/pm-mileage/sync";
+
 // Requests that must get through without the cookie.
-export const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
-  GATE_UNLOCK_PATH,
-  // GitHub Actions posts here every 30 minutes with no browser session
-  // (.github/workflows/fleetwatch-mileage.yml). The route accepts no payload.
-  "/api/pm-mileage/sync",
-]);
+export function isGateExemptPath(pathname: string): boolean {
+  if (pathname === GATE_UNLOCK_PATH) return true;
+  if (pathname === FLEETWATCH_SYNC_PATH) return fleetwatchAutoSyncEnabled();
+  return false;
+}
 
 // SHA-256 of the built-in passphrase after normalizePhrase(). Setting
 // SITE_GATE_PASSPHRASE replaces it, and because the cookie is keyed off the
