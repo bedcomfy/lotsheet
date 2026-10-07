@@ -27,6 +27,10 @@ import {
   toMiles as toPmMiles,
   toOdometer,
   transNextDue,
+  fluidNextDue,
+  FLUID_FIELDS,
+  FLUID_KINDS,
+  type FluidKind,
   type InspectionType,
   type PmCompletion,
   type PmKind,
@@ -301,6 +305,15 @@ export async function setState(key: string, value: unknown): Promise<string> {
   return updatedAt;
 }
 
+// Inserts a key only when it is absent; true when this call created it. Lets a
+// one-shot job (the master schedule apply at server start) run once even when
+// several server instances start together.
+export async function claimState(key: string, value: unknown): Promise<boolean> {
+  const db = await getDb();
+  const rows = await db.insert(appState).values({ key, value, updatedAt: sql`now()` }).onConflictDoNothing().returning({ key: appState.key });
+  return rows.length > 0;
+}
+
 // Same write, no pulse — for server-side caches (PDFs) that no client needs to
 // refetch for. Bumping the pulse there woke every device after every prewarm.
 export async function setStateQuiet(key: string, value: unknown): Promise<string> {
@@ -422,9 +435,15 @@ function pmRowToRecord(row: typeof pmMileage.$inferSelect): PmRecord {
     lastInspDate: row.lastInspDate || null,
     lastTransMiles: row.lastTransMiles ?? null,
     lastTransDate: row.lastTransDate || null,
+    lastHubMiles: row.lastHubMiles ?? null,
+    lastHubDate: row.lastHubDate || null,
+    lastDiffMiles: row.lastDiffMiles ?? null,
+    lastDiffDate: row.lastDiffDate || null,
     nextInspType: isInspectionType(row.nextInspType) ? row.nextInspType : null,
     nextInspMiles: row.nextInspMiles ?? null,
     nextTransMiles: row.nextTransMiles ?? null,
+    nextHubMiles: row.nextHubMiles ?? null,
+    nextDiffMiles: row.nextDiffMiles ?? null,
     disposition: normalizeDisposition(row.disposition),
     note: row.note || "",
     source: row.source || "",
@@ -443,9 +462,15 @@ function pmRecordToRow(r: PmRecord) {
     lastInspDate: r.lastInspDate,
     lastTransMiles: r.lastTransMiles,
     lastTransDate: r.lastTransDate,
+    lastHubMiles: r.lastHubMiles,
+    lastHubDate: r.lastHubDate,
+    lastDiffMiles: r.lastDiffMiles,
+    lastDiffDate: r.lastDiffDate,
     nextInspType: r.nextInspType,
     nextInspMiles: r.nextInspMiles,
     nextTransMiles: r.nextTransMiles,
+    nextHubMiles: r.nextHubMiles,
+    nextDiffMiles: r.nextDiffMiles,
     disposition: r.disposition || null,
     note: r.note,
     source: r.source,
@@ -511,9 +536,15 @@ export interface PmPatch {
   lastInspDate?: string | null;
   lastTransMiles?: number | string | null;
   lastTransDate?: string | null;
+  lastHubMiles?: number | string | null;
+  lastHubDate?: string | null;
+  lastDiffMiles?: number | string | null;
+  lastDiffDate?: string | null;
   nextInspType?: string | null;
   nextInspMiles?: number | null;
   nextTransMiles?: number | null;
+  nextHubMiles?: number | null;
+  nextDiffMiles?: number | null;
   disposition?: string | null;
   note?: string;
   source?: string;
@@ -557,9 +588,13 @@ async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor
     patch = { nextInspType: null, nextInspMiles: null, ...patch };
     fields.push("nextInspType", "nextInspMiles");
   }
-  if (patch.lastTransMiles !== undefined) {
-    patch = { nextTransMiles: null, ...patch };
-    fields.push("nextTransMiles");
+  // Correcting a fluid PM's last mark replaces its directly entered next mark.
+  for (const kind of FLUID_KINDS) {
+    const f = FLUID_FIELDS[kind];
+    if (patch[f.last] !== undefined) {
+      patch = { [f.next]: null, ...patch };
+      fields.push(f.next);
+    }
   }
   if (patch.odometer !== undefined) fields.push("source");
   const next: PmRecord = {
@@ -571,9 +606,15 @@ async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor
     ...(patch.lastInspDate !== undefined ? { lastInspDate: textOrNull(patch.lastInspDate) } : {}),
     ...(patch.lastTransMiles !== undefined ? { lastTransMiles: toPmMiles(patch.lastTransMiles) } : {}),
     ...(patch.lastTransDate !== undefined ? { lastTransDate: textOrNull(patch.lastTransDate) } : {}),
+    ...(patch.lastHubMiles !== undefined ? { lastHubMiles: toPmMiles(patch.lastHubMiles) } : {}),
+    ...(patch.lastHubDate !== undefined ? { lastHubDate: textOrNull(patch.lastHubDate) } : {}),
+    ...(patch.lastDiffMiles !== undefined ? { lastDiffMiles: toPmMiles(patch.lastDiffMiles) } : {}),
+    ...(patch.lastDiffDate !== undefined ? { lastDiffDate: textOrNull(patch.lastDiffDate) } : {}),
     ...(patch.nextInspType !== undefined ? { nextInspType: isInspectionType(patch.nextInspType) ? patch.nextInspType : null } : {}),
     ...(patch.nextInspMiles !== undefined ? { nextInspMiles: toPmMiles(patch.nextInspMiles) } : {}),
     ...(patch.nextTransMiles !== undefined ? { nextTransMiles: toPmMiles(patch.nextTransMiles) } : {}),
+    ...(patch.nextHubMiles !== undefined ? { nextHubMiles: toPmMiles(patch.nextHubMiles) } : {}),
+    ...(patch.nextDiffMiles !== undefined ? { nextDiffMiles: toPmMiles(patch.nextDiffMiles) } : {}),
     ...(patch.disposition !== undefined ? { disposition: normalizeDisposition(patch.disposition) } : {}),
     ...(patch.note !== undefined ? { note: String(patch.note ?? "").trim() } : {}),
     source: patch.source ?? (patch.odometer !== undefined ? "manual" : before.source),
@@ -586,9 +627,9 @@ async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor
 export class PmConflictError extends Error {}
 
 function pmScheduleFields(kind: PmKind): string[] {
-  return kind === "inspection"
-    ? ["lastInspType", "lastInspMiles", "lastInspDate", "nextInspType", "nextInspMiles"]
-    : ["lastTransMiles", "lastTransDate", "nextTransMiles"];
+  if (kind === "inspection") return ["lastInspType", "lastInspMiles", "lastInspDate", "nextInspType", "nextInspMiles"];
+  const f = FLUID_FIELDS[kind];
+  return [f.last, f.date, f.next];
 }
 
 interface CompletionOptions {
@@ -624,7 +665,7 @@ export async function completePm(
     }
     if (pmScheduleToken(before, completion.kind) !== options.expectedSchedule) throw new PmConflictError("This PM changed while you were confirming. Close this window and refresh the PM page.");
     const scheduled = nextInspection(before);
-    const due = completion.kind === "inspection" ? scheduled?.miles ?? null : transNextDue(before);
+    const due = completion.kind === "inspection" ? scheduled?.miles ?? null : fluidNextDue(before, completion.kind);
     if (!options.admin && (due === null || (completion.kind === "inspection" && completion.type && completion.type !== scheduled?.type))) {
       throw new PmConflictError("Only the scheduled PM can be completed here. Ask an admin to correct its schedule first.");
     }
@@ -649,7 +690,7 @@ export async function completePm(
     }
     const [entry] = await tx.insert(pmInspections).values({
       bus, kind: completion.kind, type: completion.kind === "inspection" ? after.lastInspType : null,
-      miles: (completion.kind === "inspection" ? after.lastInspMiles : after.lastTransMiles)!,
+      miles: (completion.kind === "inspection" ? after.lastInspMiles : after[FLUID_FIELDS[completion.kind].last])!,
       odometer: miles, doneAt: date, completedAt, requestId: options.requestId,
       foremanSr,
       beforeState: before, afterState: after, clearedFlag, actor: actor || null,
@@ -817,6 +858,10 @@ export async function applyPmReadings(
     }
     const transDue = toPmMiles(reading.transDue);
     if (transDue !== null) pm.nextTransMiles = transDue;
+    const hubDue = toPmMiles(reading.hubDue);
+    if (hubDue !== null) pm.nextHubMiles = hubDue;
+    const diffDue = toPmMiles(reading.diffDue);
+    if (diffDue !== null) pm.nextDiffMiles = diffDue;
     const lastInspMiles = toPmMiles(reading.lastInspMiles);
     if (isInspectionType(reading.lastInspType) && lastInspMiles !== null) {
       pm.lastInspType = reading.lastInspType;
@@ -827,6 +872,16 @@ export async function applyPmReadings(
     if (lastTransMiles !== null) {
       pm.lastTransMiles = lastTransMiles;
       if (!samePm("trans", existing.lastTransMiles, "trans", lastTransMiles)) pm.lastTransDate = null;
+    }
+    const lastHubMiles = toPmMiles(reading.lastHubMiles);
+    if (lastHubMiles !== null) {
+      pm.lastHubMiles = lastHubMiles;
+      if (!samePm("hub", existing.lastHubMiles, "hub", lastHubMiles)) pm.lastHubDate = null;
+    }
+    const lastDiffMiles = toPmMiles(reading.lastDiffMiles);
+    if (lastDiffMiles !== null) {
+      pm.lastDiffMiles = lastDiffMiles;
+      if (!samePm("diff", existing.lastDiffMiles, "diff", lastDiffMiles)) pm.lastDiffDate = null;
     }
     if (scheduleOnly) {
       // The tracker workbook: the PM marks change, the odometer on file, its
@@ -842,9 +897,11 @@ export async function applyPmReadings(
       const prevInsp = nextInspection(existing);
       const nextInsp = nextInspection(after);
       if (prevInsp && nextInsp && nextInsp.miles > prevInsp.miles) passed.push({ kind: "inspection", type: prevInsp.type, miles: prevInsp.miles });
-      const prevTrans = transNextDue(existing);
-      const nextTrans = transNextDue(after);
-      if (prevTrans !== null && nextTrans !== null && nextTrans > prevTrans) passed.push({ kind: "trans", type: null, miles: prevTrans });
+      for (const kind of FLUID_KINDS as readonly FluidKind[]) {
+        const prevDue = fluidNextDue(existing, kind);
+        const nextDue = fluidNextDue(after, kind);
+        if (prevDue !== null && nextDue !== null && nextDue > prevDue) passed.push({ kind, type: null, miles: prevDue });
+      }
       for (const done of passed) {
         const [entry] = await db.insert(pmInspections).values({
           bus: reading.bus, kind: done.kind, type: done.type, miles: done.miles, odometer: existing.odometer,

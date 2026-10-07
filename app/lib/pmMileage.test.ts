@@ -4,6 +4,10 @@ import {
   INSPECTION_CYCLE,
   TRANS_PM_INTERVAL,
   applyCompletion,
+  FLUID_KINDS,
+  fluidNextDue,
+  fluidMilesRemaining,
+  PM_KIND_LABEL,
   formatMiles,
   formatTenths,
   toOdometer,
@@ -149,6 +153,26 @@ describe("transmission PM", () => {
     expect(TRANS_PM_INTERVAL).toBe(75_000);
     expect(transNextDue(r)).toBe(195_000);
     expect(transMilesRemaining(r)).toBe(5_000);
+  });
+
+  it("tracks the trans, front hub and differential fluid PMs as three separate marks", () => {
+    const r = { ...emptyPmRecord("6454"), odometer: 440_000, nextTransMiles: 449_267, nextHubMiles: 443_182, nextDiffMiles: 449_267 };
+    expect(FLUID_KINDS).toEqual(["trans", "hub", "diff"]);
+    expect(FLUID_KINDS.map((kind) => [kind, fluidNextDue(r, kind), fluidMilesRemaining(r, kind)])).toEqual([
+      ["trans", 449_267, 9_267], ["hub", 443_182, 3_182], ["diff", 449_267, 9_267],
+    ]);
+    expect(pmWorkItems([r], S).map((item) => [item.id, item.dueMiles])).toEqual([
+      ["6454:hub", 443_182], ["6454:diff", 449_267], ["6454:trans", 449_267], ["6454:inspection", null],
+    ]);
+    expect(PM_KIND_LABEL.hub).toBe("Hub fluid");
+    expect(PM_KIND_LABEL.diff).toBe("Diff fluid");
+    // Completing the hub fluid records its own due mark and advances only the hub mark, 75,000 on.
+    const hubDone = applyCompletion(r, { kind: "hub", miles: 443_190, date: "10/7/26" });
+    expect(hubDone).toMatchObject({ lastHubMiles: 443_182, lastHubDate: "10/7/26", nextHubMiles: null, nextTransMiles: 449_267, nextDiffMiles: 449_267 });
+    expect(FLUID_KINDS.map((kind) => fluidNextDue(hubDone, kind))).toEqual([449_267, 518_182, 449_267]);
+    // A bus with no hub or diff mark on file shows only the inspection and trans rows.
+    const transOnly = { ...emptyPmRecord("2775"), odometer: 390_000, nextInspType: "A-21" as const, nextInspMiles: 388_706, nextTransMiles: 397_670 };
+    expect(pmWorkItems([transOnly], S).map((item) => item.kind)).toEqual(["inspection", "trans"]);
   });
 
   it("keeps its due mileage independent of the inspection schedule", () => {

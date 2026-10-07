@@ -129,7 +129,7 @@ function miles(n: unknown): string {
 }
 
 function pmMileageDetails(details: unknown): { title: string; detail: string; badge: string } {
-  type R = { odometer?: number | null; lastInspType?: string | null; lastInspMiles?: number | null; lastTransMiles?: number | null; nextInspType?: string | null; nextInspMiles?: number | null; nextTransMiles?: number | null; disposition?: string | null } | null;
+  type R = { odometer?: number | null; lastInspType?: string | null; lastInspMiles?: number | null; lastTransMiles?: number | null; lastHubMiles?: number | null; lastDiffMiles?: number | null; nextInspType?: string | null; nextInspMiles?: number | null; nextTransMiles?: number | null; nextHubMiles?: number | null; nextDiffMiles?: number | null; disposition?: string | null } | null;
   const d = (details || {}) as { bus?: string; before?: R; after?: R };
   const parts: string[] = [];
   const b = d.before || {};
@@ -139,10 +139,14 @@ function pmMileageDetails(details: unknown): { title: string; detail: string; ba
     parts.push(`last inspection ${b.lastInspType || "—"} @ ${miles(b.lastInspMiles ?? null)} → ${a.lastInspType || "—"} @ ${miles(a.lastInspMiles ?? null)}`);
   }
   if ((b.lastTransMiles ?? null) !== (a.lastTransMiles ?? null)) parts.push(`last trans PM ${miles(b.lastTransMiles ?? null)} → ${miles(a.lastTransMiles ?? null)}`);
+  if ((b.lastHubMiles ?? null) !== (a.lastHubMiles ?? null)) parts.push(`last hub fluid ${miles(b.lastHubMiles ?? null)} → ${miles(a.lastHubMiles ?? null)}`);
+  if ((b.lastDiffMiles ?? null) !== (a.lastDiffMiles ?? null)) parts.push(`last diff fluid ${miles(b.lastDiffMiles ?? null)} → ${miles(a.lastDiffMiles ?? null)}`);
   if ((b.nextInspType ?? null) !== (a.nextInspType ?? null) || (b.nextInspMiles ?? null) !== (a.nextInspMiles ?? null)) {
     parts.push(`next inspection ${b.nextInspType || "calculated"} @ ${miles(b.nextInspMiles)} → ${a.nextInspType || "calculated"} @ ${miles(a.nextInspMiles)}`);
   }
   if ((b.nextTransMiles ?? null) !== (a.nextTransMiles ?? null)) parts.push(`next trans PM ${miles(b.nextTransMiles)} → ${miles(a.nextTransMiles)}`);
+  if ((b.nextHubMiles ?? null) !== (a.nextHubMiles ?? null)) parts.push(`next hub fluid ${miles(b.nextHubMiles)} → ${miles(a.nextHubMiles)}`);
+  if ((b.nextDiffMiles ?? null) !== (a.nextDiffMiles ?? null)) parts.push(`next diff fluid ${miles(b.nextDiffMiles)} → ${miles(a.nextDiffMiles)}`);
   if ((b.disposition || "") !== (a.disposition || "")) parts.push(`status ${b.disposition || "—"} → ${a.disposition || "—"}`);
   return {
     title: `PM mileage · ${d.bus || "bus"}`,
@@ -153,7 +157,7 @@ function pmMileageDetails(details: unknown): { title: string; detail: string; ba
 
 function pmCompleteDetails(details: unknown): { title: string; detail: string; badge: string } {
   const d = (details || {}) as { bus?: string; kind?: string; type?: string | null; miles?: number | null; date?: string | null; flagCleared?: boolean };
-  const what = d.kind === "trans" ? "Transmission PM" : `${d.type || "Inspection"} inspection`;
+  const what = d.kind === "trans" ? "Transmission PM" : d.kind === "hub" ? "Front hub fluid" : d.kind === "diff" ? "Differential fluid" : `${d.type || "Inspection"} inspection`;
   return {
     title: `${what} completed · ${d.bus || "bus"}`,
     detail: `at ${miles(d.miles ?? null)} mi${d.date ? ` on ${d.date}` : ""}${d.flagCleared ? " · inspection flag cleared" : ""}`,

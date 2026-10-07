@@ -23,14 +23,36 @@ export function isPmFleetBus(bus: Pick<MasterBus, "num" | "status">): boolean {
 export const INSPECTION_CYCLE = ["A-3", "B-6", "A-9", "B-12", "A-15", "B-18", "A-21", "C-24"] as const;
 export type InspectionType = (typeof INSPECTION_CYCLE)[number];
 
-// Transmission PMs run on their own fixed interval, off the same odometer.
+// The three fluid PMs (transmission, front hub, differential) each run on
+// their own 75,000-mile interval, off the same odometer, with their own due
+// mark: the fleet system schedules them separately and the marks drift apart.
 export const TRANS_PM_INTERVAL = 75_000;
-// PM work instructions only; never written to the bus's shared flag notes.
-export const TRANS_PM_NOTE = "Change front hub fluid. Change differential fluid.";
+export const FLUID_PM_INTERVAL = TRANS_PM_INTERVAL;
 export const INSPECTION_STEP = 3_000; // every inspection mark is 3,000 miles on
 export const DEFAULT_DUE_SOON_MILES = 500; // "due soon" once this close
 
-export type PmKind = "inspection" | "trans";
+export const FLUID_KINDS = ["trans", "hub", "diff"] as const;
+export type FluidKind = (typeof FLUID_KINDS)[number];
+export type PmKind = "inspection" | FluidKind;
+export function isFluidKind(value: unknown): value is FluidKind {
+  return typeof value === "string" && (FLUID_KINDS as readonly string[]).includes(value);
+}
+export function isPmKind(value: unknown): value is PmKind {
+  return value === "inspection" || isFluidKind(value);
+}
+
+// Short label for a row or badge, and the noun used in sentences and titles.
+export const PM_KIND_LABEL: Record<PmKind, string> = { inspection: "Inspection", trans: "Trans PM", hub: "Hub fluid", diff: "Diff fluid" };
+export const PM_KIND_NOUN: Record<PmKind, string> = { inspection: "inspection", trans: "trans PM", hub: "hub fluid", diff: "diff fluid" };
+// The fleet system's own wording for each fluid PM.
+export const FLUID_PM_SCHEDULE: Record<FluidKind, string> = { trans: "TRANS P.M. 75000", hub: "CHANGE FRONT HUB FLUID", diff: "CHANGE DIFFERENTIAL FLUID" };
+
+// Where each fluid PM keeps its marks on the record.
+export const FLUID_FIELDS = {
+  trans: { last: "lastTransMiles", date: "lastTransDate", next: "nextTransMiles" },
+  hub: { last: "lastHubMiles", date: "lastHubDate", next: "nextHubMiles" },
+  diff: { last: "lastDiffMiles", date: "lastDiffDate", next: "nextDiffMiles" },
+} as const;
 
 // Where a bus stands while it waits on its PM: in the shop, needs a follow-up,
 // on hold, or split (work spread over visits). Free to change; not derived.
@@ -103,9 +125,15 @@ export interface PmRecord {
   lastInspDate: string | null;
   lastTransMiles: number | null; // odometer at the last transmission PM
   lastTransDate: string | null;
+  lastHubMiles: number | null; // odometer at the last front hub fluid change
+  lastHubDate: string | null;
+  lastDiffMiles: number | null; // odometer at the last differential fluid change
+  lastDiffDate: string | null;
   nextInspType: InspectionType | null;
   nextInspMiles: number | null;
   nextTransMiles: number | null;
+  nextHubMiles: number | null;
+  nextDiffMiles: number | null;
   disposition: PmDisposition; // shop / follow-up / hold / split, or none
   note: string;
   source: string; // "manual" | "pdf" | ""
@@ -132,9 +160,15 @@ export function emptyPmRecord(bus: string): PmRecord {
     lastInspDate: null,
     lastTransMiles: null,
     lastTransDate: null,
+    lastHubMiles: null,
+    lastHubDate: null,
+    lastDiffMiles: null,
+    lastDiffDate: null,
     nextInspType: null,
     nextInspMiles: null,
     nextTransMiles: null,
+    nextHubMiles: null,
+    nextDiffMiles: null,
     disposition: "",
     note: "",
     source: "",
@@ -193,19 +227,30 @@ export function inspMilesRemaining(record: PmRecord): number | null {
   return next.miles - record.odometer;
 }
 
-// ---------- transmission PM ----------
-// Transmission PM keeps its own due mileage, even when an inspection is
-// nearby. Completing or correcting an inspection must not move this mark.
+// ---------- fluid PMs: transmission, front hub, differential ----------
+// Each keeps its own due mileage, even when an inspection or another fluid PM
+// is nearby. Completing or correcting one must not move the others.
+export function fluidNextDue(record: PmRecord, kind: FluidKind): number | null {
+  const fields = FLUID_FIELDS[kind];
+  const next = record[fields.next];
+  if (next != null) return next;
+  const last = record[fields.last];
+  if (last === null) return null;
+  return last + FLUID_PM_INTERVAL;
+}
+
+export function fluidMilesRemaining(record: PmRecord, kind: FluidKind): number | null {
+  const due = fluidNextDue(record, kind);
+  if (due === null || record.odometer === null) return null;
+  return due - record.odometer;
+}
+
 export function transNextDue(record: PmRecord): number | null {
-  if (record.nextTransMiles != null) return record.nextTransMiles;
-  if (record.lastTransMiles === null) return null;
-  return record.lastTransMiles + TRANS_PM_INTERVAL;
+  return fluidNextDue(record, "trans");
 }
 
 export function transMilesRemaining(record: PmRecord): number | null {
-  const due = transNextDue(record);
-  if (due === null || record.odometer === null) return null;
-  return due - record.odometer;
+  return fluidMilesRemaining(record, "trans");
 }
 
 // ---------- status ----------
@@ -226,11 +271,10 @@ export function transStatus(record: PmRecord, settings: PmSettings): PmStatus {
 
 const STATUS_RANK: Record<PmStatus, number> = { overdue: 0, "due-soon": 1, ok: 2, unknown: 3 };
 
-// The bus's overall status is whichever of its two PMs needs attention first.
+// The bus's overall status is whichever of its PMs needs attention first.
 export function pmStatus(record: PmRecord, settings: PmSettings): PmStatus {
-  const a = inspStatus(record, settings);
-  const b = transStatus(record, settings);
-  return STATUS_RANK[a] <= STATUS_RANK[b] ? a : b;
+  return [inspStatus(record, settings), ...FLUID_KINDS.map((kind) => statusForMiles(fluidMilesRemaining(record, kind), settings))]
+    .reduce((best, status) => (STATUS_RANK[status] < STATUS_RANK[best] ? status : best));
 }
 
 export const PM_STATUS_LABEL: Record<PmStatus, string> = {
@@ -240,13 +284,11 @@ export const PM_STATUS_LABEL: Record<PmStatus, string> = {
   overdue: "Overdue",
 };
 
-// The smaller of the two miles-left figures (the one that decides the status).
+// The smallest miles-left figure across the bus's PMs (the one that decides the status).
 export function soonestMilesRemaining(record: PmRecord): number | null {
-  const a = inspMilesRemaining(record);
-  const b = transMilesRemaining(record);
-  if (a === null) return b;
-  if (b === null) return a;
-  return Math.min(a, b);
+  const figures = [inspMilesRemaining(record), ...FLUID_KINDS.map((kind) => fluidMilesRemaining(record, kind))]
+    .filter((left): left is number => left !== null);
+  return figures.length ? Math.min(...figures) : null;
 }
 
 // Sort: overdue first (most overdue at the top), then due soon, then OK by
@@ -303,15 +345,14 @@ export function groupPmWorkItems(items: PmWorkItem[]) {
 }
 
 // Keep an inspection row for every bus so missing inspections can be set up.
-// Transmission work only belongs in the queue once its due mileage is known.
+// A fluid PM only belongs in the queue once its due mileage is known.
 // Counts and filters describe PMs, not distinct buses.
 export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkItem[] {
   return records.filter((record) => !isPmExcluded(record.bus)).flatMap((record): PmWorkItem[] => {
     const inspection = nextInspection(record);
-    const transDue = transNextDue(record);
-    const kinds: PmKind[] = transDue === null ? ["inspection"] : ["inspection", "trans"];
+    const kinds: PmKind[] = ["inspection", ...FLUID_KINDS.filter((kind) => fluidNextDue(record, kind) !== null)];
     return kinds.map((kind) => {
-      const dueMiles = kind === "inspection" ? inspection?.miles ?? null : transDue;
+      const dueMiles = kind === "inspection" ? inspection?.miles ?? null : fluidNextDue(record, kind);
       const milesLeft = dueMiles === null || record.odometer === null ? null : dueMiles - record.odometer;
       return {
         id: `${record.bus}:${kind}`, record, kind,
@@ -363,9 +404,10 @@ export function applyCompletion(record: PmRecord, completion: PmCompletion): PmR
   const odometerDate = record.odometer === null || miles > record.odometer ? completion.date : record.odometerDate;
   // PM marks are whole miles; only the odometer itself keeps its tenth.
   const mark = Math.round(miles);
-  if (completion.kind === "trans") {
-    const due = transNextDue(record);
-    return { ...record, odometer, odometerDate, lastTransMiles: due ?? mark, lastTransDate: completion.date, nextTransMiles: null };
+  if (completion.kind !== "inspection") {
+    const fields = FLUID_FIELDS[completion.kind];
+    const due = fluidNextDue(record, completion.kind);
+    return { ...record, odometer, odometerDate, [fields.last]: due ?? mark, [fields.date]: completion.date, [fields.next]: null };
   }
   const next = nextInspection(record);
   const type = completion.type ?? next?.type ?? null;
@@ -376,7 +418,7 @@ export function applyCompletion(record: PmRecord, completion: PmCompletion): PmR
 
 // The mileage a completion will be recorded at (for previews).
 export function completionRecordedAt(record: PmRecord, kind: PmKind, type: InspectionType | null, miles: number): number {
-  if (kind === "trans") return transNextDue(record) ?? Math.round(miles);
+  if (kind !== "inspection") return fluidNextDue(record, kind) ?? Math.round(miles);
   const next = nextInspection(record);
   return next && (type === null || next.type === type) ? next.miles : Math.round(miles);
 }
@@ -398,6 +440,10 @@ export interface PmReading {
   lastInspMiles?: number | null;
   transDue?: number | null;
   lastTransMiles?: number | null;
+  hubDue?: number | null;
+  lastHubMiles?: number | null;
+  diffDue?: number | null;
+  lastDiffMiles?: number | null;
 }
 
 export interface PmReadingReview extends PmReading {
@@ -456,8 +502,9 @@ export function reviewReadings(
       rejected.push({ bus, odometer, reason: "No usable odometer reading" });
       continue;
     }
-    if (scheduleOnly && !(isInspectionType(row.nextInspType) && toMiles(row.nextInspDue) !== null) && toMiles(row.transDue) === null) {
-      rejected.push({ bus, odometer, reason: typeof row.note === "string" && row.note ? row.note : "No inspection or trans PM due on this row" });
+    if (scheduleOnly && !(isInspectionType(row.nextInspType) && toMiles(row.nextInspDue) !== null)
+      && toMiles(row.transDue) === null && toMiles(row.hubDue) === null && toMiles(row.diffDue) === null) {
+      rejected.push({ bus, odometer, reason: typeof row.note === "string" && row.note ? row.note : "No inspection or fluid PM due on this row" });
       continue;
     }
     if (retired.has(bus)) {
@@ -480,6 +527,10 @@ export function reviewReadings(
         lastInspMiles: toMiles(row.lastInspMiles),
         transDue: toMiles(row.transDue),
         lastTransMiles: toMiles(row.lastTransMiles),
+        hubDue: toMiles(row.hubDue),
+        lastHubMiles: toMiles(row.lastHubMiles),
+        diffDue: toMiles(row.diffDue),
+        lastDiffMiles: toMiles(row.lastDiffMiles),
       });
     }
   }

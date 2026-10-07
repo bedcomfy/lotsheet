@@ -21,9 +21,13 @@ export async function POST(req: Request) {
     nextInspType: r.nextInspType ?? null,
     nextInspDue: r.nextInspDue ?? null,
     transDue: r.transDue ?? null,
+    hubDue: r.hubDue ?? null,
+    diffDue: r.diffDue ?? null,
     lastInspType: isInspectionType(r.lastInspType) ? r.lastInspType : null,
     lastInspMiles: r.lastInspMiles ?? null,
     lastTransMiles: r.lastTransMiles ?? null,
+    lastHubMiles: r.lastHubMiles ?? null,
+    lastDiffMiles: r.lastDiffMiles ?? null,
   }));
   const result = await applyPmReadings(readings, data.source, data.actor);
   await recordAuditEvent(

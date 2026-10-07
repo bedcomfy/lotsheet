@@ -8,7 +8,7 @@ import type { MileageSyncStatus } from "../lib/fleetwatch";
 import type { FlagMap } from "../lib/types";
 import { emptyFlagEntry } from "../lib/serviceLaneSetup";
 
-function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean; sharedFlags: boolean; autoSync: boolean }) {
+function Fixture(_props: { unlocked: boolean; longContent: boolean; failLogout: boolean; failSync: boolean; sharedFlags: boolean; autoSync: boolean; fluidPms: boolean }) {
   return <BusMasterProvider><PmMileagePage /></BusMasterProvider>;
 }
 
@@ -19,13 +19,11 @@ const meta = {
   // autoSync mirrors the FLEETWATCH_AUTO_SYNC switch the server reports; the
   // stories default to "on" so the update flow stays covered while production
   // runs with it off (see ManualUploadOnly).
-  args: { unlocked: false, longContent: false, failLogout: false, failSync: false, sharedFlags: false, autoSync: true },
+  args: { unlocked: false, longContent: false, failLogout: false, failSync: false, sharedFlags: false, autoSync: true, fluidPms: false },
   play: async ({ canvasElement }) => {
     const screen = within(canvasElement);
     await screen.findByRole("row", { name: "Bus 6404 A-3" });
-    const standardNote = "Change front hub fluid. Change differential fluid.";
-    await expect(within(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).getByText(standardNote)).toBeVisible();
-    await expect(within(screen.getByRole("row", { name: "Bus 6404 A-3" })).queryByText(standardNote)).not.toBeInTheDocument();
+    await expect(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).toBeVisible();
     await expect(within(screen.getByRole("table", { name: "Upcoming PM work" })).getAllByRole("row", { hidden: true })).toHaveLength(6);
     await expect(screen.queryByRole("row", { name: "Bus 6435 Trans PM" })).not.toBeInTheDocument();
     await expect(screen.getByRole("rowgroup", { name: "In shop / Follow up" })).toHaveTextContent("6435");
@@ -47,12 +45,18 @@ const meta = {
         note: args.longContent ? "Follow up with the second shift about the transmission inspection and the parts requested for this bus." : "" },
       "6435": { ...emptyPmRecord("6435"), odometer: 120_100, nextInspType: "B-6", nextInspMiles: 120_000, disposition: "shop" },
     };
+    if (args.fluidPms) {
+      // Bus 6454 on the master: hub fluid due before the trans and diff marks.
+      records["6454"] = { ...emptyPmRecord("6454"), odometer: 440_000, odometerDate: "10/6/26", nextInspType: "B-12", nextInspMiles: 426_117,
+        nextTransMiles: 449_267, nextHubMiles: 443_182, nextDiffMiles: 449_267 };
+    }
     window.fetch = async (input, init) => {
       const path = new URL(input instanceof Request ? input.url : String(input), window.location.origin).pathname;
       if (path === "/api/admin/session") return Response.json({ ok: !args.failLogout }, { status: args.failLogout ? 503 : 200 });
       if (path === "/api/buses") return Response.json({ master: { buses: [
         { num: "6404", status: "active", model: args.longContent ? "Long fleet model description with operational details" : "40-foot" },
         { num: "6435", status: "active", model: "40-foot" },
+        ...(args.fluidPms ? [{ num: "6454", status: "active", model: "40-foot" }] : []),
       ] } });
       if (path === "/api/flags") return Response.json({ flags });
       if (path === "/api/pm-mileage/force-update") {
@@ -141,6 +145,27 @@ export const CrewComplete: Story = {
     await expect(form.getByText(/Next inspection B-6/)).toHaveTextContent("103,025.0");
     await expect(form.getByText(/Odometer stays at/)).toHaveTextContent("100,000.0");
     await expect(form.getByRole("button", { name: "Confirm" })).toBeEnabled();
+  },
+};
+
+// Trans, front hub and differential fluid are three PMs with their own marks.
+export const FluidPms: Story = {
+  args: { fluidPms: true, unlocked: true },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const hub = await screen.findByRole("row", { name: "Bus 6454 Hub fluid" });
+    await expect(within(hub).getByText(/443,182\.0/)).toBeVisible();
+    await expect(within(screen.getByRole("row", { name: "Bus 6454 Trans PM" })).getByText(/449,267\.0/)).toBeVisible();
+    await expect(within(screen.getByRole("row", { name: "Bus 6454 Diff fluid" })).getByText(/449,267\.0/)).toBeVisible();
+    // 6404 has only a trans mark, so no hub or diff row for it.
+    await expect(screen.queryByRole("row", { name: "Bus 6404 Hub fluid" })).not.toBeInTheDocument();
+    await userEvent.click(within(hub).getByRole("button", { name: "Actions" }));
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: /Edit next hub fluid/ })).toBeVisible());
+    await userEvent.click(screen.getByRole("menuitem", { name: /Complete Hub fluid/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Complete hub fluid · Bus 6454" });
+    await expect(within(dialog).getByText(/Hub fluid recorded at/)).toHaveTextContent("443,182.0");
+    await expect(within(dialog).getByText(/Next hub fluid/)).toHaveTextContent("518,182.0");
+    await expect(within(dialog).getByRole("button", { name: "Confirm" })).toBeEnabled();
   },
 };
 

@@ -59,4 +59,21 @@ describe("schedule-only readings from the tracker workbook (in-memory Postgres)"
     expect(lower.autoCompleted).toBe(0);
     expect((await listPmInspections("6404")).length).toBe(2);
   });
+
+  it("moves the hub and diff marks on their own and auto-completes each one separately", async () => {
+    await updatePmMileage("6454", { odometer: 440000, nextTransMiles: 449267, nextHubMiles: 443182, nextDiffMiles: 449267 }, "setup");
+    await setState("bus_master", { buses: [{ num: "6454", status: "active" }] });
+    const review = reviewReadings(
+      [{ bus: "6454", odometer: null, scheduleOnly: true, transDue: 449267, hubDue: 518182, lastHubMiles: 443182, diffDue: 449267 }],
+      [{ num: "6454", status: "active" }],
+      await getPmMileage(),
+    );
+    expect(review.accepted).toHaveLength(1);
+    const result = await applyPmReadings(review.accepted, "tracker", "test");
+    expect(result.autoCompleted).toBe(1);
+    const after = (await getPmMileage())["6454"];
+    expect(after).toMatchObject({ odometer: 440000, nextTransMiles: 449267, nextHubMiles: 518182, lastHubMiles: 443182, nextDiffMiles: 449267 });
+    const entries = await listPmInspections("6454");
+    expect(entries.map((entry) => [entry.kind, entry.miles, entry.odometer, entry.actor])).toEqual([["hub", 443182, 440000, MASTER_UPLOAD_ACTOR]]);
+  });
 });

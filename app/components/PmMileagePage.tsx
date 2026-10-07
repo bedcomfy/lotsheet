@@ -23,7 +23,11 @@ import {
   PM_DISPOSITION_LABEL,
   PM_STATUS_LABEL,
   TRANS_PM_INTERVAL,
-  TRANS_PM_NOTE,
+  FLUID_KINDS,
+  FLUID_FIELDS,
+  PM_KIND_LABEL,
+  PM_KIND_NOUN,
+  fluidNextDue,
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
@@ -81,9 +85,13 @@ type EditableField =
   | "lastInspDate"
   | "lastTransMiles"
   | "lastTransDate"
+  | "lastHubMiles"
+  | "lastHubDate"
+  | "lastDiffMiles"
+  | "lastDiffDate"
   | "disposition"
   | "note";
-const MILES_FIELDS: ReadonlySet<EditableField> = new Set(["odometer", "lastInspMiles", "lastTransMiles"]);
+const MILES_FIELDS: ReadonlySet<EditableField> = new Set(["odometer", "lastInspMiles", "lastTransMiles", "lastHubMiles", "lastDiffMiles"]);
 
 const FILTER_OPTIONS: Array<{ id: Filter; label: string }> = [
   { id: "all", label: "All PMs" },
@@ -437,7 +445,7 @@ export default function PmMileagePage() {
           </Pressable>
         ))}
         <div className={styles.tileNote}>
-          Inspections every <strong>3,000</strong> mi · trans PM every <strong>{formatMiles(TRANS_PM_INTERVAL)}</strong> mi
+          Inspections every <strong>3,000</strong> mi · trans, front hub and differential fluid PMs every <strong>{formatMiles(TRANS_PM_INTERVAL)}</strong> mi, each on its own mark
           · due soon within <strong>{formatMiles(settings.dueSoonMiles)}</strong> mi
         </div>
       </div>}
@@ -496,7 +504,7 @@ export default function PmMileagePage() {
               const serviceTime = serviceTimeParts(r.lastServiceAt);
               const bus = active.find((b) => b.num === r.bus);
               const flagged = item.kind === "inspection" ? flaggedInspection(flags, r.bus) : null;
-              const workLabel = item.kind === "trans" ? "Trans PM" : item.type ?? flagged ?? "Inspection";
+              const workLabel = item.kind === "inspection" ? item.type ?? flagged ?? "Inspection" : PM_KIND_LABEL[item.kind];
               return (
                 <div className={styles.row} role="row" key={item.id} data-status={item.status} aria-label={`Bus ${r.bus} ${workLabel}`}>
                   <div className={styles.busCell} role="cell">
@@ -537,28 +545,27 @@ export default function PmMileagePage() {
                       onSelectionChange={(key) => save(r.bus, "disposition", String(key ?? ""))} options={DISPOSITION_OPTIONS} />
                   </div>
                   <div role="cell" data-label="Note">
-                    {item.kind === "trans" && <div className={styles.standardNote}>{TRANS_PM_NOTE}</div>}
-                    {(unlocked || r.note || item.kind !== "trans") && (
-                      <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
-                        value={r.note || ""} placeholder={item.kind === "trans" ? "Additional bus note" : "note"}
-                        onCommit={(v) => save(r.bus, "note", v)} />
-                    )}
+                    <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} note`}
+                      value={r.note || ""} placeholder="note"
+                      onCommit={(v) => save(r.bus, "note", v)} />
                   </div>
                   <div role="cell" data-label="Actions" className={styles.actionCell}>
                     {!unlocked ? <Button size="sm" onPress={() => setCompleting({ bus: r.bus, kind: item.kind })} isDisabled={item.dueMiles === null}>Complete</Button> : (
                       <ActionMenu label="Actions" buttonSize="sm" placement="bottom end"
                         items={[
                           { id: "complete", label: `Complete ${workLabel}`, description: "Record this PM as done" },
-                          { id: "next", label: item.kind === "inspection" ? "Edit next inspection…" : "Edit next trans PM…", description: "Set the type and due mileage directly" },
-                          { id: "last", label: item.kind === "inspection" ? "Edit last inspection…" : "Edit last trans PM…", description: "Correct the completed PM on record" },
-                          ...(item.kind === "inspection" && transNextDue(r) === null ? [
-                            { id: "setup-trans", label: "Set next trans PM…", description: "Add its due mileage to the PM queue" },
-                          ] : []),
+                          { id: "next", label: `Edit next ${PM_KIND_NOUN[item.kind]}…`, description: "Set the type and due mileage directly" },
+                          { id: "last", label: `Edit last ${PM_KIND_NOUN[item.kind]}…`, description: "Correct the completed PM on record" },
+                          // Fluid PMs join the queue from the inspection row once they have a due mileage.
+                          ...(item.kind === "inspection" ? FLUID_KINDS.filter((kind) => fluidNextDue(r, kind) === null).map((kind) => (
+                            { id: `setup-${kind}`, label: `Set next ${PM_KIND_NOUN[kind]}…`, description: "Add its due mileage to the PM queue" }
+                          )) : []),
                         ]}
                         onAction={(key) => {
                           const target = { bus: r.bus, kind: item.kind };
+                          const setup = FLUID_KINDS.find((kind) => key === `setup-${kind}`);
                           if (key === "next") setEditingNext(target);
-                          else if (key === "setup-trans") setEditingNext({ bus: r.bus, kind: "trans" });
+                          else if (setup) setEditingNext({ bus: r.bus, kind: setup });
                           else if (key === "last") setEditing(target);
                           else setCompleting(target);
                         }} />
@@ -652,7 +659,7 @@ function EditNextPmDialog({ record, kind, busLabel, onClose, onSaved }: {
 }) {
   const isInspection = kind === "inspection";
   const next = nextInspection(record);
-  const due = isInspection ? next?.miles ?? null : transNextDue(record);
+  const due = kind === "inspection" ? next?.miles ?? null : fluidNextDue(record, kind);
   const [type, setType] = useState<string>(next?.type ?? "");
   const [miles, setMiles] = useState(due === null ? "" : String(due));
   const [busy, setBusy] = useState(false);
@@ -661,7 +668,7 @@ function EditNextPmDialog({ record, kind, busLabel, onClose, onSaved }: {
   async function submit() {
     const dueMiles = toMiles(miles);
     if (dueMiles === null || dueMiles > 2_147_483_647 || (isInspection && !isInspectionType(type))) {
-      setError(isInspection ? "Choose the next inspection and enter its due mileage." : "Enter the transmission PM due mileage.");
+      setError(isInspection ? "Choose the next inspection and enter its due mileage." : `Enter the ${PM_KIND_NOUN[kind]} due mileage.`);
       return;
     }
     setBusy(true);
@@ -672,7 +679,7 @@ function EditNextPmDialog({ record, kind, busLabel, onClose, onSaved }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bus: record.bus,
-          ...(isInspection ? { nextInspType: type, nextInspMiles: dueMiles } : { nextTransMiles: dueMiles }),
+          ...(kind === "inspection" ? { nextInspType: type, nextInspMiles: dueMiles } : { [FLUID_FIELDS[kind].next]: dueMiles }),
           actor: getDeviceActor(),
         }),
       });
@@ -688,7 +695,7 @@ function EditNextPmDialog({ record, kind, busLabel, onClose, onSaved }: {
 
   return (
     <ResponsiveDialog isOpen onOpenChange={(open) => { if (!open) onClose(); }}
-      title={`Next ${isInspection ? "inspection" : "trans PM"} · Bus ${busLabel}`}
+      title={`Next ${PM_KIND_NOUN[kind]} · Bus ${busLabel}`}
       description="Enter the work that is due and its odometer mileage. You do not need a last-PM record."
       size="sm"
       footer={<div className={styles.dialogFooter}>
@@ -724,10 +731,10 @@ function EditInspectionDialog({
   onSaved: (record: PmRecord) => void;
 }) {
   const isInspection = kind === "inspection";
-  const lastMiles = isInspection ? record.lastInspMiles : record.lastTransMiles;
+  const lastMiles = kind === "inspection" ? record.lastInspMiles : record[FLUID_FIELDS[kind].last];
   const [type, setType] = useState<string>(record.lastInspType ?? "");
   const [miles, setMiles] = useState(lastMiles === null ? "" : String(lastMiles));
-  const [date, setDate] = useState((isInspection ? record.lastInspDate : record.lastTransDate) ?? "");
+  const [date, setDate] = useState((kind === "inspection" ? record.lastInspDate : record[FLUID_FIELDS[kind].date]) ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const milesValue = toMiles(miles);
@@ -745,7 +752,7 @@ function EditInspectionDialog({
           ...(isInspection ? {
             lastInspType: isInspectionType(type) ? type : null,
             lastInspMiles: milesValue, lastInspDate: date.trim() || null,
-          } : { lastTransMiles: milesValue, lastTransDate: date.trim() || null }),
+          } : { [FLUID_FIELDS[kind].last]: milesValue, [FLUID_FIELDS[kind].date]: date.trim() || null }),
           actor: getDeviceActor(),
         }),
       });
@@ -765,7 +772,7 @@ function EditInspectionDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={`Last ${isInspection ? "inspection" : "trans PM"} · Bus ${busLabel}`}
+      title={`Last ${PM_KIND_NOUN[kind]} · Bus ${busLabel}`}
       description="Correct the completed PM on record. Saving replaces any directly entered next-due schedule for this kind of PM with the schedule calculated from this record."
       size="sm"
       footer={
@@ -827,18 +834,19 @@ function CompleteDialog({
   // Nobody types an odometer here: the reading on file stands until the next
   // Force Update, and the PM is recorded at the mark it was due. The baseline
   // only matters for a first PM with no due mark yet.
-  const baseline = record.odometer ?? (isInspection ? next?.miles ?? null : transNextDue(record));
+  const kind = target.kind;
+  const baseline = record.odometer ?? (kind === "inspection" ? next?.miles ?? null : fluidNextDue(record, kind));
   const after = useMemo(() => {
     if (baseline === null) return null;
-    if (!isInspection) {
-      const recordedAt = completionRecordedAt(record, "trans", null, baseline);
-      return { label: "Next trans PM", at: recordedAt + TRANS_PM_INTERVAL, recordedAt };
+    if (kind !== "inspection") {
+      const recordedAt = completionRecordedAt(record, kind, null, baseline);
+      return { label: `Next ${PM_KIND_NOUN[kind]}`, at: recordedAt + TRANS_PM_INTERVAL, recordedAt };
     }
     if (!isInspectionType(type)) return null;
     const recordedAt = completionRecordedAt(record, "inspection", type, baseline);
     const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: recordedAt, nextInspType: null, nextInspMiles: null });
     return preview ? { label: `Next inspection ${preview.type}`, at: preview.miles, recordedAt } : null;
-  }, [isInspection, type, baseline, record]);
+  }, [kind, type, baseline, record]);
   const milesLeftAfter = after && record.odometer !== null ? after.at - record.odometer : null;
 
   async function submit() {
@@ -883,11 +891,11 @@ function CompleteDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={isInspection ? `Complete inspection · Bus ${busLabel}` : `Complete trans PM · Bus ${busLabel}`}
+      title={`Complete ${PM_KIND_NOUN[kind]} · Bus ${busLabel}`}
       description={
         isInspection
           ? "Confirms the inspection was done today. It is recorded at the mileage it was due, so the next one lands 3,000 miles after that mark. The odometer is not changed here; Force Update keeps it current."
-          : `Confirms the transmission PM was done today. It is recorded at the mileage it was due; the next one is ${formatMiles(TRANS_PM_INTERVAL)} miles after that mark. The odometer is not changed here.`
+          : `Confirms the ${PM_KIND_NOUN[kind]} was done today. It is recorded at the mileage it was due; the next one is ${formatMiles(TRANS_PM_INTERVAL)} miles after that mark. The odometer is not changed here.`
       }
       size="sm"
       footer={
@@ -924,7 +932,7 @@ function CompleteDialog({
         )}
         {after ? (
           <div className={styles.preview}>
-            <div>{isInspection ? `${type} recorded at` : "Trans PM recorded at"} <strong>{formatTenths(after.recordedAt)}</strong></div>
+            <div>{isInspection ? `${type} recorded at` : `${PM_KIND_LABEL[kind]} recorded at`} <strong>{formatTenths(after.recordedAt)}</strong></div>
             <div>
               {after.label} at <strong>{formatTenths(after.at)}</strong>
               {milesLeftAfter !== null ? <> · <strong>{formatTenths(milesLeftAfter)}</strong> miles from now</> : null}
@@ -1138,9 +1146,13 @@ function ImportDialog({
         nextInspType: x.nextInspType ?? null,
         nextInspDue: x.nextInspDue ?? null,
         transDue: x.transDue ?? null,
+        hubDue: x.hubDue ?? null,
+        diffDue: x.diffDue ?? null,
         lastInspType: x.lastInspType ?? null,
         lastInspMiles: x.lastInspMiles ?? null,
         lastTransMiles: x.lastTransMiles ?? null,
+        lastHubMiles: x.lastHubMiles ?? null,
+        lastDiffMiles: x.lastDiffMiles ?? null,
       }));
     if (!readings.length) return;
     setBusy(true);
@@ -1192,7 +1204,7 @@ function ImportDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title="Import a fleet report"
-      description="Upload the PM status report (inspections due), the monthly miles report, the vehicle list report (odometers), or the PNW tracker workbook (next inspection and trans PM per bus; odometers stay as they are). What it says about each bus is listed for review before anything changes."
+      description="Upload the PM status report (inspections due), the monthly miles report, the vehicle list report (odometers), or the PNW tracker workbook (next inspection and the trans, hub and diff fluid PMs per bus; odometers stay as they are). What it says about each bus is listed for review before anything changes."
       size="lg"
       footer={<div className={styles.dialogFooter}>{footer}</div>}
     >
@@ -1213,7 +1225,7 @@ function ImportDialog({
             <span className={styles.fileHint}>
               Total Fleet PM Status Report, Vehicles Monthly Miles to Date Report, or Vehicle List Report. The PDF&apos;s own text is read
               directly — no AI, no cost. Picture-only scans need the AI reader. The PNW DAILY P.M. TRACKER (.xlsx) sets the next inspection
-              and trans PM per bus without touching odometers.
+              and the trans, hub and diff fluid PMs per bus without touching odometers.
             </span>
             <input
               type="file"
@@ -1247,7 +1259,7 @@ function ImportDialog({
               {result.notes ? <p>{result.notes}</p> : null}
               {result.format === "tracker" && (
                 <p>
-                  {result.accepted.filter((row) => row.nextInspType).length} next inspections and {result.accepted.filter((row) => row.transDue).length} trans PMs will be set from this file. Odometers are not changed.
+                  {result.accepted.filter((row) => row.nextInspType).length} next inspections, {result.accepted.filter((row) => row.transDue).length} trans PMs, {result.accepted.filter((row) => row.hubDue).length} hub fluid and {result.accepted.filter((row) => row.diffDue).length} diff fluid marks will be set from this file. Odometers are not changed.
                 </p>
               )}
               {result.missingFromTracker && result.missingFromTracker.length > 0 && (
@@ -1274,10 +1286,12 @@ function ImportDialog({
                           : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatTenths(row.previous)}`}
                     </span>
                     <span className={styles.reviewPm}>
-                      {row.nextInspType ? `next ${row.nextInspType} at ${formatTenths(row.nextInspDue)}` : ""}
-                      {row.nextInspType && row.transDue ? " · " : ""}
-                      {row.transDue ? `trans at ${formatTenths(row.transDue)}` : ""}
-                      {!row.nextInspType && !row.transDue ? "mileage only" : ""}
+                      {[
+                        row.nextInspType ? `next ${row.nextInspType} at ${formatTenths(row.nextInspDue)}` : "",
+                        row.transDue ? `trans at ${formatTenths(row.transDue)}` : "",
+                        row.hubDue ? `hub at ${formatTenths(row.hubDue)}` : "",
+                        row.diffDue ? `diff at ${formatTenths(row.diffDue)}` : "",
+                      ].filter(Boolean).join(" · ") || "mileage only"}
                     </span>
                     {row.note ? <span className={styles.reviewNote}>{row.note}</span> : null}
                     {row.warning && (
