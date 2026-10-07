@@ -27,7 +27,7 @@ export type InspectionType = (typeof INSPECTION_CYCLE)[number];
 export const TRANS_PM_INTERVAL = 75_000;
 // PM work instructions only; never written to the bus's shared flag notes.
 export const TRANS_PM_NOTE = "Change front hub fluid. Change differential fluid.";
-const INSPECTION_STEP = 3_000; // every inspection mark is 3,000 miles on
+export const INSPECTION_STEP = 3_000; // every inspection mark is 3,000 miles on
 export const DEFAULT_DUE_SOON_MILES = 500; // "due soon" once this close
 
 export type PmKind = "inspection" | "trans";
@@ -384,9 +384,12 @@ export function completionRecordedAt(record: PmRecord, kind: PmKind, type: Inspe
 // ---------- readings extracted from a PDF (or pasted) ----------
 export interface PmReading {
   bus: string;
-  odometer: number;
+  odometer: number | null; // null only on a schedule-only reading
   readAt: string | null;
   note?: string | null;
+  // The shop's tracker workbook carries the schedule, not fresh mileage:
+  // apply the PM marks below and leave the odometer on file alone.
+  scheduleOnly?: boolean;
   // Present when the source says which PM is next (the PM status report):
   // the last inspection and trans PM follow from it, and get written too.
   nextInspType?: InspectionType | null;
@@ -438,7 +441,9 @@ export function reviewReadings(
   const rejected: PmReadingRejection[] = [];
   for (const row of rows) {
     const bus = normalizeReportBus(row.bus, known);
-    const odometer = toOdometer(row.odometer);
+    const scheduleOnly = row.scheduleOnly === true;
+    // A schedule-only row shows the odometer already on file, unchanged.
+    const odometer = scheduleOnly ? (bus ? current[bus]?.odometer ?? null : null) : toOdometer(row.odometer);
     if (!bus || !known.has(bus)) {
       rejected.push({ bus: String(row.bus ?? "").trim() || "?", odometer, reason: "Not in the fleet list" });
       continue;
@@ -447,8 +452,12 @@ export function reviewReadings(
       rejected.push({ bus, odometer, reason: "Excluded from the bus PM program" });
       continue;
     }
-    if (odometer === null || odometer === 0) {
+    if (!scheduleOnly && (odometer === null || odometer === 0)) {
       rejected.push({ bus, odometer, reason: "No usable odometer reading" });
+      continue;
+    }
+    if (scheduleOnly && !(isInspectionType(row.nextInspType) && toMiles(row.nextInspDue) !== null) && toMiles(row.transDue) === null) {
+      rejected.push({ bus, odometer, reason: typeof row.note === "string" && row.note ? row.note : "No inspection or trans PM due on this row" });
       continue;
     }
     if (retired.has(bus)) {
@@ -458,12 +467,13 @@ export function reviewReadings(
     const readAt = row.readAt ? String(row.readAt).trim() || null : null;
     const note = row.note ? String(row.note).trim() || null : null;
     const prior = best.get(bus);
-    if (!prior || odometer > prior.odometer) {
+    if (!prior || (odometer ?? -1) > (prior.odometer ?? -1)) {
       best.set(bus, {
         bus,
         odometer,
         readAt,
         note,
+        ...(scheduleOnly ? { scheduleOnly: true } : {}),
         nextInspType: isInspectionType(row.nextInspType) ? row.nextInspType : null,
         nextInspDue: toMiles(row.nextInspDue),
         lastInspType: isInspectionType(row.lastInspType) ? row.lastInspType : null,
@@ -477,7 +487,7 @@ export function reviewReadings(
     .sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true }))
     .map((reading) => {
       const previous = current[reading.bus]?.odometer ?? null;
-      const delta = previous === null ? null : reading.odometer - previous;
+      const delta = previous === null || reading.odometer === null ? null : reading.odometer - previous;
       // Less than a mile below the reading on file is the same reading with
       // its tenth restored (425,482 saved → 425,481.5 printed), not a rollback.
       const warning =
