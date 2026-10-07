@@ -27,7 +27,7 @@ describe("Fleetwatch report", () => {
     const header = ["Vehicles Monthly Miles to Date Report (with last odometer)",
       "Report between 09/29/2026 04:55 AM and 09/30/2026 04:55 AM"];
     const row = "006404 0043 123456.7 * 5.6 * 0.0 0.0 0.0 0.0 0.0";
-    expect(parseFleetwatchReport([page([...header, row])], url).rows[0]).toMatchObject({ bus: "6404", odometer: 123457, notServiced: true });
+    expect(parseFleetwatchReport([page([...header, row])], url).rows[0]).toMatchObject({ bus: "6404", odometer: 123456.7, notServiced: true });
     expect(() => parseFleetwatchReport([page([...header, row.replace("0043", "0044")])], url)).toThrow("division");
     expect(() => parseFleetwatchReport([page([...header, row])], fleetwatchReportUrl(new Date("2026-09-30T10:55:00Z")))).toThrow("date range");
     expect(() => parseFleetwatchReport([page(header)], url)).toThrow("no usable readings");
