@@ -26,6 +26,7 @@ import {
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
+  formatOdometer,
   filterPmWorkItems,
   groupPmWorkItems,
   isInspectionType,
@@ -503,7 +504,7 @@ export default function PmMileagePage() {
                   </div>
                   <div role="cell" data-label="Odometer">
                     <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric
-                      value={r.odometer === null ? "" : String(r.odometer)} display={formatMiles(r.odometer)}
+                      value={r.odometer === null ? "" : String(r.odometer)} display={formatOdometer(r.odometer)}
                       placeholder="miles" onCommit={(v) => save(r.bus, "odometer", v)} />
                     {unlocked ? <Cell label={`Bus ${r.bus} ${workLabel} reading date`} value={r.odometerDate || ""}
                       placeholder="reading date" onCommit={(v) => save(r.bus, "odometerDate", v)} />
@@ -512,7 +513,7 @@ export default function PmMileagePage() {
                   <div role="cell" data-label="Last serviced / last odometer reading time" className={styles.serviceTime}>
                     {serviceTime ? <>
                       <time dateTime={r.lastServiceAt!}><span>{serviceTime.date}</span><span>{serviceTime.time}</span></time>
-                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span className={styles.muted}>at {formatMiles(r.lastServiceMiles)} mi</span>}
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span className={styles.muted}>at {formatOdometer(r.lastServiceMiles)} mi</span>}
                     </> : <span className={styles.muted}>Not recorded</span>}
                   </div>
                   <div role="cell" data-label="Next PM" className={styles.derived}>
@@ -914,7 +915,7 @@ function CompleteDialog({
         <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
         <TextField label="Foreman / SR" value={foremanSr} onChange={setForemanSr} maxLength={120} placeholder="Enter your name" />
         <TextField label="Odometer now" inputMode="decimal" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
-          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatMiles(record.odometer)} mi`} />
+          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatOdometer(record.odometer)} mi`} />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>
             Also clear the Inspection flag on the sheet
@@ -924,7 +925,7 @@ function CompleteDialog({
           <div className={styles.preview}>
             Recorded at <strong>{formatMiles(after.recordedAt)}</strong> · {after.label} at <strong>{formatMiles(after.at)}</strong>
             {record.odometer !== null && milesValue !== null && milesValue < record.odometer
-              ? ` · odometer stays at ${formatMiles(record.odometer)}`
+              ? ` · odometer stays at ${formatOdometer(record.odometer)}`
               : ""}
           </div>
         )}
@@ -1145,11 +1146,11 @@ function ImportDialog({
                     <Checkbox isSelected={picked.has(row.bus)} onChange={(on) => togglePicked(row.bus, on)}>
                       <strong>{row.bus}</strong>
                     </Checkbox>
-                    <span className={styles.reviewMiles}>{formatMiles(row.odometer)}</span>
+                    <span className={styles.reviewMiles}>{formatOdometer(row.odometer)}</span>
                     <span className={styles.reviewDelta}>
                       {row.previous === null
                         ? "first reading"
-                        : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatMiles(row.previous)}`}
+                        : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatOdometer(row.previous)}`}
                     </span>
                     <span className={styles.reviewPm}>
                       {row.nextInspType ? `next ${row.nextInspType} at ${formatMiles(row.nextInspDue)}` : ""}
@@ -1173,7 +1174,7 @@ function ImportDialog({
                 <ul>
                   {result.rejected.map((row, i) => (
                     <li key={`${row.bus}-${i}`}>
-                      <strong>{row.bus}</strong> {row.odometer !== null ? formatMiles(row.odometer) : ""} — {row.reason}
+                      <strong>{row.bus}</strong> {row.odometer !== null ? formatOdometer(row.odometer) : ""} — {row.reason}
                     </li>
                   ))}
                 </ul>

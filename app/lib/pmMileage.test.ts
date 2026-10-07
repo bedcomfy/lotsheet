@@ -5,6 +5,7 @@ import {
   TRANS_PM_INTERVAL,
   applyCompletion,
   formatMiles,
+  formatOdometer,
   toOdometer,
   emptyPmRecord,
   filterPmWorkItems,
@@ -263,7 +264,7 @@ describe("report readings review", () => {
     );
     expect(accepted.map((r) => [r.bus, r.odometer, r.delta, r.warning])).toEqual([
       ["6404", 121_900, 500, null],
-      ["6435", 89_500, -500, "Lower than the 90,000 on file"],
+      ["6435", 89_500, -500, "Lower than the 90,000.0 on file"],
     ]);
     expect(rejected.map((r) => [r.bus, r.reason])).toEqual([
       ["2771", "Bus is retired"],
@@ -317,6 +318,12 @@ describe("odometer tenths", () => {
     expect(formatMiles(425481.5)).toBe("425,481.5");
     expect(formatMiles(103000 - 100020.4)).toBe("2,979.6");
     expect(formatMiles(100000)).toBe("100,000");
+  });
+
+  it("always shows the tenth on a current odometer, .0 included", () => {
+    expect(formatOdometer(100020)).toBe("100,020.0");
+    expect(formatOdometer(425481.5)).toBe("425,481.5");
+    expect(formatOdometer(null)).toBe("");
   });
 
   it("carries the tenth into miles left while PM marks stay whole", () => {
