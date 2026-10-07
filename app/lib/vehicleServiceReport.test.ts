@@ -10,11 +10,11 @@ function page(lines: string[]): PositionedText[] {
 
 describe("Fleetwatch vehicle service report", () => {
   it("reads transaction odometer rather than previous odometer and preserves seconds", () => {
-    expect(parseVehicleServiceLine(serviced())).toEqual({ bus: "6404", division: "0043", odometer: 100010, servicedAt: "2026-09-30T01:20:46" });
-    expect(parseVehicleServiceLine(`${serviced()} Unit No Longer Responds To Queries`)).toMatchObject({ odometer: 100010 });
+    expect(parseVehicleServiceLine(serviced())).toEqual({ bus: "6404", division: "0043", odometer: 100010.4, servicedAt: "2026-09-30T01:20:46" });
+    expect(parseVehicleServiceLine(`${serviced()} Unit No Longer Responds To Queries`)).toMatchObject({ odometer: 100010.4 });
   });
   it("reads older last-service timestamps for vehicles not serviced in the window", () => {
-    expect(parseVehicleServiceLine("006435 0043 90000.6 05/12/2026 05:59:15 PM")).toEqual({ bus: "6435", division: "0043", odometer: 90001, servicedAt: "2026-05-12T17:59:15" });
+    expect(parseVehicleServiceLine("006435 0043 90000.6 05/12/2026 05:59:15 PM")).toEqual({ bus: "6435", division: "0043", odometer: 90000.6, servicedAt: "2026-05-12T17:59:15" });
   });
   it("handles noon and midnight without browser timezone conversion", () => {
     expect(parseVehicleServiceLine(serviced("09/30/2026 12:00:01 AM"))?.servicedAt).toBe("2026-09-30T00:00:01");

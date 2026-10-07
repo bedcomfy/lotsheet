@@ -12,7 +12,7 @@ export interface OdometerReportRow {
   bus: string; // leading zeros stripped: "002770" → "2770"
   division: string;
   dept: string | null;
-  odometer: number; // whole miles
+  odometer: number; // miles, to the tenth
   mpg: number | null;
   milesRun: number | null;
   notServiced: boolean; // the report's "*"
@@ -39,7 +39,7 @@ export function parseOdometerLine(line: string, page = 1): OdometerReportRow | n
     bus,
     division,
     dept: dept || null,
-    odometer: Math.round(Number(odometer)),
+    odometer: Number(odometer), // tenths are kept
     mpg: Number(mpg),
     milesRun: Number(milesRun),
     notServiced: Boolean(star),

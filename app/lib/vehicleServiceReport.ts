@@ -30,8 +30,8 @@ export function parseVehicleServiceLine(line: string): VehicleServiceReading | n
     ? [serviced[1], serviced[2], serviced[6], serviced[3], serviced[4], serviced[5]]
     : [idle![1], idle![2], idle![3], idle![4], idle![5], idle![6]];
   const servicedAt = serviceTimestamp(date, time, ampm);
-  const odometer = Math.round(Number(miles));
-  if (!servicedAt || !Number.isSafeInteger(odometer) || odometer <= 0) return null;
+  const odometer = Number(miles); // tenths are kept
+  if (!servicedAt || !Number.isFinite(odometer) || odometer <= 0) return null;
   return { bus: bus.replace(/^0+/, ""), division, odometer, servicedAt };
 }
 

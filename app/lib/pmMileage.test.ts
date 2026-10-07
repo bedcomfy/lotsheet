@@ -4,6 +4,8 @@ import {
   INSPECTION_CYCLE,
   TRANS_PM_INTERVAL,
   applyCompletion,
+  formatMiles,
+  toOdometer,
   emptyPmRecord,
   filterPmWorkItems,
   groupPmWorkItems,
@@ -300,5 +302,28 @@ describe("explicit next work", () => {
     expect(items.filter((r) => r.status === "due-soon")).toHaveLength(3);
     const progressed = { ...records[0], odometer: 100_050 };
     expect(pmWorkItems([progressed], S).map((r) => r.status)).toEqual(["overdue", "due-soon"]);
+  });
+});
+
+describe("odometer tenths", () => {
+  it("keeps the decimal Fleetwatch prints and strips typed commas", () => {
+    expect(toOdometer("425,481.5")).toBe(425481.5);
+    expect(toOdometer(100020.44)).toBe(100020.4);
+    expect(toOdometer("")).toBeNull();
+    expect(toOdometer("abc")).toBeNull();
+  });
+
+  it("formats odometers and miles left to the tenth, whole numbers without one", () => {
+    expect(formatMiles(425481.5)).toBe("425,481.5");
+    expect(formatMiles(103000 - 100020.4)).toBe("2,979.6");
+    expect(formatMiles(100000)).toBe("100,000");
+  });
+
+  it("carries the tenth into miles left while PM marks stay whole", () => {
+    const r = { ...emptyPmRecord("6404"), odometer: 100020.4, nextInspType: "A-3" as const, nextInspMiles: 103000 };
+    expect(inspMilesRemaining(r)).toBeCloseTo(2979.6, 6);
+    const first = applyCompletion({ ...emptyPmRecord("6457"), odometer: null }, { kind: "inspection", type: "B-6", miles: 100020.4, date: null });
+    expect(first.odometer).toBe(100020.4);
+    expect(first.lastInspMiles).toBe(100020);
   });
 });

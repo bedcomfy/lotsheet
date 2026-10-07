@@ -34,6 +34,7 @@ import {
   pmWorkItems,
   pmDisplayDisposition,
   toMiles,
+  toOdometer,
   transNextDue,
   type InspectionType,
   type PmKind,
@@ -162,7 +163,7 @@ function Cell({
       label={label}
       labelHidden
       placeholder={placeholder}
-      inputMode={numeric ? "numeric" : undefined}
+      inputMode={numeric ? "decimal" : undefined}
       value={shown}
       onChange={(next) => setDraft(next)}
       onFocus={() => setDraft(value)}
@@ -819,8 +820,8 @@ function CompleteDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const enteredMiles = Number(miles.replace(/[,\s]/g, ""));
-  const milesValue = Number.isSafeInteger(enteredMiles) && enteredMiles > 0 && enteredMiles <= 2_147_483_647 ? enteredMiles : null;
+  const enteredMiles = toOdometer(miles);
+  const milesValue = enteredMiles !== null && enteredMiles > 0 && enteredMiles <= 2_147_483_647 ? enteredMiles : null;
   const after = useMemo(() => {
     if (milesValue === null) return null;
     if (!isInspection) {
@@ -912,7 +913,7 @@ function CompleteDialog({
         <TextField label="Date" value={chicagoDateShort(new Date(completedAt))} isReadOnly />
         <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
         <TextField label="Foreman / SR" value={foremanSr} onChange={setForemanSr} maxLength={120} placeholder="Enter your name" />
-        <TextField label="Odometer now" inputMode="numeric" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
+        <TextField label="Odometer now" inputMode="decimal" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
           description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatMiles(record.odometer)} mi`} />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>

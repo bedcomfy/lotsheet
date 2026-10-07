@@ -5,7 +5,7 @@
 // can never clobber production; the suffix is resolved once here at module load,
 // exactly as the old raw-SQL store did.
 
-import { bigserial, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigserial, doublePrecision, integer, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import type { PmRecord } from "../pmMileage";
 import type { FlagEntry } from "../types";
 
@@ -65,10 +65,10 @@ export const auditEvents = pgTable(`audit_events${TABLE_SUFFIX}`, {
 // Intervals are fixed by the inspection cycle, never stored.
 export const pmMileage = pgTable(`pm_mileage${TABLE_SUFFIX}`, {
   bus: text("bus").primaryKey(),
-  odometer: integer("odometer"),
+  odometer: doublePrecision("odometer"), // tenths of a mile, as Fleetwatch prints them
   odometerDate: text("odometer_date"),
   lastServiceAt: text("last_service_at"),
-  lastServiceMiles: integer("last_service_miles"),
+  lastServiceMiles: doublePrecision("last_service_miles"),
   lastInspType: text("last_insp_type"),
   lastInspMiles: integer("last_pm_miles"),
   lastInspDate: text("last_pm_date"),
@@ -93,7 +93,7 @@ export const pmInspections = pgTable(`pm_inspections${TABLE_SUFFIX}`, {
   doneAt: text("done_at"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   foremanSr: text("foreman_sr"),
-  odometer: integer("odometer"),
+  odometer: doublePrecision("odometer"),
   requestId: text("request_id"),
   beforeState: jsonb("before_state").$type<PmRecord>(),
   afterState: jsonb("after_state").$type<PmRecord>(),
@@ -109,7 +109,7 @@ export const pmInspections = pgTable(`pm_inspections${TABLE_SUFFIX}`, {
 export const pmMileageLog = pgTable(`pm_mileage_log${TABLE_SUFFIX}`, {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   bus: text("bus").notNull(),
-  odometer: integer("odometer").notNull(),
+  odometer: doublePrecision("odometer").notNull(),
   readAt: text("read_at"),
   source: text("source"),
   batch: text("batch"),

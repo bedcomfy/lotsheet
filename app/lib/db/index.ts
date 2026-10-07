@@ -27,6 +27,12 @@ const PG_URL =
 
 const T = (base: string) => `${base}${TABLE_SUFFIX}`;
 
+// Odometers keep their tenth of a mile (Fleetwatch prints "425481.5"), so the
+// original INTEGER columns are widened once. The guard makes every later
+// start a no-op: nothing is rewritten when the column is already wide.
+const widenToDouble = (table: string, column: string) =>
+  `DO $$ BEGIN IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${T(table)}' AND column_name = '${column}' AND data_type = 'integer') THEN ALTER TABLE ${T(table)} ALTER COLUMN ${column} TYPE DOUBLE PRECISION; END IF; END $$`;
+
 // Idempotent schema setup — the same CREATE TABLE / ADD COLUMN IF NOT EXISTS the
 // app has always run on connect, so existing production tables are untouched and
 // a fresh PGlite dev database is created on first use.
@@ -69,6 +75,10 @@ const DDL: string[] = [
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS undone_at TIMESTAMPTZ`,
   `ALTER TABLE ${T("pm_inspections")} ADD COLUMN IF NOT EXISTS undone_by TEXT`,
   `CREATE UNIQUE INDEX IF NOT EXISTS ${T("pm_inspections_request_id_unique")} ON ${T("pm_inspections")} (request_id) WHERE request_id IS NOT NULL`,
+  widenToDouble("pm_mileage", "odometer"),
+  widenToDouble("pm_mileage", "last_service_miles"),
+  widenToDouble("pm_mileage_log", "odometer"),
+  widenToDouble("pm_inspections", "odometer"),
 ];
 
 let _dbPromise: Promise<DB> | undefined;

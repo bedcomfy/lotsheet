@@ -34,6 +34,17 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
     ] });
   });
 
+  it("keeps the odometer's tenth of a mile and treats the same tenth as unchanged", async () => {
+    await updatePmMileage("6404", { odometer: 100000 });
+    const first = await finishMileageSync(await start(), result([reading("6404", 100020.4)]));
+    expect(first.updated).toBe(1);
+    expect((await getPmMileage())["6404"].odometer).toBe(100020.4);
+    expect((await listPmMileageLog("6404")).map((row) => row.odometer)).toContain(100020.4);
+    await setState(MILEAGE_SYNC_KEY, {});
+    const again = await finishMileageSync(await start(), result([reading("6404", 100020.4)]));
+    expect(again).toMatchObject({ updated: 0, unchanged: 1 });
+  });
+
   it("changes only odometer fields, preserves both notes and both schedules, and avoids duplicate history", async () => {
     await updatePmMileage("6404", { odometer: 100000, odometerDate: "9/29/26", nextInspType: "A-3", nextInspMiles: 100025,
       nextTransMiles: 100250, lastInspType: "C-24", lastInspMiles: 97000, disposition: "shop", note: "PM note" });

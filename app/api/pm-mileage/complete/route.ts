@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminRequest } from "../../../lib/adminAuth";
 import { completePm, PmConflictError } from "../../../lib/store";
 import { parseBody, pmCompletePayloadSchema } from "../../../lib/schemas";
-import { isInspectionType } from "../../../lib/pmMileage";
+import { isInspectionType, toOdometer } from "../../../lib/pmMileage";
 import { rejectCrossSitePmRequest } from "../../../lib/pmRequest";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   const { data, error } = await parseBody(req, pmCompletePayloadSchema);
   if (error) return error;
   const type = data.type ? data.type.trim().toUpperCase() : null;
-  const miles = Number(String(data.miles).replace(/[,\s]/g, ""));
-  if (!String(data.miles).trim() || !Number.isSafeInteger(miles) || miles <= 0 || miles > 2_147_483_647) {
+  const miles = toOdometer(data.miles);
+  if (miles === null || miles <= 0 || miles > 2_147_483_647) {
     return NextResponse.json({ error: "Enter a valid, positive odometer reading." }, { status: 400 });
   }
   if (type && !isInspectionType(type)) return NextResponse.json({ error: "Choose a valid inspection type." }, { status: 400 });

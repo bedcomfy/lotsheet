@@ -69,7 +69,7 @@ export async function finishMileageSync(
         const previous = before.get(reading.bus);
         const miles = reading.odometer;
         if (!active.has(reading.bus)) { skipped.push({ bus: reading.bus, reason: "Not in the active fleet" }); continue; }
-        if (!Number.isSafeInteger(miles) || miles <= 0 || miles > 2_147_483_647) { skipped.push({ bus: reading.bus, reason: "No usable odometer" }); continue; }
+        if (!Number.isFinite(miles) || miles <= 0 || miles > 2_147_483_647) { skipped.push({ bus: reading.bus, reason: "No usable odometer" }); continue; }
         if (previous?.odometer === miles) { unchanged += 1; continue; }
         // Starred readings have no service date in this report. Do not label
         // them as a reading taken today; last checked is shown separately.

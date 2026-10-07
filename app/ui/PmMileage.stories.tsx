@@ -56,7 +56,7 @@ const meta = {
       ] } });
       if (path === "/api/flags") return Response.json({ flags });
       if (path === "/api/pm-mileage/force-update") {
-        records["6404"].odometer = 100020;
+        records["6404"].odometer = 100020.4;
         sync = { ...sync, lastSuccessAt: "2026-10-07T15:10:00Z", updated: 1, unchanged: 1, skipped: [] };
         return Response.json({ ok: true, status: sync, rows: 2 });
       }
@@ -180,7 +180,7 @@ export const ManualUploadOnly: Story = {
     // Force Update works without Admin Tools: the crew can refresh mileage.
     await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
     await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
-    await expect(screen.getByRole("row", { name: "Bus 6404 A-3" })).toHaveTextContent("100,020");
+    await expect(screen.getByRole("row", { name: "Bus 6404 A-3" })).toHaveTextContent("100,020.4");
     await userEvent.click(screen.getByRole("button", { name: "Import PDF" }));
     const dialog = await screen.findByRole("dialog", { name: "Import a fleet report" });
     // The dialog animates in; wait for its content to settle.
@@ -198,7 +198,7 @@ export const ForceUpdate: Story = {
     const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
     await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
     // Unlocked, the odometer is an editable box, so read its value.
-    await waitFor(() => expect(within(row).getByRole("textbox", { name: "Bus 6404 A-3 odometer" })).toHaveValue("100,020"));
+    await waitFor(() => expect(within(row).getByRole("textbox", { name: "Bus 6404 A-3 odometer" })).toHaveValue("100,020.4"));
     await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
     await expect(screen.getByText(/Last update from Fleetwatch/)).toBeVisible();
     // The button reads "Updating…" until the page has reloaded after the update.

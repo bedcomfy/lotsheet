@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.49.0 - 2026-10-07
+
+- Odometers keep their tenth of a mile. Fleetwatch prints readings such as
+  425,481.5, and the reports (Vehicle List, monthly miles, service status),
+  Import PDF, Force Update, manual edits and Complete now store and show that
+  tenth instead of rounding it. Miles left to the next inspection or trans PM
+  inherits the tenth (for example 2,979.6). PM due marks stay whole miles.
+  The odometer columns widen from INTEGER to DOUBLE PRECISION on the first
+  start after deploy; existing values are unchanged.
+
 ## 0.48.1 - 2026-10-07
 
 - Force Update no longer needs Admin Tools. Anyone signed into the site can
