@@ -201,7 +201,8 @@ export const ForceUpdate: Story = {
     await waitFor(() => expect(within(row).getByRole("textbox", { name: "Bus 6404 A-3 odometer" })).toHaveValue("100,020"));
     await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
     await expect(screen.getByText(/Last update from Fleetwatch/)).toBeVisible();
-    await expect(screen.getByRole("button", { name: "Force Update" })).toBeEnabled();
+    // The button reads "Updating…" until the page has reloaded after the update.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Force Update" })).toBeEnabled());
   },
 };
 

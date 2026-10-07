@@ -22,5 +22,5 @@ describe("Force Update source", () => {
     const result = await syncFleetwatchVehicleList();
     expect(result.ok).toBe(false);
     expect(fetched).toEqual([DATELESS_URL]);
-  });
+  }, 20_000); // the lease lives in the database, which takes a moment to start under a full run
 });
