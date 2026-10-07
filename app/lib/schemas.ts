@@ -80,7 +80,7 @@ export const pmCompletePayloadSchema = z.object({
   bus: z.string().trim().min(1),
   kind: z.enum(["inspection", "trans"]),
   type: textField, // inspection type that was done; defaults to the one that was next
-  miles: z.union([z.number(), z.string()]),
+  miles: z.union([z.number(), z.string()]).optional(), // omitted: the odometer on file stands
   completedAt: z.string().datetime({ offset: true }),
   foremanSr: z.string().trim().max(120).optional(),
   requestId: z.string().uuid(),

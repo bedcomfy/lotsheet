@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.53.0 - 2026-10-07
+
+- Completing a PM is a confirmation now. The dialog shows the date, the
+  time, which mark the PM is recorded at, where the next one lands and how
+  far away it is, and that the odometer stays as it is until the next Force
+  Update. No odometer or Foreman / SR to type; Confirm or Cancel.
+- The Completed tab's Foreman / SR column is now "Completed by": either
+  "Auto-completed by master upload" or "Completed manually" (older entries
+  keep the name that was typed).
+- Importing the master tracker records a completion when it moves a due mark
+  forward: the inspection or trans PM it replaced appears on the Completed
+  tab as auto-completed by master upload, undoable like any other. The
+  review and the saved message count the next inspections, trans PMs and
+  auto-completions.
+
 ## 0.52.0 - 2026-10-07
 
 - Import PDF also takes the shop's "PNW DAILY P.M. TRACKER" workbook

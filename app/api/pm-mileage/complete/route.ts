@@ -13,8 +13,9 @@ export async function POST(req: Request) {
   const { data, error } = await parseBody(req, pmCompletePayloadSchema);
   if (error) return error;
   const type = data.type ? data.type.trim().toUpperCase() : null;
-  const miles = toOdometer(data.miles);
-  if (miles === null || miles <= 0 || miles > 2_147_483_647) {
+  // The odometer is optional now: without one the reading on file stands.
+  const miles = data.miles === undefined ? null : toOdometer(data.miles);
+  if (data.miles !== undefined && (miles === null || miles <= 0 || miles > 2_147_483_647)) {
     return NextResponse.json({ error: "Enter a valid, positive odometer reading." }, { status: 400 });
   }
   if (type && !isInspectionType(type)) return NextResponse.json({ error: "Choose a valid inspection type." }, { status: 400 });

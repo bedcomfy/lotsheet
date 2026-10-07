@@ -1,6 +1,16 @@
 import type { PmKind, PmRecord } from "./pmMileage";
 import type { MasterBus } from "./types";
 
+// A master-tracker upload that moves a due mark forward records the PM it
+// passed as completed, credited to this actor rather than a person.
+export const MASTER_UPLOAD_ACTOR = "Master upload";
+
+// Who gets the credit line on the Completed page.
+export function completionCreditLabel(entry: Pick<PmInspectionEntry, "foremanSr" | "actor">): string {
+  if (entry.actor === MASTER_UPLOAD_ACTOR) return "Auto-completed by master upload";
+  return entry.foremanSr ? `Completed manually by ${entry.foremanSr}` : "Completed manually";
+}
+
 export interface PmInspectionEntry {
   id: string;
   bus: string;
@@ -54,8 +64,10 @@ export interface CompletedBusRow {
 }
 
 export function completedBusRows(buses: MasterBus[], entries: PmInspectionEntry[]): CompletedBusRow[] {
-  // Only the site's completion log proves work was completed here. Imported
-  // or manually edited last-PM schedules must never create completion history.
+  // Only the site's completion log proves work was completed here. Edited
+  // last-PM schedules never create completion history; the one exception is a
+  // master-tracker upload that moves a due mark forward, which logs the PM it
+  // passed under MASTER_UPLOAD_ACTOR so the Completed page shows it.
   const latest = new Map<string, PmInspectionEntry>();
   for (const entry of entries) {
     if (entry.undoneAt) continue;

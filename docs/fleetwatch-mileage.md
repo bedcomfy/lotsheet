@@ -116,3 +116,12 @@ null): the review shows the odometer already on file, and
 `applyPmReadings` writes only the PM marks, leaving the odometer, its date,
 its source and the mileage history untouched. The response also lists
 active PM-fleet buses the tracker leaves out (`missingFromTracker`).
+
+When a tracker import moves a bus's inspection or trans PM due mark forward,
+`applyPmReadings` records the PM it replaced in `pm_inspections` with
+`actor = "Master upload"` (`MASTER_UPLOAD_ACTOR`), before/after states for
+undo, and the odometer on file. The Completed tab shows such entries as
+"Auto-completed by master upload"; everything else is "Completed manually".
+Completing a PM on the site no longer asks for an odometer: `completePm`
+uses the reading on file (or the due mark when there is none) and the PM is
+recorded at its due mark.

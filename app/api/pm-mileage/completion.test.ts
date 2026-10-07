@@ -173,3 +173,24 @@ describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
     expect((await complete(req(await payload("6450")))).status).toBe(409);
   });
 });
+
+describe("Completing without an odometer", { timeout: 20_000 }, () => {
+  it("records the PM at its due mark and leaves the reading on file alone", async () => {
+    const db = await getDb();
+    await db.delete(pmInspections);
+    await db.delete(pmMileage);
+    await setState("bus_master", { buses: [{ num: "6404", status: "active" }] });
+    await seed("6404");
+    const body = await payload("6404");
+    const { miles: _miles, ...withoutMiles } = body;
+    const response = await complete(req({ ...withoutMiles, actor: "test-device" }, "http://localhost"));
+    expect(response.status).toBe(200);
+    const record = (await getPmMileage())["6404"];
+    expect(record.odometer).toBe(100000);
+    expect(record.lastInspType).toBe("A-3");
+    expect(record.lastInspMiles).toBe(100025);
+    expect(nextInspection(record)).toMatchObject({ type: "B-6", miles: 103025 });
+    const [entry] = await listPmInspections("6404");
+    expect(entry).toMatchObject({ kind: "inspection", type: "A-3", miles: 100025, odometer: 100000, foremanSr: null });
+  });
+});

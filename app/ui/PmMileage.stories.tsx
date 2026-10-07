@@ -134,15 +134,13 @@ export const CrewComplete: Story = {
     await expect(form.getByRole("textbox", { name: "Inspection done" })).toHaveValue("A-3");
     await expect(form.getByRole("textbox", { name: "Date" })).not.toHaveValue("");
     await expect(form.getByRole("textbox", { name: "Time (Chicago)" })).not.toHaveValue("");
-    await expect(form.getByRole("textbox", { name: "Odometer now" })).toHaveValue("");
-    const foreman = form.getByRole("textbox", { name: "Foreman / SR" });
-    await expect(foreman).toHaveValue("");
-    await userEvent.type(foreman, "Jordan Smith");
-    await expect(foreman).toHaveValue("Jordan Smith");
-    await userEvent.click(form.getByRole("button", { name: "Confirm completion" }));
-    await expect(form.getByRole("alert")).toHaveTextContent("Enter the odometer reading");
-    await userEvent.type(form.getByRole("textbox", { name: "Odometer now" }), "100050");
-    await expect(form.getByText(/Next inspection B-6/)).toHaveTextContent("103,025");
+    // No odometer or name to type: the dialog explains the marks and confirms.
+    await expect(form.queryByRole("textbox", { name: "Odometer now" })).not.toBeInTheDocument();
+    await expect(form.queryByRole("textbox", { name: "Foreman / SR" })).not.toBeInTheDocument();
+    await expect(form.getByText(/A-3 recorded at/)).toHaveTextContent("100,025.0");
+    await expect(form.getByText(/Next inspection B-6/)).toHaveTextContent("103,025.0");
+    await expect(form.getByText(/Odometer stays at/)).toHaveTextContent("100,000.0");
+    await expect(form.getByRole("button", { name: "Confirm" })).toBeEnabled();
   },
 };
 
