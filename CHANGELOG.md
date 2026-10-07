@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.48.0 - 2026-10-07
+
+- PM Mileage has a Force Update button next to Import PDF (Admin Tools). It
+  fetches Fleetwatch's Vehicle List Report, which has no date window and is
+  always current, and applies the odometers with the same guards and history
+  as the scheduled update: lower readings, jumps over 50,000 miles and buses
+  edited meanwhile are skipped and listed. The result shows under the header.
+- Import PDF also accepts the Vehicle List Report. Its vehicle and odometer
+  columns are located from the report's own header, and a report without
+  them is refused rather than guessed.
+
 ## 0.47.0 - 2026-10-03
 
 - Automatic Fleetwatch mileage updates are switched off. PM Mileage no longer

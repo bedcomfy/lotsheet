@@ -205,6 +205,8 @@ export default function PmMileagePage() {
   const [savingStatus, setSavingStatus] = useState<Set<string>>(new Set());
   const [sync, setSync] = useState<MileageSyncStatus>({});
   const autoSync = sync.enabled === true;
+  const [forcing, setForcing] = useState(false);
+  const [forceMessage, setForceMessage] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [showSyncSkipped, setShowSyncSkipped] = useState(false);
@@ -258,6 +260,29 @@ export default function PmMileagePage() {
     }, 30_000);
     return () => window.clearInterval(timer);
   }, [load, saveState, syncing, editing, editingNext, completing, importOpen]);
+
+  // Force Update: the server fetches Fleetwatch's always-current Vehicle List
+  // Report and applies its odometers now. Admin Tools only.
+  async function forceUpdate() {
+    setForcing(true);
+    setForceMessage("");
+    try {
+      const response = await fetch("/api/pm-mileage/force-update", { method: "POST" });
+      if (response.status === 401) { setForceMessage("Unlock Admin Tools to force an update."); return; }
+      const result = await response.json().catch(() => ({}));
+      if (result.status) setSync((prev) => ({ ...prev, ...result.status }));
+      if (result.busy) setForceMessage("An update is already running. This sheet will refresh when it finishes.");
+      else if (result.cooldown) setForceMessage("Mileage was updated less than a minute ago. Try again shortly.");
+      else if (!response.ok || !result.ok) setForceMessage(result.error || "Couldn't update mileage from Fleetwatch. Try again.");
+      else {
+        const st = result.status || {};
+        setForceMessage(`Force Update done: ${st.updated ?? 0} updated · ${st.unchanged ?? 0} unchanged${st.skipped?.length ? ` · ${st.skipped.length} skipped` : ""}.`);
+      }
+      await load();
+    } catch (error) {
+      setForceMessage(error instanceof Error ? error.message : "Couldn't update mileage from Fleetwatch. Try again.");
+    } finally { setForcing(false); }
+  }
 
   async function updateMileageNow() {
     setSyncing(true);
@@ -340,6 +365,9 @@ export default function PmMileagePage() {
             {autoSync && <Button variant="secondary" isDisabled={syncing || saveState === "saving"} onPress={updateMileageNow}>
               <RefreshCw aria-hidden="true" /> {syncing ? "Updating mileage…" : "Update mileage now"}
             </Button>}
+            <Button variant="secondary" isDisabled={forcing || saveState === "saving"} onPress={() => { void forceUpdate(); }}>
+              <RefreshCw aria-hidden="true" /> {forcing ? "Updating…" : "Force Update"}
+            </Button>
             <Button variant="primary" onPress={() => setImportOpen(true)}>
               <FileUp aria-hidden="true" /> Import PDF
             </Button>
@@ -351,8 +379,17 @@ export default function PmMileagePage() {
       {/* Automatic Fleetwatch updates are switched off unless the server says
           otherwise (FLEETWATCH_AUTO_SYNC=on). Off, mileage comes from Import PDF. */}
       {!autoSync && (
-        <div className={styles.syncNotice} role="status">
-          <span><strong>Mileage source</strong> · Upload the Fleetwatch report with <strong>Import PDF</strong> (Admin Tools). Automatic updates are turned off.</span>
+        <div className={styles.syncNotice} role="status" aria-live="polite">
+          <span><strong>Mileage source</strong> · <strong>Force Update</strong> fetches Fleetwatch&apos;s current Vehicle List Report, or upload a report with <strong>Import PDF</strong> (both need Admin Tools). Automatic updates are turned off.</span>
+          {sync.lastSuccessAt && <span>Last update from Fleetwatch: {new Date(sync.lastSuccessAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
+            {` · ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged`}</span>}
+          {sync.runningUntil && Date.parse(sync.runningUntil) > Date.now() && <span>Fetching the latest report…</span>}
+          {forceMessage && <span className={forceMessage.startsWith("Force Update done") ? undefined : styles.syncWarning}>{forceMessage}</span>}
+          {!forceMessage && sync.error && <span className={styles.syncWarning}>{sync.error}</span>}
+          {!!sync.skipped?.length && <div>
+            <Button variant="quiet" aria-expanded={showSyncSkipped} aria-controls="mileage-sync-skipped" onPress={() => setShowSyncSkipped((value) => !value)}>{sync.skipped.length} readings skipped</Button>
+            {showSyncSkipped && <ul id="mileage-sync-skipped">{sync.skipped.map((entry) => <li key={`${entry.bus}:${entry.reason}`}>Bus {entry.bus}: {entry.reason}</li>)}</ul>}
+          </div>}
         </div>
       )}
       {autoSync && <div className={styles.syncNotice} role="status" aria-live="polite">
@@ -361,6 +398,7 @@ export default function PmMileagePage() {
           {` · Mileage: ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged${sync.serviceUpdated !== undefined ? ` · Service times: ${sync.serviceUpdated} updated` : ""}`}</span>
           : <span>No successful check yet. Use Update mileage now to fetch the latest report.</span>}
         {sync.runningUntil && Date.parse(sync.runningUntil) > Date.now() && <span>Fetching the latest report…</span>}
+        {forceMessage && <span className={forceMessage.startsWith("Force Update done") ? undefined : styles.syncWarning}>{forceMessage}</span>}
         {(syncMessage || sync.error) && <span className={styles.syncWarning}>{syncMessage || sync.error}</span>}
         {sync.serviceError && <span className={styles.syncWarning}>{sync.serviceError}</span>}
         {!!sync.skipped?.length && <div>
@@ -907,7 +945,7 @@ interface ImportResult {
   reportDate: string | null;
   notes: string | null;
   method: "text" | "ai";
-  format: "pm-status" | "monthly-miles" | "ai";
+  format: "pm-status" | "monthly-miles" | "vehicle-list" | "ai";
   model: string | null;
   fileName: string;
   rawCount: number;
@@ -1048,7 +1086,7 @@ function ImportDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title="Import a fleet report"
-      description="Upload the PM status report (inspections due) or the monthly miles report (odometers). What it says about each bus is listed for review before anything changes."
+      description="Upload the PM status report (inspections due), the monthly miles report, or the vehicle list report (odometers). What it says about each bus is listed for review before anything changes."
       size="lg"
       footer={<div className={styles.dialogFooter}>{footer}</div>}
     >
@@ -1066,7 +1104,7 @@ function ImportDialog({
           <label className={styles.filePick}>
             <span>Report PDF</span>
             <span className={styles.fileHint}>
-              Total Fleet PM Status Report or Vehicles Monthly Miles to Date Report. The PDF&apos;s own text is read
+              Total Fleet PM Status Report, Vehicles Monthly Miles to Date Report, or Vehicle List Report. The PDF&apos;s own text is read
               directly — no AI, no cost. Picture-only scans need the AI reader.
             </span>
             <input
@@ -1092,7 +1130,9 @@ function ImportDialog({
                   ? "PM status report, read from the PDF text"
                   : result.format === "monthly-miles"
                     ? "monthly miles report, read from the PDF text"
-                    : `read by AI (${result.model || "model"})`}
+                    : result.format === "vehicle-list"
+                      ? "vehicle list report, read from the PDF text"
+                      : `read by AI (${result.model || "model"})`}
               </span>
               {result.notes ? <p>{result.notes}</p> : null}
             </div>

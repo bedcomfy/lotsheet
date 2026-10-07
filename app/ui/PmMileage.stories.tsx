@@ -55,6 +55,12 @@ const meta = {
         { num: "6435", status: "active", model: "40-foot" },
       ] } });
       if (path === "/api/flags") return Response.json({ flags });
+      if (path === "/api/pm-mileage/force-update") {
+        if (!args.unlocked) return Response.json({ ok: false, error: "Unlock Admin Tools first." }, { status: 401 });
+        records["6404"].odometer = 100020;
+        sync = { ...sync, lastSuccessAt: "2026-10-07T15:10:00Z", updated: 1, unchanged: 1, skipped: [] };
+        return Response.json({ ok: true, status: sync, rows: 2 });
+      }
       if (path === "/api/pm-mileage/sync") {
         if (args.failSync) return Response.json({ ok: false, error: "Fleetwatch did not return a PDF. Try again shortly." }, { status: 502 });
         records["6404"].odometer = 100010;
@@ -172,11 +178,30 @@ export const ManualUploadOnly: Story = {
     await expect(screen.queryByText(/Last successful check|No successful check/)).not.toBeInTheDocument();
     await expect(screen.getByText(/Automatic updates are turned off/)).toBeVisible();
     await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
+    // Force Update is admin-only: locked, it says so instead of fetching.
+    await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
+    await expect(await screen.findByText("Unlock Admin Tools to force an update.")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Import PDF" }));
     const dialog = await screen.findByRole("dialog", { name: "Import a fleet report" });
     // The dialog animates in; wait for its content to settle.
     await waitFor(() => expect(within(dialog).getByText(/Importing a report needs Admin Tools/)).toBeVisible());
     await expect(within(dialog).getByRole("button", { name: "Scan PDF" })).toBeDisabled();
+  },
+};
+
+// Admin presses Force Update: the Vehicle List Report's odometers land and
+// the notice reports the result.
+export const ForceUpdate: Story = {
+  args: { unlocked: true, autoSync: false },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body);
+    const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
+    await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
+    // Unlocked, the odometer is an editable box, so read its value.
+    await waitFor(() => expect(within(row).getByRole("textbox", { name: "Bus 6404 A-3 odometer" })).toHaveValue("100,020"));
+    await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
+    await expect(screen.getByText(/Last update from Fleetwatch/)).toBeVisible();
+    await expect(screen.getByRole("button", { name: "Force Update" })).toBeEnabled();
   },
 };
 

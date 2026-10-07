@@ -15,6 +15,27 @@
 > gate treats it like any other API path, and the page shows a "Mileage
 > source" line pointing at Import PDF.
 
+## Force Update (manual, always available to admins)
+
+The **Force Update** button next to Import PDF fetches the Vehicle List
+Report (Detail) for division 0043:
+
+```
+https://pace.fleetwatch.com/Main_Reports/reports/Vehicle/Vehicle%20List%20Report/Report.php?Division=0043&Department=All&VehType=All&TotalBy=Division&Detail=Detail&Revenue=All&VehicleServiceStatus=All&reportFormat=pdf
+```
+
+That report has no date window, so it is always current. `POST
+/api/pm-mileage/force-update` (Admin Tools) downloads it on the server,
+reads the vehicle and odometer columns from the report's own header
+(`app/lib/vehicleListReport.ts`), and applies the readings through the same
+lease, guards and mileage history as the scheduled update
+(`syncFleetwatchVehicleList` in `app/lib/fleetwatchSync.ts`): equal readings
+are unchanged, lower readings, increases over 50,000 miles and buses edited
+during the update are skipped and listed on the page. A report without a
+recognizable header is refused and nothing changes. Force Update does not
+depend on the `FLEETWATCH_AUTO_SYNC` switch. The same PDF can also be
+uploaded through Import PDF for review before applying.
+
 PM Mileage fetches the division 0043 Vehicles Monthly Miles to Date PDF from
 Fleetwatch. Each request ends at the current minute and starts exactly 24 hours
 earlier, with both dates formatted in America/Chicago (including daylight saving
