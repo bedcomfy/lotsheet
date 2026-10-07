@@ -83,7 +83,7 @@ describe("applying the master schedule once (in-memory Postgres)", { timeout: 20
     expect(await applyMasterScheduleOnce(rows, "test-3")).toEqual({ ran: false, result: null });
     expect((await getPmMileage())["6404"]).toBeUndefined();
 
-    await setState(MASTER_SCHEDULE_KEY, { id: "test-3", status: "running", startedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() } satisfies MasterScheduleState);
+    await setState(MASTER_SCHEDULE_KEY, { id: "test-3", status: "running", startedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString() } satisfies MasterScheduleState);
     expect((await applyMasterScheduleOnce(rows, "test-3")).ran).toBe(true);
 
     await setState(MASTER_SCHEDULE_KEY, { id: "test-4", status: "failed", startedAt: new Date().toISOString(), error: "boom" } satisfies MasterScheduleState);
