@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { AlertTriangle, CheckCircle2, FileDown, FileSpreadsheet, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, FileDown, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
 import { openSheetPdf } from "../lib/pdf";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
@@ -13,6 +13,7 @@ import { pmScheduleToken } from "../lib/pmHistory";
 import type { MileageSyncStatus } from "../lib/fleetwatch";
 import { serviceTimeParts } from "../lib/vehicleServiceReport";
 import { readPdfTextInBrowser } from "../lib/pdfTextClient";
+import { odometerLinesFor, odometerTable } from "../lib/pmTracker";
 import { getDeviceActor } from "../lib/deviceActor";
 import { inspectionOptionFromText, removeInspection } from "../lib/grid";
 import {
@@ -46,7 +47,7 @@ import {
   type PmSettings,
   type PmStatus,
 } from "../lib/pmMileage";
-import type { FlagMap } from "../lib/types";
+import type { FlagMap, MasterBus } from "../lib/types";
 import { useAdminUnlock } from "../lib/useAdminUnlock";
 import {
   ActionMenu,
@@ -201,6 +202,7 @@ export default function PmMileagePage() {
   const [saveState, markSave] = useSaveState();
   const [saveError, setSaveError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [trackerOpen, setTrackerOpen] = useState(false);
   const [completing, setCompleting] = useState<CompleteTarget | null>(null);
   const [editing, setEditing] = useState<CompleteTarget | null>(null);
   const [editingNext, setEditingNext] = useState<CompleteTarget | null>(null);
@@ -369,8 +371,8 @@ export default function PmMileagePage() {
             <Button variant="secondary" isDisabled={forcing || saveState === "saving"} onPress={() => { void forceUpdate(); }}>
               <RefreshCw aria-hidden="true" /> {forcing ? "Updating…" : "Force Update"}
             </Button>
-            <Button variant="secondary" onPress={() => { window.location.assign("/api/pm-mileage/tracker"); }}>
-              <FileSpreadsheet aria-hidden="true" /> Download tracker
+            <Button variant="secondary" onPress={() => setTrackerOpen(true)}>
+              <Copy aria-hidden="true" /> Copy odometers
             </Button>
             <Button variant="primary" onPress={() => setImportOpen(true)}>
               <FileUp aria-hidden="true" /> Import PDF
@@ -579,6 +581,7 @@ export default function PmMileagePage() {
         tryUnlock={tryUnlock}
         onApplied={load}
       />
+      <TrackerCopyDialog isOpen={trackerOpen} onOpenChange={setTrackerOpen} records={records} fleet={buses} />
       {unlocked && editing && (
         <EditInspectionDialog
           record={records[editing.bus] || emptyPmRecord(editing.bus)}
@@ -953,6 +956,97 @@ interface ImportResult {
   model: string | null;
   fileName: string;
   rawCount: number;
+}
+
+// The shop's hand-kept tracker workbook only needs new numbers in its
+// Current Odometer column. Paste its Bus # column in, copy the odometers out
+// in the same order, paste them over the column. Nothing is uploaded.
+function TrackerCopyDialog({
+  isOpen,
+  onOpenChange,
+  records,
+  fleet,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  records: Record<string, PmRecord>;
+  fleet: Pick<MasterBus, "num" | "status">[];
+}) {
+  const [input, setInput] = useState("");
+  const [copied, setCopied] = useState<"column" | "table" | "">("");
+  const [copyError, setCopyError] = useState("");
+  useEffect(() => {
+    if (!isOpen) { setInput(""); setCopied(""); setCopyError(""); }
+  }, [isOpen]);
+  const paste = useMemo(() => odometerLinesFor(input, records), [input, records]);
+  const output = paste.lines.join("\n");
+
+  async function copy(text: string, which: "column" | "table") {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setCopyError("");
+    } catch {
+      setCopyError("Couldn't reach the clipboard. Select the odometers in the box and copy them with Ctrl+C.");
+    }
+  }
+
+  return (
+    <ResponsiveDialog
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      title="Copy odometers for the tracker"
+      description="In your tracker, copy the Bus # column from the first bus down and paste it here. The odometers come back in the same order: click the first Current Odometer cell and paste. Nothing else in the workbook changes."
+      size="lg"
+      footer={
+        <div className={styles.dialogFooter}>
+          <Button variant="primary" isDisabled={paste.matched === 0} onPress={() => { void copy(output, "column"); }}>
+            <Copy aria-hidden="true" /> {copied === "column" ? "Copied" : "Copy odometers"}
+          </Button>
+        </div>
+      }
+    >
+      <div className={styles.importBody}>
+        <label className={styles.pasteBox}>
+          <span>Bus numbers from your sheet</span>
+          <textarea rows={8} value={input} spellCheck={false} placeholder={"6416\n6456\n6440"} aria-label="Bus numbers from your sheet"
+            onChange={(event) => { setInput(event.target.value); setCopied(""); }} />
+        </label>
+        <label className={styles.pasteBox}>
+          <span>Odometers, same order</span>
+          <textarea rows={8} value={output} readOnly spellCheck={false} placeholder="The odometers appear here" aria-label="Odometers, same order" />
+          <span className={styles.fileHint}>
+            {paste.buses === 0
+              ? "Paste bus numbers to get started. Tip: format the Current Odometer column as 0.0 once so whole numbers keep their .0."
+              : `${paste.matched} of ${paste.buses} bus${paste.buses === 1 ? "" : "es"} matched · one line per pasted line, so the paste lands on the right rows.`}
+          </span>
+        </label>
+        {paste.unmatched.length > 0 && (
+          <div className={styles.notice}>Not on PM Mileage, left blank: {paste.unmatched.join(", ")}</div>
+        )}
+        {paste.skipped.length > 0 && (
+          <div className={styles.notice}>Not bus numbers, left blank: {paste.skipped.join(", ")}. Copy from the first bus, not the header.</div>
+        )}
+        <details className={styles.reviewSummary}>
+          <summary>Other ways</summary>
+          <p>
+            <Button variant="secondary" onPress={() => { void copy(odometerTable(records, fleet), "table"); }}>
+              <Copy aria-hidden="true" /> {copied === "table" ? "Copied" : "Copy every bus and odometer"}
+            </Button>
+            {" "}Two columns, bus and odometer, for a lookup tab when a sheet is in another order.
+          </p>
+          <p>
+            <a href="/api/pm-mileage/tracker">Download a fresh tracker workbook</a> built from this page, with both sheets and live formulas.
+          </p>
+        </details>
+        {copyError && (
+          <div className={styles.errorBanner} role="alert">
+            <AlertTriangle aria-hidden="true" /> {copyError}
+          </div>
+        )}
+      </div>
+    </ResponsiveDialog>
+  );
 }
 
 function ImportDialog({

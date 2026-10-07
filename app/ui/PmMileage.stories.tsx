@@ -177,12 +177,21 @@ export const ManualUploadOnly: Story = {
     await expect(screen.queryByText(/Last successful check|No successful check/)).not.toBeInTheDocument();
     await expect(screen.getByText(/Automatic updates are turned off/)).toBeVisible();
     await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
-    // The master spreadsheet downloads for anyone, no Admin Tools needed.
-    await expect(screen.getByRole("button", { name: "Download tracker" })).toBeEnabled();
+    // The hand-kept tracker gets its odometers by copy and paste, no Admin Tools needed.
+    await expect(screen.getByRole("button", { name: "Copy odometers" })).toBeEnabled();
     // Force Update works without Admin Tools: the crew can refresh mileage.
     await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
     await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
     await expect(screen.getByRole("row", { name: "Bus 6404 A-3" })).toHaveTextContent("100,020.4");
+    // Paste the sheet's Bus # column, get the odometers back in that order.
+    await userEvent.click(screen.getByRole("button", { name: "Copy odometers" }));
+    const tracker = await screen.findByRole("dialog", { name: "Copy odometers for the tracker" });
+    await userEvent.type(within(tracker).getByRole("textbox", { name: "Bus numbers from your sheet" }), "6435{enter}6404{enter}9999");
+    await expect(within(tracker).getByRole("textbox", { name: "Odometers, same order" })).toHaveValue("120100.0\n100020.4\n");
+    await expect(within(tracker).getByText(/Not on PM Mileage, left blank: 9999/)).toBeVisible();
+    await expect(within(tracker).getByText(/2 of 3 buses matched/)).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Copy odometers for the tracker" })).not.toBeInTheDocument());
     await userEvent.click(screen.getByRole("button", { name: "Import PDF" }));
     const dialog = await screen.findByRole("dialog", { name: "Import a fleet report" });
     // The dialog animates in; wait for its content to settle.

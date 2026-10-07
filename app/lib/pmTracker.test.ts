@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import { emptyPmRecord } from "./pmMileage";
-import { THD_SCHEDULES, THD_SHEET, TRACKER_SHEET, buildTrackerWorkbook, trackerInspectionLabel, trackerRows } from "./pmTracker";
+import { THD_SCHEDULES, THD_SHEET, TRACKER_SHEET, buildTrackerWorkbook, odometerLinesFor, odometerTable, trackerInspectionLabel, trackerRows } from "./pmTracker";
 
 const fleet = [
   { num: "6404", status: "active" }, { num: "6435", status: "active" },
@@ -49,5 +49,24 @@ describe("tracker workbook", () => {
     expect(thd.getCell("C2").value).toBe(100250);
     expect(thd.getCell("D2").value).toBe(100020.4);
     expect(thd.getCell("E4").value).toMatchObject({ formula: "C4-D4" });
+  });
+});
+
+describe("copying odometers into the hand-kept tracker", () => {
+  it("returns one odometer line per pasted bus line, in the sheet's order, blanks for unknown buses", () => {
+    const paste = odometerLinesFor("6435\n6404\n9999\n\n6435\n", records);
+    expect(paste.lines).toEqual(["120100.0", "100020.4", "", "", "120100.0"]);
+    expect(paste).toMatchObject({ buses: 4, matched: 3, unmatched: ["9999"], skipped: [] });
+  });
+
+  it("takes the first column of a multi-column paste, strips leading zeros, and reports a pasted header", () => {
+    const paste = odometerLinesFor("Bus #\t Current Odometer\r\n006404\t100000\r\n", records);
+    expect(paste.lines).toEqual(["", "100020.4"]);
+    expect(paste.skipped).toEqual(["Bus #"]);
+    expect(paste.matched).toBe(1);
+  });
+
+  it("lists every active bus with a reading as bus-tab-odometer lines", () => {
+    expect(odometerTable(records, fleet)).toBe("6404\t100020.4\n6435\t120100.0");
   });
 });
