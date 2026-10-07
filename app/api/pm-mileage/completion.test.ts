@@ -145,7 +145,8 @@ describe("Crew completion and undo transactions", { timeout: 20_000 }, () => {
   it("validates crew input and rejects cross-site, unscheduled, excluded, and overridden work", async () => {
     await seed("6450");
     const body = await payload("6450");
-    for (const miles of ["", " ", 0, -1, 1.5, "abc", 2147483648]) expect((await complete(req({ ...body, miles }))).status).toBe(400);
+    // A tenth of a mile is a valid reading now; only empty, zero, negative, non-numeric and absurd values are refused.
+    for (const miles of ["", " ", 0, -1, "abc", 2147483648]) expect((await complete(req({ ...body, miles }))).status).toBe(400);
     expect((await complete(req(body, "https://other.example"))).status).toBe(403);
     expect((await undo(req({ id: "1" }, "https://other.example"))).status).toBe(403);
     expect((await complete(req({ ...body, disposition: "shop" }))).status).toBe(400);

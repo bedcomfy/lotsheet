@@ -138,7 +138,7 @@ export function parseVehicleListReport(pages: PositionedText[][]): VehicleListPa
       const milesToken = valueUnder(line, header, header.odometer, MILES_TOKEN);
       if (!busToken || !milesToken) continue;
       const bus = busToken.text.replace(/^0+/, "");
-      const odometer = Math.round(Number(milesToken.text.replace(/,/g, "")));
+      const odometer = Number(milesToken.text.replace(/,/g, "")); // tenths are kept
       if (!bus || !Number.isFinite(odometer) || odometer <= 0) continue;
       let lastServiceAt: string | null = null;
       let readAt: string | null = null;

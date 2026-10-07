@@ -37,7 +37,9 @@ are unchanged, lower readings, increases over 50,000 miles and buses edited
 during the update are skipped and listed on the page. A report without a
 recognizable header is refused and nothing changes. Force Update does not
 depend on the `FLEETWATCH_AUTO_SYNC` switch. The same PDF can also be
-uploaded through Import PDF for review before applying.
+uploaded through Import PDF for review before applying. Odometers keep the
+tenth of a mile the report prints (425,481.5); miles left inherits it, while
+PM due marks stay whole miles.
 
 PM Mileage fetches the division 0043 Vehicles Monthly Miles to Date PDF from
 Fleetwatch. Each request ends at the current minute and starts exactly 24 hours

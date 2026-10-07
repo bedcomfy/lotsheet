@@ -42,8 +42,8 @@ describe("Vehicle List Report", () => {
     expect(parsed.columns).toEqual({ vehicle: "Vehicle", odometer: "Odometer", service: "Last Service" });
     expect(parsed.reportDate).toBe("10/6/26");
     expect(parsed.rows).toHaveLength(2); // the zero-odometer container is left out
-    expect(parsed.rows[0]).toMatchObject({ bus: "2770", odometer: 425482, lastServiceAt: "2026-10-06T18:42:09", readAt: "10/6/26" });
-    expect(parsed.rows[1]).toMatchObject({ bus: "25546", odometer: 2790, lastServiceAt: "2026-09-15T03:06:23", readAt: "9/15/26" });
+    expect(parsed.rows[0]).toMatchObject({ bus: "2770", odometer: 425481.5, lastServiceAt: "2026-10-06T18:42:09", readAt: "10/6/26" });
+    expect(parsed.rows[1]).toMatchObject({ bus: "25546", odometer: 2789.8, lastServiceAt: "2026-09-15T03:06:23", readAt: "9/15/26" });
   });
 
   it("reads nothing when the header cannot be found", () => {

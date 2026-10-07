@@ -25,6 +25,7 @@ import {
   normalizeDisposition,
   normalizePmSettings,
   toMiles as toPmMiles,
+  toOdometer,
   transNextDue,
   type PmCompletion,
   type PmKind,
@@ -562,7 +563,7 @@ async function patchPmRecord(db: StoreWriter, bus: string, patch: PmPatch, actor
   if (patch.odometer !== undefined) fields.push("source");
   const next: PmRecord = {
     ...before,
-    ...(patch.odometer !== undefined ? { odometer: toPmMiles(patch.odometer) } : {}),
+    ...(patch.odometer !== undefined ? { odometer: toOdometer(patch.odometer) } : {}),
     ...(patch.odometerDate !== undefined ? { odometerDate: textOrNull(patch.odometerDate) } : {}),
     ...(patch.lastInspType !== undefined ? { lastInspType: isInspectionType(patch.lastInspType) ? patch.lastInspType : null } : {}),
     ...(patch.lastInspMiles !== undefined ? { lastInspMiles: toPmMiles(patch.lastInspMiles) } : {}),
@@ -791,7 +792,7 @@ export async function applyPmReadings(
   const batch = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const applied: string[] = [];
   for (const reading of readings) {
-    const odometer = toPmMiles(reading.odometer);
+    const odometer = toOdometer(reading.odometer);
     if (!reading.bus || odometer === null) continue;
     const readAt = reading.readAt || null;
     // A PM status report also says which inspection / trans PM was last

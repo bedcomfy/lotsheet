@@ -148,12 +148,22 @@ export function normalizePmSettings(value: unknown): PmSettings {
   return { dueSoonMiles: dueSoon !== null && dueSoon >= 0 ? dueSoon : DEFAULT_DUE_SOON_MILES };
 }
 
-// Whole miles or null. Accepts "123,456" and "123456.7" from typed fields.
+// Whole miles or null, for PM due marks. Accepts "123,456" and "123456.7"
+// from typed fields.
 export function toMiles(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
   const n = typeof v === "number" ? v : Number(String(v).replace(/[,\s]/g, ""));
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.round(n);
+}
+
+// An odometer reading keeps its tenth of a mile (Fleetwatch prints
+// "425481.5"); nothing is rounded away. Accepts the same typed text.
+export function toOdometer(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[,\s]/g, ""));
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 10) / 10;
 }
 
 // ---------- inspections ----------
@@ -317,9 +327,11 @@ export function pmWorkItems(records: PmRecord[], settings: PmSettings): PmWorkIt
   );
 }
 
+// Odometers and miles left keep their tenth ("425,481.5"); whole numbers
+// print without a decimal.
 export function formatMiles(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
-  return n.toLocaleString("en-US");
+  return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
 // ---------- completing a PM ----------
@@ -338,26 +350,28 @@ export interface PmCompletion {
 // odometer forward. A first inspection (no due mark yet) or an explicitly
 // different type is recorded at the entered mileage.
 export function applyCompletion(record: PmRecord, completion: PmCompletion): PmRecord {
-  const miles = toMiles(completion.miles);
+  const miles = toOdometer(completion.miles);
   if (miles === null) throw new Error("A mileage is required to complete a PM.");
   const odometer = record.odometer === null || miles > record.odometer ? miles : record.odometer;
   const odometerDate = record.odometer === null || miles > record.odometer ? completion.date : record.odometerDate;
+  // PM marks are whole miles; only the odometer itself keeps its tenth.
+  const mark = Math.round(miles);
   if (completion.kind === "trans") {
     const due = transNextDue(record);
-    return { ...record, odometer, odometerDate, lastTransMiles: due ?? miles, lastTransDate: completion.date, nextTransMiles: null };
+    return { ...record, odometer, odometerDate, lastTransMiles: due ?? mark, lastTransDate: completion.date, nextTransMiles: null };
   }
   const next = nextInspection(record);
   const type = completion.type ?? next?.type ?? null;
   if (!type) throw new Error("Pick which inspection was done — this bus has no inspection on record yet.");
-  const recordedAt = next && next.type === type ? next.miles : miles;
+  const recordedAt = next && next.type === type ? next.miles : mark;
   return { ...record, odometer, odometerDate, lastInspType: type, lastInspMiles: recordedAt, lastInspDate: completion.date, nextInspType: null, nextInspMiles: null };
 }
 
 // The mileage a completion will be recorded at (for previews).
 export function completionRecordedAt(record: PmRecord, kind: PmKind, type: InspectionType | null, miles: number): number {
-  if (kind === "trans") return transNextDue(record) ?? miles;
+  if (kind === "trans") return transNextDue(record) ?? Math.round(miles);
   const next = nextInspection(record);
-  return next && (type === null || next.type === type) ? next.miles : miles;
+  return next && (type === null || next.type === type) ? next.miles : Math.round(miles);
 }
 
 // ---------- readings extracted from a PDF (or pasted) ----------
@@ -417,7 +431,7 @@ export function reviewReadings(
   const rejected: PmReadingRejection[] = [];
   for (const row of rows) {
     const bus = normalizeReportBus(row.bus, known);
-    const odometer = toMiles(row.odometer);
+    const odometer = toOdometer(row.odometer);
     if (!bus || !known.has(bus)) {
       rejected.push({ bus: String(row.bus ?? "").trim() || "?", odometer, reason: "Not in the fleet list" });
       continue;

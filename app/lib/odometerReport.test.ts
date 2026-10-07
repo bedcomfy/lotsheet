@@ -4,18 +4,18 @@ import { odometerReportDate, parseOdometerLine, parseOdometerReport } from "./od
 describe("parseOdometerLine", () => {
   it("reads a serviced vehicle with and without a department", () => {
     expect(parseOdometerLine("002770 0043 424925.4 5.6 241.9 48.4 0.0 0.0 0.0")).toMatchObject({
-      bus: "2770", division: "0043", dept: null, odometer: 424925, mpg: 5.6, milesRun: 241.9, notServiced: false,
+      bus: "2770", division: "0043", dept: null, odometer: 424925.4, mpg: 5.6, milesRun: 241.9, notServiced: false,
     });
     expect(parseOdometerLine("006378 0043 MAIN 555509.7 3.8 240.0 56.8 0.0 0.0 0.0")).toMatchObject({
-      bus: "6378", dept: "MAIN", odometer: 555510,
+      bus: "6378", dept: "MAIN", odometer: 555509.7,
     });
   });
 
   it("flags the not-serviced star and keeps the odometer", () => {
     expect(parseOdometerLine("002771 0043 448601.9 * 5.4 * 0.0 0.0 0.0 0.0 0.0")).toMatchObject({
-      bus: "2771", odometer: 448602, notServiced: true, milesRun: 0,
+      bus: "2771", odometer: 448601.9, notServiced: true, milesRun: 0,
     });
-    expect(parseOdometerLine("025546 0043 MAIN 2789.8 * 3.3 * 0.0 0.0 0.0 0.0 0.0")).toMatchObject({ bus: "25546", odometer: 2790 });
+    expect(parseOdometerLine("025546 0043 MAIN 2789.8 * 3.3 * 0.0 0.0 0.0 0.0 0.0")).toMatchObject({ bus: "25546", odometer: 2789.8 });
   });
 
   it("ignores headers, totals and footers", () => {
@@ -37,7 +37,7 @@ describe("parseOdometerReport", () => {
     ];
     const parsed = parseOdometerReport([items]);
     expect(parsed.reportDate).toBe("9/30/26");
-    expect(parsed.rows.map((r) => [r.bus, r.odometer])).toEqual([["2770", 424925], ["6378", 555510]]);
+    expect(parsed.rows.map((r) => [r.bus, r.odometer])).toEqual([["2770", 424925.4], ["6378", 555509.7]]);
   });
 
   it("falls back to the footer date", () => {
