@@ -17,6 +17,7 @@ export interface OdometerReportRow {
   milesRun: number | null;
   notServiced: boolean; // the report's "*"
   page: number;
+  readAt?: string | null; // a per-row reading date (m/d/yy) when the report has one
 }
 
 export interface OdometerReportParse {

@@ -43,7 +43,7 @@ export async function claimMileageSync(now = new Date()) {
 
 export async function finishMileageSync(
   token: string,
-  result: { report: OdometerReportParse; services?: VehicleServiceReading[]; serviceError?: string | null; windowStart: string; windowEnd: string } | { error: string },
+  result: { report: OdometerReportParse; services?: VehicleServiceReading[]; serviceError?: string | null; windowStart: string; windowEnd: string; actor?: string } | { error: string },
 ): Promise<MileageSyncStatus> {
   const db = await getDb();
   return db.transaction(async (tx) => {
@@ -73,7 +73,7 @@ export async function finishMileageSync(
         if (previous?.odometer === miles) { unchanged += 1; continue; }
         // Starred readings have no service date in this report. Do not label
         // them as a reading taken today; last checked is shown separately.
-        const readAt = reading.notServiced ? null : result.report.reportDate;
+        const readAt = reading.notServiced ? null : (reading.readAt ?? result.report.reportDate);
         const set = { odometer: miles, odometerDate: readAt, source: FLEETWATCH_SOURCE, updatedAt: sql`now()` };
         const saved = await tx.insert(pmMileage).values({ bus: reading.bus, ...set }).onConflictDoUpdate({
           target: pmMileage.bus,
@@ -88,7 +88,7 @@ export async function finishMileageSync(
           skipped.push({ bus: reading.bus, reason });
           continue;
         }
-        await tx.insert(pmMileageLog).values({ bus: reading.bus, odometer: miles, readAt, source: FLEETWATCH_SOURCE, batch: token, actor: "Fleetwatch sync" });
+        await tx.insert(pmMileageLog).values({ bus: reading.bus, odometer: miles, readAt, source: FLEETWATCH_SOURCE, batch: token, actor: result.actor || "Fleetwatch sync" });
         updated += 1;
       }
       let serviceUpdated = 0;

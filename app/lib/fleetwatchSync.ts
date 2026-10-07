@@ -1,7 +1,9 @@
-import { fleetwatchReportUrl, fleetwatchServiceReportUrl, parseFleetwatchReport } from "./fleetwatch";
+import { fleetwatchReportUrl, fleetwatchServiceReportUrl, fleetwatchVehicleListUrl, parseFleetwatchReport, parseFleetwatchVehicleList } from "./fleetwatch";
 import { parseVehicleServiceReport } from "./vehicleServiceReport";
 import { readPdfText } from "./pmReportPdf";
 import { claimMileageSync, finishMileageSync } from "./pmMileageSyncStore";
+import { chicagoDateShort } from "./chicagoTime";
+import type { OdometerReportParse } from "./odometerReport";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
@@ -51,6 +53,36 @@ export async function syncFleetwatchMileage() {
     return { ok: true, status };
   } catch (error) {
     console.error("Fleetwatch mileage sync failed", error);
+    const message = error instanceof Error && error.message.startsWith("Fleetwatch")
+      ? error.message : "Couldn't update mileage from Fleetwatch. Saved mileage is unchanged; try again shortly.";
+    const status = await finishMileageSync(claim.token, { error: message });
+    return { ok: false, error: message, status };
+  }
+}
+
+// "Force Update" on PM Mileage: read the always-current Vehicle List Report
+// and apply its odometers with the same lease, guards and history as the
+// scheduled update. Independent of the FLEETWATCH_AUTO_SYNC switch; the
+// route that calls it requires Admin Tools.
+export async function syncFleetwatchVehicleList() {
+  const now = new Date();
+  const claim = await claimMileageSync(now);
+  if (!claim.claimed) return { ok: claim.running || !claim.status.error, error: claim.running ? undefined : claim.status.error, busy: claim.running, cooldown: !claim.running, status: claim.status };
+  try {
+    const parsed = await downloadFleetwatchReport(fleetwatchVehicleListUrl()).then(readPdfText).then(parseFleetwatchVehicleList);
+    const report: OdometerReportParse = {
+      rows: parsed.rows.map((row) => ({ bus: row.bus, division: "0043", dept: null, odometer: row.odometer, mpg: null, milesRun: null, notServiced: false, page: row.page, readAt: row.readAt })),
+      reportDate: parsed.reportDate ?? chicagoDateShort(now),
+      lineCount: parsed.lineCount,
+    };
+    // The report's "Last Service" column is when each odometer was read, so
+    // it also refreshes "Last serviced / last odometer reading time".
+    const services = parsed.rows.flatMap((row) => row.lastServiceAt ? [{ bus: row.bus, division: "0043", odometer: row.odometer, servicedAt: row.lastServiceAt }] : []);
+    const stamp = now.toISOString();
+    const status = await finishMileageSync(claim.token, { report, services, serviceError: null, windowStart: stamp, windowEnd: stamp, actor: "Force Update" });
+    return { ok: true, status, rows: report.rows.length };
+  } catch (error) {
+    console.error("Fleetwatch Force Update failed", error);
     const message = error instanceof Error && error.message.startsWith("Fleetwatch")
       ? error.message : "Couldn't update mileage from Fleetwatch. Saved mileage is unchanged; try again shortly.";
     const status = await finishMileageSync(claim.token, { error: message });

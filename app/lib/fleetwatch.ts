@@ -1,6 +1,7 @@
 import { chicagoParts } from "./chicagoTime";
 import { parseOdometerReport } from "./odometerReport";
 import { linesFromText, type PositionedText } from "./pmReport";
+import { parseVehicleListReport } from "./vehicleListReport";
 
 export { fleetwatchAutoSyncEnabled } from "./fleetwatchFlag";
 
@@ -51,6 +52,33 @@ export function fleetwatchServiceReportUrl(now = new Date()): URL {
     EndDate: mileage.searchParams.get("EndDate")!, reportFormat: "pdf",
   }).toString();
   return url;
+}
+
+// The Vehicle List Report has no date window, so it is always current. It is
+// the source for the PM Mileage "Force Update" button.
+export function fleetwatchVehicleListUrl(): URL {
+  const url = new URL("https://pace.fleetwatch.com/Main_Reports/reports/Vehicle/Vehicle%20List%20Report/Report.php");
+  url.search = new URLSearchParams({
+    Division: "0043", Department: "All", VehType: "All", TotalBy: "Division", Detail: "Detail",
+    Revenue: "All", VehicleServiceStatus: "All", reportFormat: "pdf",
+  }).toString();
+  return url;
+}
+
+// A login page or another report must never become a mileage update.
+export function parseFleetwatchVehicleList(pages: PositionedText[][]) {
+  const text = pages.flatMap(linesFromText).join("\n");
+  if (!/vehicle\s+list\s+report/i.test(text)) {
+    throw new Error("Fleetwatch returned an unexpected report. No mileage was changed.");
+  }
+  const report = parseVehicleListReport(pages);
+  if (!report.columns) {
+    throw new Error("Fleetwatch's Vehicle List Report has no recognizable vehicle and odometer columns. No mileage was changed.");
+  }
+  if (!report.rows.length) {
+    throw new Error("Fleetwatch returned no usable readings for division 0043. No mileage was changed.");
+  }
+  return report;
 }
 
 // A login page, another report, or a cached report for the wrong period must

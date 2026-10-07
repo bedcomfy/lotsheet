@@ -13,7 +13,7 @@ const DATE_TIME = "(\\d{2}/\\d{2}/\\d{4})\\s+(\\d{2}:\\d{2}:\\d{2})\\s+(AM|PM)";
 const SERVICED = new RegExp(`^(\\d{4,7})\\s+(\\d{3,5})\\s+${DATE_TIME}\\s+\\d{3,5}\\s+\\d+\\.\\d\\s+(\\d+\\.\\d)(?:\\s|$)`);
 const NOT_SERVICED = new RegExp(`^(\\d{4,7})\\s+(\\d{3,5})\\s+(\\d+\\.\\d)\\s+${DATE_TIME}(?:\\s|$)`);
 
-function serviceTimestamp(date: string, time: string, ampm: string): string | null {
+export function serviceTimestamp(date: string, time: string, ampm: string): string | null {
   const [month, day, year] = date.split("/").map(Number);
   const [hour, minute, second] = time.split(":").map(Number);
   const check = new Date(Date.UTC(year, month - 1, day));

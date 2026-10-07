@@ -3,6 +3,7 @@ import { isAdminRequest, unauthorized } from "../../../lib/adminAuth";
 import { DEFAULT_MASTER, normalizeBusMaster } from "../../../lib/buses";
 import { extractOdometerReadings, PM_EXTRACT_MODEL, pmExtractConfigured } from "../../../lib/pmExtract";
 import { parseOdometerReport } from "../../../lib/odometerReport";
+import { parseVehicleListReport } from "../../../lib/vehicleListReport";
 import { reviewReadings } from "../../../lib/pmMileage";
 import { parsePmReport, type PositionedText } from "../../../lib/pmReport";
 import { readPdfText } from "../../../lib/pmReportPdf";
@@ -131,6 +132,26 @@ export async function POST(req: Request) {
         model: null,
         fileName,
         rawCount: od.rows.length,
+      });
+    }
+    // 3. The Vehicle List Report (Detail): current odometer per vehicle, no
+    // date window. The same report "Force Update" fetches on its own.
+    const vl = parseVehicleListReport(pages);
+    if (vl.rows.length) {
+      const review = reviewReadings(
+        vl.rows.map((r) => ({ bus: r.bus, odometer: r.odometer, readAt: r.readAt ?? vl.reportDate, note: null })),
+        fleet,
+        current,
+      );
+      return NextResponse.json({
+        ...review,
+        reportDate: vl.reportDate,
+        notes: null,
+        method: "text",
+        format: "vehicle-list",
+        model: null,
+        fileName,
+        rawCount: vl.rows.length,
       });
     }
   } catch (err) {
