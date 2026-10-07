@@ -264,7 +264,7 @@ describe("report readings review", () => {
     );
     expect(accepted.map((r) => [r.bus, r.odometer, r.delta, r.warning])).toEqual([
       ["6404", 121_900, 500, null],
-      ["6435", 89_500, -500, "Lower than the 90,000 on file"],
+      ["6435", 89_500, -500, "Lower than the 90,000.0 on file"],
     ]);
     expect(rejected.map((r) => [r.bus, r.reason])).toEqual([
       ["2771", "Bus is retired"],
