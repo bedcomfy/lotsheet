@@ -56,7 +56,6 @@ const meta = {
       ] } });
       if (path === "/api/flags") return Response.json({ flags });
       if (path === "/api/pm-mileage/force-update") {
-        if (!args.unlocked) return Response.json({ ok: false, error: "Unlock Admin Tools first." }, { status: 401 });
         records["6404"].odometer = 100020;
         sync = { ...sync, lastSuccessAt: "2026-10-07T15:10:00Z", updated: 1, unchanged: 1, skipped: [] };
         return Response.json({ ok: true, status: sync, rows: 2 });
@@ -178,9 +177,10 @@ export const ManualUploadOnly: Story = {
     await expect(screen.queryByText(/Last successful check|No successful check/)).not.toBeInTheDocument();
     await expect(screen.getByText(/Automatic updates are turned off/)).toBeVisible();
     await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
-    // Force Update is admin-only: locked, it says so instead of fetching.
+    // Force Update works without Admin Tools: the crew can refresh mileage.
     await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
-    await expect(await screen.findByText("Unlock Admin Tools to force an update.")).toBeVisible();
+    await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
+    await expect(screen.getByRole("row", { name: "Bus 6404 A-3" })).toHaveTextContent("100,020");
     await userEvent.click(screen.getByRole("button", { name: "Import PDF" }));
     const dialog = await screen.findByRole("dialog", { name: "Import a fleet report" });
     // The dialog animates in; wait for its content to settle.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.48.1 - 2026-10-07
+
+- Force Update no longer needs Admin Tools. Anyone signed into the site can
+  refresh mileage from Fleetwatch's Vehicle List Report; the request still
+  has to come from the site itself. A test pins Force Update to that one
+  dateless report URL.
+
 ## 0.48.0 - 2026-10-07
 
 - PM Mileage has a Force Update button next to Import PDF (Admin Tools). It
