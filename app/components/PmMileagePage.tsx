@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { AlertTriangle, CheckCircle2, FileDown, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileDown, FileSpreadsheet, FileUp, Gauge, Lock, RefreshCw } from "lucide-react";
 import { openSheetPdf } from "../lib/pdf";
 import { PmMileagePaper } from "../sheets/pm-mileage/PmMileagePaper";
 import { chicagoDateShort } from "../lib/chicagoTime";
@@ -26,7 +26,7 @@ import {
   completionRecordedAt,
   emptyPmRecord,
   formatMiles,
-  formatOdometer,
+  formatTenths,
   filterPmWorkItems,
   groupPmWorkItems,
   isInspectionType,
@@ -110,7 +110,7 @@ const TONE: Record<PmStatus, "danger" | "warning" | "success" | "neutral"> = {
 // "1,200" / "300 over" / "No record" for a miles-left figure.
 function milesLeftLabel(left: number | null): string {
   if (left === null) return PM_STATUS_LABEL.unknown;
-  return left < 0 ? `${formatMiles(-left)} over` : formatMiles(left);
+  return left < 0 ? `${formatTenths(-left)} over` : formatTenths(left);
 }
 
 // The inspection the sheet's flag says is due, if it's one of the cycle types.
@@ -369,6 +369,9 @@ export default function PmMileagePage() {
             <Button variant="secondary" isDisabled={forcing || saveState === "saving"} onPress={() => { void forceUpdate(); }}>
               <RefreshCw aria-hidden="true" /> {forcing ? "Updating…" : "Force Update"}
             </Button>
+            <Button variant="secondary" onPress={() => { window.location.assign("/api/pm-mileage/tracker"); }}>
+              <FileSpreadsheet aria-hidden="true" /> Download tracker
+            </Button>
             <Button variant="primary" onPress={() => setImportOpen(true)}>
               <FileUp aria-hidden="true" /> Import PDF
             </Button>
@@ -504,7 +507,7 @@ export default function PmMileagePage() {
                   </div>
                   <div role="cell" data-label="Odometer">
                     <Cell readOnly={!unlocked} label={`Bus ${r.bus} ${workLabel} odometer`} numeric
-                      value={r.odometer === null ? "" : String(r.odometer)} display={formatOdometer(r.odometer)}
+                      value={r.odometer === null ? "" : String(r.odometer)} display={formatTenths(r.odometer)}
                       placeholder="miles" onCommit={(v) => save(r.bus, "odometer", v)} />
                     {unlocked ? <Cell label={`Bus ${r.bus} ${workLabel} reading date`} value={r.odometerDate || ""}
                       placeholder="reading date" onCommit={(v) => save(r.bus, "odometerDate", v)} />
@@ -513,14 +516,14 @@ export default function PmMileagePage() {
                   <div role="cell" data-label="Last serviced / last odometer reading time" className={styles.serviceTime}>
                     {serviceTime ? <>
                       <time dateTime={r.lastServiceAt!}><span>{serviceTime.date}</span><span>{serviceTime.time}</span></time>
-                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span className={styles.muted}>at {formatOdometer(r.lastServiceMiles)} mi</span>}
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span className={styles.muted}>at {formatTenths(r.lastServiceMiles)} mi</span>}
                     </> : <span className={styles.muted}>Not recorded</span>}
                   </div>
                   <div role="cell" data-label="Next PM" className={styles.derived}>
                     <div className={styles.nextCell}>
                       <strong>{workLabel}</strong>
                       <span className={item.dueMiles === null ? styles.muted : undefined}>
-                        {item.dueMiles === null ? "No due mileage" : `at ${formatMiles(item.dueMiles)}`}
+                        {item.dueMiles === null ? "No due mileage" : `at ${formatTenths(item.dueMiles)}`}
                       </span>
                     </div>
                   </div>
@@ -776,7 +779,7 @@ function EditInspectionDialog({
         <TextField label="Date" value={date} onChange={setDate} placeholder="mm/dd/yy" />
         {preview && (
           <div className={styles.preview}>
-            Next inspection {preview.type} at <strong>{formatMiles(preview.miles)}</strong>
+            Next inspection {preview.type} at <strong>{formatTenths(preview.miles)}</strong>
           </div>
         )}
         {error && (
@@ -915,7 +918,7 @@ function CompleteDialog({
         <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
         <TextField label="Foreman / SR" value={foremanSr} onChange={setForemanSr} maxLength={120} placeholder="Enter your name" />
         <TextField label="Odometer now" inputMode="decimal" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
-          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatOdometer(record.odometer)} mi`} />
+          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatTenths(record.odometer)} mi`} />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>
             Also clear the Inspection flag on the sheet
@@ -923,9 +926,9 @@ function CompleteDialog({
         )}
         {after && (
           <div className={styles.preview}>
-            Recorded at <strong>{formatMiles(after.recordedAt)}</strong> · {after.label} at <strong>{formatMiles(after.at)}</strong>
+            Recorded at <strong>{formatTenths(after.recordedAt)}</strong> · {after.label} at <strong>{formatTenths(after.at)}</strong>
             {record.odometer !== null && milesValue !== null && milesValue < record.odometer
-              ? ` · odometer stays at ${formatOdometer(record.odometer)}`
+              ? ` · odometer stays at ${formatTenths(record.odometer)}`
               : ""}
           </div>
         )}
@@ -1146,16 +1149,16 @@ function ImportDialog({
                     <Checkbox isSelected={picked.has(row.bus)} onChange={(on) => togglePicked(row.bus, on)}>
                       <strong>{row.bus}</strong>
                     </Checkbox>
-                    <span className={styles.reviewMiles}>{formatOdometer(row.odometer)}</span>
+                    <span className={styles.reviewMiles}>{formatTenths(row.odometer)}</span>
                     <span className={styles.reviewDelta}>
                       {row.previous === null
                         ? "first reading"
-                        : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatOdometer(row.previous)}`}
+                        : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatTenths(row.previous)}`}
                     </span>
                     <span className={styles.reviewPm}>
-                      {row.nextInspType ? `next ${row.nextInspType} at ${formatMiles(row.nextInspDue)}` : ""}
+                      {row.nextInspType ? `next ${row.nextInspType} at ${formatTenths(row.nextInspDue)}` : ""}
                       {row.nextInspType && row.transDue ? " · " : ""}
-                      {row.transDue ? `trans at ${formatMiles(row.transDue)}` : ""}
+                      {row.transDue ? `trans at ${formatTenths(row.transDue)}` : ""}
                       {!row.nextInspType && !row.transDue ? "mileage only" : ""}
                     </span>
                     {row.note ? <span className={styles.reviewNote}>{row.note}</span> : null}
@@ -1174,7 +1177,7 @@ function ImportDialog({
                 <ul>
                   {result.rejected.map((row, i) => (
                     <li key={`${row.bus}-${i}`}>
-                      <strong>{row.bus}</strong> {row.odometer !== null ? formatOdometer(row.odometer) : ""} — {row.reason}
+                      <strong>{row.bus}</strong> {row.odometer !== null ? formatTenths(row.odometer) : ""} — {row.reason}
                     </li>
                   ))}
                 </ul>

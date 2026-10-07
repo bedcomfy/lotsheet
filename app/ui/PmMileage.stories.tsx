@@ -96,8 +96,8 @@ export const CrewStatus: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     const row = await screen.findByRole("row", { name: "Bus 6404 A-3" });
     const trans = await screen.findByRole("row", { name: "Bus 6404 Trans PM" });
-    await expect(within(row).getByText("25")).toBeInTheDocument();
-    await expect(within(trans).getByText("250")).toBeInTheDocument();
+    await expect(within(row).getByText("25.0")).toBeInTheDocument();
+    await expect(within(trans).getByText("250.0")).toBeInTheDocument();
     await userEvent.click(within(row).getByRole("button", { name: /status/ }));
     await userEvent.click(await screen.findByRole("option", { name: "Hold" }));
     await expect(within(row).getByRole("button", { name: /status/ })).toHaveTextContent("Hold");
@@ -177,6 +177,8 @@ export const ManualUploadOnly: Story = {
     await expect(screen.queryByText(/Last successful check|No successful check/)).not.toBeInTheDocument();
     await expect(screen.getByText(/Automatic updates are turned off/)).toBeVisible();
     await expect(screen.getByRole("button", { name: "Unlock to edit" })).toBeEnabled();
+    // The master spreadsheet downloads for anyone, no Admin Tools needed.
+    await expect(screen.getByRole("button", { name: "Download tracker" })).toBeEnabled();
     // Force Update works without Admin Tools: the crew can refresh mileage.
     await userEvent.click(screen.getByRole("button", { name: "Force Update" }));
     await expect(await screen.findByText(/Force Update done: 1 updated · 1 unchanged/)).toBeVisible();
@@ -233,8 +235,8 @@ export const EditNextWithoutHistory: Story = {
     await userEvent.type(field, "100100");
     await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     const updated = await screen.findByRole("row", { name: "Bus 6404 A-9" });
-    await expect(within(updated).getByText("at 100,100")).toBeInTheDocument();
-    await expect(within(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).getByText("at 100,250")).toBeInTheDocument();
+    await expect(within(updated).getByText("at 100,100.0")).toBeInTheDocument();
+    await expect(within(screen.getByRole("row", { name: "Bus 6404 Trans PM" })).getByText("at 100,250.0")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Log out of admin" }));
     await expect(await screen.findByRole("button", { name: "Unlock to edit" })).toBeInTheDocument();
     await expect(within(updated).queryByRole("textbox")).not.toBeInTheDocument();

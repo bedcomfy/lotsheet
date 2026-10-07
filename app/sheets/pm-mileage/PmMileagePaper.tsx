@@ -1,5 +1,5 @@
 import {
-  PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, formatOdometer, groupPmWorkItems,
+  PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, formatTenths, groupPmWorkItems,
   type PmFilter, type PmSettings, type PmWorkItem,
 } from "../../lib/pmMileage";
 import { serviceTimeParts } from "../../lib/vehicleServiceReport";
@@ -49,16 +49,16 @@ export function PmMileagePaper({ items: allItems, labels, date, filter, query }:
               return (
                 <tr key={item.id} data-pm-id={item.id}>
                   <td><strong>{r.bus}</strong>{labels[r.bus] && labels[r.bus] !== r.bus && <span>{labels[r.bus]}</span>}</td>
-                  <td>{r.odometer === null ? "Not recorded" : formatOdometer(r.odometer)}
+                  <td>{r.odometer === null ? "Not recorded" : formatTenths(r.odometer)}
                     {!serviceTime && r.odometerDate && <span>Reading: {r.odometerDate}</span>}
                   </td>
                   <td>
                     {serviceTime ? <><span>{serviceTime.date}</span><span>{serviceTime.time}</span>
-                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatOdometer(r.lastServiceMiles)} mi</span>}</>
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatTenths(r.lastServiceMiles)} mi</span>}</>
                       : "Not recorded"}
                   </td>
-                  <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatMiles(item.dueMiles)}`}</span></td>
-                  <td><strong>{item.milesLeft === null ? "Unknown" : `${item.milesLeft > 0 ? "+" : ""}${formatMiles(item.milesLeft)}`}</strong></td>
+                  <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatTenths(item.dueMiles)}`}</span></td>
+                  <td><strong>{item.milesLeft === null ? "Unknown" : `${item.milesLeft > 0 ? "+" : ""}${formatTenths(item.milesLeft)}`}</strong></td>
                   <td>
                     {item.kind === "trans" && <div className={styles.note}>{TRANS_PM_NOTE}</div>}
                     {r.note ? <div className={styles.note}>{r.note}</div> : item.kind !== "trans" ? "-" : null}

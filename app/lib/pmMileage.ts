@@ -334,9 +334,9 @@ export function formatMiles(n: number | null | undefined): string {
   return n.toLocaleString("en-US", { maximumFractionDigits: 1 });
 }
 
-// A current odometer reading always shows its tenth, "100,020.0" included,
-// so a whole-number reading is not mistaken for one missing its decimal.
-export function formatOdometer(n: number | null | undefined): string {
+// Odometers, due marks and miles left always show their tenth, "100,020.0"
+// included, so a whole number is not mistaken for one missing its decimal.
+export function formatTenths(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
   return n.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
@@ -482,7 +482,7 @@ export function reviewReadings(
       // its tenth restored (425,482 saved → 425,481.5 printed), not a rollback.
       const warning =
         delta !== null && delta <= -1
-          ? `Lower than the ${formatOdometer(previous)} on file`
+          ? `Lower than the ${formatTenths(previous)} on file`
           : delta !== null && delta > 50000
             ? `Jumps ${formatMiles(delta)} miles from the reading on file`
             : null;

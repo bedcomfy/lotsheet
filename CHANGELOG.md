@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.50.0 - 2026-10-07
+
+- PM Mileage has a Download tracker button. It saves the shop's master
+  "PNW DAILY P.M. TRACKER" workbook built from the current data: every bus
+  with its odometer, inspection due mark and type, a live miles-until
+  formula and the Workorder column, soonest first, plus the "T,H,D P.M."
+  sheet for the transmission, hub and differential schedule. Mileages show
+  tenths. Anyone on the site can download it.
+- Due marks ("at 103,000.0") and miles left ("2,979.6", "25.0") show one
+  decimal everywhere, the same as the odometer.
+
 ## 0.49.2 - 2026-10-07
 
 - A current odometer always shows its tenth, including .0 (100,020.0), on
