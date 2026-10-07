@@ -32,7 +32,7 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
       { num: "6404", status: "active" }, { num: "6435", status: "active" }, { num: "6500", status: "retired" },
       { num: "9690", status: "active" },
     ] });
-  });
+  }, 20_000); // the first test also boots the in-memory database, slow under a full run
 
   it("keeps the odometer's tenth of a mile and treats the same tenth as unchanged", async () => {
     await updatePmMileage("6404", { odometer: 100000 });
