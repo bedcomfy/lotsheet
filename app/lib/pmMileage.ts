@@ -471,8 +471,10 @@ export function reviewReadings(
     .map((reading) => {
       const previous = current[reading.bus]?.odometer ?? null;
       const delta = previous === null ? null : reading.odometer - previous;
+      // Less than a mile below the reading on file is the same reading with
+      // its tenth restored (425,482 saved → 425,481.5 printed), not a rollback.
       const warning =
-        delta !== null && delta < 0
+        delta !== null && delta <= -1
           ? `Lower than the ${formatMiles(previous)} on file`
           : delta !== null && delta > 50000
             ? `Jumps ${formatMiles(delta)} miles from the reading on file`
