@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.51.0 - 2026-10-07
+
+- PM Mileage: **Copy odometers** replaces the Download tracker button. Paste
+  the tracker's Bus # column into the dialog and copy the odometers back in
+  the same order, one line per bus, then paste them over the Current
+  Odometer column. Buses with no reading come back blank so the rows line
+  up. The dialog also copies every bus and odometer as two columns for a
+  lookup tab, and still links to the fresh workbook download.
+
 ## 0.50.0 - 2026-10-07
 
 - PM Mileage has a Download tracker button. It saves the shop's master

@@ -631,3 +631,20 @@
 }
 
 .viewTabs { margin-bottom: var(--ui-space-4); }
+
+.pasteBox {
+  display: grid;
+  gap: var(--ui-space-2);
+}
+
+.pasteBox textarea {
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: var(--ui-space-3);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-md);
+  background: transparent;
+  color: inherit;
+  resize: vertical;
+  min-height: 8rem;
+}

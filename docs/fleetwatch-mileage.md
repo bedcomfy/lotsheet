@@ -87,15 +87,17 @@ On failure, saved mileage remains unchanged and the last successful check stays
 visible. An open PM page refreshes stored results every 30 seconds while idle.
 Tests use an in-memory database, never production or the local `.data` directory.
 
-## Tracker workbook (Download tracker)
+## The shop's tracker workbook (Copy odometers)
 
-`GET /api/pm-mileage/tracker` builds the shop's master spreadsheet, "PNW
-DAILY P.M. TRACKER", from the PM Mileage data (`app/lib/pmTracker.ts`) and
-the **Download tracker** button on PM Mileage saves it. Sheet 1 lists every
-active PM-fleet bus with its current odometer, inspection due mark and type
-("PM-A 15000 MILES"), a live `=C-B` miles-until formula and an empty
-Workorder column, soonest first; sheet 2 ("T,H,D P.M.") lists the
-transmission, front hub and differential schedule per bus the same way.
-Mileages use the `0.0` number format so tenths always show. The file is
-meant to replace the hand-kept workbook outright, so the odometers never
-need to be copied in by hand.
+The shop keeps its own "PNW DAILY P.M. TRACKER" workbook and only its
+Current Odometer column needs new numbers, so nothing is uploaded or
+rewritten. **Copy odometers** on PM Mileage opens a dialog: paste the
+sheet's Bus # column (first bus down), and the odometers come back in the
+same order, one line per pasted line (blank where a bus has no reading or a
+line is not a bus number), to paste over the Current Odometer column
+(`odometerLinesFor` in `app/lib/pmTracker.ts`). Numbers are plain with one
+decimal (424880.7). The dialog also offers every bus and odometer as two
+tab-separated columns for a lookup tab, and a link to
+`GET /api/pm-mileage/tracker`, which builds a fresh workbook with both
+sheets ("PNW DAILY P,M. TRACKER" and "T,H,D P.M."), live miles-until
+formulas and the `0.0` number format (`buildTrackerWorkbook`).

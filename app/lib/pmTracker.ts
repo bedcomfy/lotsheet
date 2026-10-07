@@ -119,3 +119,58 @@ export async function buildTrackerWorkbook(rows: { inspections: TrackerInspectio
   for (const sheet of [tracker, thd]) sheet.getRow(1).font = HEADER_FONT;
   return Buffer.from(await workbook.xlsx.writeBuffer());
 }
+
+// ---------- copy and paste into the hand-kept workbook ----------
+// The shop keeps its own tracker and only the Current Odometer column needs
+// new numbers, so nothing is uploaded or rewritten: the user pastes the
+// Bus # column in and copies the odometer column out.
+
+// Plain numbers for Excel: one decimal, no thousands separator.
+export function trackerNumber(n: number): string {
+  return n.toFixed(1);
+}
+
+export interface OdometerPaste {
+  lines: string[]; // one per pasted line, blank where there is no reading
+  buses: number; // bus numbers recognised in the paste
+  matched: number; // of those, with a reading on file
+  unmatched: string[]; // bus numbers with no reading (left blank)
+  skipped: string[]; // lines that were not bus numbers, e.g. a pasted header
+}
+
+// The pasted Bus # column, in the sheet's own order → the odometer column in
+// the same order. Every pasted line yields exactly one line, so the result
+// pastes straight over Current Odometer without shifting any row.
+export function odometerLinesFor(input: string, records: Record<string, PmRecord>): OdometerPaste {
+  const rows = input.replace(/\r/g, "").split("\n");
+  if (rows.length > 1 && rows[rows.length - 1] === "") rows.pop(); // Excel ends a copy with a newline
+  const lines: string[] = [];
+  const unmatched: string[] = [];
+  const skipped: string[] = [];
+  let buses = 0;
+  let matched = 0;
+  for (const raw of rows) {
+    const first = raw.split(/[\t,;]/)[0].trim();
+    if (!first) { lines.push(""); continue; }
+    const bus = first.replace(/^0+(?=\d)/, "");
+    if (!/^\d+$/.test(bus)) { skipped.push(first); lines.push(""); continue; }
+    buses += 1;
+    const odometer = records[bus]?.odometer ?? null;
+    if (odometer === null) { unmatched.push(bus); lines.push(""); continue; }
+    matched += 1;
+    lines.push(trackerNumber(odometer));
+  }
+  return { lines, buses, matched, unmatched: [...new Set(unmatched)], skipped };
+}
+
+// Every active bus with a reading as "bus<TAB>odometer" lines, bus order,
+// for a lookup tab when a sheet's rows are in some other order.
+export function odometerTable(records: Record<string, PmRecord>, fleet: Pick<MasterBus, "num" | "status">[]): string {
+  return fleet
+    .filter(isPmFleetBus)
+    .map((bus) => [bus.num, records[bus.num]?.odometer ?? null] as const)
+    .filter((entry): entry is readonly [string, number] => entry[1] !== null)
+    .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+    .map(([bus, odometer]) => `${bus}\t${trackerNumber(odometer)}`)
+    .join("\n");
+}
