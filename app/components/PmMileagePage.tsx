@@ -36,7 +36,6 @@ import {
   pmWorkItems,
   pmDisplayDisposition,
   toMiles,
-  toOdometer,
   transNextDue,
   type InspectionType,
   type PmKind,
@@ -818,36 +817,37 @@ function CompleteDialog({
   const isInspection = target.kind === "inspection";
   const next = nextInspection(record);
   const [type, setType] = useState<string>(next?.type ?? flaggedType ?? "");
-  const [miles, setMiles] = useState("");
   const [completedAt] = useState(() => new Date().toISOString());
-  const [foremanSr, setForemanSr] = useState("");
   const [requestId] = useState(() => crypto.randomUUID());
   const [expectedSchedule] = useState(() => pmScheduleToken(record, target.kind));
   const [clearFlag, setClearFlag] = useState(hasFlag);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const enteredMiles = toOdometer(miles);
-  const milesValue = enteredMiles !== null && enteredMiles > 0 && enteredMiles <= 2_147_483_647 ? enteredMiles : null;
+  // Nobody types an odometer here: the reading on file stands until the next
+  // Force Update, and the PM is recorded at the mark it was due. The baseline
+  // only matters for a first PM with no due mark yet.
+  const baseline = record.odometer ?? (isInspection ? next?.miles ?? null : transNextDue(record));
   const after = useMemo(() => {
-    if (milesValue === null) return null;
+    if (baseline === null) return null;
     if (!isInspection) {
-      const recordedAt = completionRecordedAt(record, "trans", null, milesValue);
+      const recordedAt = completionRecordedAt(record, "trans", null, baseline);
       return { label: "Next trans PM", at: recordedAt + TRANS_PM_INTERVAL, recordedAt };
     }
     if (!isInspectionType(type)) return null;
-    const recordedAt = completionRecordedAt(record, "inspection", type, milesValue);
+    const recordedAt = completionRecordedAt(record, "inspection", type, baseline);
     const preview = nextInspection({ ...record, lastInspType: type, lastInspMiles: recordedAt, nextInspType: null, nextInspMiles: null });
     return preview ? { label: `Next inspection ${preview.type}`, at: preview.miles, recordedAt } : null;
-  }, [isInspection, type, milesValue, record]);
+  }, [isInspection, type, baseline, record]);
+  const milesLeftAfter = after && record.odometer !== null ? after.at - record.odometer : null;
 
   async function submit() {
-    if (milesValue === null) {
-      setError("Enter the odometer reading when the PM was done.");
-      return;
-    }
     if (isInspection && !isInspectionType(type)) {
       setError("Pick which inspection was done.");
+      return;
+    }
+    if (!after) {
+      setError("This bus has no odometer or due mileage on file yet. Ask an admin to enter one first.");
       return;
     }
     setBusy(true);
@@ -860,9 +860,7 @@ function CompleteDialog({
           bus: target.bus,
           kind: target.kind,
           type: isInspection ? type : null,
-          miles: milesValue,
           completedAt,
-          foremanSr: foremanSr.trim(),
           requestId,
           expectedSchedule,
           clearFlag: isInspection && hasFlag && clearFlag,
@@ -888,15 +886,15 @@ function CompleteDialog({
       title={isInspection ? `Complete inspection · Bus ${busLabel}` : `Complete trans PM · Bus ${busLabel}`}
       description={
         isInspection
-          ? "Records the inspection at the mileage it was due, so the next one lands 3,000 miles after that mark. The odometer you enter only updates the bus's current mileage."
-          : `Records the transmission PM at the mileage it was due; the next one is ${formatMiles(TRANS_PM_INTERVAL)} miles after that mark.`
+          ? "Confirms the inspection was done today. It is recorded at the mileage it was due, so the next one lands 3,000 miles after that mark. The odometer is not changed here; Force Update keeps it current."
+          : `Confirms the transmission PM was done today. It is recorded at the mileage it was due; the next one is ${formatMiles(TRANS_PM_INTERVAL)} miles after that mark. The odometer is not changed here.`
       }
       size="sm"
       footer={
         <div className={styles.dialogFooter}>
           <Button variant="quiet" onPress={onClose} isDisabled={busy}>Cancel</Button>
-          <Button variant="primary" onPress={submit} isDisabled={busy}>
-            {busy ? "Saving…" : "Confirm completion"}
+          <Button variant="primary" onPress={submit} isDisabled={busy || !after}>
+            {busy ? "Saving…" : "Confirm"}
           </Button>
         </div>
       }
@@ -919,21 +917,24 @@ function CompleteDialog({
         ) : <TextField label="Inspection done" value={type} isReadOnly />)}
         <TextField label="Date" value={chicagoDateShort(new Date(completedAt))} isReadOnly />
         <TextField label="Time (Chicago)" value={new Date(completedAt).toLocaleTimeString("en-US", { timeZone: "America/Chicago" })} isReadOnly />
-        <TextField label="Foreman / SR" value={foremanSr} onChange={setForemanSr} maxLength={120} placeholder="Enter your name" />
-        <TextField label="Odometer now" inputMode="decimal" value={miles} onChange={setMiles} placeholder="Enter the reading to confirm" isRequired
-          description={record.odometer === null ? "Enter the actual odometer reading." : `Current reading on file: ${formatTenths(record.odometer)} mi`} />
         {hasFlag && isInspection && (
           <Checkbox isSelected={clearFlag} onChange={setClearFlag}>
             Also clear the Inspection flag on the sheet
           </Checkbox>
         )}
-        {after && (
+        {after ? (
           <div className={styles.preview}>
-            Recorded at <strong>{formatTenths(after.recordedAt)}</strong> · {after.label} at <strong>{formatTenths(after.at)}</strong>
-            {record.odometer !== null && milesValue !== null && milesValue < record.odometer
-              ? ` · odometer stays at ${formatTenths(record.odometer)}`
-              : ""}
+            <div>{isInspection ? `${type} recorded at` : "Trans PM recorded at"} <strong>{formatTenths(after.recordedAt)}</strong></div>
+            <div>
+              {after.label} at <strong>{formatTenths(after.at)}</strong>
+              {milesLeftAfter !== null ? <> · <strong>{formatTenths(milesLeftAfter)}</strong> miles from now</> : null}
+            </div>
+            <div>
+              Odometer stays at <strong>{record.odometer === null ? "no reading on file" : formatTenths(record.odometer)}</strong> until the next Force Update.
+            </div>
           </div>
+        ) : (
+          <div className={styles.notice}>This bus has no odometer or due mileage on file yet, so the next mark cannot be worked out. Ask an admin to enter one first.</div>
         )}
         {error && (
           <div className={styles.errorBanner} role="alert">
@@ -1069,6 +1070,7 @@ function ImportDialog({
   const [result, setResult] = useState<ImportResult | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [done, setDone] = useState<number | null>(null);
+  const [autoCompleted, setAutoCompleted] = useState(0);
 
   useEffect(() => {
     if (!isOpen) {
@@ -1078,6 +1080,7 @@ function ImportDialog({
       setResult(null);
       setPicked(new Set());
       setDone(null);
+      setAutoCompleted(0);
     }
   }, [isOpen]);
 
@@ -1151,6 +1154,7 @@ function ImportDialog({
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
       setDone(d.applied?.length ?? readings.length);
+      setAutoCompleted(typeof d.autoCompleted === "number" ? d.autoCompleted : 0);
       onApplied();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save the readings.");
@@ -1201,6 +1205,7 @@ function ImportDialog({
         {done !== null ? (
           <div className={styles.doneNote}>
             <Gauge aria-hidden="true" /> Saved {done} bus{done === 1 ? "" : "es"} from {result?.fileName}.
+            {autoCompleted > 0 ? ` ${autoCompleted} PM${autoCompleted === 1 ? "" : "s"} auto-completed by master upload; see Completed.` : ""}
           </div>
         ) : !result ? (
           <label className={styles.filePick}>
@@ -1240,6 +1245,11 @@ function ImportDialog({
                         : `read by AI (${result.model || "model"})`}
               </span>
               {result.notes ? <p>{result.notes}</p> : null}
+              {result.format === "tracker" && (
+                <p>
+                  {result.accepted.filter((row) => row.nextInspType).length} next inspections and {result.accepted.filter((row) => row.transDue).length} trans PMs will be set from this file. Odometers are not changed.
+                </p>
+              )}
               {result.missingFromTracker && result.missingFromTracker.length > 0 && (
                 <p>
                   <strong>Active on this page but not in the tracker:</strong> {result.missingFromTracker.join(", ")}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { completedBusRows, completionDateText, pmScheduleToken, type PmInspectionEntry } from "./pmHistory";
+import { MASTER_UPLOAD_ACTOR, completedBusRows, completionCreditLabel, completionDateText, pmScheduleToken, type PmInspectionEntry } from "./pmHistory";
 import { emptyPmRecord } from "./pmMileage";
 
 describe("Completed PM list", () => {
@@ -32,5 +32,14 @@ describe("Completed PM list", () => {
     const record = emptyPmRecord("1");
     expect(pmScheduleToken({ ...record, odometer: 1000, disposition: "shop", nextTransMiles: 75000 }, "inspection")).toBe(pmScheduleToken(record, "inspection"));
     expect(pmScheduleToken({ ...record, nextInspType: "A-3", nextInspMiles: 3000 }, "inspection")).not.toBe(pmScheduleToken(record, "inspection"));
+  });
+});
+
+describe("Completed-by label", () => {
+  it("says whether a PM was auto-completed by the master upload or completed manually", () => {
+    expect(completionCreditLabel({ foremanSr: null, actor: MASTER_UPLOAD_ACTOR })).toBe("Auto-completed by master upload");
+    expect(completionCreditLabel({ foremanSr: null, actor: "device-1" })).toBe("Completed manually");
+    expect(completionCreditLabel({ foremanSr: null })).toBe("Completed manually");
+    expect(completionCreditLabel({ foremanSr: "Jordan Smith", actor: "device-1" })).toBe("Completed manually by Jordan Smith");
   });
 });

@@ -27,6 +27,7 @@ import {
   toMiles as toPmMiles,
   toOdometer,
   transNextDue,
+  type InspectionType,
   type PmCompletion,
   type PmKind,
   type PmReading,
@@ -36,7 +37,7 @@ import {
 import { inspectionOptionFromText, removeInspection, setInspectionOption } from "./grid";
 import { DEFAULT_MASTER, normalizeBusMaster } from "./buses";
 import { chicagoDateShort } from "./chicagoTime";
-import { pmScheduleToken, type PmInspectionEntry } from "./pmHistory";
+import { MASTER_UPLOAD_ACTOR, pmScheduleToken, type PmInspectionEntry } from "./pmHistory";
 export type { PmInspectionEntry } from "./pmHistory";
 
 // Shared by the database and a transaction, so status and flag writes commit together.
@@ -604,7 +605,7 @@ interface CompletionOptions {
 // the same request never advances the inspection cycle a second time.
 export async function completePm(
   bus: string,
-  completion: PmCompletion,
+  completion: Omit<PmCompletion, "miles"> & { miles?: number | null },
   actor: string,
   options: CompletionOptions,
 ): Promise<{ before: PmRecord; after: PmRecord; flagCleared: boolean }> {
@@ -630,7 +631,11 @@ export async function completePm(
     const completedAt = new Date(options.completedAt);
     const foremanSr = options.foremanSr?.trim() || null;
     const date = chicagoDateShort(completedAt);
-    const next = applyCompletion(before, { ...completion, date });
+    // No odometer is typed at completion any more: the reading on file stands
+    // (Force Update keeps it current) and the PM is recorded at its due mark.
+    const miles = completion.miles ?? before.odometer ?? due;
+    if (miles === null) throw new PmConflictError("This bus has no odometer or due mileage on file. Ask an admin to enter one first.");
+    const next = applyCompletion(before, { ...completion, miles, date });
     const fields = pmScheduleFields(completion.kind);
     if (next.odometer !== before.odometer) fields.push("odometer", "odometerDate");
     const after = await writePmRecord(tx, next, fields);
@@ -645,12 +650,12 @@ export async function completePm(
     const [entry] = await tx.insert(pmInspections).values({
       bus, kind: completion.kind, type: completion.kind === "inspection" ? after.lastInspType : null,
       miles: (completion.kind === "inspection" ? after.lastInspMiles : after.lastTransMiles)!,
-      odometer: completion.miles, doneAt: date, completedAt, requestId: options.requestId,
+      odometer: miles, doneAt: date, completedAt, requestId: options.requestId,
       foremanSr,
       beforeState: before, afterState: after, clearedFlag, actor: actor || null,
     }).returning({ id: pmInspections.id });
     await logOdometerIfChanged(tx, before, after, actor);
-    await tx.insert(auditEvents).values({ kind: "pm_complete", actor, details: { id: String(entry.id), bus, kind: completion.kind, completedAt: options.completedAt, foremanSr, odometer: completion.miles, flagCleared: Boolean(clearedFlag) } });
+    await tx.insert(auditEvents).values({ kind: "pm_complete", actor, details: { id: String(entry.id), bus, kind: completion.kind, completedAt: options.completedAt, foremanSr, odometer: miles, flagCleared: Boolean(clearedFlag) } });
     await bumpPulse(tx);
     return { before, after, flagCleared: Boolean(clearedFlag) };
   });
@@ -787,10 +792,11 @@ export async function applyPmReadings(
   readings: PmReading[],
   source: string,
   actor = "",
-): Promise<{ batch: string; applied: string[] }> {
+): Promise<{ batch: string; applied: string[]; autoCompleted: number }> {
   const db = await getDb();
   const batch = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const applied: string[] = [];
+  let autoCompleted = 0;
   for (const reading of readings) {
     const scheduleOnly = reading.scheduleOnly === true;
     const odometer = scheduleOnly ? null : toOdometer(reading.odometer);
@@ -828,6 +834,26 @@ export async function applyPmReadings(
       if (!Object.keys(pm).length) continue;
       const marks = { ...pm, updatedAt: sql`now()` };
       await db.insert(pmMileage).values({ bus: reading.bus, ...marks }).onConflictDoUpdate({ target: pmMileage.bus, set: marks });
+      const after = await readPmRecord(db, reading.bus);
+      // A due mark that moved forward means the PM it replaced was done in the
+      // shop: record it on the Completed page, credited to the master upload.
+      const now = new Date();
+      const passed: Array<{ kind: PmKind; type: InspectionType | null; miles: number }> = [];
+      const prevInsp = nextInspection(existing);
+      const nextInsp = nextInspection(after);
+      if (prevInsp && nextInsp && nextInsp.miles > prevInsp.miles) passed.push({ kind: "inspection", type: prevInsp.type, miles: prevInsp.miles });
+      const prevTrans = transNextDue(existing);
+      const nextTrans = transNextDue(after);
+      if (prevTrans !== null && nextTrans !== null && nextTrans > prevTrans) passed.push({ kind: "trans", type: null, miles: prevTrans });
+      for (const done of passed) {
+        const [entry] = await db.insert(pmInspections).values({
+          bus: reading.bus, kind: done.kind, type: done.type, miles: done.miles, odometer: existing.odometer,
+          doneAt: chicagoDateShort(now), completedAt: now, foremanSr: null,
+          beforeState: existing, afterState: after, actor: MASTER_UPLOAD_ACTOR,
+        }).returning({ id: pmInspections.id });
+        await db.insert(auditEvents).values({ kind: "pm_auto_complete", actor: actor || null, details: { id: String(entry.id), bus: reading.bus, kind: done.kind, type: done.type, miles: done.miles, source, batch } });
+        autoCompleted += 1;
+      }
       applied.push(reading.bus);
       continue;
     }
@@ -848,7 +874,7 @@ export async function applyPmReadings(
     applied.push(reading.bus);
   }
   if (applied.length) await bumpPulse(db);
-  return { batch, applied };
+  return { batch, applied, autoCompleted };
 }
 
 export interface PmLogEntry {

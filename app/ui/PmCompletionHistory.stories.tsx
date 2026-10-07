@@ -58,13 +58,13 @@ export const Undo: Story = {
     const screen = within(canvasElement.ownerDocument.body);
     await userEvent.click(await screen.findByRole("button", { name: "Completion info for bus 6404" }));
     const info = await screen.findByRole("dialog", { name: "Completion history · Bus 6404" });
-    await within(info).findByText("Foreman / SR: Jordan Smith");
+    await within(info).findByText("Completed manually by Jordan Smith");
     await userEvent.click(await within(info).findByRole("button", { name: "Undo completion" }));
     const confirm = await screen.findByRole("dialog", { name: "Undo A-3 completion?" });
     await userEvent.click(within(confirm).getByRole("button", { name: "Undo completion" }));
     // The confirm dialog is still animating away when the undo lands; wait for the sheet to settle.
     await waitFor(() => expect(within(info).getByText("A-3 · Undone")).toBeVisible());
-    await waitFor(() => expect(within(info).getByText("Foreman / SR: Jordan Smith")).toBeVisible());
+    await waitFor(() => expect(within(info).getByText("Completed manually by Jordan Smith")).toBeVisible());
   },
 };
 export const ImportedScheduleOnly: Story = {
