@@ -262,13 +262,12 @@ export default function PmMileagePage() {
   }, [load, saveState, syncing, editing, editingNext, completing, importOpen]);
 
   // Force Update: the server fetches Fleetwatch's always-current Vehicle List
-  // Report and applies its odometers now. Admin Tools only.
+  // Report (the dateless URL) and applies its odometers now. Anyone can press it.
   async function forceUpdate() {
     setForcing(true);
     setForceMessage("");
     try {
       const response = await fetch("/api/pm-mileage/force-update", { method: "POST" });
-      if (response.status === 401) { setForceMessage("Unlock Admin Tools to force an update."); return; }
       const result = await response.json().catch(() => ({}));
       if (result.status) setSync((prev) => ({ ...prev, ...result.status }));
       if (result.busy) setForceMessage("An update is already running. This sheet will refresh when it finishes.");
@@ -380,7 +379,7 @@ export default function PmMileagePage() {
           otherwise (FLEETWATCH_AUTO_SYNC=on). Off, mileage comes from Import PDF. */}
       {!autoSync && (
         <div className={styles.syncNotice} role="status" aria-live="polite">
-          <span><strong>Mileage source</strong> · <strong>Force Update</strong> fetches Fleetwatch&apos;s current Vehicle List Report, or upload a report with <strong>Import PDF</strong> (both need Admin Tools). Automatic updates are turned off.</span>
+          <span><strong>Mileage source</strong> · <strong>Force Update</strong> fetches Fleetwatch&apos;s current Vehicle List Report, or upload a report with <strong>Import PDF</strong> (Admin Tools). Automatic updates are turned off.</span>
           {sync.lastSuccessAt && <span>Last update from Fleetwatch: {new Date(sync.lastSuccessAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}
             {` · ${sync.updated ?? 0} updated · ${sync.unchanged ?? 0} unchanged`}</span>}
           {sync.runningUntil && Date.parse(sync.runningUntil) > Date.now() && <span>Fetching the latest report…</span>}
@@ -409,7 +408,7 @@ export default function PmMileagePage() {
 
       {!unlocked && (
         <div className={styles.lockNotice}>
-          <Lock aria-hidden="true" /> Anyone can complete PMs, undo accidental completions, {autoSync ? "update bus status, or fetch Fleetwatch mileage" : "or update bus status"}. Unlock Admin Tools to edit mileage, schedules, or notes, or import reports.
+          <Lock aria-hidden="true" /> Anyone can complete PMs, undo accidental completions, update bus status, or force a mileage update from Fleetwatch. Unlock Admin Tools to edit mileage, schedules, or notes, or import reports.
         </div>
       )}
 

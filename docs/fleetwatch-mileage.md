@@ -15,7 +15,7 @@
 > gate treats it like any other API path, and the page shows a "Mileage
 > source" line pointing at Import PDF.
 
-## Force Update (manual, always available to admins)
+## Force Update (manual, available to everyone on the site)
 
 The **Force Update** button next to Import PDF fetches the Vehicle List
 Report (Detail) for division 0043:
@@ -24,8 +24,11 @@ Report (Detail) for division 0043:
 https://pace.fleetwatch.com/Main_Reports/reports/Vehicle/Vehicle%20List%20Report/Report.php?Division=0043&Department=All&VehType=All&TotalBy=Division&Detail=Detail&Revenue=All&VehicleServiceStatus=All&reportFormat=pdf
 ```
 
-That report has no date window, so it is always current. `POST
-/api/pm-mileage/force-update` (Admin Tools) downloads it on the server,
+That report has no date window, so it is always current, and it is the only
+URL Force Update ever fetches (never the dated mileage or service reports of
+the automatic update). `POST /api/pm-mileage/force-update` needs no Admin
+Tools, only the site session and a same-site check; it downloads the report
+on the server,
 reads the vehicle and odometer columns from the report's own header
 (`app/lib/vehicleListReport.ts`), and applies the readings through the same
 lease, guards and mileage history as the scheduled update
