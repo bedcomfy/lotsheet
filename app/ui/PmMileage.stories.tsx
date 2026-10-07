@@ -160,7 +160,7 @@ export const FluidPms: Story = {
     // 6404 has only a trans mark, so no hub or diff row for it.
     await expect(screen.queryByRole("row", { name: "Bus 6404 Hub fluid" })).not.toBeInTheDocument();
     await userEvent.click(within(hub).getByRole("button", { name: "Actions" }));
-    await expect(await screen.findByRole("menuitem", { name: /Edit next hub fluid/ })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: /Edit next hub fluid/ })).toBeVisible());
     await userEvent.click(screen.getByRole("menuitem", { name: /Complete Hub fluid/ }));
     const dialog = await screen.findByRole("dialog", { name: "Complete hub fluid · Bus 6454" });
     await expect(within(dialog).getByText(/Hub fluid recorded at/)).toHaveTextContent("443,182.0");
