@@ -3,12 +3,16 @@ import { isAdminRequest, unauthorized } from "../../lib/adminAuth";
 import { getFlags, getPmMileage, getPmSettings, recordAuditEvent, updatePmMileage } from "../../lib/store";
 import { parseBody, pmDispositionPayloadSchema, pmMileagePatchSchema } from "../../lib/schemas";
 import { getMileageSyncStatus } from "../../lib/pmMileageSyncStore";
+import { ensureMasterSchedule } from "../../lib/masterSchedule";
 import { fleetwatchAutoSyncEnabled } from "../../lib/fleetwatchFlag";
 
 export const dynamic = "force-dynamic";
+// The first load after a deploy may apply the committed master schedule.
+export const maxDuration = 60;
 
 // Every bus's PM mileage record plus the shared settings (due-soon window).
 export async function GET() {
+  await ensureMasterSchedule();
   const [records, settings, sync] = await Promise.all([getPmMileage(), getPmSettings(), getMileageSyncStatus()]);
   return NextResponse.json({ records, settings, sync: { ...sync, enabled: fleetwatchAutoSyncEnabled() } });
 }

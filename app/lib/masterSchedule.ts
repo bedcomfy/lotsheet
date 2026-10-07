@@ -3,12 +3,14 @@
 // The shop keeps the PM schedule in its "PNW DAILY P.M. TRACKER" workbook. A
 // snapshot of that workbook's schedule (next inspection type and due mark,
 // plus the trans, front hub and differential PM marks) is committed in
-// masterSchedule.data.ts. On the first server start after a deploy that
-// carries a new snapshot, applyMasterScheduleOnce runs it through the same
-// review and apply path as Import PDF with the workbook attached: odometers
-// stay as they are on the site, marks that moved forward show up on the
-// Completed page as auto-completed by the master upload. The snapshot id is
-// stored in app_state so it never applies twice.
+// masterSchedule.data.ts. The first request after a deploy that carries a new
+// snapshot (ensureMasterSchedule, called from the PM Mileage and site-session
+// routes) runs it through the same review and apply path as Import PDF with
+// the workbook attached: odometers stay as they are on the site, marks that
+// moved forward show up on the Completed page as auto-completed by the master
+// upload. The snapshot id is stored in app_state so it never applies twice.
+// It runs inside a request handler on purpose: work started outside one (a
+// server-start hook) can be frozen with the instance before it finishes.
 import { DEFAULT_MASTER, normalizeBusMaster } from "./buses";
 import { MASTER_UPLOAD_ACTOR } from "./pmHistory";
 import { reviewReadings } from "./pmMileage";
@@ -37,8 +39,9 @@ export type MasterScheduleState =
   | { id: string; status: "failed"; startedAt: string; error: string }
   | ({ status: "done" } & MasterScheduleResult);
 
-// A claim older than this is treated as abandoned (the instance died mid-run).
-const STALE_CLAIM_MS = 15 * 60 * 1000;
+// A claim older than this is treated as abandoned: a serverless instance can
+// be frozen or recycled mid-run, and a full run takes well under a minute.
+const STALE_CLAIM_MS = 2 * 60 * 1000;
 
 export function masterScheduleRows(rows: readonly MasterScheduleRow[] = MASTER_SCHEDULE_ROWS): TrackerScheduleRow[] {
   return rows.map(([bus, nextInspType, nextInspDue, transDue, hubDue, diffDue]) => ({
@@ -48,7 +51,7 @@ export function masterScheduleRows(rows: readonly MasterScheduleRow[] = MASTER_S
 
 // Applies the snapshot once: the stored result comes back when it already
 // ran, another instance's fresh claim yields nothing, a failed or abandoned
-// run is retried. Safe to call from every server start.
+// run is retried. Safe to call on every request.
 export async function applyMasterScheduleOnce(
   rows: readonly MasterScheduleRow[] = MASTER_SCHEDULE_ROWS,
   id: string = MASTER_SCHEDULE_ID,
@@ -92,5 +95,24 @@ export async function applyMasterScheduleOnce(
   } catch (err) {
     await setState(MASTER_SCHEDULE_KEY, { ...claim, status: "failed", error: err instanceof Error ? err.message : String(err) } satisfies MasterScheduleState);
     throw err;
+  }
+}
+
+// Request-time entry point: applies the committed snapshot if it has not run
+// yet and logs the outcome. Never throws (the page must still load) and
+// stays out of tests and the in-memory database.
+export async function ensureMasterSchedule(): Promise<void> {
+  if (process.env.PGLITE_DATA === "memory") return;
+  try {
+    const { ran, result } = await applyMasterScheduleOnce();
+    if (ran && result) {
+      console.log(`[master-schedule] applied ${result.id}: ${result.applied.length} buses updated, ${result.autoCompleted} PMs auto-completed, ${result.rejected.length} rows skipped`);
+      for (const row of result.rejected) console.log(`[master-schedule] skipped bus ${row.bus}: ${row.reason}`);
+      if (result.missingFromMaster.length) console.log(`[master-schedule] active buses not in the master: ${result.missingFromMaster.join(", ")}`);
+    } else if (!result) {
+      console.log("[master-schedule] another server instance is applying the snapshot");
+    }
+  } catch (err) {
+    console.error("[master-schedule] failed:", err instanceof Error ? err.message : err);
   }
 }

@@ -9,8 +9,12 @@ import {
   gateToken,
   phraseMatches,
 } from "../../../lib/siteGate";
+import { ensureMasterSchedule } from "../../../lib/masterSchedule";
 
 export const dynamic = "force-dynamic";
+// The session check may apply the committed master PM schedule once after a
+// deploy (ensureMasterSchedule); give it room.
+export const maxDuration = 60;
 
 // The decoy typing test posts each finished run here. A run whose text is the
 // site passphrase is reported as a "personal best": the response carries the
@@ -32,6 +36,7 @@ export async function POST(req: Request) {
 // When does this browser's site session end? Null when it has none. The
 // unlocked app polls this to reload into the decoy at the right moment.
 export async function GET(req: Request) {
+  await ensureMasterSchedule();
   const expiresAt = await gateSessionExpiry(cookieFromHeader(req.headers.get("cookie"), GATE_COOKIE));
   return NextResponse.json({ ok: true, session: expiresAt === null ? null : { expiresAt } });
 }

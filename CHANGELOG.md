@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.54.1 - 2026-10-07
+
+- The committed master schedule now applies during the first PM Mileage
+  load (or site session check) after a deploy instead of from the server
+  start hook, where a serverless instance could be frozen before it
+  finished. An abandoned run is retried after two minutes.
+
 ## 0.54.0 - 2026-10-07
 
 - Trans PM, front hub fluid and differential fluid are three separate PMs

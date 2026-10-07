@@ -138,8 +138,12 @@ runs those rows through `trackerScheduleReadings` → `reviewReadings` →
 `applyPmReadings`, exactly like an Import PDF with the workbook attached,
 and stores the outcome under the `pm_master_schedule` app-state key (claimed
 first with `claimState` so concurrent server starts do not both apply it).
-The root `instrumentation.ts` calls it on every Node server start and logs
-`[master-schedule] …`; a snapshot with the same id is skipped, a failed or
-abandoned run is retried, and tests (in-memory database) skip it. To ship a
+`ensureMasterSchedule` calls it from the PM Mileage GET route and the site
+session check (`GET /api/typing/results`), both with `maxDuration = 60`, and
+logs `[master-schedule] …`; a snapshot with the same id is skipped, a failed
+or abandoned run (claim older than two minutes) is retried, and tests
+(in-memory database) skip it. It runs inside a request on purpose: work
+started from a server-start hook can be frozen with the serverless instance
+before it finishes. To ship a
 new master: regenerate the data file with `parseTrackerWorkbook`, bump the
 id, deploy.
