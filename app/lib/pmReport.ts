@@ -140,7 +140,7 @@ export function markToType(mark: number): InspectionType | null {
   return found ?? null;
 }
 
-function previousType(type: InspectionType): InspectionType {
+export function previousType(type: InspectionType): InspectionType {
   const i = INSPECTION_CYCLE.indexOf(type);
   return INSPECTION_CYCLE[(i - 1 + INSPECTION_CYCLE.length) % INSPECTION_CYCLE.length];
 }

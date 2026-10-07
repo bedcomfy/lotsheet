@@ -792,8 +792,9 @@ export async function applyPmReadings(
   const batch = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const applied: string[] = [];
   for (const reading of readings) {
-    const odometer = toOdometer(reading.odometer);
-    if (!reading.bus || odometer === null) continue;
+    const scheduleOnly = reading.scheduleOnly === true;
+    const odometer = scheduleOnly ? null : toOdometer(reading.odometer);
+    if (!reading.bus || (!scheduleOnly && odometer === null)) continue;
     const readAt = reading.readAt || null;
     // A PM status report also says which inspection / trans PM was last
     // done; a plain mileage list leaves those alone. The report carries no
@@ -821,6 +822,16 @@ export async function applyPmReadings(
       pm.lastTransMiles = lastTransMiles;
       if (!samePm("trans", existing.lastTransMiles, "trans", lastTransMiles)) pm.lastTransDate = null;
     }
+    if (scheduleOnly) {
+      // The tracker workbook: the PM marks change, the odometer on file, its
+      // date, its source and the mileage history do not.
+      if (!Object.keys(pm).length) continue;
+      const marks = { ...pm, updatedAt: sql`now()` };
+      await db.insert(pmMileage).values({ bus: reading.bus, ...marks }).onConflictDoUpdate({ target: pmMileage.bus, set: marks });
+      applied.push(reading.bus);
+      continue;
+    }
+    if (odometer === null) continue; // already skipped above; keeps the insert typed
     const set = { odometer, odometerDate: readAt, source, updatedAt: sql`now()`, ...pm };
     await db
       .insert(pmMileage)

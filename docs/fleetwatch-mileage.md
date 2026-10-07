@@ -101,3 +101,18 @@ tab-separated columns for a lookup tab, and a link to
 `GET /api/pm-mileage/tracker`, which builds a fresh workbook with both
 sheets ("PNW DAILY P,M. TRACKER" and "T,H,D P.M."), live miles-until
 formulas and the `0.0` number format (`buildTrackerWorkbook`).
+
+## Importing the shop's tracker (schedule only)
+
+Import PDF accepts the tracker workbook (.xlsx) too. `parseTrackerWorkbook`
+in `app/lib/pmTracker.ts` reads the live sheets (header row with Bus # /
+Vehicle Number, Inspection Due and Next Insp Type or PM Schedule, and a
+miles column that is a formula; pasted fleet-system reports are static and
+skipped). The inspection sheet gives each bus its next inspection type
+(`PM-A 15000 MILES` → A-15 by the mark, so typos in the letter do not
+matter) and due mark; the T,H,D sheet's TRANS rows give the trans PM mark.
+The rows become schedule-only readings (`scheduleOnly: true`, odometer
+null): the review shows the odometer already on file, and
+`applyPmReadings` writes only the PM marks, leaving the odometer, its date,
+its source and the mileage history untouched. The response also lists
+active PM-fleet buses the tracker leaves out (`missingFromTracker`).

@@ -4,6 +4,9 @@ import { DEFAULT_MASTER, normalizeBusMaster } from "../../../lib/buses";
 import { extractOdometerReadings, PM_EXTRACT_MODEL, pmExtractConfigured } from "../../../lib/pmExtract";
 import { parseOdometerReport } from "../../../lib/odometerReport";
 import { parseVehicleListReport } from "../../../lib/vehicleListReport";
+import { parseTrackerWorkbook } from "../../../lib/pmTracker";
+import { INSPECTION_STEP, TRANS_PM_INTERVAL, isPmFleetBus } from "../../../lib/pmMileage";
+import { previousType } from "../../../lib/pmReport";
 import { reviewReadings } from "../../../lib/pmMileage";
 import { parsePmReport, type PositionedText } from "../../../lib/pmReport";
 import { readPdfText } from "../../../lib/pmReportPdf";
@@ -61,12 +64,14 @@ export async function POST(req: Request) {
   } else {
     const form = await req.formData().catch(() => null);
     const file = form?.get("file");
-    if (!(file instanceof File)) return NextResponse.json({ error: "Attach a PDF as `file`." }, { status: 400 });
-    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-    if (!isPdf) return NextResponse.json({ error: "Only PDF files can be scanned." }, { status: 400 });
+    if (!(file instanceof File)) return NextResponse.json({ error: "Attach a PDF or the tracker workbook as `file`." }, { status: 400 });
     if (file.size > MAX_PDF_BYTES) {
-      return NextResponse.json({ error: "That PDF is too big to upload whole; the page reads it in the browser instead." }, { status: 413 });
+      return NextResponse.json({ error: "That file is too big to upload whole; a PDF is read in the browser instead." }, { status: 413 });
     }
+    const isWorkbook = /\.xlsx$/i.test(file.name) || file.type.includes("spreadsheetml");
+    if (isWorkbook) return importTracker(Buffer.from(await file.arrayBuffer()), file.name);
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (!isPdf) return NextResponse.json({ error: "Only PDF files and the tracker workbook (.xlsx) can be read." }, { status: 400 });
     pdf = Buffer.from(await file.arrayBuffer());
     fileName = file.name;
   }
@@ -199,5 +204,58 @@ export async function POST(req: Request) {
     model: PM_EXTRACT_MODEL,
     fileName,
     rawCount: extracted.readings.length,
+  });
+}
+
+// The shop's "PNW DAILY P.M. TRACKER" workbook: which inspection is due next
+// and the trans PM mark for every bus. It carries no fresh mileage, so the
+// review shows the odometer already on file and applying changes only the
+// schedule. Active buses the workbook leaves out are listed so the shop can
+// add them.
+async function importTracker(file: Buffer, fileName: string) {
+  const masterValue = (await getState("bus_master")).value as { buses?: unknown } | null;
+  const fleet = normalizeBusMaster(
+    masterValue && Array.isArray(masterValue.buses) ? (masterValue as { buses: MasterBus[] }) : DEFAULT_MASTER,
+  ).buses;
+  const current = await getPmMileage();
+  let parsed;
+  try {
+    parsed = await parseTrackerWorkbook(file);
+  } catch (err) {
+    console.warn("[pm-import] tracker workbook read failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Couldn't read that workbook. Save it as .xlsx and try again." }, { status: 422 });
+  }
+  if (!parsed.sheets.length) {
+    return NextResponse.json({ error: "No tracker sheet found: expected Bus #, Inspection Due and Next Insp Type (or PM Schedule) columns with a live miles formula." }, { status: 422 });
+  }
+  const review = reviewReadings(
+    parsed.rows.map((row) => ({
+      bus: row.bus,
+      odometer: null,
+      scheduleOnly: true,
+      note: row.note,
+      nextInspType: row.nextInspType,
+      nextInspDue: row.nextInspDue,
+      lastInspType: row.nextInspType ? previousType(row.nextInspType) : null,
+      lastInspMiles: row.nextInspDue === null ? null : row.nextInspDue - INSPECTION_STEP,
+      transDue: row.transDue,
+      lastTransMiles: row.transDue === null ? null : row.transDue - TRANS_PM_INTERVAL,
+    })),
+    fleet,
+    current,
+  );
+  const listed = new Set(parsed.rows.map((row) => row.bus));
+  const missingFromTracker = fleet.filter(isPmFleetBus).map((bus) => bus.num).filter((num) => !listed.has(num))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return NextResponse.json({
+    ...review,
+    reportDate: null,
+    notes: `Read from ${parsed.sheets.join(" and ")}. The tracker sets each bus's next inspection and trans PM; odometers stay as they are on this page.`,
+    method: "text",
+    format: "tracker",
+    model: null,
+    fileName,
+    rawCount: parsed.rows.length,
+    missingFromTracker,
   });
 }

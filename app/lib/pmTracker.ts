@@ -7,6 +7,7 @@
 
 import ExcelJS from "exceljs";
 import { isPmFleetBus, nextInspection, transNextDue, type InspectionType, type PmRecord } from "./pmMileage";
+import { markToType } from "./pmReport";
 import type { MasterBus } from "./types";
 
 export const TRACKER_SHEET = "PNW DAILY P,M. TRACKER";
@@ -173,4 +174,112 @@ export function odometerTable(records: Record<string, PmRecord>, fleet: Pick<Mas
     .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
     .map(([bus, odometer]) => `${bus}\t${trackerNumber(odometer)}`)
     .join("\n");
+}
+
+// ---------- reading the shop's workbook: the PM schedule ----------
+// The tracker is where the shop records which inspection is due next and the
+// trans PM mark, so it can bring the site's schedule up to date. Only the
+// live sheets are read: the ones whose miles column is a formula. Pasted
+// fleet-system reports in the same workbook are static text and are skipped.
+
+export interface TrackerScheduleRow {
+  bus: string;
+  nextInspType: InspectionType | null;
+  nextInspDue: number | null;
+  transDue: number | null;
+  note: string | null;
+}
+
+export interface TrackerParse {
+  rows: TrackerScheduleRow[];
+  sheets: string[]; // the sheets that were read
+  lineCount: number;
+}
+
+// "PM-A 15000 MILES" → "A-15" by the mark, so "PM-6 6000 MILES" and
+// "PM-c 24000 MILES" (typos in the real sheet) still resolve.
+export function trackerLabelToType(label: string): InspectionType | null {
+  const match = /PM\s*-?\s*[A-Z0-9]?\s*(\d{4,5})\s*MILES/i.exec(label);
+  return match ? markToType(Number(match[1])) : null;
+}
+
+interface TrackerHeader { row: number; bus: number; due: number; type: number | null; schedule: number | null; miles: number | null }
+
+function cellText(sheet: ExcelJS.Worksheet, row: number, column: number): string {
+  return sheet.getCell(row, column).text.trim();
+}
+
+function markNumber(sheet: ExcelJS.Worksheet, row: number, column: number): number | null {
+  const n = Number(cellText(sheet, row, column).replace(/[,\s]/g, ""));
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null; // due marks are whole miles
+}
+
+function findTrackerHeader(sheet: ExcelJS.Worksheet): TrackerHeader | null {
+  for (let row = 1; row <= Math.min(sheet.rowCount, 8); row += 1) {
+    const found: Partial<TrackerHeader> = { row };
+    for (let column = 1; column <= sheet.columnCount; column += 1) {
+      const text = cellText(sheet, row, column).toLowerCase();
+      if (/^(bus\s*#|vehicle\s*(number|#))/.test(text)) found.bus = column;
+      else if (/^inspection\s*due/.test(text)) found.due = column;
+      else if (/^next\s*insp/.test(text)) found.type = column;
+      else if (/^pm\s*schedule/.test(text)) found.schedule = column;
+      else if (/^miles\s*(until|till)/.test(text)) found.miles = column;
+    }
+    if (found.bus && found.due && (found.type || found.schedule)) {
+      return { row, bus: found.bus, due: found.due, type: found.type ?? null, schedule: found.schedule ?? null, miles: found.miles ?? null };
+    }
+  }
+  return null;
+}
+
+// A live sheet computes its miles column; a pasted report is plain text.
+function isLiveSheet(sheet: ExcelJS.Worksheet, header: TrackerHeader): boolean {
+  if (!header.miles) return false;
+  for (let row = header.row + 1; row <= Math.min(sheet.rowCount, header.row + 5); row += 1) {
+    const value = sheet.getCell(row, header.miles).value;
+    if (value && typeof value === "object" && ("formula" in value || "sharedFormula" in value)) return true;
+  }
+  return false;
+}
+
+export async function parseTrackerWorkbook(file: Buffer | ArrayBuffer): Promise<TrackerParse> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(file as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  const rows = new Map<string, TrackerScheduleRow>();
+  const sheets: string[] = [];
+  let lineCount = 0;
+  const rowFor = (bus: string) => {
+    const existing = rows.get(bus);
+    if (existing) return existing;
+    const created: TrackerScheduleRow = { bus, nextInspType: null, nextInspDue: null, transDue: null, note: null };
+    rows.set(bus, created);
+    return created;
+  };
+  for (const sheet of workbook.worksheets) {
+    const header = findTrackerHeader(sheet);
+    if (!header || !isLiveSheet(sheet, header)) continue;
+    sheets.push(sheet.name);
+    for (let row = header.row + 1; row <= sheet.rowCount; row += 1) {
+      const bus = cellText(sheet, row, header.bus).replace(/^0+(?=\d)/, "");
+      if (!/^\d+$/.test(bus)) continue;
+      lineCount += 1;
+      if (header.type) {
+        const entry = rowFor(bus);
+        if (entry.nextInspDue !== null) continue; // the first row for a bus wins
+        const due = markNumber(sheet, row, header.due);
+        const label = cellText(sheet, row, header.type);
+        const type = trackerLabelToType(label);
+        if (due !== null && type) { entry.nextInspType = type; entry.nextInspDue = due; }
+        else if (due !== null) entry.note = label ? `Inspection type not recognized: ${label}` : "Inspection due without a type";
+      } else if (header.schedule && /trans/i.test(cellText(sheet, row, header.schedule))) {
+        const entry = rowFor(bus);
+        if (entry.transDue === null) entry.transDue = markNumber(sheet, row, header.due);
+      }
+    }
+  }
+  return {
+    rows: [...rows.values()].sort((a, b) => a.bus.localeCompare(b.bus, undefined, { numeric: true })),
+    sheets,
+    lineCount,
+  };
 }

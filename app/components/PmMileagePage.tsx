@@ -952,7 +952,8 @@ interface ImportResult {
   reportDate: string | null;
   notes: string | null;
   method: "text" | "ai";
-  format: "pm-status" | "monthly-miles" | "vehicle-list" | "ai";
+  format: "pm-status" | "monthly-miles" | "vehicle-list" | "tracker" | "ai";
+  missingFromTracker?: string[];
   model: string | null;
   fileName: string;
   rawCount: number;
@@ -1089,7 +1090,9 @@ function ImportDialog({
       // run to several megabytes, more than the server will take in one
       // request. If the browser can't read it, a small file is uploaded whole.
       let r: Response;
+      const isWorkbook = /\.xlsx$/i.test(file.name);
       try {
+        if (isWorkbook) throw new Error("workbook"); // the tracker is small and read on the server
         const pages = await readPdfTextInBrowser(file);
         r = await fetch("/api/pm-mileage/import", {
           method: "POST",
@@ -1097,7 +1100,7 @@ function ImportDialog({
           body: JSON.stringify({ fileName: file.name, pages }),
         });
       } catch (readErr) {
-        if (file.size > 4 * 1024 * 1024) {
+        if (!isWorkbook && file.size > 4 * 1024 * 1024) {
           throw new Error(
             `Couldn't read this PDF in the browser (${readErr instanceof Error ? readErr.message : "error"}) and it is too big to upload whole.`,
           );
@@ -1127,6 +1130,7 @@ function ImportDialog({
       .map((x) => ({
         bus: x.bus,
         odometer: x.odometer,
+        scheduleOnly: x.scheduleOnly === true,
         readAt: x.readAt,
         nextInspType: x.nextInspType ?? null,
         nextInspDue: x.nextInspDue ?? null,
@@ -1142,7 +1146,7 @@ function ImportDialog({
       const r = await fetch("/api/pm-mileage/readings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ readings, source: "pdf", actor: getDeviceActor() }),
+        body: JSON.stringify({ readings, source: result.format === "tracker" ? "tracker" : "pdf", actor: getDeviceActor() }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -1184,7 +1188,7 @@ function ImportDialog({
       isOpen={isOpen}
       onOpenChange={onOpenChange}
       title="Import a fleet report"
-      description="Upload the PM status report (inspections due), the monthly miles report, or the vehicle list report (odometers). What it says about each bus is listed for review before anything changes."
+      description="Upload the PM status report (inspections due), the monthly miles report, the vehicle list report (odometers), or the PNW tracker workbook (next inspection and trans PM per bus; odometers stay as they are). What it says about each bus is listed for review before anything changes."
       size="lg"
       footer={<div className={styles.dialogFooter}>{footer}</div>}
     >
@@ -1200,14 +1204,15 @@ function ImportDialog({
           </div>
         ) : !result ? (
           <label className={styles.filePick}>
-            <span>Report PDF</span>
+            <span>Report PDF or tracker workbook</span>
             <span className={styles.fileHint}>
               Total Fleet PM Status Report, Vehicles Monthly Miles to Date Report, or Vehicle List Report. The PDF&apos;s own text is read
-              directly — no AI, no cost. Picture-only scans need the AI reader.
+              directly — no AI, no cost. Picture-only scans need the AI reader. The PNW DAILY P.M. TRACKER (.xlsx) sets the next inspection
+              and trans PM per bus without touching odometers.
             </span>
             <input
               type="file"
-              accept="application/pdf,.pdf"
+              accept="application/pdf,.pdf,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(event: ChangeEvent<HTMLInputElement>) => setFile(event.target.files?.[0] || null)}
             />
             {file && (
@@ -1230,9 +1235,16 @@ function ImportDialog({
                     ? "monthly miles report, read from the PDF text"
                     : result.format === "vehicle-list"
                       ? "vehicle list report, read from the PDF text"
-                      : `read by AI (${result.model || "model"})`}
+                      : result.format === "tracker"
+                        ? "PNW tracker workbook: PM schedule only"
+                        : `read by AI (${result.model || "model"})`}
               </span>
               {result.notes ? <p>{result.notes}</p> : null}
+              {result.missingFromTracker && result.missingFromTracker.length > 0 && (
+                <p>
+                  <strong>Active on this page but not in the tracker:</strong> {result.missingFromTracker.join(", ")}
+                </p>
+              )}
             </div>
             {result.accepted.length === 0 ? (
               <EmptyState title="No usable readings" description="Nothing in this PDF matched a bus in the fleet list." />
@@ -1245,9 +1257,11 @@ function ImportDialog({
                     </Checkbox>
                     <span className={styles.reviewMiles}>{formatTenths(row.odometer)}</span>
                     <span className={styles.reviewDelta}>
-                      {row.previous === null
-                        ? "first reading"
-                        : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatTenths(row.previous)}`}
+                      {row.scheduleOnly
+                        ? row.odometer === null ? "no odometer on file" : "odometer kept"
+                        : row.previous === null
+                          ? "first reading"
+                          : `${row.delta !== null && row.delta >= 0 ? "+" : ""}${formatMiles(row.delta)} from ${formatTenths(row.previous)}`}
                     </span>
                     <span className={styles.reviewPm}>
                       {row.nextInspType ? `next ${row.nextInspType} at ${formatTenths(row.nextInspDue)}` : ""}

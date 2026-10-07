@@ -108,7 +108,8 @@ export const pmReadingsPayloadSchema = z.object({
     .array(
       z.object({
         bus: z.string().trim().min(1),
-        odometer: z.number().nonnegative(), // tenths are kept
+        odometer: z.number().nonnegative().nullable(), // tenths are kept; null on a schedule-only row
+        scheduleOnly: z.boolean().optional(), // the tracker workbook: PM marks only, odometer untouched
         readAt: z.union([z.string(), z.null()]).optional(),
         nextInspType: z.enum(INSPECTION_CYCLE).nullable().optional(),
         nextInspDue: z.number().int().nonnegative().nullable().optional(),

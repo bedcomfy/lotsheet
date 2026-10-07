@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.52.0 - 2026-10-07
+
+- Import PDF also takes the shop's "PNW DAILY P.M. TRACKER" workbook
+  (.xlsx). The review lists each bus's next inspection and trans PM from the
+  sheet, and applying sets only that schedule: odometers, their dates and
+  the mileage history stay as they are on the site. Only the live tracker
+  sheets are read (the ones with a miles formula); pasted reports in the
+  workbook are skipped. The review also names active buses the tracker
+  leaves out.
+
 ## 0.51.0 - 2026-10-07
 
 - PM Mileage: **Copy odometers** replaces the Download tracker button. Paste

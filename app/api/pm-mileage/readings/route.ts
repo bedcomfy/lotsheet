@@ -16,6 +16,7 @@ export async function POST(req: Request) {
   const readings = data.readings.map((r) => ({
     bus: r.bus,
     odometer: r.odometer,
+    scheduleOnly: r.scheduleOnly === true,
     readAt: r.readAt ?? null,
     nextInspType: r.nextInspType ?? null,
     nextInspDue: r.nextInspDue ?? null,
