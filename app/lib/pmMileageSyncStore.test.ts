@@ -32,7 +32,7 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
       { num: "6404", status: "active" }, { num: "6435", status: "active" }, { num: "6500", status: "retired" },
       { num: "9690", status: "active" },
     ] });
-  });
+  }, 20_000); // the first test also boots the in-memory database, slow under a full run
 
   it("keeps the odometer's tenth of a mile and treats the same tenth as unchanged", async () => {
     await updatePmMileage("6404", { odometer: 100000 });
@@ -76,6 +76,16 @@ describe("automatic mileage writes (in-memory Postgres)", { timeout: 20_000 }, (
     await expect(finishMileageSync(first.token!, result([reading("6404", 110000)]))).rejects.toThrow("expired");
     await finishMileageSync(next, { error: "Fleetwatch unavailable" });
     expect((await claimMileageSync()).claimed).toBe(false);
+  });
+
+  it("restores the tenth on a reading that was saved rounded up, but still refuses a real rollback", async () => {
+    await updatePmMileage("6404", { odometer: 100021 }); // 100020.6 saved before tenths were kept
+    await updatePmMileage("6435", { odometer: 100022 });
+    const status = await finishMileageSync(await start(), result([reading("6404", 100020.6), reading("6435", 100020.6)]));
+    expect(status).toMatchObject({ updated: 1, unchanged: 0 });
+    expect(status.skipped).toEqual([{ bus: "6435", reason: "Below saved mileage" }]);
+    expect((await getPmMileage())["6404"].odometer).toBe(100020.6);
+    expect((await getPmMileage())["6435"].odometer).toBe(100022);
   });
 
   it("skips lower mileage, excessive jumps, and edits that happened during the download", async () => {

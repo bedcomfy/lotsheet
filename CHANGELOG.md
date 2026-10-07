@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.49.1 - 2026-10-07
+
+- Force Update and Import PDF now restore the tenth on readings that were
+  saved as whole numbers. A reading less than a mile below the one on file
+  (425,482 saved, 425,481.5 printed) is the same reading, so it is applied
+  instead of being skipped as "Below saved mileage"; a reading a full mile
+  or more lower is still refused.
+
 ## 0.49.0 - 2026-10-07
 
 - Odometers keep their tenth of a mile. Fleetwatch prints readings such as

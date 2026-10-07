@@ -75,10 +75,13 @@ export async function finishMileageSync(
         // them as a reading taken today; last checked is shown separately.
         const readAt = reading.notServiced ? null : (reading.readAt ?? result.report.reportDate);
         const set = { odometer: miles, odometerDate: readAt, source: FLEETWATCH_SOURCE, updatedAt: sql`now()` };
+        // Mileage never goes backwards, except by less than a mile: a reading
+        // saved as a whole number (425,482) comes back from the report with its
+        // tenth (425,481.5), and that is the same reading, not a rollback.
         const saved = await tx.insert(pmMileage).values({ bus: reading.bus, ...set }).onConflictDoUpdate({
           target: pmMileage.bus,
           set,
-          setWhere: sql`(${pmMileage.odometer} IS NULL OR (${pmMileage.odometer} < ${miles} AND ${miles} - ${pmMileage.odometer} <= 50000))
+          setWhere: sql`(${pmMileage.odometer} IS NULL OR (${pmMileage.odometer} - ${miles} < 1 AND ${miles} - ${pmMileage.odometer} <= 50000))
             AND (${pmMileage.updatedAt} IS NULL OR ${pmMileage.updatedAt} <= ${old.startedAt}::timestamptz)`,
         }).returning({ bus: pmMileage.bus });
         if (!saved.length) {
