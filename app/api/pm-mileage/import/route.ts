@@ -4,9 +4,8 @@ import { DEFAULT_MASTER, normalizeBusMaster } from "../../../lib/buses";
 import { extractOdometerReadings, PM_EXTRACT_MODEL, pmExtractConfigured } from "../../../lib/pmExtract";
 import { parseOdometerReport } from "../../../lib/odometerReport";
 import { parseVehicleListReport } from "../../../lib/vehicleListReport";
-import { parseTrackerWorkbook } from "../../../lib/pmTracker";
-import { INSPECTION_STEP, TRANS_PM_INTERVAL, isPmFleetBus } from "../../../lib/pmMileage";
-import { previousType } from "../../../lib/pmReport";
+import { parseTrackerWorkbook, trackerScheduleReadings } from "../../../lib/pmTracker";
+import { isPmFleetBus } from "../../../lib/pmMileage";
 import { reviewReadings } from "../../../lib/pmMileage";
 import { parsePmReport, type PositionedText } from "../../../lib/pmReport";
 import { readPdfText } from "../../../lib/pmReportPdf";
@@ -101,6 +100,10 @@ export async function POST(req: Request) {
           lastInspMiles: b.lastInspMiles,
           transDue: b.transDue,
           lastTransMiles: b.lastTransMiles,
+          hubDue: b.hubDue,
+          lastHubMiles: b.lastHubMiles,
+          diffDue: b.diffDue,
+          lastDiffMiles: b.lastDiffMiles,
         })),
         fleet,
         current,
@@ -229,18 +232,7 @@ async function importTracker(file: Buffer, fileName: string) {
     return NextResponse.json({ error: "No tracker sheet found: expected Bus #, Inspection Due and Next Insp Type (or PM Schedule) columns with a live miles formula." }, { status: 422 });
   }
   const review = reviewReadings(
-    parsed.rows.map((row) => ({
-      bus: row.bus,
-      odometer: null,
-      scheduleOnly: true,
-      note: row.note,
-      nextInspType: row.nextInspType,
-      nextInspDue: row.nextInspDue,
-      lastInspType: row.nextInspType ? previousType(row.nextInspType) : null,
-      lastInspMiles: row.nextInspDue === null ? null : row.nextInspDue - INSPECTION_STEP,
-      transDue: row.transDue,
-      lastTransMiles: row.transDue === null ? null : row.transDue - TRANS_PM_INTERVAL,
-    })),
+    trackerScheduleReadings(parsed.rows),
     fleet,
     current,
   );
@@ -250,7 +242,7 @@ async function importTracker(file: Buffer, fileName: string) {
   return NextResponse.json({
     ...review,
     reportDate: null,
-    notes: `Read from ${parsed.sheets.join(" and ")}. The tracker sets each bus's next inspection and trans PM; odometers stay as they are on this page.`,
+    notes: `Read from ${parsed.sheets.join(" and ")}. The tracker sets each bus's next inspection and its trans, hub and diff PM marks; odometers stay as they are on this page.`,
     method: "text",
     format: "tracker",
     model: null,

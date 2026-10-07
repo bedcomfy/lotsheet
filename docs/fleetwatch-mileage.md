@@ -110,14 +110,16 @@ Vehicle Number, Inspection Due and Next Insp Type or PM Schedule, and a
 miles column that is a formula; pasted fleet-system reports are static and
 skipped). The inspection sheet gives each bus its next inspection type
 (`PM-A 15000 MILES` → A-15 by the mark, so typos in the letter do not
-matter) and due mark; the T,H,D sheet's TRANS rows give the trans PM mark.
+matter) and due mark; the T,H,D sheet's TRANS, HUB and DIFFERENTIAL rows
+give the trans, front hub and differential fluid PM marks, one PM each
+(`FLUID_KINDS`, `FLUID_FIELDS` in `app/lib/pmMileage.ts`).
 The rows become schedule-only readings (`scheduleOnly: true`, odometer
 null): the review shows the odometer already on file, and
 `applyPmReadings` writes only the PM marks, leaving the odometer, its date,
 its source and the mileage history untouched. The response also lists
 active PM-fleet buses the tracker leaves out (`missingFromTracker`).
 
-When a tracker import moves a bus's inspection or trans PM due mark forward,
+When a tracker import moves a bus's inspection or fluid PM due mark forward,
 `applyPmReadings` records the PM it replaced in `pm_inspections` with
 `actor = "Master upload"` (`MASTER_UPLOAD_ACTOR`), before/after states for
 undo, and the odometer on file. The Completed tab shows such entries as
@@ -125,3 +127,19 @@ undo, and the odometer on file. The Completed tab shows such entries as
 Completing a PM on the site no longer asks for an odometer: `completePm`
 uses the reading on file (or the due mark when there is none) and the PM is
 recorded at its due mark.
+
+## The committed master schedule
+
+`app/lib/masterSchedule.data.ts` is a generated snapshot of the shop's
+master tracker: one row per bus with the next inspection type and due mark
+and the trans, hub and diff PM marks (`MASTER_SCHEDULE_ROWS`), stamped with
+`MASTER_SCHEDULE_ID`. `applyMasterScheduleOnce` in `app/lib/masterSchedule.ts`
+runs those rows through `trackerScheduleReadings` → `reviewReadings` →
+`applyPmReadings`, exactly like an Import PDF with the workbook attached,
+and stores the outcome under the `pm_master_schedule` app-state key (claimed
+first with `claimState` so concurrent server starts do not both apply it).
+The root `instrumentation.ts` calls it on every Node server start and logs
+`[master-schedule] …`; a snapshot with the same id is skipped, a failed or
+abandoned run is retried, and tests (in-memory database) skip it. To ship a
+new master: regenerate the data file with `parseTrackerWorkbook`, bump the
+id, deploy.

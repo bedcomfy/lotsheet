@@ -1,5 +1,5 @@
 import {
-  PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, formatTenths, groupPmWorkItems,
+  PM_KIND_LABEL, PM_STATUS_LABEL, formatMiles, formatTenths, groupPmWorkItems,
   type PmFilter, type PmSettings, type PmWorkItem,
 } from "../../lib/pmMileage";
 import { serviceTimeParts } from "../../lib/vehicleServiceReport";
@@ -57,12 +57,9 @@ export function PmMileagePaper({ items: allItems, labels, date, filter, query }:
                       {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatTenths(r.lastServiceMiles)} mi</span>}</>
                       : "Not recorded"}
                   </td>
-                  <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatTenths(item.dueMiles)}`}</span></td>
+                  <td><strong>{item.kind === "inspection" ? item.type || "Inspection" : PM_KIND_LABEL[item.kind]}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatTenths(item.dueMiles)}`}</span></td>
                   <td><strong>{item.milesLeft === null ? "Unknown" : `${item.milesLeft > 0 ? "+" : ""}${formatTenths(item.milesLeft)}`}</strong></td>
-                  <td>
-                    {item.kind === "trans" && <div className={styles.note}>{TRANS_PM_NOTE}</div>}
-                    {r.note ? <div className={styles.note}>{r.note}</div> : item.kind !== "trans" ? "-" : null}
-                  </td>
+                  <td>{r.note ? <div className={styles.note}>{r.note}</div> : "-"}</td>
                 </tr>
               );
             })}

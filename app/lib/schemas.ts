@@ -54,9 +54,15 @@ export const pmMileagePatchSchema = z.object({
   lastInspDate: textField,
   lastTransMiles: milesField,
   lastTransDate: textField,
+  lastHubMiles: milesField,
+  lastHubDate: textField,
+  lastDiffMiles: milesField,
+  lastDiffDate: textField,
   nextInspType: z.enum(INSPECTION_CYCLE).nullable().optional(),
   nextInspMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
   nextTransMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
+  nextHubMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
+  nextDiffMiles: z.number().int().nonnegative().max(2_147_483_647).nullable().optional(),
   disposition: textField, // shop / follow-up / hold / split / ""
   note: z.string().optional(),
   actor: z.string().catch("").default(""),
@@ -78,7 +84,7 @@ export const pmDispositionPayloadSchema = z.object({
 // POST /api/pm-mileage/complete — an inspection or transmission PM was done.
 export const pmCompletePayloadSchema = z.object({
   bus: z.string().trim().min(1),
-  kind: z.enum(["inspection", "trans"]),
+  kind: z.enum(["inspection", "trans", "hub", "diff"]),
   type: textField, // inspection type that was done; defaults to the one that was next
   miles: z.union([z.number(), z.string()]).optional(), // omitted: the odometer on file stands
   completedAt: z.string().datetime({ offset: true }),
@@ -114,10 +120,14 @@ export const pmReadingsPayloadSchema = z.object({
         nextInspType: z.enum(INSPECTION_CYCLE).nullable().optional(),
         nextInspDue: z.number().int().nonnegative().nullable().optional(),
         transDue: z.number().int().nonnegative().nullable().optional(),
-        // From a PM status report: which inspection / trans PM was last done.
+        hubDue: z.number().int().nonnegative().nullable().optional(),
+        diffDue: z.number().int().nonnegative().nullable().optional(),
+        // From a PM status report: which inspection / fluid PM was last done.
         lastInspType: z.union([z.string(), z.null()]).optional(),
         lastInspMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
         lastTransMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
+        lastHubMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
+        lastDiffMiles: z.union([z.number().int().nonnegative(), z.null()]).optional(),
       }),
     )
     .min(1)

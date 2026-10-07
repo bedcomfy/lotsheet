@@ -373,8 +373,6 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(filteredPages[0]).toContain("2 PMs");
   expect(filteredPages[0]).toContain("6404");
   expect(filteredPages[0]).toContain("Trans PM");
-  expect(filteredPages[0]).toContain("Change front hub fluid.");
-  expect(filteredPages[0]).toContain("Change differential fluid.");
   expect(filteredPages[0]).toContain("PM NOTE ONLY");
   expect(filteredPages[0]).not.toContain("FLAG NOTE ONLY");
   expect(filteredPages[0]).not.toContain("6450");
@@ -387,8 +385,6 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   expect(nativePages).toHaveLength(1);
   expect(nativePages[0]).toContain("+25");
   expect(nativePages[0]).toContain("+250");
-  expect(nativePages[0]).toContain("Change front hub fluid.");
-  expect(nativePages[0]).toContain("Change differential fluid.");
   expect(nativePages[0]).not.toContain("Unlock to edit");
   expect(nativePages[0]).not.toContain("Dark Mode");
   await writeFile("test-results/pm-mileage-native.pdf", nativeBytes);

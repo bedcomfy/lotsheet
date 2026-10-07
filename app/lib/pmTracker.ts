@@ -6,13 +6,13 @@
 // mirrors the workbook the shop already keeps, so it can replace it as is.
 
 import ExcelJS from "exceljs";
-import { isPmFleetBus, nextInspection, transNextDue, type InspectionType, type PmRecord } from "./pmMileage";
-import { markToType } from "./pmReport";
+import { FLUID_KINDS, FLUID_PM_INTERVAL, FLUID_PM_SCHEDULE, INSPECTION_STEP, fluidNextDue, isPmFleetBus, nextInspection, type FluidKind, type InspectionType, type PmReading, type PmRecord } from "./pmMileage";
+import { markToType, previousType } from "./pmReport";
 import type { MasterBus } from "./types";
 
 export const TRACKER_SHEET = "PNW DAILY P,M. TRACKER";
 export const THD_SHEET = "T,H,D P.M.";
-export const THD_SCHEDULES = ["TRANS P.M. 75000", "CHANGE FRONT HUB FLUID", "CHANGE DIFFERENTIAL FLUID"] as const;
+export const THD_SCHEDULES = FLUID_KINDS.map((kind) => FLUID_PM_SCHEDULE[kind]);
 
 const TENTHS = "0.0"; // every mileage shows its tenth, 100020.0 included
 const HEADER_FONT = { name: "Arial Nova", size: 11, bold: true };
@@ -33,10 +33,11 @@ export interface TrackerInspectionRow {
   milesLeft: number | null;
 }
 
-export interface TrackerTransRow {
+export interface TrackerFluidRow {
   bus: string;
+  kind: FluidKind;
   odometer: number | null;
-  due: number | null;
+  due: number;
   milesLeft: number | null;
 }
 
@@ -46,14 +47,15 @@ function soonestFirst<T extends { bus: string; milesLeft: number | null }>(a: T,
 }
 
 // One inspection row per active PM-fleet bus (blanks when nothing is on
-// file, so a missing bus is visible), and one trans row per bus with a
-// transmission PM mark. Both soonest first, like the shop sorts the sheet.
+// file, so a missing bus is visible), and one row per fluid PM with a due
+// mark (trans, front hub, differential). Both soonest first, like the shop
+// sorts the sheet.
 export function trackerRows(
   records: Record<string, PmRecord>,
   fleet: Pick<MasterBus, "num" | "status">[],
-): { inspections: TrackerInspectionRow[]; trans: TrackerTransRow[] } {
+): { inspections: TrackerInspectionRow[]; fluids: TrackerFluidRow[] } {
   const inspections: TrackerInspectionRow[] = [];
-  const trans: TrackerTransRow[] = [];
+  const fluids: TrackerFluidRow[] = [];
   for (const bus of fleet.filter(isPmFleetBus)) {
     const record = records[bus.num];
     const odometer = record?.odometer ?? null;
@@ -62,17 +64,19 @@ export function trackerRows(
       bus: bus.num, odometer, due: next?.miles ?? null, type: next?.type ?? null,
       milesLeft: next && odometer !== null ? next.miles - odometer : null,
     });
-    const transDue = record ? transNextDue(record) : null;
-    if (transDue !== null) trans.push({ bus: bus.num, odometer, due: transDue, milesLeft: odometer === null ? null : transDue - odometer });
+    for (const kind of FLUID_KINDS) {
+      const due = record ? fluidNextDue(record, kind) : null;
+      if (due !== null) fluids.push({ bus: bus.num, kind, odometer, due, milesLeft: odometer === null ? null : due - odometer });
+    }
   }
-  return { inspections: inspections.sort(soonestFirst), trans: trans.sort(soonestFirst) };
+  return { inspections: inspections.sort(soonestFirst), fluids: fluids.sort(soonestFirst) };
 }
 
 function busCell(bus: string): number | string {
   return /^\d+$/.test(bus) ? Number(bus) : bus;
 }
 
-export async function buildTrackerWorkbook(rows: { inspections: TrackerInspectionRow[]; trans: TrackerTransRow[] }): Promise<Buffer> {
+export async function buildTrackerWorkbook(rows: { inspections: TrackerInspectionRow[]; fluids: TrackerFluidRow[] }): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "PM Mileage";
   workbook.created = new Date();
@@ -107,15 +111,12 @@ export async function buildTrackerWorkbook(rows: { inspections: TrackerInspectio
     { header: "Current Mileage", width: 18 },
     { header: "Miles Till Next Inspection", width: 26 },
   ];
-  let n = 2;
-  for (const row of rows.trans) {
-    for (const schedule of THD_SCHEDULES) {
-      const added = thd.addRow([busCell(row.bus), schedule, row.due, row.odometer, row.milesLeft === null ? null : { formula: `C${n}-D${n}`, result: row.milesLeft }]);
-      added.font = BODY_FONT;
-      for (const column of ["C", "D", "E"]) added.getCell(column).numFmt = TENTHS;
-      n += 1;
-    }
-  }
+  rows.fluids.forEach((row, index) => {
+    const n = index + 2;
+    const added = thd.addRow([busCell(row.bus), FLUID_PM_SCHEDULE[row.kind], row.due, row.odometer, row.milesLeft === null ? null : { formula: `C${n}-D${n}`, result: row.milesLeft }]);
+    added.font = BODY_FONT;
+    for (const column of ["C", "D", "E"]) added.getCell(column).numFmt = TENTHS;
+  });
 
   for (const sheet of [tracker, thd]) sheet.getRow(1).font = HEADER_FONT;
   return Buffer.from(await workbook.xlsx.writeBuffer());
@@ -187,7 +188,17 @@ export interface TrackerScheduleRow {
   nextInspType: InspectionType | null;
   nextInspDue: number | null;
   transDue: number | null;
+  hubDue: number | null;
+  diffDue: number | null;
   note: string | null;
+}
+
+// A T,H,D sheet schedule → which fluid PM it is.
+export function fluidKindFromSchedule(text: string): FluidKind | null {
+  if (/trans/i.test(text)) return "trans";
+  if (/hub/i.test(text)) return "hub";
+  if (/differential|\bdiff\b/i.test(text)) return "diff";
+  return null;
 }
 
 export interface TrackerParse {
@@ -242,6 +253,28 @@ function isLiveSheet(sheet: ExcelJS.Worksheet, header: TrackerHeader): boolean {
   return false;
 }
 
+// Tracker rows → schedule-only readings for reviewReadings/applyPmReadings:
+// the odometer stays as it is on the site; each due mark also implies the
+// last service one interval back, so the site can show when it was done.
+export function trackerScheduleReadings(rows: TrackerScheduleRow[]): Array<Omit<PmReading, "readAt"> & { note: string | null }> {
+  return rows.map((row) => ({
+    bus: row.bus,
+    odometer: null,
+    scheduleOnly: true,
+    note: row.note,
+    nextInspType: row.nextInspType,
+    nextInspDue: row.nextInspDue,
+    lastInspType: row.nextInspType ? previousType(row.nextInspType) : null,
+    lastInspMiles: row.nextInspDue === null ? null : row.nextInspDue - INSPECTION_STEP,
+    transDue: row.transDue,
+    lastTransMiles: row.transDue === null ? null : row.transDue - FLUID_PM_INTERVAL,
+    hubDue: row.hubDue,
+    lastHubMiles: row.hubDue === null ? null : row.hubDue - FLUID_PM_INTERVAL,
+    diffDue: row.diffDue,
+    lastDiffMiles: row.diffDue === null ? null : row.diffDue - FLUID_PM_INTERVAL,
+  }));
+}
+
 export async function parseTrackerWorkbook(file: Buffer | ArrayBuffer): Promise<TrackerParse> {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(file as unknown as Parameters<typeof workbook.xlsx.load>[0]);
@@ -251,7 +284,7 @@ export async function parseTrackerWorkbook(file: Buffer | ArrayBuffer): Promise<
   const rowFor = (bus: string) => {
     const existing = rows.get(bus);
     if (existing) return existing;
-    const created: TrackerScheduleRow = { bus, nextInspType: null, nextInspDue: null, transDue: null, note: null };
+    const created: TrackerScheduleRow = { bus, nextInspType: null, nextInspDue: null, transDue: null, hubDue: null, diffDue: null, note: null };
     rows.set(bus, created);
     return created;
   };
@@ -271,9 +304,12 @@ export async function parseTrackerWorkbook(file: Buffer | ArrayBuffer): Promise<
         const type = trackerLabelToType(label);
         if (due !== null && type) { entry.nextInspType = type; entry.nextInspDue = due; }
         else if (due !== null) entry.note = label ? `Inspection type not recognized: ${label}` : "Inspection due without a type";
-      } else if (header.schedule && /trans/i.test(cellText(sheet, row, header.schedule))) {
+      } else if (header.schedule) {
+        const kind = fluidKindFromSchedule(cellText(sheet, row, header.schedule));
+        if (!kind) continue;
         const entry = rowFor(bus);
-        if (entry.transDue === null) entry.transDue = markNumber(sheet, row, header.due);
+        const key = `${kind}Due` as const;
+        if (entry[key] === null) entry[key] = markNumber(sheet, row, header.due);
       }
     }
   }

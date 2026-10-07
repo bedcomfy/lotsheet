@@ -1,4 +1,4 @@
-import type { PmKind, PmRecord } from "./pmMileage";
+import { FLUID_FIELDS, type PmKind, type PmRecord } from "./pmMileage";
 import type { MasterBus } from "./types";
 
 // A master-tracker upload that moves a due mark forward records the PM it
@@ -31,9 +31,11 @@ export interface PmInspectionEntry {
 // Only this PM's schedule participates in conflict detection. Mileage syncing,
 // notes, statuses, and the other kind of PM must not invalidate a completion.
 export function pmScheduleToken(record: PmRecord, kind: PmKind): string {
-  return JSON.stringify(kind === "inspection"
-    ? [record.lastInspType, record.lastInspMiles, record.lastInspDate, record.nextInspType, record.nextInspMiles]
-    : [record.lastTransMiles, record.lastTransDate, record.nextTransMiles]);
+  if (kind === "inspection") {
+    return JSON.stringify([record.lastInspType, record.lastInspMiles, record.lastInspDate, record.nextInspType, record.nextInspMiles]);
+  }
+  const fields = FLUID_FIELDS[kind];
+  return JSON.stringify([record[fields.last], record[fields.date], record[fields.next]]);
 }
 
 export function completionTimestamp(entry: PmInspectionEntry): string | null {

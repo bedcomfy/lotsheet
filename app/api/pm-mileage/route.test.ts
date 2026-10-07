@@ -82,10 +82,10 @@ describe("PM API access and independent schedules", { timeout: 20_000 }, () => {
     expect(scanned.status).toBe(200);
     const review = await scanned.json();
     expect(review.accepted).toHaveLength(1);
-    expect(review.accepted[0]).toMatchObject({ bus: "6417", nextInspType: "A-3", nextInspDue: 100_025, transDue: 100_250 });
+    expect(review.accepted[0]).toMatchObject({ bus: "6417", nextInspType: "A-3", nextInspDue: 100_025, transDue: 100_250, hubDue: 100_250, diffDue: null });
     expect((await applyReadings(request("POST", { readings: review.accepted }, true))).status).toBe(200);
     let record = (await getPmMileage())["6417"];
-    expect(pmWorkItems([record], DEFAULT_PM_SETTINGS).map((r) => [r.kind, r.milesLeft])).toEqual([["inspection", 25], ["trans", 250]]);
+    expect(pmWorkItems([record], DEFAULT_PM_SETTINGS).map((r) => [r.kind, r.milesLeft])).toEqual([["inspection", 25], ["hub", 250], ["trans", 250]]);
 
     // Daily odometer-only imports preserve both independently stored schedules.
     expect((await applyReadings(request("POST", { readings: [{ bus: "6417", odometer: 100_010 }] }, true))).status).toBe(200);

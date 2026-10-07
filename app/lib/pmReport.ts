@@ -39,6 +39,10 @@ export interface PmReportBus {
   lastInspMiles: number | null;
   transDue: number | null;
   lastTransMiles: number | null;
+  hubDue: number | null;
+  lastHubMiles: number | null;
+  diffDue: number | null;
+  lastDiffMiles: number | null;
   note: string | null; // anything odd (rows disagree, unknown PM mark)
   pages: number[];
 }
@@ -169,13 +173,16 @@ export function summarizeReportRows(rows: PmReportRow[]): PmReportBus[] {
     const odometer = Math.max(...list.map((r) => r.current));
     const notes: string[] = [];
     if (new Set(list.map((r) => r.current)).size > 1) notes.push("rows disagree on the current mileage; kept the highest");
-    const latestForKind = (inspection: boolean) => {
-      const candidates = list.filter((r) => (r.mark !== null) === inspection);
+    const latestOf = (candidates: PmReportRow[]) => {
       const latest = Math.max(...candidates.map((r) => r.current));
       return candidates.filter((r) => r.current === latest);
     };
-    const insp = latestForKind(true);
-    const trans = latestForKind(false);
+    const insp = latestOf(list.filter((r) => r.mark !== null));
+    // The three fluid PMs are separate lines with their own due marks.
+    const fluid = (test: RegExp) => latestOf(list.filter((r) => r.mark === null && test.test(r.activity)));
+    const trans = fluid(/trans/i);
+    const hub = fluid(/hub/i);
+    const diff = fluid(/differential|\bdiff\b/i);
     let nextInspType: InspectionType | null = null;
     let nextInspDue: number | null = null;
     if (insp.length) {
@@ -185,8 +192,10 @@ export function summarizeReportRows(rows: PmReportRow[]): PmReportBus[] {
       nextInspType = markToType(soonest.mark as number);
       nextInspDue = soonest.dueAt;
     }
-    let transDue: number | null = null;
-    if (trans.length) transDue = Math.min(...trans.map((r) => r.dueAt));
+    const dueOf = (rows: PmReportRow[]) => (rows.length ? Math.min(...rows.map((r) => r.dueAt)) : null);
+    const transDue = dueOf(trans);
+    const hubDue = dueOf(hub);
+    const diffDue = dueOf(diff);
     out.push({
       bus,
       odometer,
@@ -196,6 +205,10 @@ export function summarizeReportRows(rows: PmReportRow[]): PmReportBus[] {
       lastInspMiles: nextInspDue === null ? null : nextInspDue - INSPECTION_INTERVAL,
       transDue,
       lastTransMiles: transDue === null ? null : transDue - TRANS_PM_INTERVAL,
+      hubDue,
+      lastHubMiles: hubDue === null ? null : hubDue - TRANS_PM_INTERVAL,
+      diffDue,
+      lastDiffMiles: diffDue === null ? null : diffDue - TRANS_PM_INTERVAL,
       note: notes.length ? notes.join("; ") : null,
       pages: [...new Set(list.map((r) => r.page))].sort((a, b) => a - b),
     });

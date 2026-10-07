@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { Button, ConfirmDialog, EmptyState, IconButton, Panel, ResponsiveDialog, SearchField } from "../ui";
 import { completedBusRows, completionCreditLabel, completionDateText, completionTimestamp, type PmInspectionEntry } from "../lib/pmHistory";
-import { formatMiles, type PmRecord } from "../lib/pmMileage";
+import { PM_KIND_LABEL, formatMiles, type PmRecord } from "../lib/pmMileage";
 import { getDeviceActor } from "../lib/deviceActor";
 import type { MasterBus } from "../lib/types";
 import styles from "./PmCompletionHistory.module.css";
@@ -83,7 +83,7 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
           </div>
           {rows.map((row) => <div className={styles.row} role="row" aria-label={`Completed work for bus ${row.bus}`} key={row.bus}>
             <div role="cell" data-label="Bus"><strong>{label(row.bus)}</strong></div>
-            <div role="cell" data-label="Last completed PM">{row.kind === "trans" ? "Trans PM" : row.type || "No completion recorded"}</div>
+            <div role="cell" data-label="Last completed PM">{row.kind === null ? "No completion recorded" : row.kind === "inspection" ? row.type || "No completion recorded" : PM_KIND_LABEL[row.kind]}</div>
             <div role="cell" data-label="Completed">{row.entry ? completionDateText(row.completedAt) : "—"}</div>
             <div role="cell" data-label="Recorded mileage">{row.miles === null ? "—" : formatMiles(row.miles)}</div>
             <div role="cell" data-label="Completed by">{row.entry ? completionCreditLabel(row.entry) : "—"}</div>
@@ -101,7 +101,7 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
         <p>No PMs have been completed through this site for this bus yet.</p>
       </div>}
       {history?.map((entry) => <article className={styles.entry} key={entry.id}>
-        <strong>{entry.kind === "trans" ? "Trans PM" : entry.type || "Inspection"}{entry.undoneAt ? " · Undone" : ""}</strong>
+        <strong>{entry.kind === "inspection" ? entry.type || "Inspection" : PM_KIND_LABEL[entry.kind]}{entry.undoneAt ? " · Undone" : ""}</strong>
         <p>{completionDateText(completionTimestamp(entry))}</p>
         <p>Recorded mileage: {formatMiles(entry.miles)}</p>
         <p>{completionCreditLabel(entry)}</p>
@@ -110,7 +110,7 @@ export default function PmCompletionHistory({ buses, records, label, onUpdated }
       </article>)}
     </ResponsiveDialog>
     <ConfirmDialog isOpen={undo !== null} onOpenChange={(open) => { if (!open) setUndo(null); }}
-      title={`Undo ${undo?.kind === "trans" ? "Trans PM" : undo?.type || "inspection"} completion?`}
+      title={`Undo ${undo ? (undo.kind === "inspection" ? undo.type || "inspection" : PM_KIND_LABEL[undo.kind]) : "PM"} completion?`}
       description="Restore this PM's previous schedule and return it to upcoming work. Current mileage, notes, bus status, and the other PM schedule are kept."
       confirmLabel="Undo completion" isPending={busy} onConfirm={confirmUndo} />
   </>;

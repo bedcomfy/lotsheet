@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.54.0 - 2026-10-07
+
+- Trans PM, front hub fluid and differential fluid are three separate PMs
+  now, each with its own due mark, last-done mark and date. The PM Mileage
+  table shows a row per fluid PM that has a mark on file (labelled Trans PM,
+  Hub fluid, Diff fluid), each can be completed or edited on its own, and
+  the printed sheet, the Completed tab and the audit log name the kind.
+  The 75,000-mile interval is shared.
+- The tracker workbook download writes one T,H,D row per fluid PM with a
+  mark, and importing the master reads the TRANS, HUB and DIFFERENTIAL rows
+  into their own marks. Auto-completions are recorded per kind.
+- The shop's master tracker (as of October 7, 2026) is committed as a
+  snapshot and applied to the site once, on the first server start after
+  this deploy: every bus's next inspection type and due mark and its trans,
+  hub and diff marks are set from the sheet, odometers stay as they are,
+  and replaced PMs show on the Completed tab as auto-completed by master
+  upload. The result is kept in the database so the snapshot never applies
+  twice; the audit log records the run.
+
 ## 0.53.0 - 2026-10-07
 
 - Completing a PM is a confirmation now. The dialog shows the date, the
