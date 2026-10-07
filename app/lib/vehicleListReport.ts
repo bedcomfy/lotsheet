@@ -11,10 +11,16 @@
 
 import type { PositionedText } from "./pmReport";
 import { odometerReportDate } from "./odometerReport";
+import { serviceTimestamp } from "./vehicleServiceReport";
 
 export interface VehicleListRow {
   bus: string; // leading zeros stripped: "006450" → "6450"
   odometer: number; // whole miles
+  // The "Last Service" column: when this odometer was read (a fueling), as
+  // Fleetwatch's Chicago wall-clock time, YYYY-MM-DDTHH:mm:ss; and its date
+  // alone as m/d/yy for the reading date. Null when the column is absent.
+  lastServiceAt: string | null;
+  readAt: string | null;
   page: number;
   line: string;
 }
@@ -23,15 +29,27 @@ export interface VehicleListParse {
   rows: VehicleListRow[];
   reportDate: string | null; // the report's print date, m/d/yy
   lineCount: number;
-  columns: { vehicle: string; odometer: string } | null; // the header text that was matched
+  columns: { vehicle: string; odometer: string; service?: string } | null; // the header text that was matched
 }
 
 const ROW_TOLERANCE = 4.5;
 const VEHICLE_HEADER = /^(vehicle|veh\.?|unit|bus|equipment)(\s*(#|no\.?|number|num\.?|id))?$/i;
 const ODOMETER_HEADER = /^((current|last|latest)\s+)?(odometer|odom\.?|meter|mileage|miles)(\s*(reading|read|rdg\.?))?$/i;
+const SERVICE_HEADER = /^(last\s+serviced?|service\s+(date|time)|last\s+(fuel(ing|ed)?|reading))$/i;
 const BUS_TOKEN = /^\d{3,7}$/;
 const MILES_TOKEN = /^(\d{1,3}(,\d{3})+|\d{1,9})(\.\d+)?$/;
-const TOTAL_LINE = /\b(total|subtotal|count|average|page\s+\d+)\b/i;
+// "10/06/2026 06:42:09 PM" (one token in Fleetwatch's PDF)
+const SERVICE_TOKEN = /^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}:\d{2})\s*(AM|PM)$/i;
+const TOTAL_LINE = /\b(total|subtotal|count|average|page\s+\d+|vehicles\s+in)\b/i;
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+// The footer's "Tuesday, October 06, 2026 11:55:30 PM" → "10/6/26"; other
+// Fleetwatch date shapes fall back to the shared reader.
+export function vehicleListReportDate(line: string): string | null {
+  const long = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),\s+(\d{4})\b/i.exec(line);
+  if (long) return `${MONTHS.indexOf(long[1].toLowerCase()) + 1}/${Number(long[2])}/${long[3].slice(-2)}`;
+  return odometerReportDate(line);
+}
 
 interface Token { text: string; row: number; col: number }
 
@@ -58,7 +76,7 @@ export function positionedLines(items: PositionedText[]): Token[][] {
   return lines;
 }
 
-interface Header { cols: number[]; vehicle: number; odometer: number; text: { vehicle: string; odometer: string } }
+interface Header { cols: number[]; vehicle: number; odometer: number; service: number | null; text: { vehicle: string; odometer: string; service?: string } }
 
 // A header row names both columns. Adjacent header words ("Vehicle" "Number")
 // may arrive as separate tokens, so pairs are tried as well as single tokens.
@@ -73,13 +91,18 @@ function findHeader(line: Token[]): Header | null {
   const longest = (re: RegExp) => candidates.filter((c) => re.test(c.text)).sort((a, b) => b.text.length - a.text.length)[0];
   const vehicle = longest(VEHICLE_HEADER);
   const odometer = longest(ODOMETER_HEADER);
+  const service = longest(SERVICE_HEADER);
   if (!vehicle || !odometer || vehicle.index === odometer.index) return null;
-  // Column positions: the two matched headers (a two-word header counts once,
-  // at its centre) plus every other header word.
+  // Column positions: the matched headers (a two-word header counts once, at
+  // its centre) plus every other header word.
+  const chosenAll = [vehicle, odometer, ...(service ? [service] : [])];
   const merged = new Set<number>();
-  for (const chosen of [vehicle, odometer]) for (let i = 0; i < chosen.span; i++) merged.add(chosen.index + i);
-  const cols = [vehicle.col, odometer.col, ...line.filter((_, index) => !merged.has(index)).map((token) => token.col)];
-  return { cols, vehicle: vehicle.col, odometer: odometer.col, text: { vehicle: vehicle.text, odometer: odometer.text } };
+  for (const chosen of chosenAll) for (let i = 0; i < chosen.span; i++) merged.add(chosen.index + i);
+  const cols = [...chosenAll.map((c) => c.col), ...line.filter((_, index) => !merged.has(index)).map((token) => token.col)];
+  return {
+    cols, vehicle: vehicle.col, odometer: odometer.col, service: service ? service.col : null,
+    text: { vehicle: vehicle.text, odometer: odometer.text, ...(service ? { service: service.text } : {}) },
+  };
 }
 
 // The token that sits under a header: nearest to that header's position, and
@@ -107,7 +130,7 @@ export function parseVehicleListReport(pages: PositionedText[][]): VehicleListPa
     for (const line of positionedLines(items)) {
       lineCount += 1;
       const text = line.map((t) => t.text).join(" ");
-      if (!reportDate) reportDate = odometerReportDate(text);
+      if (!reportDate) reportDate = vehicleListReportDate(text);
       const found = findHeader(line);
       if (found) { header = found; columns = columns || found.text; continue; }
       if (!header || TOTAL_LINE.test(text)) continue;
@@ -117,7 +140,17 @@ export function parseVehicleListReport(pages: PositionedText[][]): VehicleListPa
       const bus = busToken.text.replace(/^0+/, "");
       const odometer = Math.round(Number(milesToken.text.replace(/,/g, "")));
       if (!bus || !Number.isFinite(odometer) || odometer <= 0) continue;
-      rows.push({ bus, odometer, page: index + 1, line: text });
+      let lastServiceAt: string | null = null;
+      let readAt: string | null = null;
+      const serviceToken = header.service === null ? null : valueUnder(line, header, header.service, SERVICE_TOKEN);
+      const serviceMatch = serviceToken ? SERVICE_TOKEN.exec(serviceToken.text) : null;
+      if (serviceMatch) {
+        const [, date, time, ampm] = serviceMatch;
+        const [m, d] = date.split("/").map((n) => n.padStart(2, "0"));
+        lastServiceAt = serviceTimestamp(`${m}/${d}/${date.split("/")[2]}`, time.padStart(8, "0"), ampm.toUpperCase());
+        if (lastServiceAt) readAt = `${Number(m)}/${Number(d)}/${date.split("/")[2].slice(-2)}`;
+      }
+      rows.push({ bus, odometer, lastServiceAt, readAt, page: index + 1, line: text });
     }
   });
   // One line per vehicle; if a number repeats, keep the highest reading.

@@ -73,7 +73,7 @@ export async function finishMileageSync(
         if (previous?.odometer === miles) { unchanged += 1; continue; }
         // Starred readings have no service date in this report. Do not label
         // them as a reading taken today; last checked is shown separately.
-        const readAt = reading.notServiced ? null : result.report.reportDate;
+        const readAt = reading.notServiced ? null : (reading.readAt ?? result.report.reportDate);
         const set = { odometer: miles, odometerDate: readAt, source: FLEETWATCH_SOURCE, updatedAt: sql`now()` };
         const saved = await tx.insert(pmMileage).values({ bus: reading.bus, ...set }).onConflictDoUpdate({
           target: pmMileage.bus,

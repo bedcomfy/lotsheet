@@ -139,7 +139,7 @@ export async function POST(req: Request) {
     const vl = parseVehicleListReport(pages);
     if (vl.rows.length) {
       const review = reviewReadings(
-        vl.rows.map((r) => ({ bus: r.bus, odometer: r.odometer, readAt: vl.reportDate, note: null })),
+        vl.rows.map((r) => ({ bus: r.bus, odometer: r.odometer, readAt: r.readAt ?? vl.reportDate, note: null })),
         fleet,
         current,
       );

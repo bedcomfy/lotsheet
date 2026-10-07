@@ -71,12 +71,15 @@ export async function syncFleetwatchVehicleList() {
   try {
     const parsed = await downloadFleetwatchReport(fleetwatchVehicleListUrl()).then(readPdfText).then(parseFleetwatchVehicleList);
     const report: OdometerReportParse = {
-      rows: parsed.rows.map((row) => ({ bus: row.bus, division: "0043", dept: null, odometer: row.odometer, mpg: null, milesRun: null, notServiced: false, page: row.page })),
+      rows: parsed.rows.map((row) => ({ bus: row.bus, division: "0043", dept: null, odometer: row.odometer, mpg: null, milesRun: null, notServiced: false, page: row.page, readAt: row.readAt })),
       reportDate: parsed.reportDate ?? chicagoDateShort(now),
       lineCount: parsed.lineCount,
     };
+    // The report's "Last Service" column is when each odometer was read, so
+    // it also refreshes "Last serviced / last odometer reading time".
+    const services = parsed.rows.flatMap((row) => row.lastServiceAt ? [{ bus: row.bus, division: "0043", odometer: row.odometer, servicedAt: row.lastServiceAt }] : []);
     const stamp = now.toISOString();
-    const status = await finishMileageSync(claim.token, { report, services: [], serviceError: null, windowStart: stamp, windowEnd: stamp, actor: "Force Update" });
+    const status = await finishMileageSync(claim.token, { report, services, serviceError: null, windowStart: stamp, windowEnd: stamp, actor: "Force Update" });
     return { ok: true, status, rows: report.rows.length };
   } catch (error) {
     console.error("Fleetwatch Force Update failed", error);

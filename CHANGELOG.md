@@ -7,6 +7,9 @@
   always current, and applies the odometers with the same guards and history
   as the scheduled update: lower readings, jumps over 50,000 miles and buses
   edited meanwhile are skipped and listed. The result shows under the header.
+- The report's Last Service column dates each reading and refreshes the
+  "Last serviced / last odometer reading time" column, so Force Update
+  replaces both of the old automatic reports.
 - Import PDF also accepts the Vehicle List Report. Its vehicle and odometer
   columns are located from the report's own header, and a report without
   them is refused rather than guessed.
