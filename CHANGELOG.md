@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.49.2 - 2026-10-07
+
+- A current odometer always shows its tenth, including .0 (100,020.0), on
+  PM Mileage, its printed sheet, the Import PDF review and the work order's
+  vehicle autofill, so a whole-number reading is not mistaken for one that
+  lost its decimal. Due marks and miles left are unchanged.
+
 ## 0.49.1 - 2026-10-07
 
 - Force Update and Import PDF now restore the tenth on readings that were

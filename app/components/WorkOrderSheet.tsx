@@ -10,7 +10,7 @@ import { chicagoDateShort } from "../lib/chicagoTime";
 import { Button, Chip, ConfirmDialog, IconButton } from "../ui";
 import WorkOrderObjectCode from "./WorkOrderObjectCode";
 import { OBJECT_CODES } from "../lib/objectCodes";
-import { formatMiles } from "../lib/pmMileage";
+import { formatOdometer } from "../lib/pmMileage";
 import { useBusMaster } from "./BusMasterProvider";
 import { PaperViewport, SheetRevision } from "../sheets/core";
 import { LETTER_PORTRAIT } from "../sheets/core/profiles";
@@ -214,7 +214,7 @@ export default function WorkOrderSheet() {
     const fill = (odometer: number | null) => {
       if (!alive) return;
       const description = [bus.model, bus.length ? `${bus.length}` : ""].filter(Boolean).join(" · ");
-      const miles = odometer === null ? "" : formatMiles(odometer);
+      const miles = odometer === null ? "" : formatOdometer(odometer);
       // A different bus than last time: its description and odometer replace
       // whatever was there, since those belonged to the old bus. The same bus
       // again only fills blanks, so an edit made since stays.

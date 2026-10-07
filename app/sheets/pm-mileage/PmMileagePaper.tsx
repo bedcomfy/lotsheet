@@ -1,5 +1,5 @@
 import {
-  PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, groupPmWorkItems,
+  PM_STATUS_LABEL, TRANS_PM_NOTE, formatMiles, formatOdometer, groupPmWorkItems,
   type PmFilter, type PmSettings, type PmWorkItem,
 } from "../../lib/pmMileage";
 import { serviceTimeParts } from "../../lib/vehicleServiceReport";
@@ -49,12 +49,12 @@ export function PmMileagePaper({ items: allItems, labels, date, filter, query }:
               return (
                 <tr key={item.id} data-pm-id={item.id}>
                   <td><strong>{r.bus}</strong>{labels[r.bus] && labels[r.bus] !== r.bus && <span>{labels[r.bus]}</span>}</td>
-                  <td>{r.odometer === null ? "Not recorded" : formatMiles(r.odometer)}
+                  <td>{r.odometer === null ? "Not recorded" : formatOdometer(r.odometer)}
                     {!serviceTime && r.odometerDate && <span>Reading: {r.odometerDate}</span>}
                   </td>
                   <td>
                     {serviceTime ? <><span>{serviceTime.date}</span><span>{serviceTime.time}</span>
-                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatMiles(r.lastServiceMiles)} mi</span>}</>
+                      {r.lastServiceMiles !== null && r.lastServiceMiles !== r.odometer && <span>at {formatOdometer(r.lastServiceMiles)} mi</span>}</>
                       : "Not recorded"}
                   </td>
                   <td><strong>{item.kind === "trans" ? "Trans PM" : item.type || "Inspection"}</strong><span>{item.dueMiles === null ? "Not scheduled" : `at ${formatMiles(item.dueMiles)}`}</span></td>
