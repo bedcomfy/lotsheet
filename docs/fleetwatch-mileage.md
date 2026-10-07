@@ -86,3 +86,16 @@ than being represented as today's service.
 On failure, saved mileage remains unchanged and the last successful check stays
 visible. An open PM page refreshes stored results every 30 seconds while idle.
 Tests use an in-memory database, never production or the local `.data` directory.
+
+## Tracker workbook (Download tracker)
+
+`GET /api/pm-mileage/tracker` builds the shop's master spreadsheet, "PNW
+DAILY P.M. TRACKER", from the PM Mileage data (`app/lib/pmTracker.ts`) and
+the **Download tracker** button on PM Mileage saves it. Sheet 1 lists every
+active PM-fleet bus with its current odometer, inspection due mark and type
+("PM-A 15000 MILES"), a live `=C-B` miles-until formula and an empty
+Workorder column, soonest first; sheet 2 ("T,H,D P.M.") lists the
+transmission, front hub and differential schedule per bus the same way.
+Mileages use the `0.0` number format so tenths always show. The file is
+meant to replace the hand-kept workbook outright, so the odometers never
+need to be copied in by hand.

@@ -30,8 +30,8 @@ test("crew status, direct next-PM correction, completion, and admin logout", asy
   await page.getByRole("searchbox", { name: "Search buses", exact: true }).fill("6404");
   const inspection = page.getByRole("row", { name: "Bus 6404 A-3", exact: true });
   const trans = page.getByRole("row", { name: "Bus 6404 Trans PM", exact: true });
-  await expect(inspection.getByText("25", { exact: true })).toBeVisible();
-  await expect(trans.getByText("250", { exact: true })).toBeVisible();
+  await expect(inspection.getByText("25.0", { exact: true })).toBeVisible();
+  await expect(trans.getByText("250.0", { exact: true })).toBeVisible();
   await inspection.getByRole("button", { name: /status/ }).click();
   await page.getByRole("option", { name: "Hold", exact: true }).click();
   await expect(trans.getByRole("button", { name: /status/ })).toContainText("Hold");
@@ -444,7 +444,7 @@ test("unscheduled Trans PM stays out of the queue and printouts until an admin a
   await edit.getByRole("button", { name: "Save", exact: true }).click();
   await expect(trans).toBeVisible();
   await expect(trans.getByText("at 384,500")).toBeVisible();
-  await expect(trans.getByText("704", { exact: true })).toBeVisible();
+  await expect(trans.getByText("704.0", { exact: true })).toBeVisible();
   await expect(page.getByText(/^2 of \d+ PMs/)).toBeVisible();
   await expect(inspection.getByText("at 384,000")).toBeVisible();
   const record = (await (await api.get("/api/pm-mileage")).json()).records["6388"];

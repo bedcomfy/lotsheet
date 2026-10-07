@@ -5,7 +5,7 @@ import {
   TRANS_PM_INTERVAL,
   applyCompletion,
   formatMiles,
-  formatOdometer,
+  formatTenths,
   toOdometer,
   emptyPmRecord,
   filterPmWorkItems,
@@ -321,9 +321,9 @@ describe("odometer tenths", () => {
   });
 
   it("always shows the tenth on a current odometer, .0 included", () => {
-    expect(formatOdometer(100020)).toBe("100,020.0");
-    expect(formatOdometer(425481.5)).toBe("425,481.5");
-    expect(formatOdometer(null)).toBe("");
+    expect(formatTenths(100020)).toBe("100,020.0");
+    expect(formatTenths(425481.5)).toBe("425,481.5");
+    expect(formatTenths(null)).toBe("");
   });
 
   it("carries the tenth into miles left while PM marks stay whole", () => {
