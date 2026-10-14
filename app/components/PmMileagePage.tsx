@@ -363,7 +363,7 @@ export default function PmMileagePage() {
       <PageHeader
         eyebrow="Preventive Maintenance"
         title="PM Mileage"
-        description="Shop and Follow up buses appear first. Bus status also shows Split and Holds for Inspection. All other PMs stay in mileage order. Each PM keeps its own row."
+        description="Shop and Follow up PMs appear first when overdue or due within 500 miles. Bus status also shows Split and Holds for Inspection. All other PMs stay in mileage order. Each PM keeps its own row."
         actions={
           <div className={styles.headerActions}>
             <SaveStatus state={saveState} />

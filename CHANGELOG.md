@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.54.2 - 2026-10-14
+
+- Limit the PM Mileage In shop / Follow up section to each PM that is overdue or due within 500 miles. Later inspections, transmission, hub fluid, and differential fluid work stay in Upcoming work, even when the bus is in the shop.
+- Apply the same grouping to the printed PM report while preserving its existing 1,000-mile print limit, bus status, and independent maintenance schedules.
+
 ## 0.54.1 - 2026-10-07
 
 - The committed master schedule now applies during the first PM Mileage

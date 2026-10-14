@@ -16,6 +16,72 @@ async function pdfText(bytes: Buffer) {
 }
 
 // Uses the isolated in-memory dev server configured by playwright.config.ts.
+test("Shop includes only each PM due within 500 miles on screen and in print", async ({ page, context }) => {
+  test.setTimeout(120_000);
+  const api = context.request;
+  expect((await api.post("/api/admin/session", { data: { password: process.env.ADMIN_PASSWORD || "ride" } })).ok()).toBe(true);
+  const schedule = {
+    bus: "6471", odometer: 100_000, disposition: "", nextInspType: "A-9", nextInspMiles: 99_800,
+    nextTransMiles: 110_000, nextHubMiles: 100_500, nextDiffMiles: 100_501,
+  };
+  expect((await api.put("/api/pm-mileage", { data: schedule })).ok()).toBe(true);
+  await api.delete("/api/admin/session");
+  await page.goto("/pm-mileage");
+  const search = page.getByRole("searchbox", { name: "Search buses", exact: true });
+  await search.fill("6471");
+  const table = page.getByRole("table", { name: "Upcoming PM work" });
+  const inspection = table.getByRole("row", { name: "Bus 6471 A-9", exact: true });
+  await inspection.getByRole("button", { name: /status/ }).click();
+  await page.getByRole("option", { name: "Shop", exact: true }).click();
+  const shop = table.getByRole("rowgroup", { name: "In shop / Follow up", exact: true });
+  const queue = table.getByRole("rowgroup", { name: "Upcoming work", exact: true });
+  const assertGroups = async () => {
+    await expect(shop.getByRole("row", { name: /^Bus 6471 / })).toHaveCount(2);
+    await expect(shop.getByRole("row", { name: "Bus 6471 A-9", exact: true })).toBeVisible();
+    await expect(shop.getByRole("row", { name: "Bus 6471 Hub fluid", exact: true })).toBeVisible();
+    await expect(queue.getByRole("row", { name: /^Bus 6471 / })).toHaveCount(2);
+    await expect(queue.getByRole("row", { name: "Bus 6471 Diff fluid", exact: true })).toBeVisible();
+    await expect(queue.getByRole("row", { name: "Bus 6471 Trans PM", exact: true })).toBeVisible();
+  };
+  await assertGroups();
+  await page.reload();
+  await search.fill("6471");
+  await assertGroups();
+  const record = (await (await api.get("/api/pm-mileage")).json()).records["6471"];
+  expect(record).toMatchObject({ ...schedule, disposition: "shop" });
+
+  await page.emulateMedia({ media: "print" });
+  const paper = page.locator("[data-pm-paper]");
+  const printedShop = paper.getByRole("table", { name: "In shop / Follow up" });
+  await expect(printedShop.locator("[data-pm-id]")).toHaveCount(2);
+  await expect(printedShop.locator('[data-pm-id="6471:inspection"]')).toBeVisible();
+  await expect(printedShop.locator('[data-pm-id="6471:hub"]')).toBeVisible();
+  await expect(paper.getByRole("table", { name: "Upcoming work" }).locator("[data-pm-id]"))
+    .toHaveAttribute("data-pm-id", "6471:diff");
+  await expect(paper.locator('[data-pm-id="6471:trans"]')).toHaveCount(0);
+  await page.emulateMedia({ media: "screen" });
+
+  const response = await api.get("/api/pdf", { params: { path: "/pm-mileage", pmQuery: "6471" }, timeout: 90_000 });
+  expect(response.ok()).toBe(true);
+  const bytes = await response.body();
+  const pages = await pdfText(bytes);
+  expect(pages).toHaveLength(1);
+  const [shopText, upcomingText] = pages[0].split("Upcoming work");
+  expect(shopText).toContain("In shop / Follow up");
+  expect(shopText).toContain("A-9");
+  expect(shopText).toContain("Hub fluid");
+  expect(shopText).not.toContain("Diff fluid");
+  expect(upcomingText).toContain("Diff fluid");
+  expect(pages[0]).not.toContain("Trans PM");
+  await mkdir("test-results", { recursive: true });
+  await writeFile("test-results/pm-shop-window.pdf", bytes);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertGroups();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: "test-results/pm-shop-window-phone.png", fullPage: true });
+});
+
 test("crew status, direct next-PM correction, completion, and admin logout", async ({ page, context }) => {
   const api = context.request;
   const password = process.env.ADMIN_PASSWORD || "ride";
@@ -292,7 +358,9 @@ test("PM shop grouping, shared Hold/Split flags, and grayscale multi-page printi
   const shop = table.getByRole("rowgroup", { name: "In shop / Follow up" });
   const queue = table.getByRole("rowgroup", { name: "Upcoming work" });
   await expect(shop.getByRole("row", { name: "Bus 6450 A-3", exact: true })).toBeVisible();
-  await expect(shop.getByRole("row", { name: "Bus 6451 Trans PM", exact: true })).toBeVisible();
+  await expect(queue.getByRole("row", { name: "Bus 6450 Trans PM", exact: true })).toBeVisible();
+  await expect(queue.getByRole("row", { name: "Bus 6451 A-3", exact: true })).toBeVisible();
+  await expect(queue.getByRole("row", { name: "Bus 6451 Trans PM", exact: true })).toBeVisible();
   const queueNames = await queue.locator('[role="row"][aria-label]').evaluateAll((rows) => rows.map((row) => row.getAttribute("aria-label")).filter((name) => /^Bus (6404|6417|6435) /.test(name || "")));
   expect(queueNames).toEqual(["Bus 6404 A-3", "Bus 6417 A-3", "Bus 6435 A-3", "Bus 6404 Trans PM", "Bus 6417 Trans PM", "Bus 6435 Trans PM"]);
   expect(await table.getByRole("rowgroup").evaluateAll((groups) => groups.map((group) => group.getAttribute("aria-label"))))

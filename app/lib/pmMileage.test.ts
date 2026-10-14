@@ -85,6 +85,44 @@ describe("PM fleet scope", () => {
 });
 
 describe("PM queue sections", () => {
+  it.each(["shop", "follow-up"] as const)("keeps distant fluid PMs out of %s while retaining them in upcoming work", (disposition) => {
+    const record = { ...emptyPmRecord("6471"), disposition, odometer: 100_000,
+      nextInspType: "A-9" as const, nextInspMiles: 99_800,
+      nextTransMiles: 110_000, nextHubMiles: 100_250, nextDiffMiles: 100_501 };
+    // The shop window stays at 500 even if the general Due soon filter is wider.
+    const work = pmWorkItems([record], { dueSoonMiles: 2000 });
+    const groups = groupPmWorkItems(work);
+    expect(groups[0].items.map((item) => [item.id, item.milesLeft])).toEqual([
+      ["6471:inspection", -200], ["6471:hub", 250],
+    ]);
+    expect(groups[1].items.map((item) => [item.id, item.milesLeft])).toEqual([
+      ["6471:diff", 501], ["6471:trans", 10_000],
+    ]);
+    expect(groups.flatMap((group) => group.items)).toHaveLength(work.length);
+  });
+
+  it.each([-2000, -200, 0, 499.9, 500, 500.1, 3000, null])("groups all four PM kinds by their own remaining mileage: %s", (left) => {
+    const record = { ...emptyPmRecord("6471"), disposition: "shop" as const,
+      odometer: left === null ? null : 100_000 - left,
+      nextInspType: "A-9" as const, nextInspMiles: 100_000,
+      nextTransMiles: 100_000, nextHubMiles: 100_000, nextDiffMiles: 100_000 };
+    const groups = groupPmWorkItems(pmWorkItems([record], S));
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(left !== null && left <= 500 ? "shop" : "queue");
+    expect(groups[0].items.map((item) => item.kind).sort()).toEqual(["diff", "hub", "inspection", "trans"]);
+  });
+
+  it("returns the next inspection to upcoming work after completion while keeping overdue fluid work in shop", () => {
+    const record = { ...emptyPmRecord("6471"), disposition: "shop" as const, odometer: 100_200,
+      nextInspType: "A-9" as const, nextInspMiles: 100_000, nextTransMiles: 99_900 };
+    const completed = applyCompletion(record, { kind: "inspection", miles: record.odometer, date: "10/14/26" });
+    const groups = groupPmWorkItems(pmWorkItems([completed], S));
+    expect(groups.map((group) => [group.id, group.items.map((item) => item.id)])).toEqual([
+      ["shop", ["6471:trans"]], ["queue", ["6471:inspection"]],
+    ]);
+    expect(completed.disposition).toBe("shop");
+  });
+
   it("moves only Shop and Follow up to the top section, preserving each PM's mileage order", () => {
     const records = (["", "hold", "split", "shop", "follow-up"] as const).map((disposition, index) => ({
       ...emptyPmRecord(String(6400 + index)), disposition, odometer: 100_000,

@@ -330,13 +330,19 @@ export function filterPmWorkItems(
       models.get(record.bus)?.toLowerCase().includes(q)));
 }
 
-// Partition the mileage-ordered queue without changing the order within either
-// section. Hold and Split remain in the normal queue, even when overdue.
+const PM_SHOP_WINDOW_MILES = 500;
+
+// Bus status is shared, but shop work is decided per PM: include overdue work
+// and marks due within 500 miles, not the bus's entire maintenance schedule.
+// Later or unknown work stays in the normal queue, as do Hold and Split.
+// Partition without changing mileage order within either section.
 export function groupPmWorkItems(items: PmWorkItem[]) {
   const shop: PmWorkItem[] = [];
   const queue: PmWorkItem[] = [];
   for (const item of items) {
-    (item.record.disposition === "shop" || item.record.disposition === "follow-up" ? shop : queue).push(item);
+    const inShop = item.record.disposition === "shop" || item.record.disposition === "follow-up";
+    const nearDue = item.milesLeft !== null && item.milesLeft <= PM_SHOP_WINDOW_MILES;
+    (inShop && nearDue ? shop : queue).push(item);
   }
   return [
     { id: "shop", title: "In shop / Follow up", items: shop },
