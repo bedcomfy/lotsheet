@@ -23,11 +23,31 @@ async function grid(page: Page, id: string) {
     return {
       paper: [origin.width, origin.height],
       table: box(paper.querySelector("table")!),
-      cells: rows.flatMap((row) => [...row.children].map(box)),
+      cells: rows.slice(1).flatMap((row) => [...row.children].map(box)),
       buses: [...paper.querySelectorAll("[data-bus], .fuelt__busnum")].map((bus) => bus.getAttribute("data-bus") || bus.textContent),
       bodyText: rows.slice(1).map((row) => row.textContent),
     };
   });
+}
+
+async function centeredCustomHeader(page: Page) {
+  const bounds = await page.locator('[data-sheet-id="custom-sheet"]').evaluate((paper) => {
+    const page = paper.getBoundingClientRect();
+    const title = paper.querySelector('[data-sheet-title]')!.getBoundingClientRect();
+    const date = paper.querySelector('[data-sheet-date]')!.getBoundingClientRect();
+    const table = paper.querySelector('table')!.getBoundingClientRect();
+    return {
+      centerOffset: Math.abs((title.left + title.right) / 2 - (page.left + page.right) / 2),
+      gap: date.left - title.right,
+      rightInset: table.right - date.right,
+      titleAlign: getComputedStyle(paper.querySelector('[data-sheet-title]')!).textAlign,
+    };
+  });
+  expect(bounds.centerOffset).toBeLessThan(1);
+  expect(bounds.titleAlign).toBe("center");
+  expect(bounds.gap).toBeGreaterThanOrEqual(8);
+  expect(bounds.rightInset).toBeGreaterThanOrEqual(0);
+  expect(bounds.rightInset).toBeLessThan(10);
 }
 
 test("copies match Fuel geometry and roster on screen and paper without changing Fuel", async ({ page, context }) => {
@@ -51,7 +71,10 @@ test("copies match Fuel geometry and roster on screen and paper without changing
       expect(copy.table, `${media} ${id} table bounds`).toEqual(original.table);
       expect(copy.cells, `${media} ${id} cell bounds`).toEqual(original.cells);
       expect(copy.buses, `${media} ${id} bus order`).toEqual(original.buses);
-      if (id === "custom-sheet") expect(copy.bodyText).toEqual(original.bodyText);
+      if (id === "custom-sheet") {
+        expect(copy.bodyText).toEqual(original.bodyText);
+        await centeredCustomHeader(page);
+      }
     }
   }
   await page.emulateMedia({ media: "screen" });
@@ -67,6 +90,7 @@ test("copies match Fuel geometry and roster on screen and paper without changing
   await page.reload();
   await expect(header).toHaveValue("November Equipment Checks");
   await expect(page.getByRole("textbox", { name: "Bus 2770 gallons" })).toHaveValue("12.5");
+  await centeredCustomHeader(page);
 
   await page.getByRole("radio", { name: "Monthly Bus Cleaning", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Bus 2770 cleaning date" })).toHaveValue("11/09");
@@ -127,6 +151,7 @@ test("long custom headings stay complete and readable in a one-page PDF", async 
   await page.goto("/custom-sheet");
   await page.getByRole("textbox", { name: "Sheet header", exact: true }).fill(header);
   await expect.poll(async () => (await (await context.request.get("/api/state/custom-sheet")).json()).value.header).toBe(header);
+  await centeredCustomHeader(page);
   const response = await context.request.get("/api/pdf", { params: { path: "/custom-sheet" }, timeout: 90_000 });
   expect(response.ok()).toBe(true);
   const bytes = await response.body();

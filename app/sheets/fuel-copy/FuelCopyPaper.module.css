@@ -76,6 +76,16 @@
   white-space: normal;
 }
 
+.header td.centeredHeader { padding-left: 6px; }
+.headerLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+.headerLayout .title { grid-column: 2; text-align: center; }
+.headerLayout [data-sheet-date] { grid-column: 3; justify-self: end; white-space: nowrap; }
+
 .date {
   display: inline-block;
   min-width: 110px;

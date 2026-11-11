@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.55.2 - 2026-11-10
+
+- Center the Custom Sheet heading across the page and move its date to the upper right in the preview and PDF. Keep the blank heading line and fuel-sized bus grid.
+
 ## 0.55.1 - 2026-11-10
 
 - Reopen the site without the typing-game password lock. Keep the entire gate available behind `SITE_GATE_ENABLED=on` for later use.

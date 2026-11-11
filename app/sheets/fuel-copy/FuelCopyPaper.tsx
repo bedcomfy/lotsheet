@@ -12,6 +12,7 @@ interface FuelCopyPaperProps {
   busNumbers: string[];
   title: string;
   titleLine?: boolean;
+  centeredHeader?: boolean;
   dateLabel?: string;
   date: string;
   entryLabel: string;
@@ -21,10 +22,12 @@ interface FuelCopyPaperProps {
 }
 
 export function FuelCopyPaper({
-  sheetId, label, busNumbers, title, titleLine = false, dateLabel = "DATE", date,
+  sheetId, label, busNumbers, title, titleLine = false, centeredHeader = false, dateLabel = "DATE", date,
   entryLabel, blank = false, flags = {}, renderEntry,
 }: FuelCopyPaperProps) {
   const { columns, rows, total } = buildFuelCopyColumns(busNumbers);
+  const heading = <span className={`${styles.title} ${titleLine ? styles.titleLine : ""}`} data-sheet-title="">{title || "\u00a0"}</span>;
+  const dateField = <span data-sheet-date="">{dateLabel}: <span className={styles.date}>{blank ? "" : date}</span></span>;
 
   function groupCells(group: number, row: number) {
     if (group === 3 && row === rows - 1) return (
@@ -64,10 +67,12 @@ export function FuelCopyPaper({
         </colgroup>
         <tbody>
           <tr className={styles.header}>
-            <td colSpan={6}>
-              <span className={`${styles.title} ${titleLine ? styles.titleLine : ""}`} data-sheet-title="">{title || "\u00a0"}</span>
-            </td>
-            <td colSpan={6}>{dateLabel}: <span className={styles.date}>{blank ? "" : date}</span></td>
+            {centeredHeader ? <td colSpan={12} className={styles.centeredHeader}>
+              <div className={styles.headerLayout}>{heading}{dateField}</div>
+            </td> : <>
+              <td colSpan={6}>{heading}</td>
+              <td colSpan={6}>{dateField}</td>
+            </>}
           </tr>
           <tr className={styles.columnHeaders}>
             {Array.from({ length: 4 }, (_, group) => <Fragment key={group}>

@@ -27,7 +27,7 @@ export function CustomSheetPaper({ data, busNumbers, flags, blank = false, onCha
   }
   return <FuelCopyPaper
     sheetId="custom-sheet" label="Custom sheet roster" busNumbers={busNumbers}
-    title={blank ? "" : data.header} titleLine date={data.date} entryLabel="GALS" blank={blank} flags={flags}
+    title={blank ? "" : data.header} titleLine centeredHeader date={data.date} entryLabel="GALS" blank={blank} flags={flags}
     renderEntry={(bus, field, className) => {
       const key = field === "value" ? "gals" : "serv";
       const value = data.entries[bus]?.[key] || "";

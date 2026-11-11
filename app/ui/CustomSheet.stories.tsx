@@ -40,6 +40,11 @@ export const Typical: Story = {
     await userEvent.clear(header);
     await userEvent.type(header, "November checks");
     await expect(canvasElement.querySelector("[data-sheet-title]")).toHaveTextContent("November checks");
+    const paper = canvasElement.querySelector('[data-sheet-id="custom-sheet"]')!.getBoundingClientRect();
+    const title = canvasElement.querySelector("[data-sheet-title]")!.getBoundingClientRect();
+    const date = canvasElement.querySelector("[data-sheet-date]")!.getBoundingClientRect();
+    await expect(Math.abs((title.left + title.right) / 2 - (paper.left + paper.right) / 2)).toBeLessThan(1);
+    await expect(date.left).toBeGreaterThan(title.right);
     const gallons = canvas.getByRole("textbox", { name: "Bus 2770 gallons" });
     await userEvent.clear(gallons);
     await userEvent.type(gallons, "12.5");
