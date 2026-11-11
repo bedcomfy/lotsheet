@@ -79,12 +79,22 @@
 .header td.centeredHeader { padding-left: 6px; }
 .headerLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr) 104px;
+  height: 27.2px;
   align-items: center;
   column-gap: 8px;
 }
-.headerLayout .title { grid-column: 2; text-align: center; }
-.headerLayout [data-sheet-date] { grid-column: 3; justify-self: end; white-space: nowrap; }
+.headerLayout .title {
+  grid-column: 2;
+  height: 27.2px;
+  overflow: hidden;
+  line-height: 26.2px;
+  text-align: center;
+  white-space: nowrap;
+}
+.singleLineTitle { display: inline-block; width: max-content; white-space: nowrap; }
+.headerLayout [data-sheet-date] { grid-column: 3; justify-self: end; font-size: 12px; white-space: nowrap; }
+.headerLayout .date { min-width: 64px; font-size: 12px; }
 
 .date {
   display: inline-block;

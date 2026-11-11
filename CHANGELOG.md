@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.55.3 - 2026-11-10
+
+- Change Custom Sheet columns to OK and N / R. Keep their boxes blank for handwriting, with only the heading and date editable on screen, and hide all bus flags on this sheet.
+- Widen the centered heading and reduce the date size. Fit heading text to one fixed-height line so longer titles never push down the bus grid; blank printing still leaves the heading empty.
+
 ## 0.55.2 - 2026-11-10
 
 - Center the Custom Sheet heading across the page and move its date to the upper right in the preview and PDF. Keep the blank heading line and fuel-sized bus grid.

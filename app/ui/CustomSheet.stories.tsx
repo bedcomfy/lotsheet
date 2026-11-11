@@ -12,12 +12,12 @@ import styles from "./NewOperationalSheets.stories.module.css";
 function CustomSheetExample({ blank = false, longHeader = false, phone = false }) {
   const [data, setData] = useState(() => customSheetSchema.parse({
     header: longHeader ? "Northwest garage special equipment checks and follow-up work for the November service review" : "Equipment Checks",
-    date: "11/10/26", entries: { "2770": { gals: "22.5", serv: "AB" } },
+    date: "11/10/26", entries: { "2770": { gals: "OK", serv: "" }, "2771": { gals: "", serv: "N/R" } },
   }));
   const content = <>
     {!blank && <TextField label="Sheet header" value={data.header} onChange={(header) => setData({ ...data, header })} />}
     <PaperViewport profile={LETTER_PORTRAIT} mobileViewer label="Custom Sheet paper preview">
-      <CustomSheetPaper data={data} busNumbers={FUEL_COLUMNS.flat()} blank={blank} onChange={blank ? undefined : setData} />
+      <CustomSheetPaper data={data} busNumbers={FUEL_COLUMNS.flat()} blank={blank} />
     </PaperViewport>
   </>;
   return <main className={styles.canvas}>
@@ -45,11 +45,7 @@ export const Typical: Story = {
     const date = canvasElement.querySelector("[data-sheet-date]")!.getBoundingClientRect();
     await expect(Math.abs((title.left + title.right) / 2 - (paper.left + paper.right) / 2)).toBeLessThan(1);
     await expect(date.left).toBeGreaterThan(title.right);
-    const gallons = canvas.getByRole("textbox", { name: "Bus 2770 gallons" });
-    await userEvent.clear(gallons);
-    await userEvent.type(gallons, "12.5");
-    await expect(gallons).toHaveValue("12.5");
-    await expect(gallons).toHaveFocus();
+    await expect(canvasElement.querySelector('[data-sheet-id="custom-sheet"] input')).toBeNull();
   },
 };
 export const Blank: Story = {
@@ -60,6 +56,13 @@ export const Blank: Story = {
   },
 };
 export const Dark: Story = { globals: { theme: "dark" } };
-export const LongHeader: Story = { args: { longHeader: true } };
+export const LongHeader: Story = {
+  args: { longHeader: true },
+  play: async ({ canvasElement }) => {
+    const title = canvasElement.querySelector<HTMLElement>("[data-sheet-title]")!;
+    await expect(getComputedStyle(title).whiteSpace).toBe("nowrap");
+    await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth + 1);
+  },
+};
 export const Phone: Story = { args: { phone: true }, globals: { safeArea: "phone" } };
 export const PhoneDark: Story = { args: { phone: true, longHeader: true }, globals: { theme: "dark", safeArea: "phone" } };

@@ -34,6 +34,7 @@ async function centeredCustomHeader(page: Page) {
   const bounds = await page.locator('[data-sheet-id="custom-sheet"]').evaluate((paper) => {
     const page = paper.getBoundingClientRect();
     const title = paper.querySelector('[data-sheet-title]')!.getBoundingClientRect();
+    const titleElement = paper.querySelector<HTMLElement>('[data-sheet-title]')!;
     const date = paper.querySelector('[data-sheet-date]')!.getBoundingClientRect();
     const table = paper.querySelector('table')!.getBoundingClientRect();
     return {
@@ -41,6 +42,9 @@ async function centeredCustomHeader(page: Page) {
       gap: date.left - title.right,
       rightInset: table.right - date.right,
       titleAlign: getComputedStyle(paper.querySelector('[data-sheet-title]')!).textAlign,
+      wrapping: getComputedStyle(titleElement).whiteSpace,
+      overflow: titleElement.scrollWidth - titleElement.clientWidth,
+      titleWidth: title.width,
     };
   });
   expect(bounds.centerOffset).toBeLessThan(1);
@@ -48,6 +52,9 @@ async function centeredCustomHeader(page: Page) {
   expect(bounds.gap).toBeGreaterThanOrEqual(8);
   expect(bounds.rightInset).toBeGreaterThanOrEqual(0);
   expect(bounds.rightInset).toBeLessThan(10);
+  expect(bounds.wrapping).toBe("nowrap");
+  expect(bounds.overflow).toBeLessThanOrEqual(1);
+  expect(bounds.titleWidth).toBeGreaterThan(480);
 }
 
 test("copies match Fuel geometry and roster on screen and paper without changing Fuel", async ({ page, context }) => {
@@ -57,6 +64,11 @@ test("copies match Fuel geometry and roster on screen and paper without changing
   const savedMonthly = { version: 1, month: "2026-11", entries: { "2770": { date: "11/09", serv: "123456" }, "25538": { date: "11/01", serv: "654321" } } };
   expect((await api.put("/api/state/fuel", { data: { value: savedFuel } })).ok()).toBe(true);
   expect((await api.put("/api/state/monthly-cleaning", { data: { value: savedMonthly } })).ok()).toBe(true);
+  // Existing saved cell values stay compatible, but the handwriting form
+  // never displays them or exposes inputs for them.
+  expect((await api.put("/api/state/custom-sheet", { data: { value: {
+    header: "Old heading", date: "11/10/26", entries: { "2770": { gals: "12.5", serv: "AB" } },
+  } } })).ok()).toBe(true);
 
   for (const media of ["screen", "print"] as const) {
     await page.emulateMedia({ media });
@@ -72,7 +84,7 @@ test("copies match Fuel geometry and roster on screen and paper without changing
       expect(copy.cells, `${media} ${id} cell bounds`).toEqual(original.cells);
       expect(copy.buses, `${media} ${id} bus order`).toEqual(original.buses);
       if (id === "custom-sheet") {
-        expect(copy.bodyText).toEqual(original.bodyText);
+        expect(copy.bodyText.slice(1)).toEqual(original.bodyText.slice(1));
         await centeredCustomHeader(page);
       }
     }
@@ -82,14 +94,18 @@ test("copies match Fuel geometry and roster on screen and paper without changing
   await expect(page.getByRole("radio", { name: "Custom Sheet", exact: true })).toBeChecked();
   const header = page.getByRole("textbox", { name: "Sheet header", exact: true });
   await header.fill("November Equipment Checks");
-  await page.getByRole("textbox", { name: "Bus 2770 gallons" }).fill("12.5");
-  await page.getByRole("textbox", { name: "Bus 2770 servicer" }).fill("AB");
+  await page.getByLabel("Custom Sheet date", { exact: true }).fill("2026-11-12");
+  const paper = page.locator('[data-sheet-id="custom-sheet"]');
+  await expect(paper.locator("input, textarea, [contenteditable=true]")).toHaveCount(0);
+  await expect(paper.getByText("OK", { exact: true })).toHaveCount(4);
+  await expect(paper.getByText("N / R", { exact: true })).toHaveCount(4);
+  await expect(paper.getByText("12.5", { exact: true })).toHaveCount(0);
   await expect.poll(async () => (await (await api.get("/api/state/custom-sheet")).json()).value).toMatchObject({
-    header: "November Equipment Checks", entries: { "2770": { gals: "12.5", serv: "AB" } },
+    header: "November Equipment Checks", date: "11/12/26", entries: { "2770": { gals: "12.5", serv: "AB" } },
   });
   await page.reload();
   await expect(header).toHaveValue("November Equipment Checks");
-  await expect(page.getByRole("textbox", { name: "Bus 2770 gallons" })).toHaveValue("12.5");
+  await expect(page.getByLabel("Custom Sheet date", { exact: true })).toHaveValue("2026-11-12");
   await centeredCustomHeader(page);
 
   await page.getByRole("radio", { name: "Monthly Bus Cleaning", exact: true }).click();
@@ -108,14 +124,19 @@ test("copies match Fuel geometry and roster on screen and paper without changing
       const bytes = await response.body();
       const text = await pdfContent(bytes);
       if (id === "custom-sheet") {
+        expect(text).not.toContain("12.5");
+        expect(text).not.toContain("AB");
+        expect(text).not.toContain("GALS");
+        expect(text).not.toContain("SERV");
+        expect(text).toContain("OK");
+        expect(text).toContain("N / R");
         if (blank) {
           expect(text).not.toContain("November Equipment Checks");
           expect(text).not.toContain("PNW FUEL SHEET");
-          expect(text).not.toContain("12.5");
+          expect(text).not.toContain("11/12/26");
         } else {
           expect(text).toContain("November Equipment Checks");
-          expect(text).toContain("12.5");
-          expect(text).toContain("AB");
+          expect(text).toContain("11/12/26");
         }
       }
       if (id === "monthly-cleaning" && !blank) {
@@ -127,8 +148,20 @@ test("copies match Fuel geometry and roster on screen and paper without changing
     }
   }
 
+  for (const [bus, flags] of [["2770", ["inspection"]], ["2771", ["retorque"]], ["2772", ["hold", "cards"]]] as const) {
+    expect((await api.post("/api/flags", { data: { bus, flags } })).ok()).toBe(true);
+  }
+  await page.goto("/other?tab=custom-sheet");
+  for (const bus of ["2770", "2771", "2772"]) {
+    await expect(paper.locator(`[data-bus="${bus}"]`)).toHaveText(bus);
+    await expect(paper.locator(`[data-bus="${bus}"]`)).not.toHaveCSS("background-color", "rgb(255, 224, 102)");
+  }
+  const flaggedPdf = await api.get("/api/pdf?path=/custom-sheet", { timeout: 90_000 });
+  expect(flaggedPdf.ok()).toBe(true);
+  await writeFile("test-results/fuel-copies/custom-no-flags.pdf", await flaggedPdf.body());
+  expect((await (await api.get("/api/flags")).json()).flags["2770"].flags).toEqual(["inspection"]);
+
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("radio", { name: "Custom Sheet", exact: true }).click();
   await expect(header).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   await page.screenshot({ path: "test-results/fuel-copies/custom-phone.png", fullPage: true });
@@ -146,12 +179,24 @@ test("copies match Fuel geometry and roster on screen and paper without changing
   expect((await (await api.get("/api/state/custom-sheet")).json()).value.header).toBe("November Equipment Checks");
 });
 
-test("long custom headings stay complete and readable in a one-page PDF", async ({ page, context }) => {
+test("long custom headings fit one line without moving the bus grid", async ({ page, context }) => {
   const header = "Northwest garage special equipment checks and follow-up work for the November service review";
   await page.goto("/custom-sheet");
+  await expect(page.getByRole("textbox", { name: "Sheet header", exact: true })).toHaveValue("November Equipment Checks");
+  const baseline = new Map<string, Awaited<ReturnType<typeof grid>>>();
+  for (const media of ["screen", "print"] as const) {
+    await page.emulateMedia({ media });
+    baseline.set(media, await grid(page, "custom-sheet"));
+  }
+  await page.emulateMedia({ media: "screen" });
   await page.getByRole("textbox", { name: "Sheet header", exact: true }).fill(header);
   await expect.poll(async () => (await (await context.request.get("/api/state/custom-sheet")).json()).value.header).toBe(header);
-  await centeredCustomHeader(page);
+  for (const media of ["screen", "print"] as const) {
+    await page.emulateMedia({ media });
+    await centeredCustomHeader(page);
+    expect((await grid(page, "custom-sheet")).cells).toEqual(baseline.get(media)!.cells);
+  }
+  await page.emulateMedia({ media: "screen" });
   const response = await context.request.get("/api/pdf", { params: { path: "/custom-sheet" }, timeout: 90_000 });
   expect(response.ok()).toBe(true);
   const bytes = await response.body();

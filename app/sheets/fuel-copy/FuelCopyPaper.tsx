@@ -1,4 +1,6 @@
-import { Fragment, type ReactNode } from "react";
+"use client";
+
+import { Fragment, useLayoutEffect, useRef, type ReactNode } from "react";
 import { fuelIndicator } from "../../lib/grid";
 import type { FlagMap } from "../../lib/types";
 import { SheetRevision } from "../core";
@@ -16,6 +18,7 @@ interface FuelCopyPaperProps {
   dateLabel?: string;
   date: string;
   entryLabel: string;
+  secondEntryLabel?: string;
   blank?: boolean;
   flags?: FlagMap;
   renderEntry: (bus: string, field: "value" | "serv", className: string) => ReactNode;
@@ -23,10 +26,33 @@ interface FuelCopyPaperProps {
 
 export function FuelCopyPaper({
   sheetId, label, busNumbers, title, titleLine = false, centeredHeader = false, dateLabel = "DATE", date,
-  entryLabel, blank = false, flags = {}, renderEntry,
+  entryLabel, secondEntryLabel = "SERV", blank = false, flags = {}, renderEntry,
 }: FuelCopyPaperProps) {
   const { columns, rows, total } = buildFuelCopyColumns(busNumbers);
-  const heading = <span className={`${styles.title} ${titleLine ? styles.titleLine : ""}`} data-sheet-title="">{title || "\u00a0"}</span>;
+  const headingRef = useRef<HTMLSpanElement>(null);
+  const headingTextRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const heading = headingRef.current;
+    const text = headingTextRef.current;
+    if (!centeredHeader || !heading || !text) return;
+    // Fit only the custom heading, preserving the fixed header and bus-row
+    // heights. Measure unscaled widths so the phone's paper zoom stays exact.
+    function fitHeading() {
+      heading!.style.fontSize = "19px";
+      const available = heading!.clientWidth;
+      const natural = text!.offsetWidth;
+      if (available > 0 && natural > available) {
+        heading!.style.fontSize = `${19 * (available - 1) / natural}px`;
+      }
+    }
+    fitHeading();
+    const observer = new ResizeObserver(fitHeading);
+    observer.observe(heading);
+    return () => observer.disconnect();
+  }, [centeredHeader, title]);
+  const heading = <span ref={headingRef} className={`${styles.title} ${titleLine ? styles.titleLine : ""}`} data-sheet-title="">
+    <span ref={headingTextRef} className={centeredHeader ? styles.singleLineTitle : undefined}>{title || "\u00a0"}</span>
+  </span>;
   const dateField = <span data-sheet-date="">{dateLabel}: <span className={styles.date}>{blank ? "" : date}</span></span>;
 
   function groupCells(group: number, row: number) {
@@ -76,7 +102,7 @@ export function FuelCopyPaper({
           </tr>
           <tr className={styles.columnHeaders}>
             {Array.from({ length: 4 }, (_, group) => <Fragment key={group}>
-              <td>BUS</td><td>{entryLabel}</td><td>SERV</td>
+              <td>BUS</td><td>{entryLabel}</td><td>{secondEntryLabel}</td>
             </Fragment>)}
           </tr>
           {Array.from({ length: rows }, (_, row) => <tr key={row}>

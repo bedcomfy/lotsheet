@@ -8,11 +8,11 @@ export const customSheetDefinition: SheetDefinition<CustomSheetData> = {
   path: "/custom-sheet",
   stateKey: "custom-sheet",
   dataVersion: 1,
-  renderVersion: 1,
+  renderVersion: 2,
   paper: LETTER_PORTRAIT,
   expectedPages: { min: 1, max: 1 },
   variants: ["current", "blank"],
   createBlank: createBlankCustomSheet,
   validate: (value) => value ? customSheetSchema.parse(value) : createBlankCustomSheet(),
-  description: "An exact copy of the fuel form with your own heading.",
+  description: "A fuel-sized checklist with an editable heading and date, and blank OK / N / R boxes for handwriting.",
 };
