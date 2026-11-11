@@ -1,0 +1,8 @@
+.headerField {
+  flex: 1 1 19rem;
+  min-width: 0;
+  max-width: 30rem;
+}
+@media (max-width: 699px) {
+  .headerField { flex-basis: 100%; max-width: none; }
+}

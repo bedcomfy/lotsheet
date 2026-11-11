@@ -72,6 +72,8 @@ export const Stress: Story = {
   args: { fixture: "stress" },
 };
 
+export const Dark: Story = { globals: { theme: "dark" } };
+
 export const PhoneFit: Story = {
   globals: { safeArea: "phone" },
   render: () => (

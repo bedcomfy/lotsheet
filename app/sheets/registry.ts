@@ -6,6 +6,7 @@ import { hybridWeeklyDefinition } from "./hybrid-weekly/definition";
 import { interiorCleaningDefinition } from "./interior-cleaning/definition";
 import { meterReadingsDefinition } from "./meter-readings/definition";
 import { monthlyCleaningDefinition } from "./monthly-cleaning/definition";
+import { customSheetDefinition } from "./custom-sheet/definition";
 import {
   fareboxSheetSchema,
   fuelSheetSchema,
@@ -146,6 +147,7 @@ export const SHEET_DEFINITIONS = [
   hybridDailyDefinition,
   hybridWeeklyDefinition,
   monthlyCleaningDefinition,
+  customSheetDefinition,
 ] as const;
 
 type RegisteredSheetDefinition = (typeof SHEET_DEFINITIONS)[number];

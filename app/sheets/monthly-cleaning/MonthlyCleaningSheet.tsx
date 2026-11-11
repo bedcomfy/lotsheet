@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import KeyedSheetWorkspace from "../../components/KeyedSheetWorkspace";
 import { useBusMaster } from "../../components/BusMasterProvider";
-import { countsTowardFleet } from "../../lib/fleetStats";
+import { useFlags } from "../../lib/queries";
 import { monthlyCleaningDefinition } from "./definition";
 import { MonthlyCleaningPaper } from "./MonthlyCleaningPaper";
 import {
@@ -33,13 +33,11 @@ export default function MonthlyCleaningSheet({
   onReady,
   onRegisterFlush,
 }: MonthlyCleaningSheetProps) {
-  const { master, ready: busMasterReady } = useBusMaster();
+  const { laneBuses, ready: busMasterReady } = useBusMaster();
+  const { data: flags = {}, isFetched: flagsReady } = useFlags();
   const [sheetReady, setSheetReady] = useState(false);
-  const busNumbers = useMemo(
-    () => master.buses.filter(countsTowardFleet).map((bus) => bus.num),
-    [master.buses],
-  );
-  const ready = sheetReady && busMasterReady;
+  const busNumbers = laneBuses();
+  const ready = sheetReady && busMasterReady && flagsReady;
 
   useEffect(() => {
     onReady?.(ready);
@@ -67,6 +65,7 @@ export default function MonthlyCleaningSheet({
           <MonthlyCleaningPaper
             data={value}
             busNumbers={busNumbers}
+            flags={flags}
             blank={blank}
             onChange={onChange}
           />

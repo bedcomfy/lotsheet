@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.55.0 - 2026-11-10
+
+- Add Custom Sheet under Other Sheets: a copy of the fuel form with an editable heading, its own saved entries and history, and a blank print that leaves the heading and entries empty for handwriting.
+- Rebuild Monthly Bus Cleaning from the same fuel-form copy, matching its grid, page size, spacing and lane-bus order while retaining the cleaning month, DATE/SERV fields and existing saved entries.
+- Leave the original Fuel Sheet, its storage, and its print styling unchanged.
+
 ## 0.54.2 - 2026-10-14
 
 - Limit the PM Mileage In shop / Follow up section to each PM that is overdue or due within 500 miles. Later inspections, transmission, hub fluid, and differential fluid work stay in Upcoming work, even when the bus is in the shop.

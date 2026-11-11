@@ -25,4 +25,10 @@ describe("monthly bus cleaning sheet", () => {
     expect(result.total).toBe(140);
     expect(result.columns.flat().filter(Boolean)).toHaveLength(140);
   });
+
+  it("uses the fuel sheet's established order before appending new lane buses", () => {
+    const result = buildMonthlyCleaningColumns(["25540", "6378", "2771", "2770", "6510"]);
+    expect(result.columns.flat().filter(Boolean)).toEqual(["2770", "2771", "6510", "6378", "25540"]);
+    expect(result.rows).toBe(35);
+  });
 });

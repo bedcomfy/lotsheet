@@ -1,0 +1,118 @@
+/* Copy of the existing Fuel sheet's paper rules, scoped to these two forms.
+   Keep the original Fuel sheet and the legacy print cascade untouched. */
+.page {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 8.5in;
+  min-width: 8.5in;
+  max-width: 8.5in;
+  height: 11in;
+  min-height: 11in;
+  margin: 0 auto;
+  padding: 0.3375in;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
+}
+
+.page,
+.page * {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+}
+
+.logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1;
+  display: block;
+  width: 30px;
+  height: auto;
+  pointer-events: none;
+}
+
+.table {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.busColumn { width: calc(8.333333% + 6px); }
+.entryColumn { width: calc(8.333333% - 3px); }
+
+.table td {
+  height: auto;
+  overflow: hidden;
+  padding: 0 4px;
+  border: 1px solid #000;
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.header td {
+  padding: 5px 6px;
+  border: none;
+  border-bottom: 1px solid #000;
+  font-size: 19px;
+  text-align: left;
+}
+
+.header td:first-child { padding-left: 22px; }
+.title { font-size: 19px; line-height: 1; letter-spacing: 0.03em; }
+.titleLine {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid #000;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.date {
+  display: inline-block;
+  min-width: 110px;
+  height: 1.6em;
+  padding: 0 4px;
+  border-bottom: 1px solid #000;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1.5em;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.columnHeaders td { background: #f3f4f6; }
+.table .bus { position: relative; padding: 0; font-variant-numeric: tabular-nums; }
+.busContent { display: flex; align-items: center; justify-content: center; gap: 1px; width: 100%; min-width: 0; line-height: 1; }
+.busNumber { flex: 0 0 auto; line-height: 1; }
+.flagged { background: #ffe066; }
+.indicator { display: flex; align-items: center; justify-content: center; flex: 0 0 auto; pointer-events: none; }
+.indicatorLetter { font-family: "Roboto Slab", "Times New Roman", serif; font-weight: 700; font-size: 18px; line-height: 1; transform: translateY(-1px); }
+.asterisk { font-family: Arial, Helvetica, sans-serif; transform: translateY(1px); }
+.input {
+  width: 100%;
+  padding: 0;
+  border: none;
+  color: #111;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  text-align: center;
+}
+.input:focus-visible { outline: 2px solid var(--ui-accent, #2563eb); outline-offset: -2px; }
+.table .total { padding-right: 4px; text-align: right; }
+
+@media print {
+  .page { min-width: 0; max-width: none; width: 100%; height: 100vh; overflow: hidden; box-shadow: none; }
+  .header td { padding-bottom: 8px; }
+  .input:focus-visible { outline: none; }
+  .page, .page * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

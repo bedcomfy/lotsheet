@@ -67,6 +67,7 @@ export const DAILY_SHEET_ROUTES: AppRoute[] = [
       "/hybrid-weekly",
       "/hybrid-daily",
       "/monthly-cleaning",
+      "/custom-sheet",
     ],
     description: "Cleaning and supporting operational forms",
   },

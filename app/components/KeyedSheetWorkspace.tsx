@@ -60,6 +60,7 @@ interface KeyedSheetWorkspaceProps<T> {
   getBlankPrintParams?: (
     value: T,
   ) => Record<string, string | number | null | undefined>;
+  renderControls?: (args: { value: T; onChange: (next: T) => void; disabled: boolean }) => ReactNode;
 }
 
 function queryParam(name: string): string {
@@ -86,6 +87,7 @@ export default function KeyedSheetWorkspace<T>({
   printLabel = "Print PDF",
   blankPrintLabel = "Print blank form",
   getBlankPrintParams,
+  renderControls,
 }: KeyedSheetWorkspaceProps<T>) {
   const adapter = useMemo(
     () => createKeyedStateAdapter(definition),
@@ -254,6 +256,7 @@ export default function KeyedSheetWorkspace<T>({
           ) : (
             <span className={chromeStyles.title}>{definition.title}</span>
           )}
+          {renderControls?.({ value, onChange: setValue, disabled: !editable })}
           <SaveStatus state={saveState} />
           <ToolbarGroup className={chromeStyles.actions}>
             <ActionMenu

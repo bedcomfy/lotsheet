@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import type { Key } from "react-aria-components";
-import { BusFront, CalendarDays, CalendarRange, Sparkles } from "lucide-react";
+import { BusFront, CalendarDays, CalendarRange, FilePenLine, Sparkles } from "lucide-react";
 import HybridDailySheet from "../sheets/hybrid-daily/HybridDailySheet";
 import HybridWeeklySheet from "../sheets/hybrid-weekly/HybridWeeklySheet";
 import InteriorCleaningSheet from "../sheets/interior-cleaning/InteriorCleaningSheet";
 import MonthlyCleaningSheet from "../sheets/monthly-cleaning/MonthlyCleaningSheet";
+import CustomSheet from "../sheets/custom-sheet/CustomSheet";
 import { AppPage, PageHeader, TabBar } from "../ui";
 import styles from "./OtherSheets.module.css";
 
-const TAB_IDS = ["interior-cleaning", "hybrid-weekly", "hybrid-daily", "monthly-cleaning"] as const;
+const TAB_IDS = ["interior-cleaning", "hybrid-weekly", "hybrid-daily", "monthly-cleaning", "custom-sheet"] as const;
 type TabId = (typeof TAB_IDS)[number];
 function isTabId(value: unknown): value is TabId {
   return typeof value === "string" && (TAB_IDS as readonly string[]).includes(value);
@@ -64,6 +65,11 @@ export default function OtherSheets() {
             label: "Monthly Bus Cleaning",
             icon: <CalendarRange aria-hidden="true" />,
           },
+          {
+            id: "custom-sheet",
+            label: "Custom Sheet",
+            icon: <FilePenLine aria-hidden="true" />,
+          },
         ]}
       />
       {selected === "interior-cleaning" ? (
@@ -72,8 +78,10 @@ export default function OtherSheets() {
         <HybridWeeklySheet />
       ) : selected === "hybrid-daily" ? (
         <HybridDailySheet />
-      ) : (
+      ) : selected === "monthly-cleaning" ? (
         <MonthlyCleaningSheet />
+      ) : (
+        <CustomSheet />
       )}
     </AppPage>
   );

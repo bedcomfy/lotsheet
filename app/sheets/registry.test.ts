@@ -63,4 +63,12 @@ describe("SheetKit registry", () => {
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.id)).size).toBe(SHEET_DEFINITIONS.length);
     expect(new Set(SHEET_DEFINITIONS.map((item) => item.path)).size).toBe(SHEET_DEFINITIONS.length);
   });
+
+  it("keeps the custom copy separate from the fuel and monthly cleaning state", () => {
+    const custom = getSheetDefinitionByPath("/custom-sheet");
+    expect(custom).toMatchObject({ id: "custom-sheet", stateKey: "custom-sheet", variants: ["current", "blank"] });
+    expect(custom?.createBlank?.()).toMatchObject({ header: "", entries: {} });
+    expect(getSheetDefinitionByPath("/fuel")?.stateKey).toBe("fuel");
+    expect(getSheetDefinitionByPath("/monthly-cleaning")?.stateKey).toBe("monthly-cleaning");
+  });
 });
