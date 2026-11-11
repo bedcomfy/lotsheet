@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.55.1 - 2026-11-10
+
+- Reopen the site without the typing-game password lock. Keep the entire gate available behind `SITE_GATE_ENABLED=on` for later use.
+- Disable site-session expiry and hide the site Log out controls while the gate is off. Admin Tools still uses its separate password and logout.
+
 ## 0.55.0 - 2026-11-10
 
 - Add Custom Sheet under Other Sheets: a copy of the fuel form with an editable heading, its own saved entries and history, and a blank print that leaves the heading and entries empty for handwriting.

@@ -11,6 +11,7 @@ import { MobileNavProvider } from "./components/MobileNavContext";
 import MobileTabBar from "./components/MobileTabBar";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import SiteSessionWatch from "./components/SiteSessionWatch";
+import { siteGateEnabled } from "./lib/siteGateFlag";
 
 export const metadata: Metadata = {
   title: "Pace Northwest Sheets",
@@ -22,9 +23,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Pace NW Sheets",
   },
-  // The tab and home-screen icon is deliberately not the Pace logo: the site
-  // sits behind a decoy (docs/site-gate.md), and a branded tab would give it
-  // away. The decoy embeds the same character.
+  // Keep the same neutral icon as the optional typing-game gate, so it is
+  // ready if that gate is enabled again (docs/site-gate.md).
   icons: {
     icon: "/tab-icon.png",
     apple: "/apple-tab-icon.png",
@@ -46,6 +46,7 @@ export const viewport: Viewport = {
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('pace:theme');document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const gateEnabled = siteGateEnabled();
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>
       <head>
@@ -58,7 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <BusTypeConfigProvider>
                 <MobileNavProvider>
                 <Suspense fallback={null}>
-                  <SheetNav />
+                  <SheetNav siteGateEnabled={gateEnabled} />
                 </Suspense>
                 {/* The wide sheet is contained here (overflow-x: clip) instead of on
                     <body>, so the sticky mobile nav can pin to the viewport — a clip
@@ -68,7 +69,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   <MobileTabBar />
                   <KeyboardShortcuts />
                 </Suspense>
-                <SiteSessionWatch />
+                <SiteSessionWatch enabled={gateEnabled} />
                 </MobileNavProvider>
               </BusTypeConfigProvider>
             </FlagConfigProvider>

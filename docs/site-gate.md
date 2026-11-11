@@ -1,5 +1,17 @@
 # Site gate
 
+**Currently disabled.** The site opens normally without the typing game or a
+site password. The game, passphrase check, cookies, expiry, and logout code are
+retained. Admin Tools still requires its separate password.
+
+To restore the typing-game lock, set `SITE_GATE_ENABLED=on` in the deployment
+environment and redeploy. The default is off; `off` or removing the variable
+opens the site again. The same switch controls the request gate, session-expiry
+watcher, and site Log out buttons on desktop and mobile. Existing passphrase
+configuration remains available through `SITE_GATE_PASSPHRASE`.
+
+The behavior below applies while `SITE_GATE_ENABLED=on`.
+
 Every request to the site, on any path, hostname, or method, is checked by
 `proxy.ts` until the browser holds an unlock cookie. The proxy has no
 `matcher` on purpose: a request the matcher skipped would bypass the gate.
@@ -70,3 +82,6 @@ and sets the unlock cookie on that browser first, so printing is unaffected.
 - `e2e/gate.setup.ts` checks the decoy in a real browser, unlocks with the
   passphrase from `playwright.config.ts`, and saves the cookie jar the other
   end-to-end tests start from.
+- `npm run e2e:open-site` checks the public default in a fresh browser, including
+  mobile navigation, stale site cookies, separate admin login/logout, and PDF
+  printing. Its database is isolated in memory.

@@ -1,8 +1,9 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, gateToken } from "../../../lib/siteGate";
 import { DELETE, GET, POST } from "./route";
 
 afterEach(() => vi.unstubAllEnvs());
+beforeEach(() => vi.stubEnv("SITE_GATE_ENABLED", "on"));
 
 function post(body: unknown) {
   return POST(new Request("http://localhost/api/typing/results", { method: "POST", body: JSON.stringify(body) }));
@@ -30,10 +31,19 @@ it("hands out the unlock cookie when the run is the passphrase", async () => {
 
   // The app can ask when the session ends, and log out.
   const session = await GET(new Request("http://localhost/api/typing/results", { headers: { cookie: `${GATE_COOKIE}=${cookie!.value}` } }));
-  expect(await session.json()).toEqual({ ok: true, session: { expiresAt: issuedAt + GATE_SESSION_SECONDS * 1000 } });
-  expect(await (await GET(new Request("http://localhost/api/typing/results"))).json()).toEqual({ ok: true, session: null });
+  expect(await session.json()).toEqual({ ok: true, enabled: true, session: { expiresAt: issuedAt + GATE_SESSION_SECONDS * 1000 } });
+  expect(await (await GET(new Request("http://localhost/api/typing/results"))).json()).toEqual({ ok: true, enabled: true, session: null });
   const logout = await DELETE();
   expect(await logout.json()).toEqual({ ok: true });
   expect(logout.cookies.get(GATE_COOKIE)).toMatchObject({ value: "", maxAge: 0, path: "/", httpOnly: true });
   expect(logout.cookies.get(ADMIN_COOKIE)).toMatchObject({ value: "", maxAge: 0, path: "/", httpOnly: true });
+});
+
+it("disables expiry and lets an existing decoy tab reload without a password while the gate is off", async () => {
+  vi.stubEnv("SITE_GATE_ENABLED", undefined);
+  const session = await GET(new Request("http://localhost/api/typing/results"));
+  expect(await session.json()).toEqual({ ok: true, enabled: false, session: null });
+  const unlock = await post({ text: "anything" });
+  expect(await unlock.json()).toEqual({ ok: true, personalBest: true, enabled: false });
+  expect(unlock.cookies.get(GATE_COOKIE)).toBeUndefined();
 });

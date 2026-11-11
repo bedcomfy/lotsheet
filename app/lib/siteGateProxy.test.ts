@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import proxy from "../../proxy";
 import { ADMIN_COOKIE, GATE_COOKIE, gateToken } from "./siteGate";
 
@@ -11,8 +11,19 @@ function request(path: string, init?: { method?: string; cookie?: string }) {
 }
 
 afterEach(() => vi.unstubAllEnvs());
+beforeEach(() => vi.stubEnv("SITE_GATE_ENABLED", "on"));
 
 describe("site gate proxy", () => {
+  it.each([undefined, "", "off"])("opens the site and APIs when the gate switch is %s, without clearing admin sessions", async (value) => {
+    vi.stubEnv("SITE_GATE_ENABLED", value);
+    for (const path of ["/", "/home", "/pm-mileage", "/api/pm-mileage", "/api/state/custom-sheet", "/_next/static/chunks/app.js", "/logo.png"]) {
+      const res = await proxy(request(path, { cookie: `${GATE_COOKIE}=expired; ${ADMIN_COOKIE}=existing-admin-session` }));
+      expect(res.headers.get("x-middleware-next"), path).toBe("1");
+      expect(res.headers.get("set-cookie"), path).toBeNull();
+    }
+    expect((await proxy(request("/api/state/custom-sheet", { method: "PUT" }))).headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("serves the decoy page for every page path without the cookie", async () => {
     vi.stubEnv("SITE_GATE_PASSPHRASE", "open sesame 42");
     for (const path of ["/", "/home", "/HOME", "/home/", "/pm-mileage", "/workorder?print=1", "/home?_rsc=1abc", "/admin", "/no-such-page", "/.well-known/x"]) {

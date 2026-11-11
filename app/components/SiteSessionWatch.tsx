@@ -7,8 +7,9 @@ import { GATE_UNLOCK_PATH, SITE_LOGOUT_KEY } from "../lib/siteSession";
 // server when the session ends, reloads into the decoy at that moment, checks
 // again whenever the tab comes back into view (a phone that slept past the
 // deadline), and locks when another tab logs out. Renders nothing.
-export default function SiteSessionWatch() {
+export default function SiteSessionWatch({ enabled = false }: { enabled?: boolean }) {
   useEffect(() => {
+    if (!enabled) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
 
@@ -18,6 +19,11 @@ export default function SiteSessionWatch() {
         .then((response) => (response.ok ? response.json() : null))
         .catch(() => null);
       if (cancelled || !data) return;
+      // A deployment can switch off the gate while an older tab is open.
+      if (data.enabled === false) {
+        clearTimeout(timer);
+        return;
+      }
       const expiresAt = Number(data.session?.expiresAt);
       if (!expiresAt) {
         lock();
@@ -42,6 +48,6 @@ export default function SiteSessionWatch() {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("storage", onStorage);
     };
-  }, []);
+  }, [enabled]);
   return null;
 }

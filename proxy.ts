@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_COOKIE, GATE_COOKIE, clearedCookieOptions, isGateExemptPath, isGateTokenValid } from "./app/lib/siteGate";
 import { decoyPage } from "./app/lib/siteGateDecoy";
+import { siteGateEnabled } from "./app/lib/siteGateFlag";
 
 // Site gate: without the unlock cookie every page is the decoy typing test
 // and everything else (API paths, Next's own chunks and images, files) is a
@@ -11,6 +12,7 @@ import { decoyPage } from "./app/lib/siteGateDecoy";
 // has none of its own). The only pass-throughs are in isGateExemptPath.
 
 export default async function proxy(req: NextRequest): Promise<NextResponse> {
+  if (!siteGateEnabled()) return NextResponse.next();
   const { pathname } = req.nextUrl;
   if (isGateExemptPath(pathname)) return NextResponse.next();
   if (await isGateTokenValid(req.cookies.get(GATE_COOKIE)?.value)) return NextResponse.next();

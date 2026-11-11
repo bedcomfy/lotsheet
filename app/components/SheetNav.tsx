@@ -28,7 +28,7 @@ import {
 import { Pressable } from "../ui/Pressable";
 import styles from "./SheetNav.module.css";
 
-export default function SheetNav() {
+export default function SheetNav({ siteGateEnabled = false }: { siteGateEnabled?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -140,7 +140,7 @@ export default function SheetNav() {
         </div>
         <div className={styles.bottom}>
           <AdminLogoutButton compact={railCollapsed} />
-          <SiteLogoutButton compact={railCollapsed} />
+          {siteGateEnabled && <SiteLogoutButton compact={railCollapsed} />}
           {!railCollapsed && <ThemeToggle />}
           <Pressable
             className={styles.railToggle}
@@ -179,7 +179,7 @@ export default function SheetNav() {
         footer={
           <div className={styles.hubFooter}>
             <AdminLogoutButton />
-            <SiteLogoutButton />
+            {siteGateEnabled && <SiteLogoutButton />}
             <ThemeToggle />
             <span>v{APP_VERSION}</span>
           </div>

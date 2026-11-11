@@ -4,8 +4,8 @@ import { chromium, defineConfig } from "@playwright/test";
 // `npm run e2e` (starts the dev server automatically). Vitest owns unit + data-
 // layer tests (app/**/*.test.ts); these cover whole-page rendering.
 //
-// The site gate (proxy.ts) hides every page behind the decoy typing test, so a
-// setup project unlocks once and every other test reuses that cookie jar.
+// Explicitly enable the optional gate here to keep its full flow tested for
+// future use. The public default is covered by playwright.open-site.config.ts.
 const GATE_PASSPHRASE = "e2e typing gate";
 const GATE_STATE = "tmp/playwright/gate.json";
 
@@ -19,7 +19,7 @@ export default defineConfig({
   use: { baseURL: "http://localhost:3000" },
   projects: [
     { name: "gate", testMatch: /gate\.setup\.ts/ },
-    { name: "chromium", testIgnore: /gate\.setup\.ts/, dependencies: ["gate"], use: { storageState: GATE_STATE } },
+    { name: "chromium", testIgnore: [/gate\.setup\.ts/, /site-gate-disabled\.spec\.ts/], dependencies: ["gate"], use: { storageState: GATE_STATE } },
   ],
   webServer: {
     command: "npm run dev",
@@ -30,6 +30,7 @@ export default defineConfig({
       CHROME_EXECUTABLE_PATH: chromium.executablePath(),
       PGLITE_DATA: "memory",
       SITE_GATE_PASSPHRASE: GATE_PASSPHRASE,
+      SITE_GATE_ENABLED: "on",
     },
   },
 });

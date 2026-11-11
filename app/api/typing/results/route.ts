@@ -10,6 +10,7 @@ import {
   phraseMatches,
 } from "../../../lib/siteGate";
 import { ensureMasterSchedule } from "../../../lib/masterSchedule";
+import { siteGateEnabled } from "../../../lib/siteGateFlag";
 
 export const dynamic = "force-dynamic";
 // The session check may apply the committed master PM schedule once after a
@@ -21,6 +22,8 @@ export const maxDuration = 60;
 // unlock cookie and the page reloads into the real site. Every other run is
 // acknowledged and dropped. Nothing is stored.
 export async function POST(req: Request) {
+  // Let an already-open typing page reload into the now-public site.
+  if (!siteGateEnabled()) return NextResponse.json({ ok: true, personalBest: true, enabled: false });
   const body = await req.json().catch(() => ({}));
   const text = typeof body?.text === "string" ? body.text.slice(0, 200) : "";
   if (!(await phraseMatches(text))) {
@@ -36,9 +39,10 @@ export async function POST(req: Request) {
 // When does this browser's site session end? Null when it has none. The
 // unlocked app polls this to reload into the decoy at the right moment.
 export async function GET(req: Request) {
+  if (!siteGateEnabled()) return NextResponse.json({ ok: true, enabled: false, session: null });
   await ensureMasterSchedule();
   const expiresAt = await gateSessionExpiry(cookieFromHeader(req.headers.get("cookie"), GATE_COOKIE));
-  return NextResponse.json({ ok: true, session: expiresAt === null ? null : { expiresAt } });
+  return NextResponse.json({ ok: true, enabled: true, session: expiresAt === null ? null : { expiresAt } });
 }
 
 // Log out: drop the site cookie and the admin cookie with it.

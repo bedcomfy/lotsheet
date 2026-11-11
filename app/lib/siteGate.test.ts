@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GATE_COOKIE,
   GATE_SESSION_SECONDS,
@@ -13,8 +13,14 @@ import {
 } from "./siteGate";
 
 afterEach(() => vi.unstubAllEnvs());
+beforeEach(() => vi.stubEnv("SITE_GATE_ENABLED", "on"));
 
 describe("site gate", () => {
+  it("accepts ordinary requests without a cookie while the gate is disabled", async () => {
+    vi.stubEnv("SITE_GATE_ENABLED", undefined);
+    expect(await isUnlockedRequest(new Request("http://localhost/home"))).toBe(true);
+  });
+
   it("accepts the configured passphrase regardless of case and spacing", async () => {
     vi.stubEnv("SITE_GATE_PASSPHRASE", "open sesame 42");
     expect(await phraseMatches("opensesame42")).toBe(true);

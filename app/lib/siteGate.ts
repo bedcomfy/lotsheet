@@ -7,6 +7,7 @@
 
 import { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH } from "./siteSession";
 import { fleetwatchAutoSyncEnabled } from "./fleetwatchFlag";
+import { siteGateEnabled } from "./siteGateFlag";
 
 export { ADMIN_COOKIE, GATE_COOKIE, GATE_SESSION_SECONDS, GATE_UNLOCK_PATH };
 
@@ -102,6 +103,7 @@ export function cookieFromHeader(cookieHeader: string | null | undefined, name: 
 }
 
 export async function isUnlockedRequest(req: Request): Promise<boolean> {
+  if (!siteGateEnabled()) return true;
   return isGateTokenValid(cookieFromHeader(req.headers.get("cookie"), GATE_COOKIE));
 }
 
