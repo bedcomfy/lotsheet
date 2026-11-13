@@ -1,0 +1,26 @@
+.page { max-width: 88rem; margin: 0 auto; display: grid; gap: var(--ui-space-5); }
+.connection { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-text-muted); }
+.hint { margin: var(--ui-space-2) 0 0; color: var(--ui-text-muted); font-size: var(--ui-font-size-sm); line-height: var(--ui-line-height-body); }
+.connection > .hint { flex-basis: 100%; margin: 0; }
+.steps { margin: 0 0 var(--ui-space-4); padding-left: var(--ui-space-5); display: grid; gap: var(--ui-space-2); font-size: var(--ui-font-size-md); line-height: var(--ui-line-height-body); }
+.address { margin-top: var(--ui-space-4); }
+.address textarea { min-height: 6rem; max-height: 12rem; overflow-wrap: anywhere; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-xs); }
+.form { display: grid; grid-template-columns: minmax(9rem, 0.8fr) minmax(14rem, 1.5fr) auto; align-items: start; gap: var(--ui-space-4); }
+.form > button { margin-top: 1.55rem; }
+.error { border-left: 3px solid var(--ui-danger); padding: var(--ui-space-3); background: var(--ui-danger-soft); color: var(--ui-danger); font-size: var(--ui-font-size-md); line-height: var(--ui-line-height-body); }
+.resultToolbar { margin-top: var(--ui-space-4); font-size: var(--ui-font-size-sm); color: var(--ui-text-muted); }
+.results { max-height: 60dvh; }
+.results:focus-visible { outline: 2px solid var(--ui-focus); outline-offset: 2px; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--ui-font-size-sm); text-align: left; }
+.table th, .table td { border-bottom: 1px solid var(--ui-border); padding: var(--ui-space-3); vertical-align: top; min-width: 7rem; }
+.table th { position: sticky; top: 0; background: var(--ui-surface-muted); color: var(--ui-text-muted); font-weight: var(--ui-weight-semibold); white-space: nowrap; }
+.table td { color: var(--ui-text); line-height: var(--ui-line-height-body); overflow-wrap: anywhere; }
+.table td:nth-child(2) { min-width: 16rem; max-width: 32rem; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 699px) {
+  .form { grid-template-columns: minmax(0, 1fr); }
+  .form > button { margin-top: 0; width: 100%; }
+  .results { max-height: 65dvh; }
+  .page { padding-bottom: calc(var(--ui-space-6) + var(--ui-safe-bottom)); }
+}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.56.0 - 2026-11-13
+
+- Add an Oracle Fusion connection page with a saved browser favorite: sign in to Fusion, click Connect Lotsheet, and read work orders or assets without opening Developer Tools.
+- Keep Oracle credentials in the Fusion tab. Renew access on demand, limit the connection to selected read-only records, and show sign-in or reconnection instructions when the session ends.
+- Add exact-number searches and bounded paging. Results stay in the receiving tab and are not written to Fusion or the shared sheet database.
+
 ## 0.55.3 - 2026-11-10
 
 - Change Custom Sheet columns to OK and N / R. Keep their boxes blank for handwriting, with only the heading and date editable on screen, and hide all bus flags on this sheet.
