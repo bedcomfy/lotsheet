@@ -125,7 +125,7 @@ export const UTILITY_ROUTES: AppRoute[] = [
     path: "/fusion",
     label: "Oracle Fusion",
     icon: Cable,
-    description: "Connect your Fusion tab to read work orders and assets",
+    description: "Save temporary Oracle access and read work orders and assets",
   },
   {
     path: "/object-codes",

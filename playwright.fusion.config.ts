@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 // Exercise the compiled bookmark with a fully mocked Oracle origin. No Oracle
 // credentials or external Oracle requests are used by this test suite.
@@ -17,6 +19,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: "", PREVIEW_DATABASE_URL: "", POSTGRES_URL: "", POSTGRES_PRISMA_URL: "",
       PGLITE_DATA: "memory", SITE_GATE_ENABLED: "", ADMIN_PASSWORD: "fusion-test-admin",
+      NODE_OPTIONS: "--import=" + pathToFileURL(resolve("e2e/fusion-fetch-mock.mjs")).href,
     },
   },
 });

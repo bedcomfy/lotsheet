@@ -43,7 +43,7 @@ export const Setup: Story = {
   },
 };
 export const Connected: Story = {
-  args: { state: { ...INITIAL_FUSION_STATE, status: "connected", result: RESULT } },
+  args: { state: { ...INITIAL_FUSION_STATE, status: "connected", expiresAt: RESULT.expiresAt, result: RESULT } },
   play: async ({ canvasElement, args }) => {
     const screen = within(canvasElement);
     await expect(screen.getByRole("table", { name: "Work orders from Oracle Fusion" })).toBeVisible();
@@ -55,7 +55,7 @@ export const Connected: Story = {
   },
 };
 export const SearchAndRead: Story = {
-  args: { state: { ...INITIAL_FUSION_STATE, status: "connected" } },
+  args: { state: { ...INITIAL_FUSION_STATE, status: "connected", expiresAt: RESULT.expiresAt } },
   render: args => <Fixture {...args} />,
   play: async ({ canvasElement, args }) => {
     const screen = within(canvasElement);

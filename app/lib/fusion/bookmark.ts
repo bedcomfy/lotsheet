@@ -1,5 +1,5 @@
 import { startFusionBridge } from "./bridge";
-import { FUSION_ORIGIN, FUSION_PROTOCOL, FUSION_RESOURCES } from "./config";
+import { FUSION_ORIGIN, FUSION_PROTOCOL } from "./config";
 
 export function createFusionBookmark(appOrigin: string): string {
   const url = new URL(appOrigin);
@@ -9,7 +9,7 @@ export function createFusionBookmark(appOrigin: string): string {
     throw new Error("A secure Lotsheet address is required.");
   }
   const config = { appOrigin: url.origin, fusionOrigin: FUSION_ORIGIN,
-    protocol: FUSION_PROTOCOL, resources: FUSION_RESOURCES };
+    protocol: FUSION_PROTOCOL };
   // Encode the script, including its fragment character, as one bookmark URL.
   return "javascript:" + encodeURIComponent("void (" + startFusionBridge.toString() + ")(" + JSON.stringify(config) + ")");
 }

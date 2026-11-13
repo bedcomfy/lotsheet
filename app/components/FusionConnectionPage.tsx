@@ -16,7 +16,7 @@ import styles from "./FusionConnectionPage.module.css";
 const STATUS: Record<FusionSnapshot["status"], { text: string; tone: StatusTone }> = {
   idle: { text: "Not connected", tone: "neutral" },
   connecting: { text: "Connecting…", tone: "info" },
-  connected: { text: "Browser connected", tone: "success" },
+  connected: { text: "Access saved", tone: "success" },
   "sign-in-required": { text: "Sign in to Fusion", tone: "warning" },
   disconnected: { text: "Disconnected", tone: "neutral" },
 };
@@ -39,7 +39,7 @@ export function FusionConnectionView({ state, bookmark, resource, search,
   const [addressOpen, setAddressOpen] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
   const connected = state.status === "connected";
-  const showSetup = setupOpen || state.status === "idle" || state.status === "disconnected";
+  const showSetup = setupOpen || state.status === "idle" || state.status === "disconnected" || state.status === "sign-in-required";
   const definition = FUSION_RESOURCES[resource];
   const status = STATUS[state.status];
   const result = state.result;
@@ -57,12 +57,12 @@ export function FusionConnectionView({ state, bookmark, resource, search,
   return (
     <AppPage className={styles.page}>
       <PageHeader title="Oracle Fusion" eyebrow="Connection"
-        description="Read work orders and assets through your signed-in Fusion tab."
+        description="Connect once, then use Lotsheet until your Oracle access expires."
         actions={<>
           <Button onPress={() => window.open(FUSION_HOME, "_blank", "noopener,noreferrer")}>
             <ExternalLink aria-hidden="true" /> Open Fusion
           </Button>
-          <Button onPress={onDisconnect} isDisabled={!connected && state.status !== "sign-in-required" && state.status !== "connecting"}>
+          <Button onPress={onDisconnect} isDisabled={!connected && state.status !== "sign-in-required"}>
             <Unplug aria-hidden="true" /> Disconnect
           </Button>
         </>} />
@@ -73,7 +73,10 @@ export function FusionConnectionView({ state, bookmark, resource, search,
           <StatusBadge>Read-only</StatusBadge>
           {result && <span>Last read {new Date(result.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>}
         </div>
-        <p className={styles.hint}>Keep the Fusion tab open. After signing in or reloading that tab, click your favorite again.</p>
+        <p className={styles.hint}>{connected && state.expiresAt
+          ? <>You can close Fusion. Your saved access expires {new Date(state.expiresAt).toLocaleString()}.</>
+          : state.status === "connecting" ? "Saving and checking your Oracle access. Keep Fusion open until this finishes."
+          : "Sign into Fusion and click Connect Lotsheet. Once access is saved, you can close Fusion."}</p>
         {!showSetup && <Button size="sm" variant="quiet" onPress={() => setSetupOpen(true)} aria-expanded={false} aria-controls="fusion-favorite-setup">
           <Bookmark aria-hidden="true" /> Favorite setup
         </Button>}
@@ -85,7 +88,7 @@ export function FusionConnectionView({ state, bookmark, resource, search,
         <ol className={styles.steps}>
           <li>Name the favorite <strong>Connect Lotsheet</strong>.</li>
           <li>Copy the address below and paste it into the favorite’s address field.</li>
-          <li>Open your signed-in Fusion tab and click the favorite. Lotsheet opens here and connects.</li>
+          <li>Open your signed-in Fusion tab and click the favorite. Wait for <strong>Access saved</strong>, then close Fusion and use Lotsheet.</li>
         </ol>
         <ToolbarGroup>
           <Button variant="primary" onPress={copyBookmark} isDisabled={!bookmark}>
@@ -132,8 +135,7 @@ export function FusionConnectionView({ state, bookmark, resource, search,
                 </tr>)}</tbody>
               </table>
             </DataTableFrame> : <EmptyState title="No matching records" description="Try another number, or leave it blank to browse records you can access." />}
-            {result.expiresAt && <p className={styles.hint}>Current access expires {new Date(result.expiresAt).toLocaleString()}.
-              {" "}It is renewed when needed for a read while your Fusion sign-in remains valid.</p>}
+            <p className={styles.hint}>Saved access works across Lotsheet pages and refreshes in this browser. When it expires, sign into Fusion and click your favorite again.</p>
           </> : !state.error && <EmptyState icon={<Cable />} title={connected ? "Ready to read" : "Connect from your Fusion tab"}
             description={connected ? "Choose a record type, then read records." : "Use your Connect Lotsheet favorite in Fusion to start."} />}
       </Panel>

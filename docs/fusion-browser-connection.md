@@ -1,50 +1,63 @@
-# Oracle Fusion browser connection
+# Saved Oracle Fusion access
 
-Open `/fusion` in Lotsheet. Copy the favorite address into the address field of
-a browser favorite named **Connect Lotsheet**. In the same browser, sign into
-Fusion and click that favorite. It opens a new Lotsheet tab and connects it to
-that specific Fusion tab. Choose work orders or assets and click **Read records**.
+Open `/fusion` in Lotsheet. Copy the favorite address into the address field of a
+browser favorite named **Connect Lotsheet**. Sign into Fusion in that browser and
+click the favorite. When the new Lotsheet tab says **Access saved**, close Fusion
+and use Lotsheet. Access survives navigation, page refreshes, and reopening
+Lotsheet in the same browser until the Oracle token expires. Reconnect with the
+favorite when prompted. Disconnect removes the saved access from that browser.
 
-The favorite is tied to the Lotsheet origin from which it was copied. Save a new
-favorite when moving from a preview to production, or when the connection code
-changes. Keep the Fusion tab open. Reloading Fusion, signing in again, or closing
-either tab requires another favorite click. Reloading the receiving Lotsheet tab
-reconnects automatically while the original Fusion tab remains open.
+The v0.56.1 favorite replaces v0.56.0's ongoing tab connection. Copy the new
+address once. Favorites are tied to the Lotsheet origin from which they are
+copied; save the production favorite when moving from a preview to production.
 
-## Scope and credentials
+## Handoff and session
 
-- Every Oracle operation is a GET. Only `maintenanceWorkOrders` and
-  `installedBaseAssets` are allowed, with six selected columns and 25 rows per
-  request. Search is by exact work-order or asset number; paging is bounded.
-- The Fusion-side script uses the existing signed-in session to call
-  `/fscmRestApi/anticsrf`, then `/fscmRestApi/tokenrelay` with `X-XSRF-TOKEN`.
-  The API read uses the returned bearer token and omits browser cookies.
-- Oracle credentials stay in the Fusion tab's closure. The receiving Lotsheet
-  tab receives projected records and expiration metadata, never the token,
-  cookies, or anti-CSRF value. It has no arbitrary URL or mutation capability.
-- Both ends check the exact origin, window, and a random pairing ID. Request IDs
-  correlate replies. The pairing ID alone cannot authorize a read.
-- Results live in React state in the receiving tab. No records or credentials
-  are saved to Lotsheet's database, browser storage, server routes, or logs.
-  Only the non-credential pairing ID is kept in session storage for reloads.
-- A read obtains replacement access near token expiration, or retries once
-  after a 401. This depends on an active Fusion session; it is not unattended
-  background access or a permanent integration credential.
-- Disconnect clears the receiving tab and stops the Fusion-side listener.
-  Closing/reloading Fusion stops the connection. Closing Lotsheet is detected
-  by the Fusion-side script within five seconds.
+The favorite calls Oracle's anti-CSRF and token-relay endpoints using the user's
+existing signed-in Fusion session. It transfers the bearer token once using
+`postMessage` to the exact Lotsheet origin, window, and random pairing ID. The
+receiver sends the token directly to `/api/fusion/session` in an HTTPS POST body.
+It does not put it in a URL, clipboard, React state, local storage, or session
+storage. The bookmark clears its token and listeners after acknowledgement.
+
+The session endpoint checks the token with a bounded Oracle GET before saving it
+in a host-only `Secure`, `HttpOnly`, `SameSite=Strict` cookie scoped to
+`/api/fusion`. Cookie lifetime ends at the JWT's `exp`; credentials with missing,
+expired, over-24-hour or unsupported claims are rejected. Decoding JWT claims is
+only a local lifetime check: Oracle verifies the actual credential on creation
+and every data request. Cookie size is bounded to fit normal browser limits.
+
+This is private browser storage, not a shared Lotsheet database credential.
+Other browsers and devices do not inherit it. No token or record is written to
+application logs, files, database tables, or process-wide session maps. The
+server handles the bearer transiently when calling Oracle. Session responses
+contain only connection and expiry metadata. All API responses disable caching.
+
+## Reads and expiration
+
+`/api/fusion/records` uses the saved cookie for server-to-server reads. Only GET
+requests to the fixed Oracle host's `maintenanceWorkOrders` and
+`installedBaseAssets` endpoints are allowed. Searches are exact numbers, fields
+are projected, pages are capped at 25 rows, and offsets are bounded. There are
+no Oracle create/update/delete operations and no caller-controlled upstream URL.
+
+Requests require a same-origin custom header; session changes also require a
+matching Origin and JSON input. The routes do not enable cross-origin access.
+Oracle permission checks still apply to each request. A 401 or token expiry
+clears displayed results and asks for reauthentication. There is no automatic
+refresh while Fusion is closed, and Oracle may reject access before `exp`.
+Disconnect deletes the cookie; it does not revoke the Oracle-issued token.
 
 ## Verification
 
-`npm run verify` covers the unit and Storybook suites and both builds.
-After a successful Next.js build, `npm run e2e:fusion` starts the compiled app
-with an isolated in-memory database. It mocks the entire Oracle origin and uses
-only synthetic tokens and records. It clicks the actual generated JavaScript
-URL, checks pairing, reads, token replacement, reload, disconnect, and phone
-layout. It makes no live requests to Oracle.
+Run `npm run verify`, then `npm run e2e:fusion` against the compiled app. The
+browser test runs real Lotsheet session and read handlers with a synthetic
+Oracle server boundary loaded only by its isolated test server. No test mode or
+alternate upstream exists in production code. Tests close Fusion before reads,
+refresh and reopen Lotsheet, check browser isolation, exercise reauthentication,
+expiry and disconnect, and inspect desktop/phone layouts. All credentials and
+records in tests are synthetic. A final live test requires the signed-in work
+browser and confirms Oracle accepts requests from the deployed Lotsheet server.
 
-The real work browser has separately demonstrated token relay, a bearer-only
-work-order read, cross-tab messaging, and JavaScript favorites. The complete
-saved-favorite flow still needs validation in that signed-in work browser.
-Corporate browser policies, popup settings, and Oracle session changes can
-affect that result.
+References: [Oracle token relay](https://docs.oracle.com/en/cloud/paas/visual-builder-addin/dev-guide/oracle-fusion-applications-token-relay-authentication.html)
+and [cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie).

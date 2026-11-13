@@ -1,7 +1,10 @@
 export const FUSION_ORIGIN = "https://iaymqy.fa.ocs.oraclecloud.com";
 export const FUSION_HOME = `${FUSION_ORIGIN}/fscmUI/faces/FuseWelcome`;
-export const FUSION_PROTOCOL = "lotsheet-fusion-v1";
+export const FUSION_PROTOCOL = "lotsheet-fusion-session-v2";
 export const FUSION_PAGE_SIZE = 25;
+export const FUSION_SESSION_PATH = "/api/fusion/session";
+export const FUSION_RECORDS_PATH = "/api/fusion/records";
+export const FUSION_REQUEST_HEADER = "X-Lotsheet-Fusion";
 
 export const FUSION_RESOURCES = {
   workOrders: {
