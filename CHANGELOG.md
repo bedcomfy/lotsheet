@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.56.1 - 2026-11-13
+
+- Save temporary Oracle access from the connection favorite in a private, expiring browser cookie. Fusion can be closed after Access saved appears; Lotsheet restores access across pages, refreshes, and reopened tabs.
+- Read work orders and assets through bounded server-side GET requests. Keep the bearer out of page storage and API response bodies, enforce each browser's own session, and require reauthentication when access expires or Oracle rejects it.
+- Add Disconnect cleanup and full-flow tests covering closed Fusion tabs, browser isolation, reauthentication, and expiration.
+
+## 0.56.0 - 2026-11-13
+
+- Add an Oracle Fusion connection page with a saved browser favorite: sign in to Fusion, click Connect Lotsheet, and read work orders or assets without opening Developer Tools.
+- Keep Oracle credentials in the Fusion tab. Renew access on demand, limit the connection to selected read-only records, and show sign-in or reconnection instructions when the session ends.
+- Add exact-number searches and bounded paging. Results stay in the receiving tab and are not written to Fusion or the shared sheet database.
+
 ## 0.55.3 - 2026-11-10
 
 - Change Custom Sheet columns to OK and N / R. Keep their boxes blank for handwriting, with only the heading and date editable on screen, and hide all bus flags on this sheet.

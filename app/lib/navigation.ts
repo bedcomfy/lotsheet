@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BusFront,
+  Cable,
   ClipboardList,
   FileText,
   Files,
@@ -120,6 +121,12 @@ export const ADMIN_ROUTE: AppRoute = {
 };
 
 export const UTILITY_ROUTES: AppRoute[] = [
+  {
+    path: "/fusion",
+    label: "Oracle Fusion",
+    icon: Cable,
+    description: "Save temporary Oracle access and read work orders and assets",
+  },
   {
     path: "/object-codes",
     label: "Object Codes",

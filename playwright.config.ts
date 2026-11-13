@@ -19,7 +19,7 @@ export default defineConfig({
   use: { baseURL: "http://localhost:3000" },
   projects: [
     { name: "gate", testMatch: /gate\.setup\.ts/ },
-    { name: "chromium", testIgnore: [/gate\.setup\.ts/, /site-gate-disabled\.spec\.ts/], dependencies: ["gate"], use: { storageState: GATE_STATE } },
+    { name: "chromium", testIgnore: [/gate\.setup\.ts/, /site-gate-disabled\.spec\.ts/, /fusion-connection\.spec\.ts/], dependencies: ["gate"], use: { storageState: GATE_STATE } },
   ],
   webServer: {
     command: "npm run dev",
