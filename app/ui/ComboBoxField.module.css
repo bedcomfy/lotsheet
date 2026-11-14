@@ -1,0 +1,21 @@
+.field { display: grid; gap: var(--ui-space-2); min-width: 0; }
+.label { color: var(--ui-text); font-size: var(--ui-font-size-sm); font-weight: var(--ui-weight-medium); }
+.control { display: flex; min-width: 0; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-md); background: var(--ui-surface); box-shadow: var(--ui-shadow-sm); }
+.control:focus-within { border-color: var(--ui-focus); box-shadow: var(--ui-focus-ring); }
+.input { min-width: 0; width: 100%; min-height: var(--ui-control-md); padding: var(--ui-space-2) var(--ui-space-3); border: 0; border-radius: inherit; outline: none; background: transparent; color: var(--ui-text); font: inherit; font-size: var(--ui-font-size-md); letter-spacing: 0; }
+.input::placeholder { color: var(--ui-text-subtle); }
+.trigger { display: grid; place-items: center; min-width: var(--ui-control-md); background: transparent; border: 0; border-radius: inherit; color: var(--ui-text-muted); cursor: pointer; touch-action: manipulation; }
+.trigger svg { width: 1rem; height: 1rem; }
+.trigger[data-hovered] { background: var(--ui-surface-hover); }
+.trigger[data-focus-visible] { outline: 2px solid var(--ui-focus); outline-offset: -2px; }
+.field[data-disabled] { opacity: .55; }
+.description, .empty { color: var(--ui-text-muted); font-size: var(--ui-font-size-xs); line-height: var(--ui-line-height-body); }
+.popover { z-index: var(--ui-layer-popover); width: var(--trigger-width); max-width: calc(var(--ui-viewport-width) - var(--ui-space-4) * 2); max-height: min(24rem, var(--available-height), calc(var(--ui-viewport-height) - var(--ui-space-6))); overflow: auto; overscroll-behavior: contain; touch-action: pan-y; padding: var(--ui-space-1); border: 1px solid var(--ui-border); border-radius: var(--ui-radius-md); background: var(--ui-surface-raised); box-shadow: var(--ui-shadow-lg); outline: none; }
+.list { display: grid; gap: 2px; outline: none; }
+.option { display: grid; gap: var(--ui-space-1); min-height: var(--ui-control-md); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-sm); color: var(--ui-text); cursor: pointer; outline: none; touch-action: manipulation; overflow-wrap: anywhere; }
+.option[data-focused], .option[data-hovered] { background: var(--ui-surface-hover); }
+.option[data-focus-visible] { box-shadow: inset 0 0 0 2px var(--ui-focus); }
+.option[data-selected] { background: var(--ui-accent-soft); color: var(--ui-text); }
+.optionLabel { font-weight: var(--ui-weight-semibold); font-size: var(--ui-font-size-sm); }
+.optionDescription { color: var(--ui-text-muted); font-size: var(--ui-font-size-sm); line-height: var(--ui-line-height-body); }
+.empty { padding: var(--ui-space-3); }

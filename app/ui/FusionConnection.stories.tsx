@@ -20,7 +20,7 @@ const meta = {
     bookmark: "javascript:void(0)",
     resource: "workOrders",
     search: "",
-    onResource: fn(), onSearch: fn(), onRead: fn(), onDisconnect: fn(),
+    onResource: fn(), onSearch: fn(), onRead: fn(), onDisconnect: fn(), onParts: fn(),
   },
 } satisfies Meta<typeof FusionConnectionView>;
 export default meta;
