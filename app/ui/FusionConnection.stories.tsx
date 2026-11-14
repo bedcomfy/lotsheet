@@ -65,6 +65,9 @@ export const SearchAndRead: Story = {
   },
 };
 export const Reading: Story = { args: { state: { ...INITIAL_FUSION_STATE, status: "connected", reading: true } } };
+export const SavedOnSite: Story = { args: { state: { ...INITIAL_FUSION_STATE, status: "connected", storage: "server", expiresAt: RESULT.expiresAt } },
+  play: async ({ canvasElement }) => { await expect(within(canvasElement).getByText("Saved on site · private testing")).toBeVisible(); } };
+export const SharedTestConnection: Story = { args: { state: { ...INITIAL_FUSION_STATE, status: "connected", storage: "server", shared: true, expiresAt: RESULT.expiresAt } } };
 export const SignInRequired: Story = { args: { state: { ...INITIAL_FUSION_STATE, status: "sign-in-required", error: "Sign into Fusion, then click your Connect Lotsheet favorite again." } } };
 export const Empty: Story = { args: { state: { ...INITIAL_FUSION_STATE, status: "connected", result: { ...RESULT, items: [], hasMore: false } } } };
 export const Dark: Story = { ...Connected, globals: { theme: "dark" }, play: undefined };

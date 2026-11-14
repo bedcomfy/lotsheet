@@ -6,10 +6,10 @@ The Parts page (`/fusion/parts`) lets a connected Lotsheet user search an NWD pa
 
 - Fixed tenant: `https://iaymqy.fa.ocs.oraclecloud.com`.
 - Fixed organization: `300000004581674` / `NWD` / `Pace Northwest Division`.
-- Uses the existing browser's Secure, HttpOnly, SameSite=Strict Fusion cookie. No access to another browser's connection and no central token store.
+- Uses the shared private test vault described in [Saved Oracle Fusion access](fusion-browser-connection.md). A signed, expiring browser permit or private test header is required; anonymous visitors cannot borrow tokens.
 - Every application request requires `X-Lotsheet-Fusion: 1`, same-origin checks, and an unexpired saved credential. Oracle validates the credential on every upstream read.
 - The server checks returned organization IDs/codes and component/bus filters; it rejects mismatches rather than quietly filtering them out.
-- No new tokens, credentials, or environment variables. Existing Fusion connection setup is unchanged.
+- The existing favorite is unchanged. Successful reads migrate old bearer cookies into encrypted server storage when `FUSION_TEST_VAULT_KEY` is configured.
 
 ## Reads
 
@@ -49,6 +49,18 @@ Two read streams build the index. Catalog search works while indexing continues.
 The page clears displayed data on expiry, a 401, or a changed connection fingerprint. Each response is bound to the connection that initiated the scan, so a new cookie midway through indexing cannot merge two accounts' data. Aborted or superseded part searches cannot replace the current part's history. Returning focus rechecks Oracle access. A network failure shows a warning about previously read values; a catalog-access denial clears the view. Browser cache expiry is evaluated when loaded, and cached business data is not an authentication credential.
 
 ## Verification and live limitation
+
+Parts errors distinguish authentication, permission, Oracle query rejection, response format,
+storage and network failures. Safe diagnostics identify the resource and upstream status
+without returning Oracle error bodies or authorization headers. General Fusion connected
+status does not claim that a separate catalog request succeeded.
+
+Every index/history page sends the opaque `X-Lotsheet-Fusion-Connection` fingerprint from
+the verified context; it selects that same vault credential. A different token is never
+silently mixed into an in-progress scan. Refresh can select another authorized connection.
+`GET /api/fusion/diagnostics?kind=catalog|locations|subinventories|balances` is restricted
+to the private server test header. It performs four fixed one-row NWD probes, reporting
+status and field types only. It cannot fetch arbitrary URLs, reports or organizations.
 
 Unit tests exercise input restrictions, tenant/organization scoping, actual-offset paging, report parsing against captured Oracle HTML, quantity semantics, expired credentials, repeated pages, changed connections, stale responses and cache boundaries. Browser stories cover keyboard name search, exact part lookup, bus filtering, returns, empty/error/loading states, dark theme, long content and phone safe areas. The isolated full-flow test runs actual application handlers and cookies with a synthetic Oracle boundary, including capped pages, report fallback, refresh/cache restore and lost authentication.
 

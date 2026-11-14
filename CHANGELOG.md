@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.57.1 - 2026-11-13
+
+- Save verified temporary Oracle tokens encrypted on the server for private read-only testing. Migrate existing browser access automatically; allow authorized test sessions to reuse valid saved credentials while keeping anonymous visitors out.
+- Verify saved connections against Oracle, discard rejected tokens, preserve expiration, and remove contributed access on Disconnect. Keep tokens out of browser storage, API responses and logs.
+- Distinguish Parts catalog/query/permission/storage errors from network failures and add restricted diagnostic reads. Pin each index scan to one credential so shared access cannot mix accounts mid-scan.
+- Cover encryption, browser isolation, shared fallback, migration, expiry, disconnect and the full connection/Parts browser flow.
+
 ## 0.57.0 - 2026-11-13
 
 - Add Northwest Parts under Reference: search by part number or partial description, inspect stock and assigned locations, and filter actual material charges and returns by bus.

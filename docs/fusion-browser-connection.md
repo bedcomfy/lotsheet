@@ -5,7 +5,9 @@ browser favorite named **Connect Lotsheet**. Sign into Fusion in that browser an
 click the favorite. When the new Lotsheet tab says **Access saved**, close Fusion
 and use Lotsheet. Access survives navigation, page refreshes, and reopening
 Lotsheet in the same browser until the Oracle token expires. Reconnect with the
-favorite when prompted. Disconnect removes the saved access from that browser.
+favorite when prompted. In private testing, **Saved on site** confirms encrypted
+server storage. Disconnect removes this browser's contributed token from the
+test pool and clears its local access.
 
 The v0.56.1 favorite replaces v0.56.0's ongoing tab connection. Copy the new
 address once. Favorites are tied to the Lotsheet origin from which they are
@@ -20,22 +22,38 @@ receiver sends the token directly to `/api/fusion/session` in an HTTPS POST body
 It does not put it in a URL, clipboard, React state, local storage, or session
 storage. The bookmark clears its token and listeners after acknowledgement.
 
-The session endpoint checks the token with a bounded Oracle GET before saving it
-in a host-only `Secure`, `HttpOnly`, `SameSite=Strict` cookie scoped to
-`/api/fusion`. Cookie lifetime ends at the JWT's `exp`; credentials with missing,
+The session endpoint checks the token with a bounded Oracle GET before saving it.
+With `FUSION_TEST_VAULT_KEY` configured, AES-256-GCM ciphertext goes into the dedicated
+`fusion_test_credentials` table, using the existing environment table suffix.
+A signed, host-only `Secure`, `HttpOnly`, `SameSite=Strict` tester permit scoped to
+`/api/fusion` replaces the bearer cookie. Permit lifetime ends at the JWT's `exp`; credentials with missing,
 expired, over-24-hour or unsupported claims are rejected. Decoding JWT claims is
 only a local lifetime check: Oracle verifies the actual credential on creation
 and every data request. Cookie size is bounded to fit normal browser limits.
 
-This is private browser storage, not a shared Lotsheet database credential.
-Other browsers and devices do not inherit it. No token or record is written to
-application logs, files, database tables, or process-wide session maps. The
-server handles the bearer transiently when calling Oracle. Session responses
-contain only connection and expiry metadata. All API responses disable caching.
+Only a browser with a valid signed tester permit, or private server test authorization,
+can borrow a saved token. Anonymous visitors and the general site/admin passwords
+cannot use the pool. Reads try the contributed token first, then other saved tokens
+when Oracle denies authentication or permission. A borrowed token never extends the
+browser permit's expiry. This is shared private test access, not per-user production
+authorization. Oracle enforces the selected credential's permissions on every read.
+
+No bearer is returned by any API or written to logs, browser storage, or source files.
+The encryption key is a server-only 32-byte secret in production environment settings;
+it is not an Oracle API key. The private testing header uses a separately derived HMAC.
+Session responses contain status, storage, sharing and expiry metadata only.
+All API responses disable caching. Expired rows are unusable immediately and purged on
+vault access; a 401 deletes the rejected token. A 403 retains it for other resources.
+
+Existing bearer cookies migrate on their next successful verified session/context/record
+read. Without the vault key, local/test deployments retain the previous browser-only
+cookie flow. A configured vault storage failure fails closed rather than silently
+claiming server storage succeeded. Rotating the key invalidates permits and stored
+ciphertext; reconnect with the favorite afterward.
 
 ## Reads and expiration
 
-`/api/fusion/records` uses the saved cookie for server-to-server reads. Only GET
+`/api/fusion/records` resolves authorized saved access for server-to-server reads. Only GET
 requests to the fixed Oracle host's `maintenanceWorkOrders` and
 `installedBaseAssets` endpoints are allowed. Searches are exact numbers, fields
 are projected, pages are capped at 25 rows, and offsets are bounded. There are
@@ -46,7 +64,9 @@ matching Origin and JSON input. The routes do not enable cross-origin access.
 Oracle permission checks still apply to each request. A 401 or token expiry
 clears displayed results and asks for reauthentication. There is no automatic
 refresh while Fusion is closed, and Oracle may reject access before `exp`.
-Disconnect deletes the cookie; it does not revoke the Oracle-issued token.
+Disconnect removes the contributed server token and cookies; it does not revoke the
+Oracle-issued token. Restoring the Fusion page now verifies an actual Oracle read,
+not just the locally decoded expiry. Catalog access is still a separate permission.
 
 ## Verification
 

@@ -46,14 +46,14 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
       </>} />
     <Toolbar>
       <ToolbarGroup><StatusBadge>Northwest only</StatusBadge><StatusBadge>Read-only</StatusBadge>
-        <StatusBadge tone={state.status === "connected" ? "success" : "warning"}>{state.status === "connected" ? "Oracle connected" : state.status === "checking" ? "Checking connection" : "Connection required"}</StatusBadge>
+        <StatusBadge tone={state.status === "connected" ? "success" : "warning"}>{state.status === "connected" ? "Oracle connected" : state.status === "checking" ? "Checking connection" : state.status === "error" ? "Northwest read failed" : "Connection required"}</StatusBadge>
       </ToolbarGroup>
       {index && <span className={styles.hint}>Access expires {time(index.expiresAt)}</span>}
     </Toolbar>
     {state.error && <p role="alert" className={styles.error}>{state.error}</p>}
     {!index ? <EmptyState kind={state.status === "checking" ? "loading" : state.status === "error" ? "error" : "empty"}
-      title={state.status === "checking" ? "Checking Northwest access" : "Connect to Oracle Fusion"}
-      description={state.status === "checking" ? "Validating your saved connection before loading parts." : "Use your Connect Lotsheet favorite in your signed-in Fusion browser, then open Parts here."}
+      title={state.status === "checking" ? "Checking Northwest access" : state.status === "error" ? "Northwest catalog could not be read" : "Connect to Oracle Fusion"}
+      description={state.status === "checking" ? "Validating your saved connection before loading parts." : state.status === "error" ? "Saved Oracle access and catalog access are separate checks. The error above identifies the failed read; try Refresh index to retry." : "Use your Connect Lotsheet favorite in your signed-in Fusion browser, then open Parts here."}
       action={state.status !== "checking" ? <Button variant="primary" onPress={onConnect}>Open Oracle connection</Button> : undefined} /> : <>
       <Panel title="Northwest parts index" description={complete ? "All pages returned by Oracle have been indexed for the current connection." : "Search becomes available as parts load. Results remain partial until every section finishes."}
         actions={<StatusBadge tone={complete ? stale ? "warning" : "success" : state.indexing ? "info" : "warning"}>{complete ? stale ? "Refresh recommended" : "Index complete" : state.indexing ? "Building index" : "Index incomplete"}</StatusBadge>}>

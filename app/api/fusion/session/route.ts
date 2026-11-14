@@ -2,15 +2,16 @@ import {
   clearAccessCookie, failureResponse, FusionFailure, MAX_TOKEN_LENGTH, privateJson,
   requireSameOrigin, savedAccess, setAccessCookie, tokenExpiry, verifyOracleAccess,
 } from "../../../lib/fusion/server";
+import { connectionStatus } from "../../../lib/fusion/access";
+import { clearTesterCookie, credentialId, forgetToken, rememberVerifiedToken, setTesterCookie, testerPermit, vaultKey } from "../../../lib/fusion/vault";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-export function GET(request: Request) {
+export async function GET(request: Request) {
   try {
     requireSameOrigin(request);
-    const access = savedAccess(request);
-    return privateJson({ connected: Boolean(access), expiresAt: access?.expiresAt ?? null });
+    return await connectionStatus(request);
   } catch (error) { return failureResponse(error); }
 }
 
@@ -26,17 +27,22 @@ export async function POST(request: Request) {
     const expiresAt = tokenExpiry(token);
     if (!expiresAt) throw new FusionFailure("AUTH", 401);
     await verifyOracleAccess(token);
-    const response = privateJson({ connected: true, expiresAt });
-    setAccessCookie(response, token, expiresAt);
+    const stored = vaultKey() ? await rememberVerifiedToken(token) : null;
+    const response = privateJson({ connected: true, expiresAt, storage: stored ? "server" : "browser", shared: false });
+    if (stored) { setTesterCookie(response, stored); clearAccessCookie(response); }
+    else setAccessCookie(response, token, expiresAt);
     return response;
   } catch (error) { return failureResponse(error instanceof SyntaxError ? new FusionFailure("REQUEST", 400) : error); }
 }
 
-export function DELETE(request: Request) {
+export async function DELETE(request: Request) {
   try {
     requireSameOrigin(request);
-    const response = privateJson({ connected: false, expiresAt: null });
+    const own = savedAccess(request), permit = testerPermit(request);
+    if (own || permit) await forgetToken(own ? credentialId(own.token) : permit!.preferredId);
+    const response = privateJson({ connected: false, expiresAt: null, storage: vaultKey() ? "server" : "browser", shared: false });
     clearAccessCookie(response);
+    clearTesterCookie(response);
     return response;
   } catch (error) { return failureResponse(error); }
 }

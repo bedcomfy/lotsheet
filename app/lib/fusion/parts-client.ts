@@ -19,9 +19,15 @@ const ERRORS: Record<string, string> = {
   FORMAT: "Oracle returned unexpected or overlapping records. Refresh to try again; these results are incomplete.",
   LIMIT: "The safety limit was reached. These results are incomplete.",
   NETWORK: "The read could not finish. Check your connection and try again.",
+  HTTP: "Oracle rejected this data request. Your connection may still be valid.",
+  STORAGE: "Private Oracle token storage is unavailable. Try again shortly.",
 };
 class ReadError extends Error {
-  constructor(public code: string) { super(ERRORS[code] ?? ERRORS.NETWORK); }
+  constructor(public code: string, diagnostic?: { resource?: string; upstreamStatus?: number; stage?: string }) {
+    const resource = diagnostic?.resource && /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(diagnostic.resource) ? diagnostic.resource : null;
+    const status = diagnostic?.upstreamStatus;
+    super((ERRORS[code] ?? ERRORS.NETWORK) + (resource ? ` (${resource}${Number.isInteger(status) ? `, HTTP ${status}` : ""})` : ""));
+  }
 }
 export function checkPage<T>(page: PartsPage<T>, offset: number, connectionId: string) {
   if (page?.connectionId !== connectionId) throw new ReadError("CONNECTION");
@@ -45,11 +51,14 @@ export class PartsClient {
     let response: Response;
     try {
       response = await this.request("/api/fusion/parts?" + new URLSearchParams(params), { credentials: "same-origin", cache: "no-store", redirect: "error",
-        headers: { [FUSION_REQUEST_HEADER]: "1", Accept: "application/json" }, signal: AbortSignal.any([signal, AbortSignal.timeout(80_000)]) });
+        headers: { [FUSION_REQUEST_HEADER]: "1", Accept: "application/json",
+          ...(params.kind !== "context" && this.state.index ? { "X-Lotsheet-Fusion-Connection": this.state.index.connectionId } : {}) },
+        signal: AbortSignal.any([signal, AbortSignal.timeout(80_000)]) });
     } catch { throw new ReadError("NETWORK"); }
-    if (response.status === 401) throw new ReadError("AUTH");
-    if (response.status === 403) throw new ReadError("FORBIDDEN");
-    if (!response.ok) throw new ReadError("NETWORK");
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      throw new ReadError(response.status === 401 ? "AUTH" : response.status === 403 ? "FORBIDDEN" : Object.hasOwn(ERRORS, body?.code ?? "") ? body.code : "NETWORK", body?.diagnostic);
+    }
     try { return await response.json(); } catch { throw new ReadError("FORMAT"); }
   }
   private failAuth(error: unknown) {

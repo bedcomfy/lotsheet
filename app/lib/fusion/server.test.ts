@@ -34,7 +34,7 @@ describe("private Fusion sessions and reads", () => {
     expect(response.cookies.get(FUSION_COOKIE)).toMatchObject({ value: token, httpOnly: true, secure: true,
       sameSite: "strict", path: FUSION_COOKIE_PATH, maxAge: 14400 });
     expect(response.cookies.get(FUSION_COOKIE)?.domain).toBeUndefined();
-    expect(await response.json()).toEqual({ connected: true, expiresAt: Date.now() + 14400000 });
+    expect(await response.json()).toMatchObject({ connected: true, expiresAt: Date.now() + 14400000, storage: "browser" });
     expect(response.headers.get("cache-control")).toContain("no-store");
     const [url, options] = fakeFetch.mock.calls[0];
     expect(new URL(url).origin).toBe(FUSION_ORIGIN);
@@ -44,12 +44,12 @@ describe("private Fusion sessions and reads", () => {
     expect(options.headers.Cookie).toBeUndefined();
   });
 
-  it("restores only cookie metadata and keeps separate browsers unauthenticated", async () => {
+  it("validates restored access with Oracle and keeps separate browsers unauthenticated", async () => {
     const token = jwt();
-    const restored = sessionGET(request("/session", { token }));
-    expect(await restored.json()).toEqual({ connected: true, expiresAt: tokenExpiry(token) });
-    expect(await sessionGET(request()).json()).toEqual({ connected: false, expiresAt: null });
-    expect(fakeFetch).not.toHaveBeenCalled();
+    const restored = await sessionGET(request("/session", { token }));
+    expect(await restored.json()).toMatchObject({ connected: true, expiresAt: tokenExpiry(token) });
+    expect(await (await sessionGET(request())).json()).toMatchObject({ connected: false, expiresAt: null });
+    expect(fakeFetch).toHaveBeenCalledTimes(1);
     const missing = await recordsGET(request("/records?resource=workOrders", { headers: { Authorization: "Bearer " + token } }));
     expect(missing.status).toBe(401);
   });
@@ -68,7 +68,7 @@ describe("private Fusion sessions and reads", () => {
     expect(query.get("q")).toBe("WorkOrderNumber='NWD-1683'");
     expect(query.get("limit")).toBe("25");
     expect(query.get("fields")).toContain("WorkOrderDescription");
-    expect(response.headers.get("vary")).toBe("Cookie");
+    expect(response.headers.get("vary")).toContain("Cookie");
   });
 
   it("never accepts a decoded JWT as proof that Oracle will accept its signature", async () => {
@@ -128,8 +128,8 @@ describe("private Fusion sessions and reads", () => {
     }
   });
 
-  it("Disconnect removes this browser's cookie without contacting or writing to Oracle", () => {
-    const response = DELETE(request("/session", { method: "DELETE", token: jwt() }));
+  it("Disconnect removes this browser's cookie without contacting or writing to Oracle", async () => {
+    const response = await DELETE(request("/session", { method: "DELETE", token: jwt() }));
     expect(response.cookies.get(FUSION_COOKIE)).toMatchObject({ value: "", httpOnly: true, path: FUSION_COOKIE_PATH, maxAge: 0 });
     expect(fakeFetch).not.toHaveBeenCalled();
   });

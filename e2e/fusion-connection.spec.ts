@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { FUSION_HOME, FUSION_ORIGIN, FUSION_REQUEST_HEADER } from "../app/lib/fusion/config";
 
-const COOKIE = "__Secure-pace-fusion-access";
+const COOKIE = "__Secure-pace-fusion-tester";
 async function mockFusion(context: BrowserContext, ttl = 14400) {
   let issues = 0;
   const paths: string[] = [];
@@ -59,6 +59,9 @@ test("save access, close Fusion, read through the server, refresh, reopen Lotshe
   await fusion.close();
   const accessCookie = (await context.cookies()).find(cookie => cookie.name === COOKIE);
   expect(accessCookie).toMatchObject({ httpOnly: true, secure: true, sameSite: "Strict", path: "/api/fusion" });
+  expect(accessCookie!.value).not.toMatch(/mock-token|^e30\./);
+  expect((await context.cookies()).some(cookie => cookie.name === "__Secure-pace-fusion-access")).toBe(false);
+  await expect(receiver.getByText("Saved on site · private testing")).toBeVisible();
   expect(accessCookie!.expires - Date.now() / 1000).toBeGreaterThan(14300);
   expect(accessCookie!.expires - Date.now() / 1000).toBeLessThanOrEqual(14400);
   const publicBrowserState = await receiver.evaluate(() => JSON.stringify({ cookie: document.cookie,
@@ -92,7 +95,7 @@ test("save access, close Fusion, read through the server, refresh, reopen Lotshe
 
   const otherBrowser = await browser.newContext();
   const privateStatus = await otherBrowser.request.get("http://localhost:3002/api/fusion/session", { headers: { [FUSION_REQUEST_HEADER]: "1" } });
-  expect(await privateStatus.json()).toEqual({ connected: false, expiresAt: null });
+  expect(await privateStatus.json()).toMatchObject({ connected: false, expiresAt: null });
   const denied = await otherBrowser.request.get("http://localhost:3002/api/fusion/records?resource=workOrders", { headers: { [FUSION_REQUEST_HEADER]: "1" } });
   expect(denied.status()).toBe(401);
   await otherBrowser.close();

@@ -11,6 +11,8 @@ export interface FusionSnapshot {
   result: FusionResult | null;
   expiresAt: number | null;
   error: string | null;
+  storage?: "server" | "browser";
+  shared?: boolean;
 }
 export const INITIAL_FUSION_STATE: FusionSnapshot = {
   status: "idle", reading: false, result: null, expiresAt: null, error: null,
@@ -25,13 +27,15 @@ const ERRORS: Record<string, string> = {
   HTTP: "Oracle could not complete this read. Try another number or try again later.",
   NETWORK: "Oracle could not be reached. Try again shortly.",
   SAVE: "Access could not be saved in this browser. Check its cookie settings and reconnect.",
+  STORAGE: "Private Oracle token storage is unavailable. Try connecting again shortly.",
 };
 class ApiFailure extends Error {
   constructor(public code: string) { super(Object.hasOwn(ERRORS, code) ? ERRORS[code] : ERRORS.NETWORK); }
 }
 
-/** Credentials are handed straight to the server, then kept in an HttpOnly
- * cookie. Only non-secret status and result data enter this object's state. */
+/** Credentials are handed straight to the server. Server storage uses an
+ * HttpOnly tester permit; legacy deployments use an HttpOnly bearer cookie.
+ * Only non-secret status and result data enter this object's state. */
 export class FusionClient {
   private snapshot: FusionSnapshot = { ...INITIAL_FUSION_STATE };
   private peer: Window | null = null;
@@ -143,6 +147,7 @@ export class FusionClient {
       if (this.disposed) return;
       if (saved.connected !== true) throw new ApiFailure("SAVE");
       this.connected(saved.expiresAt);
+      this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true });
       this.send("complete");
       this.detachBridge();
     } catch (error) {
@@ -157,10 +162,16 @@ export class FusionClient {
     try {
       const session = await this.call(FUSION_SESSION_PATH);
       if (this.disposed || generation !== this.generation) return;
-      if (session.connected === true) this.connected(session.expiresAt);
+      if (session.connected === true) {
+        this.connected(session.expiresAt);
+        this.update({ storage: session.storage === "server" ? "server" : "browser", shared: session.shared === true });
+      }
       else if (required || this.snapshot.expiresAt) this.expire();
-    } catch {
-      if (!this.disposed && generation === this.generation) this.update({ error: "Saved access could not be checked. Reload Lotsheet and try again." });
+    } catch (error) {
+      if (!this.disposed && generation === this.generation) {
+        if (error instanceof ApiFailure && error.code === "AUTH") this.expire();
+        else this.update({ error: error instanceof ApiFailure ? error.message : "Saved access could not be checked. Reload Lotsheet and try again." });
+      }
     } finally { this.restoring = false; }
   }
 
