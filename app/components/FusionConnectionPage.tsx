@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Form } from "react-aria-components";
-import { Bookmark, Cable, Copy, ExternalLink, RefreshCw, Unplug } from "lucide-react";
+import { Bookmark, Cable, Copy, ExternalLink, PackageSearch, RefreshCw, Unplug } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { AppPage, DataTableFrame, EmptyState, PageHeader, Panel, Toolbar, ToolbarGroup } from "../ui/Page";
 import { Button } from "../ui/Button";
 import { TextAreaField, TextField } from "../ui/Field";
@@ -31,10 +32,11 @@ export interface FusionConnectionViewProps {
   onSearch: (search: string) => void;
   onRead: (offset: number) => void;
   onDisconnect: () => void;
+  onParts: () => void;
 }
 
 export function FusionConnectionView({ state, bookmark, resource, search,
-  onResource, onSearch, onRead, onDisconnect }: FusionConnectionViewProps) {
+  onResource, onSearch, onRead, onDisconnect, onParts }: FusionConnectionViewProps) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
@@ -59,6 +61,7 @@ export function FusionConnectionView({ state, bookmark, resource, search,
       <PageHeader title="Oracle Fusion" eyebrow="Connection"
         description="Connect once, then use Lotsheet until your Oracle access expires."
         actions={<>
+          <Button onPress={onParts}><PackageSearch aria-hidden="true" /> Northwest parts</Button>
           <Button onPress={() => window.open(FUSION_HOME, "_blank", "noopener,noreferrer")}>
             <ExternalLink aria-hidden="true" /> Open Fusion
           </Button>
@@ -153,6 +156,7 @@ function formatCell(value: string | number | null | undefined, date: boolean) {
 }
 
 export default function FusionConnectionPage() {
+  const router = useRouter();
   const [state, setState] = useState<FusionSnapshot>(INITIAL_FUSION_STATE);
   const [bookmark, setBookmark] = useState("");
   const [resource, setResource] = useState<FusionResource>("workOrders");
@@ -169,5 +173,5 @@ export default function FusionConnectionPage() {
     onResource={value => { setResource(value); setSearch(""); client.current?.clearResults(); }}
     onSearch={value => { setSearch(value); client.current?.clearResults(); }}
     onRead={offset => client.current?.read(resource, search, offset)}
-    onDisconnect={() => client.current?.disconnect()} />;
+    onDisconnect={() => client.current?.disconnect()} onParts={() => router.push("/fusion/parts")} />;
 }

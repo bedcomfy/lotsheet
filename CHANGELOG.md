@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.57.0 - 2026-11-13
+
+- Add Northwest Parts under Reference: search by part number or partial description, inspect stock and assigned locations, and filter actual material charges and returns by bus.
+- Index every available Northwest catalog, location, stockroom and on-hand page, with a bounded Buyers Inventory report fallback. Show source, freshness and completeness; keep missing balances unknown and unconfirmed units separate.
+- Reuse each browser's temporary Oracle connection and cache completed business-data indexes locally. Keep all Fusion operations read-only, enforce Northwest on the server, clear results on expiry, and prevent mixing responses across connections.
+- Add pagination, organization isolation, report parsing, connection lifecycle, accessible interface and full-flow coverage.
+
 ## 0.56.1 - 2026-11-13
 
 - Save temporary Oracle access from the connection favorite in a private, expiring browser cookie. Fusion can be closed after Access saved appears; Lotsheet restores access across pages, refreshes, and reopened tabs.

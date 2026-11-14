@@ -9,6 +9,7 @@ import {
   Fuel,
   Gauge,
   Home,
+  PackageSearch,
   RefreshCw,
   SearchCode,
   ShieldAlert,
@@ -121,6 +122,12 @@ export const ADMIN_ROUTE: AppRoute = {
 };
 
 export const UTILITY_ROUTES: AppRoute[] = [
+  {
+    path: "/fusion/parts",
+    label: "Parts",
+    icon: PackageSearch,
+    description: "Northwest parts, stock locations, and work order charge history",
+  },
   {
     path: "/fusion",
     label: "Oracle Fusion",

@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 // credentials or external Oracle requests are used by this test suite.
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: /fusion-connection\.spec\.ts/,
+  testMatch: /fusion-(connection|parts)\.spec\.ts/,
   outputDir: "test-results/fusion",
   timeout: 60_000,
   workers: 1,
