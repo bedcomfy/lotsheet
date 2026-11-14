@@ -14,22 +14,23 @@ const MESSAGES = {
   FORMAT: "Oracle returned an unexpected response. Try again later.",
   NETWORK: "Oracle could not be reached. Try again shortly.",
   HTTP: "Oracle could not complete this read. Try another number or try again later.",
+  STORAGE: "Private Oracle token storage is unavailable. Try again shortly.",
 } as const;
 
 export class FusionFailure extends Error {
-  constructor(public code: keyof typeof MESSAGES, public status: number) { super(MESSAGES[code]); }
+  constructor(public code: keyof typeof MESSAGES, public status: number, public diagnostic?: { resource: string; upstreamStatus?: number; stage?: string }) { super(MESSAGES[code]); }
 }
 
 export function privateJson(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: {
-    "Cache-Control": "private, no-store", "Vercel-CDN-Cache-Control": "no-store", Vary: "Cookie",
+    "Cache-Control": "private, no-store", "Vercel-CDN-Cache-Control": "no-store", Vary: "Cookie, X-Lotsheet-Fusion-Test, X-Lotsheet-Fusion-Connection",
   } });
 }
 
 export function failureResponse(error: unknown) {
   const failure = error instanceof FusionFailure ? error : new FusionFailure("NETWORK", 502);
   // Never serialize upstream bodies, request headers, or arbitrary error text.
-  return privateJson({ code: failure.code, error: failure.message }, failure.status);
+  return privateJson({ code: failure.code, error: failure.message, ...(failure.diagnostic ? { diagnostic: failure.diagnostic } : {}) }, failure.status);
 }
 
 export function requireSameOrigin(request: Request) {

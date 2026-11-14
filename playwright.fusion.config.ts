@@ -19,6 +19,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: "", PREVIEW_DATABASE_URL: "", POSTGRES_URL: "", POSTGRES_PRISMA_URL: "",
       PGLITE_DATA: "memory", SITE_GATE_ENABLED: "", ADMIN_PASSWORD: "fusion-test-admin",
+      FUSION_TEST_VAULT_KEY: "ab".repeat(32), // Synthetic test key; never a deployed secret.
       NODE_OPTIONS: "--import=" + pathToFileURL(resolve("e2e/fusion-fetch-mock.mjs")).href,
     },
   },

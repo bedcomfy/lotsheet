@@ -74,10 +74,12 @@ export function FusionConnectionView({ state, bookmark, resource, search,
         <div className={styles.status} role="status" aria-live="polite">
           <StatusBadge tone={status.tone} icon={<Cable />}>{status.text}</StatusBadge>
           <StatusBadge>Read-only</StatusBadge>
+          {connected && state.storage === "server" && <StatusBadge tone="info">Saved on site · private testing</StatusBadge>}
+          {connected && state.shared && <StatusBadge tone="warning">Shared test connection</StatusBadge>}
           {result && <span>Last read {new Date(result.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>}
         </div>
         <p className={styles.hint}>{connected && state.expiresAt
-          ? <>You can close Fusion. Your saved access expires {new Date(state.expiresAt).toLocaleString()}.</>
+          ? <>You can close Fusion. Your saved access expires {new Date(state.expiresAt).toLocaleString()}.{state.storage === "server" ? " Temporary tokens are encrypted on the server for read-only testing. Disconnect removes the token you contributed." : " Access is stored in this browser."}</>
           : state.status === "connecting" ? "Saving and checking your Oracle access. Keep Fusion open until this finishes."
           : "Sign into Fusion and click Connect Lotsheet. Once access is saved, you can close Fusion."}</p>
         {!showSetup && <Button size="sm" variant="quiet" onPress={() => setSetupOpen(true)} aria-expanded={false} aria-controls="fusion-favorite-setup">

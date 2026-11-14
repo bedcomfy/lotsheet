@@ -60,6 +60,7 @@ async function limitedText(response: Response, max: number): Promise<string> {
 }
 async function oracle(token: string, path: string, options: RequestInit = {}, report = false) {
   expiry(token);
+  const resource = path.split("?")[0].split("/").at(-1)!;
   let response: Response;
   try {
     response = await fetch(FUSION_ORIGIN + path, { ...options, method: report ? "POST" : "GET",
@@ -67,23 +68,23 @@ async function oracle(token: string, path: string, options: RequestInit = {}, re
       headers: { Authorization: "Bearer " + token, Accept: report ? "application/soap+xml" : "application/json",
         ...(report ? { "Content-Type": "application/soap+xml; charset=utf-8" } : { "REST-Framework-Version": "4" }) },
     });
-  } catch { throw new FusionFailure("NETWORK", 502); }
-  if (response.status === 401) throw new FusionFailure("AUTH", 401);
-  if (response.status === 403) throw new FusionFailure("FORBIDDEN", 403);
-  if (!response.ok) throw new FusionFailure("HTTP", 502);
+  } catch { throw new FusionFailure("NETWORK", 502, { resource, stage: "request" }); }
+  if (response.status === 401) throw new FusionFailure("AUTH", 401, { resource, upstreamStatus: 401 });
+  if (response.status === 403) throw new FusionFailure("FORBIDDEN", 403, { resource, upstreamStatus: 403 });
+  if (!response.ok) throw new FusionFailure("HTTP", 502, { resource, upstreamStatus: response.status });
   let body: string;
   try { body = await limitedText(response, report ? MAX_REPORT_BYTES : MAX_REST_BYTES); }
-  catch (error) { if (error instanceof FusionFailure) throw error; throw new FusionFailure("NETWORK", 502); }
+  catch (error) { if (error instanceof FusionFailure) throw error; throw new FusionFailure("NETWORK", 502, { resource, stage: "response" }); }
   expiry(token); return body;
 }
 async function collection(token: string, path: string, query: URLSearchParams, offset: number) {
   let body: { items: Row[]; hasMore: boolean; offset?: number };
   try { body = JSON.parse(await oracle(token, PREFIX + path + "?" + query)); }
-  catch (error) { if (error instanceof FusionFailure) throw error; throw new FusionFailure("FORMAT", 502); }
+  catch (error) { if (error instanceof FusionFailure) throw error; throw new FusionFailure("FORMAT", 502, { resource: path, stage: "json" }); }
   if (!body || !Array.isArray(body.items) || body.items.length > PARTS_PAGE_SIZE || typeof body.hasMore !== "boolean" ||
       (body.offset != null && body.offset !== offset) || (body.hasMore && !body.items.length) ||
-      body.items.some(row => !row || typeof row !== "object" || Array.isArray(row))) throw new FusionFailure("FORMAT", 502);
-  body.items.forEach(nwd);
+      body.items.some(row => !row || typeof row !== "object" || Array.isArray(row))) throw new FusionFailure("FORMAT", 502, { resource: path, stage: "collection" });
+  try { body.items.forEach(nwd); } catch { throw new FusionFailure("FORMAT", 502, { resource: path, stage: "organization" }); }
   // Advance by actual returned rows, not the requested limit: Oracle may cap it.
   return { items: body.items, offset, nextOffset: offset + body.items.length,
     hasMore: body.hasMore, expiresAt: expiry(token), fetchedAt: Date.now(), connectionId: createHash("sha256").update(token).digest("hex") };
@@ -108,6 +109,38 @@ export async function readPartsContext(token: string) {
   const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`, fields: "OrganizationId,OrganizationCode,ItemId", limit: "1", onlyData: "true" });
   await collection(token, "itemsV2", query, 0);
   return { connectionId: createHash("sha256").update(token).digest("hex"), expiresAt: expiry(token), organization: "NWD" };
+}
+/** Fixed, one-row probes for private testing. Return shape/status only, never credentials or upstream error bodies. */
+export async function diagnoseParts(token: string, kind: IndexKind) {
+  const definition = DEFINITIONS[kind];
+  const base = { q: `OrganizationId=${NWD_ORGANIZATION_ID}` + (kind === "balances" ? ";SummaryLevel='Locator'" : ""), limit: "1", onlyData: "true" };
+  const probes = [
+    { name: "minimal-default", query: new URLSearchParams(base), version: false },
+    { name: "projected-default", query: new URLSearchParams({ ...base, fields: definition.fields }), version: false },
+    { name: "projected-v4", query: new URLSearchParams({ ...base, fields: definition.fields }), version: true },
+    { name: "ordered-v4", query: new URLSearchParams({ ...base, fields: definition.fields, orderBy: definition.order }), version: true },
+  ];
+  const results = [];
+  for (const probe of probes) {
+    expiry(token);
+    let response: Response;
+    try {
+      response = await fetch(FUSION_ORIGIN + PREFIX + definition.path + "?" + probe.query, { method: "GET", credentials: "omit", redirect: "error", cache: "no-store",
+        signal: AbortSignal.timeout(12_000), headers: { Authorization: "Bearer " + token, Accept: "application/json", ...(probe.version ? { "REST-Framework-Version": "4" } : {}) } });
+    } catch { results.push({ probe: probe.name, failure: "NETWORK" }); continue; }
+    if (response.status === 401) throw new FusionFailure("AUTH", 401);
+    const raw = await limitedText(response, MAX_REST_BYTES);
+    let body: { items?: Row[]; hasMore?: unknown; offset?: unknown } | null = null;
+    try { body = JSON.parse(raw); } catch {}
+    const row = Array.isArray(body?.items) ? body!.items![0] : null;
+    results.push({ probe: probe.name, status: response.status, json: body !== null, hasItems: Array.isArray(body?.items), hasMore: body?.hasMore, offset: body?.offset,
+      fieldTypes: row && typeof row === "object" ? Object.fromEntries(Object.entries(row).map(([key, value]) => [key, value === null ? "null" : typeof value])) : null,
+      organization: row ? { id: row.OrganizationId, code: row.OrganizationCode } : null,
+      // Only report known schema field names mentioned by a failed request.
+      mentionedFields: response.ok ? [] : definition.fields.split(",").filter(field => raw.includes(field)),
+    });
+  }
+  return { resource: definition.path, organization: "NWD", probes: results };
 }
 export async function readPartsIndex(token: string, kind: IndexKind, offset: number): Promise<PartsPage<Part | PartLocation | PartBalance>> {
   const definition = DEFINITIONS[kind];

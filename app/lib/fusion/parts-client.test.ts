@@ -11,7 +11,7 @@ const page = (items: unknown[], offset = 0, hasMore = false) => ({ items, offset
 const cache = (): PartsCache => ({ load: vi.fn().mockResolvedValue(null), save: vi.fn().mockResolvedValue(undefined), clear: vi.fn().mockResolvedValue(undefined) });
 function fixture(override?: (kind: string, offset: number, url: URL) => Promise<Response> | Response | undefined) {
   let state: PartsSnapshot = INITIAL_PARTS_STATE;
-  const fetch = vi.fn(async (input: RequestInfo | URL) => {
+  const fetch = vi.fn(async (input: RequestInfo | URL, _options?: RequestInit) => {
     const url = new URL(String(input), "https://nwmaint.app"), kind = url.searchParams.get("kind")!, offset = Number(url.searchParams.get("offset") ?? 0);
     const custom = override?.(kind, offset, url); if (custom) return custom;
     if (kind === "context") return Response.json({ connectionId, organization: "NWD", expiresAt: Date.now() + 14400000 });
@@ -42,6 +42,8 @@ describe("parts discovery and completeness", () => {
     expect(indexIsComplete(f.state().index!)).toBe(true);
     expect(f.cache.save).toHaveBeenCalledTimes(1);
     expect(f.fetch.mock.calls.some(([url]) => String(url).includes("kind=catalog&offset=1"))).toBe(true);
+    expect(f.fetch.mock.calls.filter(([url]) => !String(url).includes("kind=context")).every(([, options]) =>
+      new Headers(options?.headers).get("X-Lotsheet-Fusion-Connection") === connectionId)).toBe(true);
     f.client.dispose();
   });
   it("rejects repeated pages as incomplete instead of quietly dropping duplicates", async () => {
@@ -50,6 +52,12 @@ describe("parts discovery and completeness", () => {
     expect(f.state().index?.progress.catalog.status).toBe("error");
     expect(f.state().index?.parts).toHaveLength(1);
     expect(f.cache.save).not.toHaveBeenCalled(); f.client.dispose();
+  });
+  it("distinguishes an Oracle query rejection from an authentication or network failure", async () => {
+    const f = fixture(kind => kind === "context" ? Response.json({ code: "HTTP", diagnostic: { resource: "itemsV2", upstreamStatus: 400 } }, { status: 502 }) : undefined);
+    await f.client.connect();
+    expect(f.state()).toMatchObject({ status: "error", error: "Oracle rejected this data request. Your connection may still be valid. (itemsV2, HTTP 400)" });
+    f.client.dispose();
   });
   it("paginates the fixed report after an on-hand denial", async () => {
     const f = fixture((kind, offset) => kind === "balances" ? Response.json({}, { status: 403 }) : kind === "stock-report" ?
