@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  FUSION_ORIGIN, FUSION_PAGE_SIZE, FUSION_REQUEST_HEADER, FUSION_RESOURCES,
+  FUSION_ORIGIN, FUSION_PAGE_SIZE, FUSION_REQUEST_HEADER, FUSION_RESOURCES, FUSION_SERVER_TIME_HEADER,
   FUSION_SEARCH_PATTERN, isFusionResource, parseFusionResult, type FusionResource,
 } from "./config";
 
@@ -24,6 +24,7 @@ export class FusionFailure extends Error {
 export function privateJson(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: {
     "Cache-Control": "private, no-store", "Vercel-CDN-Cache-Control": "no-store", Vary: "Cookie, X-Lotsheet-Fusion-Test, X-Lotsheet-Fusion-Connection",
+    [FUSION_SERVER_TIME_HEADER]: String(Date.now()),
   } });
 }
 

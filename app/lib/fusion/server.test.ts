@@ -36,6 +36,7 @@ describe("private Fusion sessions and reads", () => {
     expect(response.cookies.get(FUSION_COOKIE)?.domain).toBeUndefined();
     expect(await response.json()).toMatchObject({ connected: true, expiresAt: Date.now() + 14400000, storage: "browser" });
     expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(response.headers.get("X-Lotsheet-Fusion-Time")).toBe(String(Date.now()));
     const [url, options] = fakeFetch.mock.calls[0];
     expect(new URL(url).origin).toBe(FUSION_ORIGIN);
     expect(new URL(url).searchParams.get("limit")).toBe("1");

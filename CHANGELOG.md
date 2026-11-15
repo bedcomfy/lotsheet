@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.57.3 - 2026-11-14
+
+- Show a live hours/minutes/seconds countdown and exact expiration time on the Fusion and Parts pages, using the saved connection's expiry.
+- Calibrate against server response time, recompute each tick and on returning to the tab, warn in the last 15 minutes, and stop at zero with reconnect instructions.
+- Keep the Parts countdown tied to the current validated expiry when restoring a cached inventory. Avoid screen-reader announcements every second and isolate timer updates from large parts lists.
+
 ## 0.57.2 - 2026-11-14
 
 - Fix the live Parts catalog 400 caused by Oracle requiring a search term. Use the existing Northwest inventory report for complete reported part names/numbers and stock; resolve exact Oracle item IDs when reading charge history.

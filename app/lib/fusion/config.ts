@@ -5,6 +5,7 @@ export const FUSION_PAGE_SIZE = 25;
 export const FUSION_SESSION_PATH = "/api/fusion/session";
 export const FUSION_RECORDS_PATH = "/api/fusion/records";
 export const FUSION_REQUEST_HEADER = "X-Lotsheet-Fusion";
+export const FUSION_SERVER_TIME_HEADER = "X-Lotsheet-Fusion-Time";
 
 export const FUSION_RESOURCES = {
   workOrders: {

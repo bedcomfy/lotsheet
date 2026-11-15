@@ -10,6 +10,7 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   page.on("request", request => { if (request.url().includes("/api/fusion/parts")) partsRequests.push(request.url()); });
   await page.goto("/fusion/parts");
   await expect(page.getByText("Index complete", { exact: true })).toBeVisible();
+  await expect(page.getByRole("timer", { name: "Oracle access time remaining" })).toContainText(/\d{2}:\d{2}:\d{2} remaining/);
   const search = page.getByRole("combobox", { name: "Part number or name" });
   await search.fill("cool bulk");
   await page.getByRole("option", { name: /910090/ }).click();

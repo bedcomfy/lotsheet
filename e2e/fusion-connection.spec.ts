@@ -62,6 +62,7 @@ test("save access, close Fusion, read through the server, refresh, reopen Lotshe
   expect(accessCookie!.value).not.toMatch(/mock-token|^e30\./);
   expect((await context.cookies()).some(cookie => cookie.name === "__Secure-pace-fusion-access")).toBe(false);
   await expect(receiver.getByText("Saved on site · private testing")).toBeVisible();
+  await expect(receiver.getByRole("timer", { name: "Oracle access time remaining" })).toContainText(/\d{2}:\d{2}:\d{2} remaining/);
   expect(accessCookie!.expires - Date.now() / 1000).toBeGreaterThan(14300);
   expect(accessCookie!.expires - Date.now() / 1000).toBeLessThanOrEqual(14400);
   const publicBrowserState = await receiver.evaluate(() => JSON.stringify({ cookie: document.cookie,

@@ -1,4 +1,5 @@
-import { FUSION_REQUEST_HEADER } from "./config";
+import { FUSION_REQUEST_HEADER, FUSION_SERVER_TIME_HEADER } from "./config";
+import { fusionNow, synchronizeFusionClock } from "./clock";
 import { emptyPartsIndex, indexIsComplete, PARTS_MAX_OFFSET, type IndexKind, type Part, type PartBalance, type PartCharge, type PartLocation, type PartsIndex, type PartsPage } from "./parts";
 import type { PartsCache } from "./parts-cache";
 
@@ -33,7 +34,7 @@ export function checkPage<T>(page: PartsPage<T>, offset: number, connectionId: s
   if (page?.connectionId !== connectionId) throw new ReadError("CONNECTION");
   if (!Array.isArray(page.items) || page.offset !== offset || typeof page.hasMore !== "boolean" ||
       !Number.isInteger(page.nextOffset) || page.nextOffset < offset || (page.hasMore && page.nextOffset <= offset)) throw new ReadError("FORMAT");
-  if (page.expiresAt <= Date.now()) throw new ReadError("AUTH");
+  if (page.expiresAt <= fusionNow()) throw new ReadError("AUTH");
   if (page.nextOffset > PARTS_MAX_OFFSET && page.hasMore) throw new ReadError("LIMIT");
 }
 export class PartsClient {
@@ -55,6 +56,7 @@ export class PartsClient {
           ...(params.kind !== "context" && this.state.index ? { "X-Lotsheet-Fusion-Connection": this.state.index.connectionId } : {}) },
         signal: AbortSignal.any([signal, AbortSignal.timeout(80_000)]) });
     } catch { throw new ReadError("NETWORK"); }
+    synchronizeFusionClock(response.headers.get(FUSION_SERVER_TIME_HEADER));
     if (!response.ok) {
       const body = await response.json().catch(() => null);
       throw new ReadError(response.status === 401 ? "AUTH" : response.status === 403 ? "FORBIDDEN" : Object.hasOwn(ERRORS, body?.code ?? "") ? body.code : "NETWORK", body?.diagnostic);
@@ -77,11 +79,11 @@ export class PartsClient {
     try {
       const context = await this.call<{ connectionId: string; expiresAt: number; organization: string }>({ kind: "context" }, signal);
       if (signal.aborted || this.disposed) return;
-      if (!/^[a-f0-9]{64}$/.test(context.connectionId) || context.organization !== "NWD" || !Number.isFinite(context.expiresAt) || context.expiresAt <= Date.now()) throw new ReadError("FORMAT");
-      this.timer = setTimeout(() => this.failAuth(new ReadError("AUTH")), context.expiresAt - Date.now());
+      if (!/^[a-f0-9]{64}$/.test(context.connectionId) || context.organization !== "NWD" || !Number.isFinite(context.expiresAt) || context.expiresAt <= fusionNow()) throw new ReadError("FORMAT");
+      this.timer = setTimeout(() => this.failAuth(new ReadError("AUTH")), context.expiresAt - fusionNow());
       const cached = force ? null : await this.cache.load(context.connectionId);
       if (signal.aborted || this.disposed) return;
-      const index = cached ?? emptyPartsIndex(context.connectionId, context.expiresAt);
+      const index = cached ? { ...cached, expiresAt: context.expiresAt } : emptyPartsIndex(context.connectionId, context.expiresAt);
       this.update({ status: "connected", index, indexing: !cached, error: null });
       if (cached) return;
       await this.cache.clear();

@@ -13,6 +13,7 @@ import { PartsClient, INITIAL_PARTS_STATE, type PartsSnapshot } from "../lib/fus
 import { browserPartsCache } from "../lib/fusion/parts-cache";
 import { balanceTotal, findParts, indexIsComplete, partBalances, partLocations, PARTS_CACHE_AGE, type Part, type PartsIndex } from "../lib/fusion/parts";
 import styles from "./FusionPartsPage.module.css";
+import { FusionExpiryCountdown } from "./FusionExpiryCountdown";
 
 const time = (timestamp: number | null) => timestamp ? new Date(timestamp).toLocaleString() : "Not yet read";
 const quantity = (value: number | null) => value === null ? "Unknown" : value.toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -48,7 +49,7 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
       <ToolbarGroup><StatusBadge>Northwest only</StatusBadge><StatusBadge>Read-only</StatusBadge>
         <StatusBadge tone={state.status === "connected" ? "success" : "warning"}>{state.status === "connected" ? "Oracle connected" : state.status === "checking" ? "Checking connection" : state.status === "error" ? "Northwest read failed" : "Connection required"}</StatusBadge>
       </ToolbarGroup>
-      {index && <span className={styles.hint}>Access expires {time(index.expiresAt)}</span>}
+      {index && <FusionExpiryCountdown expiresAt={index.expiresAt} />}
     </Toolbar>
     {state.error && <p role="alert" className={styles.error}>{state.error}</p>}
     {index?.catalogSource === "buyers-report" && <p className={styles.hint}>Part names and numbers come from Oracle’s Northwest inventory report. Catalog units and item status are unavailable in this report. Charge history is read live for the selected part.</p>}

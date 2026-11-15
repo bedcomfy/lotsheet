@@ -13,6 +13,7 @@ import { createFusionBookmark } from "../lib/fusion/bookmark";
 import { FusionClient, INITIAL_FUSION_STATE, type FusionSnapshot } from "../lib/fusion/client";
 import { FUSION_HOME, FUSION_PAGE_SIZE, FUSION_RESOURCES, isFusionResource, type FusionResource } from "../lib/fusion/config";
 import styles from "./FusionConnectionPage.module.css";
+import { FusionExpiryCountdown } from "./FusionExpiryCountdown";
 
 const STATUS: Record<FusionSnapshot["status"], { text: string; tone: StatusTone }> = {
   idle: { text: "Not connected", tone: "neutral" },
@@ -78,8 +79,9 @@ export function FusionConnectionView({ state, bookmark, resource, search,
           {connected && state.shared && <StatusBadge tone="warning">Shared test connection</StatusBadge>}
           {result && <span>Last read {new Date(result.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>}
         </div>
+        {connected && state.expiresAt && <FusionExpiryCountdown expiresAt={state.expiresAt} />}
         <p className={styles.hint}>{connected && state.expiresAt
-          ? <>You can close Fusion. Your saved access expires {new Date(state.expiresAt).toLocaleString()}.{state.storage === "server" ? " Temporary tokens are encrypted on the server for read-only testing. Disconnect removes the token you contributed." : " Access is stored in this browser."}</>
+          ? <>You can close Fusion. Reconnect with your favorite when access expires.{state.storage === "server" ? " Temporary tokens are encrypted on the server for read-only testing. Disconnect removes the token you contributed." : " Access is stored in this browser."}</>
           : state.status === "connecting" ? "Saving and checking your Oracle access. Keep Fusion open until this finishes."
           : "Sign into Fusion and click Connect Lotsheet. Once access is saved, you can close Fusion."}</p>
         {!showSetup && <Button size="sm" variant="quiet" onPress={() => setSetupOpen(true)} aria-expanded={false} aria-controls="fusion-favorite-setup">

@@ -9,6 +9,13 @@ favorite when prompted. In private testing, **Saved on site** confirms encrypted
 server storage. Disconnect removes this browser's contributed token from the
 test pool and clears its local access.
 
+Fusion and Parts show a live `HH:MM:SS` countdown and the exact local expiration
+time. The countdown uses the server's effective access expiry (including the
+browser permit limit) and calibrates against server response time. It recomputes
+from that timestamp each second and when the tab becomes visible, turns amber
+in the last 15 minutes, and stops at zero. Restoring a cached parts index uses
+the freshly validated connection expiry. Countdown ticks do not call Oracle.
+
 The v0.56.1 favorite replaces v0.56.0's ongoing tab connection. Copy the new
 address once. Favorites are tied to the Lotsheet origin from which they are
 copied; save the production favorite when moving from a preview to production.

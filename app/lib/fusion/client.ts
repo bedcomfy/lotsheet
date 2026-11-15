@@ -1,8 +1,9 @@
 import {
   FUSION_ID_PATTERN, FUSION_ORIGIN, FUSION_PROTOCOL, FUSION_SEARCH_PATTERN,
-  FUSION_RECORDS_PATH, FUSION_REQUEST_HEADER, FUSION_SESSION_PATH,
+  FUSION_RECORDS_PATH, FUSION_REQUEST_HEADER, FUSION_SESSION_PATH, FUSION_SERVER_TIME_HEADER,
   isFusionResource, parseFusionResult, type FusionResource, type FusionResult,
 } from "./config";
+import { fusionNow, synchronizeFusionClock } from "./clock";
 
 export type FusionStatus = "idle" | "connecting" | "connected" | "sign-in-required" | "disconnected";
 export interface FusionSnapshot {
@@ -126,6 +127,7 @@ export class FusionClient {
         ...options, credentials: "same-origin", cache: "no-store", redirect: "error", signal: controller.signal,
         headers: { [FUSION_REQUEST_HEADER]: "1", Accept: "application/json", ...options.headers },
       });
+      synchronizeFusionClock(response.headers.get(FUSION_SERVER_TIME_HEADER));
       const body = await response.json();
       if (!response.ok) throw new ApiFailure(typeof body?.code === "string" ? body.code : "NETWORK");
       return body;
@@ -133,13 +135,13 @@ export class FusionClient {
   }
 
   private connected(expiresAt: unknown) {
-    if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) throw new ApiFailure("AUTH");
+    if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt) || expiresAt <= fusionNow()) throw new ApiFailure("AUTH");
     if (this.disposed) return;
     if (this.expiryTimer !== null) this.host.clearTimeout(this.expiryTimer);
     this.expiryTimer = this.host.setTimeout(() => {
       this.expire();
       void this.restore(true);
-    }, Math.min(expiresAt - Date.now() + 50, 2147483647));
+    }, Math.min(expiresAt - fusionNow() + 50, 2147483647));
     this.update({ status: "connected", expiresAt, error: null });
   }
 
@@ -207,7 +209,7 @@ export class FusionClient {
   async read(resource: FusionResource, search: string, offset = 0) {
     const clean = search.trim();
     if (this.disposed || this.snapshot.status !== "connected" || this.snapshot.reading) return;
-    if (!this.snapshot.expiresAt || this.snapshot.expiresAt <= Date.now()) { this.expire(); return; }
+    if (!this.snapshot.expiresAt || this.snapshot.expiresAt <= fusionNow()) { this.expire(); return; }
     if (!isFusionResource(resource) || !FUSION_SEARCH_PATTERN.test(clean) ||
         !Number.isInteger(offset) || offset < 0 || offset > 10000) {
       this.update({ error: "Use a number up to 64 characters, with letters, digits, spaces, dots, dashes, or underscores." });
