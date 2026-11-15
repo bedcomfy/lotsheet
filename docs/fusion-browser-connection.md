@@ -5,13 +5,13 @@ browser favorite named **Connect Lotsheet**. Sign into Fusion in that browser an
 click the favorite. When the new Lotsheet tab says **Access saved**, close Fusion
 and use Lotsheet. Access survives navigation, page refreshes, and reopening
 Lotsheet in the same browser until the Oracle token expires. Reconnect with the
-favorite when prompted. In private testing, **Saved on site** confirms encrypted
+favorite when prompted. In testing, **Saved on site** confirms encrypted
 server storage. Disconnect removes this browser's contributed token from the
 test pool and clears its local access.
 
 Fusion and Parts show a live `HH:MM:SS` countdown and the exact local expiration
 time. The countdown uses the server's effective access expiry (including the
-browser permit limit) and calibrates against server response time. It recomputes
+browser permit limit when site-wide sharing is off) and calibrates against server response time. It recomputes
 from that timestamp each second and when the tab becomes visible, turns amber
 in the last 15 minutes, and stops at zero. Restoring a cached parts index uses
 the freshly validated connection expiry. Countdown ticks do not call Oracle.
@@ -38,12 +38,21 @@ expired, over-24-hour or unsupported claims are rejected. Decoding JWT claims is
 only a local lifetime check: Oracle verifies the actual credential on creation
 and every data request. Cookie size is bounded to fit normal browser limits.
 
-Only a browser with a valid signed tester permit, or private server test authorization,
-can borrow a saved token. Anonymous visitors and the general site/admin passwords
-cannot use the pool. Reads try the contributed token first, then other saved tokens
-when Oracle denies authentication or permission. A borrowed token never extends the
-browser permit's expiry. This is shared private test access, not per-user production
-authorization. Oracle enforces the selected credential's permissions on every read.
+`FUSION_SHARED_TEST_ACCESS=on`, together with the vault key, enables the explicitly
+requested redevelopment mode: every site visitor on any device can use the saved
+read-only connection without an Oracle login, test code, cookie, or bookmark on that
+device. This applies to session status, records, and Parts. The site's current access
+gate is off, so this includes anonymous visitors. No browser permit is issued to a
+borrower. The countdown uses the selected token's actual expiry, and an older device
+permit does not shorten it. When all saved tokens expire or are rejected, reads stop.
+
+With the switch off or absent, only a valid signed tester permit or private server
+test authorization can borrow a saved token, and the permit's expiry bounds borrowed
+access. Disable the switch and redeploy to restore that boundary; this is a testing
+configuration, not per-user production authorization. Reads try the contributed
+token first, then other saved tokens when Oracle denies authentication or permission.
+Oracle enforces the selected credential's permissions on every read. Parts pagination
+remains pinned to one credential so records from different connections are not mixed.
 
 No bearer is returned by any API or written to logs, browser storage, or source files.
 The encryption key is a server-only 32-byte secret in production environment settings;
@@ -71,7 +80,9 @@ matching Origin and JSON input. The routes do not enable cross-origin access.
 Oracle permission checks still apply to each request. A 401 or token expiry
 clears displayed results and asks for reauthentication. There is no automatic
 refresh while Fusion is closed, and Oracle may reject access before `exp`.
-Disconnect removes the contributed server token and cookies; it does not revoke the
+Disconnect is available to a browser that contributed access. It removes that server
+token and cookies; a fresh device borrowing shared access cannot remove someone else's
+token and does not show this control. Disconnect does not revoke the
 Oracle-issued token. Restoring the Fusion page now verifies an actual Oracle read,
 not just the locally decoded expiry. Catalog access is still a separate permission.
 
@@ -85,12 +96,14 @@ protocol is unchanged, so an existing v2 favorite does not need replacement.
 
 Run `npm run verify`, then `npm run e2e:fusion` against the compiled app. The
 browser test runs real Lotsheet session and read handlers with a synthetic
-Oracle server boundary loaded only by its isolated test server. No test mode or
-alternate upstream exists in production code. Tests close Fusion before reads,
-refresh and reopen Lotsheet, check browser isolation, exercise reauthentication,
+Oracle server boundary loaded only by its isolated test server. No synthetic Oracle
+upstream exists in production code. Tests close Fusion before reads,
+refresh and reopen Lotsheet, use a fresh phone browser without Oracle cookies to
+read work orders, index Parts and read charge history, exercise reauthentication,
 expiry and disconnect, and inspect desktop/phone layouts. All credentials and
-records in tests are synthetic. A final live test requires the signed-in work
-browser and confirms Oracle accepts requests from the deployed Lotsheet server.
+records in tests are synthetic. Unit tests also verify the sharing-off boundary,
+fallback, expiry and removal ownership. A final live test uses the saved connection
+from a fresh browser to confirm the deployed site works without a device login.
 
 References: [Oracle token relay](https://docs.oracle.com/en/cloud/paas/visual-builder-addin/dev-guide/oracle-fusion-applications-token-relay-authentication.html)
 and [cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie).

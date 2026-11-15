@@ -14,6 +14,7 @@ export interface FusionSnapshot {
   error: string | null;
   storage?: "server" | "browser";
   shared?: boolean;
+  canDisconnect?: boolean;
 }
 export const INITIAL_FUSION_STATE: FusionSnapshot = {
   status: "idle", reading: false, result: null, expiresAt: null, error: null,
@@ -156,7 +157,7 @@ export class FusionClient {
       if (this.disposed || generation !== this.generation) return;
       if (saved.connected !== true) throw new ApiFailure("SAVE");
       this.connected(saved.expiresAt);
-      this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true });
+      this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true, canDisconnect: saved.canDisconnect !== false });
       this.send("complete");
       this.detachBridge();
     } catch (error) {
@@ -171,9 +172,10 @@ export class FusionClient {
     try {
       const saved = await this.call(FUSION_SESSION_PATH);
       if (this.disposed || generation !== this.generation || this.snapshot.status !== "connecting") return;
-      if (saved.connected === true) {
+      // Shared site access alone does not confirm this bookmark's token was saved.
+      if (saved.connected === true && saved.canDisconnect !== false) {
         this.connected(saved.expiresAt);
-        this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true });
+        this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true, canDisconnect: saved.canDisconnect !== false });
         this.send("complete"); this.detachBridge();
       } else if (this.peer?.closed) this.handoffFailed("Fusion closed before access was saved. Click Connect Lotsheet in Fusion again.");
     } catch { /* The bounded handoff deadline supplies the actionable error. */ }
@@ -189,7 +191,7 @@ export class FusionClient {
       if (this.disposed || generation !== this.generation) return;
       if (session.connected === true) {
         this.connected(session.expiresAt);
-        this.update({ storage: session.storage === "server" ? "server" : "browser", shared: session.shared === true });
+        this.update({ storage: session.storage === "server" ? "server" : "browser", shared: session.shared === true, canDisconnect: session.canDisconnect !== false });
       }
       else if (required || this.snapshot.expiresAt) this.expire();
     } catch (error) {

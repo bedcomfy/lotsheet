@@ -45,6 +45,14 @@ function fixture(handoff = true, initialSaved = false) {
 afterEach(() => vi.useRealTimers());
 
 describe("saved Fusion access", () => {
+  it("does not complete a new bookmark handoff just because another device has shared access", async () => {
+    const f = fixture();
+    f.fetch.mockResolvedValue(Response.json({ connected: true, expiresAt: f.expiresAt, shared: true, canDisconnect: false }));
+    await vi.advanceTimersByTimeAsync(5001);
+    expect(f.state()?.status).toBe("connecting");
+    expect(f.peer.postMessage.mock.calls.some(([message]) => message.type === "complete")).toBe(false);
+    f.client.dispose();
+  });
   it("recovers saved access when a bookmark opens with an unfinished handoff", async () => {
     const f = fixture(true, true);
     expect(f.state()?.status).toBe("connecting");

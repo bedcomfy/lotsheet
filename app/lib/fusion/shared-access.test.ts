@@ -5,6 +5,7 @@ import { getDb } from "../db";
 import { TABLE_SUFFIX } from "../db/schema";
 import { DELETE, GET, POST } from "../../api/fusion/session/route";
 import { GET as readRecords } from "../../api/fusion/records/route";
+import { GET as readParts } from "../../api/fusion/parts/route";
 import { GET as diagnostics } from "../../api/fusion/diagnostics/route";
 import { FUSION_REQUEST_HEADER } from "./config";
 import { withFusionAccess } from "./access";
@@ -37,6 +38,7 @@ function permitCookie(token: string) {
 }
 beforeEach(async () => {
   vi.stubEnv("FUSION_TEST_VAULT_KEY", KEY);
+  vi.stubEnv("FUSION_SHARED_TEST_ACCESS", "off");
   fakeFetch.mockReset().mockImplementation(async () => Response.json({ items: [{ WorkOrderNumber: "NWD-1683" }], hasMore: false }));
   vi.stubGlobal("fetch", fakeFetch);
   await storedAccesses();
@@ -77,7 +79,7 @@ describe("encrypted temporary Fusion test access", () => {
     expect(response.cookies.get(TESTER_COOKIE)?.value).not.toContain(token);
     expect(await storedAccesses()).toHaveLength(1);
   });
-  it("never lends saved access to anonymous visitors, wrong test keys or forged cookies", async () => {
+  it("keeps saved access private when site-wide test sharing is disabled", async () => {
     const token = jwt("owner"); await rememberVerifiedToken(token);
     const deniedHeaders: Record<string, string>[] = [{}, { [TEST_HEADER]: "wrong" }, { Cookie: permitCookie(token).replace("v1.", "v2.") }];
     for (const headers of deniedHeaders) {
@@ -89,6 +91,52 @@ describe("encrypted temporary Fusion test access", () => {
     const allowed = await readRecords(request("/records?resource=workOrders", "GET", machine()));
     expect(allowed.status).toBe(200);
     expect(await allowed.text()).not.toContain(token);
+  });
+  it("shares verified saved access with a fresh device when explicitly enabled, without returning credentials", async () => {
+    vi.stubEnv("FUSION_SHARED_TEST_ACCESS", "on");
+    const access = await rememberVerifiedToken(jwt("shared"));
+    const status = await GET(request());
+    expect(await status.json()).toMatchObject({ connected: true, shared: true, canDisconnect: false, storage: "server", expiresAt: access.expiresAt });
+    expect(status.headers.get("set-cookie")).toBeNull();
+    const records = await readRecords(request("/records?resource=workOrders"));
+    expect(records.status).toBe(200);
+    expect(await records.text()).not.toContain(access.token);
+    fakeFetch.mockResolvedValueOnce(Response.json({ items: [{ OrganizationId: 300000004581674, OrganizationCode: "NWD", InventoryItemId: 123 }], hasMore: false }));
+    const parts = await readParts(request("/parts?kind=context"));
+    expect(parts.status).toBe(200);
+    expect(await parts.json()).toMatchObject({ organization: "NWD", connectionId: access.id, expiresAt: access.expiresAt });
+    // Borrowing does not grant ownership or expose private diagnostics.
+    expect((await diagnostics(request("/diagnostics"))).status).toBe(403);
+    await DELETE(request("/session", "DELETE"));
+    expect(await storedAccesses()).toHaveLength(1);
+    vi.stubEnv("FUSION_SHARED_TEST_ACCESS", "off");
+    expect(await (await GET(request())).json()).toMatchObject({ connected: false });
+    expect((await readRecords(request("/records?resource=workOrders"))).status).toBe(401);
+  });
+  it("uses another saved token after rejection in shared mode and reports its actual expiry", async () => {
+    vi.stubEnv("FUSION_SHARED_TEST_ACCESS", "on");
+    const first = await rememberVerifiedToken(jwt("reject", 14400));
+    const second = await rememberVerifiedToken(jwt("usable", 7200));
+    const read = vi.fn(async (token: string) => {
+      if (token === first.token) throw new FusionFailure("AUTH", 401);
+      return "read succeeded";
+    });
+    const value = await withFusionAccess(request(), read);
+    expect(value).toMatchObject({ shared: true, canDisconnect: false, expiresAt: second.expiresAt, access: { id: second.id } });
+    expect(read).toHaveBeenCalledTimes(2);
+    expect((await storedAccesses()).map(row => row.id)).toEqual([second.id]);
+    vi.useFakeTimers(); vi.setSystemTime(second.expiresAt + 1);
+    expect(await (await GET(request())).json()).toMatchObject({ connected: false, expiresAt: null });
+  });
+  it("does not let an old browser permit shorten shared-mode access or mint a new permit", async () => {
+    vi.stubEnv("FUSION_SHARED_TEST_ACCESS", "on");
+    const short = jwt("previous", 30), cookie = permitCookie(short);
+    const current = await rememberVerifiedToken(jwt("current"));
+    const response = await GET(request("/session", "GET", { Cookie: cookie }));
+    expect(await response.json()).toMatchObject({ connected: true, shared: true, expiresAt: current.expiresAt });
+    expect(response.headers.get("set-cookie")).toBeNull();
+    vi.useFakeTimers(); vi.setSystemTime(Date.now() + 31000);
+    expect(await (await GET(request("/session", "GET", { Cookie: cookie }))).json()).toMatchObject({ connected: true, canDisconnect: false, expiresAt: current.expiresAt });
   });
   it("rejects tampering, swapped row identities and expired encryption envelopes", async () => {
     const access = await rememberVerifiedToken(jwt("encrypt"));

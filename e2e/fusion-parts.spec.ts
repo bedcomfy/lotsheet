@@ -5,6 +5,7 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 14400 })).toString("base64url");
   const saved = await context.request.post("/api/fusion/session", { headers: { Origin: "http://localhost:3002", [FUSION_REQUEST_HEADER]: "1" }, data: { accessToken: "e30." + payload + ".mock-token-1" } });
   expect(saved.status()).toBe(200);
+  const contributedCookie = (await context.cookies()).find(cookie => cookie.name === "__Secure-pace-fusion-tester")!;
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   const partsRequests: string[] = [];
   page.on("request", request => { if (request.url().includes("/api/fusion/parts")) partsRequests.push(request.url()); });
@@ -37,6 +38,14 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   await page.getByRole("option", { name: /910103/ }).click();
   await expect(page.getByText("No matching charge entries", { exact: true })).toBeVisible();
   await context.clearCookies();
+  const sharedRead = page.waitForResponse(response => response.url().includes("kind=history"));
+  await page.getByRole("button", { name: "Refresh history" }).click();
+  expect((await sharedRead).status()).toBe(200);
+  await expect(page.getByText("No matching charge entries", { exact: true })).toBeVisible();
+  // Cookie loss no longer disconnects a test device. Remove the actual saved
+  // connection using its contributor's permit to exercise connection loss.
+  const removed = await context.request.delete("/api/fusion/session", { headers: { Origin: "http://localhost:3002", [FUSION_REQUEST_HEADER]: "1", Cookie: contributedCookie.name + "=" + contributedCookie.value } });
+  expect(removed.status()).toBe(200);
   await page.getByRole("button", { name: "Refresh history" }).click();
   await expect(page.getByText("Connect to Oracle Fusion", { exact: true })).toBeVisible();
   await expect(page.getByRole("table")).toHaveCount(0);

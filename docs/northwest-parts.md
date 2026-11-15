@@ -6,7 +6,7 @@ The Parts page (`/fusion/parts`) lets a connected Lotsheet user search an NWD pa
 
 - Fixed tenant: `https://iaymqy.fa.ocs.oraclecloud.com`.
 - Fixed organization: `300000004581674` / `NWD` / `Pace Northwest Division`.
-- Uses the shared private test vault described in [Saved Oracle Fusion access](fusion-browser-connection.md). A signed, expiring browser permit or private test header is required; anonymous visitors cannot borrow tokens.
+- Uses the encrypted test vault described in [Saved Oracle Fusion access](fusion-browser-connection.md). With `FUSION_SHARED_TEST_ACCESS=on`, every device/site visitor can read through a valid saved connection without its own Oracle login. With sharing off, a signed, expiring browser permit or private test header is required.
 - Every application request requires `X-Lotsheet-Fusion: 1`, same-origin checks, and an unexpired saved credential. Oracle validates the credential on every upstream read.
 - The server checks returned organization IDs/codes and component/bus filters; it rejects mismatches rather than quietly filtering them out.
 - The existing favorite is unchanged. Successful reads migrate old bearer cookies into encrypted server storage when `FUSION_TEST_VAULT_KEY` is configured.

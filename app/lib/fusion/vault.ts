@@ -14,6 +14,10 @@ export function vaultKey() {
   const value = process.env.FUSION_TEST_VAULT_KEY ?? "";
   return /^[a-f0-9]{64}$/i.test(value) ? Buffer.from(value, "hex") : null;
 }
+/** Explicit redevelopment mode: all site visitors may use saved read access. */
+export function sharedTestAccessEnabled() {
+  return process.env.FUSION_SHARED_TEST_ACCESS === "on" && !!vaultKey();
+}
 export function credentialId(token: string) { return createHash("sha256").update(token).digest("hex"); }
 function equal(a: string, b: string) {
   const first = Buffer.from(a), second = Buffer.from(b);

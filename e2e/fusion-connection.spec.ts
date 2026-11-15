@@ -61,7 +61,7 @@ test("save access, close Fusion, read through the server, refresh, reopen Lotshe
   expect(accessCookie).toMatchObject({ httpOnly: true, secure: true, sameSite: "Strict", path: "/api/fusion" });
   expect(accessCookie!.value).not.toMatch(/mock-token|^e30\./);
   expect((await context.cookies()).some(cookie => cookie.name === "__Secure-pace-fusion-access")).toBe(false);
-  await expect(receiver.getByText("Saved on site · private testing")).toBeVisible();
+  await expect(receiver.getByText("Saved on site · testing")).toBeVisible();
   await expect(receiver.getByRole("timer", { name: "Oracle access time remaining" })).toContainText(/\d{2}:\d{2}:\d{2} remaining/);
   expect(accessCookie!.expires - Date.now() / 1000).toBeGreaterThan(14300);
   expect(accessCookie!.expires - Date.now() / 1000).toBeLessThanOrEqual(14400);
@@ -94,11 +94,29 @@ test("save access, close Fusion, read through the server, refresh, reopen Lotshe
   expect(oracle.issues()).toBe(1);
   expect(oracle.paths).toHaveLength(3);
 
-  const otherBrowser = await browser.newContext();
-  const privateStatus = await otherBrowser.request.get("http://localhost:3002/api/fusion/session", { headers: { [FUSION_REQUEST_HEADER]: "1" } });
-  expect(await privateStatus.json()).toMatchObject({ connected: false, expiresAt: null });
-  const denied = await otherBrowser.request.get("http://localhost:3002/api/fusion/records?resource=workOrders", { headers: { [FUSION_REQUEST_HEADER]: "1" } });
-  expect(denied.status()).toBe(401);
+  const otherBrowser = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const sharedStatus = await otherBrowser.request.get("http://localhost:3002/api/fusion/session", { headers: { [FUSION_REQUEST_HEADER]: "1" } });
+  expect(await sharedStatus.json()).toMatchObject({ connected: true, shared: true, canDisconnect: false });
+  const phone = await otherBrowser.newPage();
+  let oracleRequests = 0;
+  phone.on("request", request => { if (request.url().startsWith(FUSION_ORIGIN)) oracleRequests++; });
+  await phone.goto("http://localhost:3002/fusion");
+  await expect(phone.getByText("Shared test connection", { exact: true })).toBeVisible();
+  await expect(phone.getByRole("timer")).toContainText(/\d{2}:\d{2}:\d{2} remaining/);
+  await expect(phone.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(0);
+  await phone.getByRole("button", { name: "Read records", exact: true }).click();
+  await expect(phone.getByRole("cell", { name: "NWD-1683", exact: true })).toBeVisible();
+  await phone.screenshot({ path: testInfo.outputPath("shared-phone.png"), fullPage: true });
+  await phone.goto("http://localhost:3002/fusion/parts");
+  await expect(phone.getByText("Index complete", { exact: true })).toBeVisible();
+  await phone.getByRole("combobox", { name: "Part number or name" }).fill("cool bulk");
+  await phone.getByRole("option", { name: /910090/ }).click();
+  await expect(phone.getByText("All available entries loaded", { exact: true })).toBeVisible();
+  await expect(phone.getByRole("region", { name: "Part charge history", exact: true })).toContainText("NWD-1680");
+  expect(oracleRequests).toBe(0);
+  expect((await otherBrowser.cookies()).some(cookie => cookie.name.includes("fusion"))).toBe(false);
+  await phone.reload();
+  await expect(phone.getByText("Oracle connected", { exact: true })).toBeVisible();
   await otherBrowser.close();
 
   await reopened.getByRole("button", { name: "Record type" }).click();
@@ -133,6 +151,6 @@ test("recovers a saved connection after remounting an unfinished bookmark handof
   await receiver.evaluate(() => sessionStorage.setItem("pace:fusion:handoff:v2", "11111111-1111-4111-8111-111111111111"));
   await receiver.reload();
   await expect(receiver.getByText("Access saved", { exact: true })).toBeVisible({ timeout: 15000 });
-  await expect(receiver.getByText("Saved on site · private testing")).toBeVisible();
+  await expect(receiver.getByText("Saved on site · testing")).toBeVisible();
   await fusion.close();
 });

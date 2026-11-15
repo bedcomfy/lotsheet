@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.57.4 - 2026-11-14
+
+- Add explicitly enabled site-wide Oracle test sharing so fresh phones and other devices can use valid saved access without an Oracle login or bookmark on each device.
+- Keep tokens encrypted on the server, enforce their actual expiry, retain fallback to another valid connection, and keep Parts pagination bound to one connection. Disabling the test-sharing setting restores the browser-permit requirement.
+- Explain shared access on the Fusion page and show Disconnect only to browsers that contributed access. Do not treat another device's shared connection as completion of a new bookmark handoff.
+- Verify a fresh phone can read work orders, index Northwest parts, and read part charge history without Oracle cookies.
+
 ## 0.57.3 - 2026-11-14
 
 - Show a live hours/minutes/seconds countdown and exact expiration time on the Fusion and Parts pages, using the saved connection's expiry.

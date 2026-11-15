@@ -66,22 +66,24 @@ export function FusionConnectionView({ state, bookmark, resource, search,
           <Button onPress={() => window.open(FUSION_HOME, "_blank", "noopener,noreferrer")}>
             <ExternalLink aria-hidden="true" /> Open Fusion
           </Button>
-          <Button onPress={onDisconnect} isDisabled={!connected && state.status !== "sign-in-required"}>
+          {state.canDisconnect !== false && <Button onPress={onDisconnect} isDisabled={!connected && state.status !== "sign-in-required"}>
             <Unplug aria-hidden="true" /> Disconnect
-          </Button>
+          </Button>}
         </>} />
 
       <div className={styles.connection}>
         <div className={styles.status} role="status" aria-live="polite">
           <StatusBadge tone={status.tone} icon={<Cable />}>{status.text}</StatusBadge>
           <StatusBadge>Read-only</StatusBadge>
-          {connected && state.storage === "server" && <StatusBadge tone="info">Saved on site · private testing</StatusBadge>}
+          {connected && state.storage === "server" && <StatusBadge tone="info">Saved on site · testing</StatusBadge>}
           {connected && state.shared && <StatusBadge tone="warning">Shared test connection</StatusBadge>}
           {result && <span>Last read {new Date(result.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>}
         </div>
         {connected && state.expiresAt && <FusionExpiryCountdown expiresAt={state.expiresAt} />}
         <p className={styles.hint}>{connected && state.expiresAt
-          ? <>You can close Fusion. Reconnect with your favorite when access expires.{state.storage === "server" ? " Temporary tokens are encrypted on the server for read-only testing. Disconnect removes the token you contributed." : " Access is stored in this browser."}</>
+          ? state.shared && state.canDisconnect === false
+            ? "This device is using the site's saved test connection. You can use Lotsheet without signing into Fusion here. When saved access expires, reconnect from a computer signed into Fusion."
+            : <>You can close Fusion. Reconnect with your favorite when access expires.{state.storage === "server" ? " Temporary tokens are encrypted on the server for read-only testing. Disconnect removes the token you contributed." : " Access is stored in this browser."}</>
           : state.status === "connecting" ? "Saving and checking your Oracle access. Keep Fusion open until this finishes."
           : "Sign into Fusion and click Connect Lotsheet. Once access is saved, you can close Fusion."}</p>
         {!showSetup && <Button size="sm" variant="quiet" onPress={() => setSetupOpen(true)} aria-expanded={false} aria-controls="fusion-favorite-setup">
