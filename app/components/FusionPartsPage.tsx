@@ -6,12 +6,12 @@ import { Cable, PackageSearch, RefreshCw } from "lucide-react";
 import { AppPage, DataTableFrame, EmptyState, PageHeader, Panel, Toolbar, ToolbarGroup } from "../ui/Page";
 import { Button } from "../ui/Button";
 import { ComboBoxField } from "../ui/ComboBoxField";
-import { SelectField } from "../ui/SelectField";
+import { TextField } from "../ui/Field";
 import { Checkbox } from "../ui/Checkbox";
 import { StatusBadge } from "../ui/StatusBadge";
 import { PartsClient, INITIAL_PARTS_STATE, type PartsSnapshot } from "../lib/fusion/parts-client";
 import { browserPartsCache } from "../lib/fusion/parts-cache";
-import { balanceTotal, findParts, indexIsComplete, partBalances, partLocations, PARTS_CACHE_AGE, type Part, type PartsIndex } from "../lib/fusion/parts";
+import { balanceTotal, findParts, indexIsComplete, partBalances, partLocations, PARTS_CACHE_AGE, type Part, type PartCharge, type PartsIndex } from "../lib/fusion/parts";
 import styles from "./FusionPartsPage.module.css";
 import { FusionExpiryCountdown } from "./FusionExpiryCountdown";
 
@@ -25,19 +25,19 @@ export interface FusionPartsViewProps {
 }
 export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: FusionPartsViewProps) {
   const [search, setSearch] = useState("");
-  const [bus, setBus] = useState("all");
+  const [bus, setBus] = useState("");
   const [returns, setReturns] = useState(true);
   const [visible, setVisible] = useState(50);
   const deferredSearch = useDeferredValue(search);
   const { index, history } = state;
   const suggestions = useMemo(() => findParts(index?.parts ?? [], deferredSearch).map(p => ({ id: p.id, label: p.number, description: p.description })), [index?.parts, deferredSearch]);
   const part = index?.parts.find(p => p.id === history.partId);
-  const buses = useMemo(() => [...new Set(history.rows.map(row => row.bus).filter((b): b is string => !!b))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })), [history.rows]);
-  const filtered = useMemo(() => history.rows.filter(row => (bus === "all" || row.bus === bus) && (returns || row.type === "MATERIAL_ISSUE")), [history.rows, bus, returns]);
+  const busNumber = bus.trim();
+  const filtered = useMemo(() => history.rows.filter(row => (!busNumber || row.bus?.toLocaleUpperCase() === busNumber.toLocaleUpperCase()) && (returns || row.type === "MATERIAL_ISSUE")), [history.rows, busNumber, returns]);
   const workOrders = new Set(filtered.filter(row => row.type === "MATERIAL_ISSUE").map(row => row.workOrderId)).size;
   const complete = !!index && indexIsComplete(index);
   const stale = !!index && Date.now() - index.startedAt >= PARTS_CACHE_AGE;
-  function select(id: string | null) { setBus("all"); setVisible(50); onSelect(id); }
+  function select(id: string | null) { setBus(""); setVisible(50); onSelect(id); }
   return <AppPage className={styles.page}>
     <PageHeader title="Parts & charge history" eyebrow="Northwest Division"
       description="Find a part, check its stock and storage locations, and see the work orders it was charged to."
@@ -79,8 +79,9 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
         <Panel title={`Charge history · ${part.number}`} description={part.description}
           actions={<Button size="sm" onPress={() => onSelect(part.id)} isDisabled={history.status === "loading"}>Refresh history</Button>}>
           <div className={styles.filters}>
-            <SelectField label="Bus" selectedKey={bus} options={[{ id: "all", label: "All buses" }, ...buses.map(b => ({ id: b, label: "Bus " + b }))]}
-              onSelectionChange={key => { setBus(String(key)); setVisible(50); }} />
+            <TextField label="Bus number" value={bus} placeholder="All buses" maxLength={64} inputMode="numeric"
+              description="Enter any bus number. Leave blank to show all buses."
+              onChange={value => { setBus(value); setVisible(50); }} />
             <Checkbox isSelected={returns} onChange={value => { setReturns(value); setVisible(50); }}>Include part returns</Checkbox>
           </div>
           <Toolbar className={styles.historySummary}>
@@ -91,25 +92,34 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
           {filtered.length ? <>
             <DataTableFrame tabIndex={0} role="region" aria-label="Part charge history" className={styles.tableFrame}>
               <table className={styles.table}><caption className={styles.srOnly}>Northwest part charge history</caption>
-                <thead><tr>{["Date", "Work order", "Bus", "Entry", "Quantity", "Location", "Recorded by"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+                <thead><tr>{["Date", "Work order", "Bus", "Entry", "Quantity", "Location", "Mechanics on operation", "Part recorded by"].map(label => <th scope="col" key={label} className={label === "Mechanics on operation" ? styles.mechanicsColumn : undefined}>{label}</th>)}</tr></thead>
                 <tbody>{filtered.slice(0, visible).map(row => <tr key={row.key}>
-                  <td>{date(row.date)}</td><td><strong>{row.workOrder}</strong><small>Operation {row.operation ?? "not supplied"}</small></td>
+                  <td>{date(row.date)}</td><td><strong>{row.workOrder}</strong><small>Operation {row.operation ?? "not supplied"}</small>
+                    <div className={styles.mobileMechanics}><small>Mechanics</small><OperationMechanics row={row} /></div></td>
                   <td>{row.bus ?? "Not supplied"}</td><td><StatusBadge tone={row.type === "MATERIAL_RETURN" ? "warning" : "neutral"}>{row.type === "MATERIAL_RETURN" ? "Return" : "Charge"}</StatusBadge></td>
                   <td>{quantity(row.quantity)} <small>{row.unit ?? "Unit not supplied"}</small></td>
                   <td>{[row.subinventory, row.locator].filter(Boolean).join(" / ") || "Not supplied"}</td>
+                  <td className={styles.mechanicsColumn}><OperationMechanics row={row} /></td>
                   <td>{row.enteredBy ?? "Not supplied"}{row.note && <small>{row.note}</small>}</td>
                 </tr>)}</tbody>
               </table>
             </DataTableFrame>
             {filtered.length > visible && <Button onPress={() => setVisible(n => n + 50)}>Show more entries ({filtered.length - visible} remaining)</Button>}
           </> : <EmptyState kind={history.status === "loading" ? "loading" : history.status === "error" ? "error" : "empty"}
-            title={history.status === "loading" ? "Reading charges from Oracle" : history.status === "error" ? "History could not be completed" : "No matching charge entries"}
-            description={history.status === "complete" ? "No material transactions were returned for this part and these filters in Northwest." : "Only completed reads can confirm that there are no matching entries."} />}
-          <p className={styles.hint}>Actual material issues and returns, with quantities as reported by Oracle. A work order can have multiple entries. Read {time(history.fetchedAt)}.</p>
+            title={history.status === "loading" ? "Reading charges from Oracle" : history.status === "error" ? "History could not be completed" : busNumber ? `No matching charge entries for bus ${busNumber}` : "No matching charge entries"}
+            description={history.status === "complete" ? busNumber ? `No ${returns ? "charges or returns" : "charges"} for part ${part.number} on bus ${busNumber} were returned in Northwest.` : "No material transactions were returned for this part and these filters in Northwest." : "Only completed reads can confirm that there are no matching entries."} />}
+          <p className={styles.hint}>Mechanics come from recorded mechanic labor on the same work order and operation. Part recorded by identifies who entered the material transaction. A work order can have multiple entries. Read {time(history.fetchedAt)}.</p>
         </Panel>
       </> : <EmptyState icon={<PackageSearch />} title="Choose a part to see its history" description="Stock and work order charges will appear together here." />}
     </>}
   </AppPage>;
+}
+
+function OperationMechanics({ row }: { row: PartCharge }) {
+  return <>{row.mechanicStatus !== "complete" ? "Mechanics unavailable" : row.mechanics.length
+    ? row.mechanics.map(name => <div key={name}>{name}</div>)
+    : row.unnamedMechanic ? "Name not recorded" : "No mechanic labor recorded"}
+    {row.mechanicStatus === "complete" && row.mechanics.length > 0 && row.unnamedMechanic && <small>Some labor entries have no name.</small>}</>;
 }
 
 function PartStock({ index, part }: { index: PartsIndex; part: Part }) {

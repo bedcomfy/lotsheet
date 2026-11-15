@@ -18,9 +18,15 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   await expect(page.getByText("All available entries loaded", { exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "3,060.47 Unit not supplied", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: /NWD-1676/ })).toBeVisible();
-  await page.getByRole("button", { name: /All buses Bus/ }).click();
-  await page.getByRole("option", { name: "Bus 6403", exact: true }).click();
+  const busFilter = page.getByRole("textbox", { name: "Bus number", exact: true });
+  await busFilter.fill("9999");
+  await expect(page.getByText("No matching charge entries for bus 9999", { exact: true })).toBeVisible();
+  await busFilter.fill("6403");
   await expect(page.getByRole("cell", { name: /NWD-1676/ })).toHaveCount(0);
+  const history = page.getByRole("region", { name: "Part charge history", exact: true });
+  await expect(history).toContainText("Selvin A Zambrano");
+  await expect(history).toContainText("Peter M Katona");
+  await expect(history).toContainText("Synthetic technician");
   await expect(page.getByText("Return", { exact: true })).toBeVisible();
   await page.getByText("Include part returns", { exact: true }).click();
   await expect(page.getByRole("checkbox", { name: "Include part returns" })).not.toBeChecked();

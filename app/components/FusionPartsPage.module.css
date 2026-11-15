@@ -13,5 +13,7 @@
 .table td { min-width: 7rem; max-width: 24rem; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; line-height: var(--ui-line-height-body); }
 .table small { display: block; margin-top: var(--ui-space-1); color: var(--ui-text-muted); font-size: var(--ui-font-size-xs); }
 .tableFrame { margin-bottom: var(--ui-space-3); }
+.mobileMechanics { display: none; }
+.mechanicsColumn { min-width: 11rem; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-@media (max-width: 640px) { .progress { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filters { align-items: stretch; } .filters > :first-child { max-width: none; flex-basis: 100%; } }
+@media (max-width: 640px) { .progress { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filters { align-items: stretch; } .filters > :first-child { max-width: none; flex-basis: 100%; } .mobileMechanics { display: block; margin-top: var(--ui-space-2); } .mechanicsColumn { display: none; } }

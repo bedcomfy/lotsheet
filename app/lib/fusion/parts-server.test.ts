@@ -44,6 +44,7 @@ describe("Northwest read boundary", () => {
   });
   it("requests actual material transactions for a component and exact bus; rejects an unrelated component", async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({ items: [], hasMore: false }))
       .mockResolvedValueOnce(Response.json({ items: [{ ...charge, ComponentItemId: 9 }], hasMore: false })); vi.stubGlobal("fetch", fetch);
     const page = await readPartHistory(token(), String(item.ItemId), "6403", 0);
     const q = new URL(fetch.mock.calls[0][0]).searchParams.get("q");
@@ -79,7 +80,8 @@ describe("Northwest report fallback", () => {
   });
   it("resolves a report part number to its exact Northwest Oracle ID before reading charges", async () => {
     const fetch = vi.fn().mockResolvedValueOnce(Response.json({ items: [item], hasMore: false }))
-      .mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }));
+      .mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({ items: [], hasMore: false }));
     vi.stubGlobal("fetch", fetch);
     const result = await readPartHistory(token(), "part:393130303930", "6403", 0);
     expect(new URL(fetch.mock.calls[0][0]).searchParams.get("q")).toBe("OrganizationId=300000004581674 and ItemNumber='910090'");
@@ -106,5 +108,49 @@ describe("Northwest report fallback", () => {
     expect(init.body).not.toContain(">All<");
     expect(init.body).toContain("<p:runReport>");
     expect(stockReportEnvelope(["A&B"])).toContain("A&amp;B");
+  });
+});
+
+describe("mechanics on charged operations", () => {
+  const labor = { ...org, WorkOrderId: charge.WorkOrderId, OperationSequenceNumber: 10, TransactionType: "RESOURCE_CHARGE", ResourceName: "Mechanic", CreatedBy: "Clerk must not become a mechanic" };
+  it("joins by work order and operation, reads every labor page and deduplicates people", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({ items: [charge, { ...charge, TransactionId: 30000003, OperationSequenceNumber: 20 }], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({ items: [
+        { ...labor, TransactionId: 1, ResourceInstance: "Selvin A Zambrano" },
+        { ...labor, TransactionId: 2, ResourceInstance: "Peter M Katona" },
+        { ...labor, TransactionId: 3, OperationSequenceNumber: 20, ResourceInstance: "Roberto Velasco Jr." },
+      ], offset: 0, hasMore: true }))
+      .mockResolvedValueOnce(Response.json({ items: [
+        { ...labor, TransactionId: 4, ResourceInstance: "Selvin A Zambrano" },
+        { ...labor, TransactionId: 5, ResourceInstance: null },
+        { ...labor, TransactionId: 6, ResourceName: "Vehicle lift", ResourceInstance: "Lift 3" },
+      ], offset: 3, hasMore: false }));
+    vi.stubGlobal("fetch", fetch);
+    const result = await readPartHistory(token(), String(item.ItemId), "", 0);
+    expect(result.items[0]).toMatchObject({ mechanics: ["Peter M Katona", "Selvin A Zambrano"], mechanicStatus: "complete", unnamedMechanic: true });
+    expect(result.items[1]).toMatchObject({ mechanics: ["Roberto Velasco Jr."], mechanicStatus: "complete", unnamedMechanic: false });
+    expect(JSON.stringify(result)).not.toMatch(/Clerk must|Lift 3/);
+    const q = new URL(fetch.mock.calls[1][0]).searchParams.get("q");
+    expect(q).toContain(`OrganizationId=${NWD_ORGANIZATION_ID}`);
+    expect(q).toContain(`WorkOrderId=${charge.WorkOrderId} and OperationSequenceNumber=10`);
+    expect(q).toContain(`WorkOrderId=${charge.WorkOrderId} and OperationSequenceNumber=20`);
+    expect(new URL(fetch.mock.calls[2][0]).searchParams.get("offset")).toBe("3");
+  });
+  it.each([403, 500])("preserves part charges and reports unavailable mechanics when labor fails (%s)", async status => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({}, { status })));
+    expect((await readPartHistory(token(), String(item.ItemId), "", 0)).items[0]).toMatchObject({ quantity: 22, mechanics: [], mechanicStatus: "unavailable" });
+  });
+  it("does not hide expired or rejected authorization behind unavailable mechanic names", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({}, { status: 401 })));
+    await expect(readPartHistory(token(), String(item.ItemId), "", 0)).rejects.toMatchObject({ code: "AUTH" });
+  });
+  it("does not attach labor returned for another work order or division", async () => {
+    for (const foreign of [{ WorkOrderId: 999 }, { OrganizationId: 999 }]) {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }))
+        .mockResolvedValueOnce(Response.json({ items: [{ ...labor, TransactionId: 1, ResourceInstance: "Wrong person", ...foreign }], hasMore: false })));
+      expect((await readPartHistory(token(), String(item.ItemId), "", 0)).items[0]).toMatchObject({ mechanics: [], mechanicStatus: "unavailable" });
+    }
   });
 });

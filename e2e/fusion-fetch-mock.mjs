@@ -49,6 +49,13 @@ globalThis.fetch = async (input, options) => {
   if (url.pathname.endsWith("/subinventoryItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, SubinventoryItemId: "100000024478060_300000012931087", ItemNumber: "910090", SecondaryInventory: "Northwest" }]);
   if (url.pathname.endsWith("/inventoryOnhandBalances")) return Response.json({}, { status: 403 });
   if (url.pathname.endsWith("/maintenanceWorkOrderTransactionHistory")) {
+    if (q.includes("TransactionType='RESOURCE_CHARGE'")) {
+      const labor = { ...org, WorkOrderId: 10, OperationSequenceNumber: 10, TransactionType: "RESOURCE_CHARGE", ResourceName: "Mechanic" };
+      return page([
+        { ...labor, TransactionId: 101, ResourceInstance: "Selvin A Zambrano" },
+        { ...labor, TransactionId: 102, ResourceInstance: "Peter M Katona" },
+      ].filter(row => q.includes(`WorkOrderId=${row.WorkOrderId} and OperationSequenceNumber=${row.OperationSequenceNumber}`)));
+    }
     const component = Number(q.match(/ComponentItemId=(\d+)/)?.[1]);
     if (component !== catalog[0].ItemId) return page([]);
     return page([

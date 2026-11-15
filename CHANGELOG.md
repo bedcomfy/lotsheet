@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.57.5 - 2026-11-14
+
+- Replace the Parts bus dropdown with a typed bus-number filter. Accept buses absent from the results and show a specific no-history message after a complete read; blank shows all buses.
+- Show all named mechanics from posted labor on each material transaction's exact work order and operation, separately from the person who recorded the part charge.
+- Read labor in bounded, paginated Northwest batches, deduplicate names, flag unnamed labor and unavailable lookups, and preserve part history if only the labor lookup fails.
+- Verify multiple mechanics, unrelated operations, bus no-matches, missing names, authentication and partial lookup failures, and the phone flow.
+
 ## 0.57.4 - 2026-11-14
 
 - Add explicitly enabled site-wide Oracle test sharing so fresh phones and other devices can use valid saved access without an Oracle login or bookmark on each device.

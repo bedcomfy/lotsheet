@@ -16,6 +16,7 @@ const DEFINITIONS = {
   balances: { path: "inventoryOnhandBalances", fields: "OrganizationId,OrganizationCode,InventoryItemId,ItemNumber,SubinventoryCode,Locator,LocatorId,PrimaryQuantity,PrimaryUOMCode,PrimaryUnitOfMeasure,Revision,OwningPartySiteId,SummaryLevel", order: "InventoryItemId:asc,SubinventoryCode:asc,LocatorId:asc" },
 } as const;
 const HISTORY_FIELDS = "OrganizationId,TransactionId,InventoryTransactionReference,WorkOrderId,WorkOrderNumber,AssetNumber,ComponentItemId,OperationSequenceNumber,TransactionDate,TransactionType,Quantity,UnitOfMeasure,SubInventory,LocatorCode,CreatedBy,TransactionNote";
+const MECHANIC_FIELDS = "OrganizationId,TransactionId,WorkOrderId,OperationSequenceNumber,TransactionType,ResourceName,ResourceInstance";
 type Row = Record<string, unknown>;
 function text(value: unknown, required = false): string | null {
   if (value == null || value === "") { if (required) throw new FusionFailure("FORMAT", 502); return null; }
@@ -186,7 +187,7 @@ export async function readPartHistory(token: string, itemId: string, bus: string
   const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID} and ComponentItemId=${itemId} and (TransactionType='MATERIAL_ISSUE' or TransactionType='MATERIAL_RETURN')` + (bus ? ` and AssetNumber='${bus}'` : ""),
     fields: HISTORY_FIELDS, onlyData: "true", limit: String(PARTS_PAGE_SIZE), offset: String(offset), orderBy: "TransactionDate:desc,TransactionId:desc" });
   const page = await collection(token, "maintenanceWorkOrderTransactionHistory", query, offset);
-  return { ...page, items: page.items.map(row => {
+  const items: PartCharge[] = page.items.map(row => {
     if (id(row.ComponentItemId) !== itemId || (bus && row.AssetNumber !== bus) ||
         !["MATERIAL_ISSUE", "MATERIAL_RETURN"].includes(String(row.TransactionType))) throw new FusionFailure("FORMAT", 502);
     const transactionId = id(row.TransactionId)!;
@@ -195,8 +196,62 @@ export async function readPartHistory(token: string, itemId: string, bus: string
       bus: text(row.AssetNumber), operation: number(row.OperationSequenceNumber), date: text(row.TransactionDate),
       type: row.TransactionType as PartCharge["type"], quantity: number(row.Quantity), unit: text(row.UnitOfMeasure),
       subinventory: text(row.SubInventory), locator: text(row.LocatorCode), enteredBy: text(row.CreatedBy), note: text(row.TransactionNote),
+      mechanics: [], mechanicStatus: "unavailable", unnamedMechanic: false,
     };
-  }) };
+  });
+  await addOperationMechanics(token, items);
+  return { ...page, items };
+}
+
+/** Read posted mechanic labor for the exact work-order/operation pairs on this
+ * material page. CreatedBy is a clerk/operator and must never supply a mechanic. */
+async function addOperationMechanics(token: string, charges: PartCharge[]) {
+  const key = (workOrderId: string, operation: number) => workOrderId + ":" + operation;
+  const pairs = [...new Map(charges.filter(row => Number.isSafeInteger(row.operation) && row.operation! >= 0)
+    .map(row => [key(row.workOrderId, row.operation!), { workOrderId: row.workOrderId, operation: row.operation! }])).entries()];
+  let next = 0;
+  const deadline = Date.now() + 30_000;
+  const worker = async () => {
+    while (next < pairs.length) {
+      const start = next; next += 20;
+      const batch = pairs.slice(start, next);
+      const found = new Map(batch.map(([k]) => [k, { names: new Set<string>(), unnamed: false }]));
+      const seen = new Set<string>();
+      try {
+        let offset = 0, more = true;
+        while (more) {
+          if (Date.now() >= deadline) throw new FusionFailure("NETWORK", 502);
+          const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID} and TransactionType='RESOURCE_CHARGE' and (` +
+            batch.map(([, pair]) => `(WorkOrderId=${pair.workOrderId} and OperationSequenceNumber=${pair.operation})`).join(" or ") + ")",
+            fields: MECHANIC_FIELDS, onlyData: "true", limit: String(PARTS_PAGE_SIZE), offset: String(offset), orderBy: "TransactionId:asc" });
+          const page = await collection(token, "maintenanceWorkOrderTransactionHistory", query, offset);
+          for (const row of page.items) {
+            const operation = number(row.OperationSequenceNumber), transaction = id(row.TransactionId)!;
+            const group = operation === null ? null : found.get(key(id(row.WorkOrderId)!, operation));
+            if (!group || row.TransactionType !== "RESOURCE_CHARGE" || seen.has(transaction)) throw new FusionFailure("FORMAT", 502);
+            seen.add(transaction);
+            // This tenant identifies mechanic labor by its Oracle resource name.
+            if (!/mechanic/i.test(text(row.ResourceName) ?? "")) continue;
+            const name = text(row.ResourceInstance)?.trim();
+            if (name) group.names.add(name); else group.unnamed = true;
+          }
+          offset = page.nextOffset; more = page.hasMore;
+          if (more && offset >= 5000) throw new FusionFailure("FORMAT", 502);
+        }
+        for (const charge of charges) {
+          const group = charge.operation === null ? null : found.get(key(charge.workOrderId, charge.operation));
+          if (!group) continue;
+          charge.mechanics = [...group.names].sort((a, b) => a.localeCompare(b));
+          charge.unnamedMechanic = group.unnamed; charge.mechanicStatus = "complete";
+        }
+      } catch (error) {
+        if (error instanceof FusionFailure && error.code === "AUTH") throw error;
+        // Preserve verified part charges if the separate labor read is unavailable.
+        // A failed/partial labor read must not masquerade as no mechanics recorded.
+      }
+    }
+  };
+  await Promise.all([worker(), worker()]);
 }
 
 const STOCK_REPORT_PATH = "/Custom/Reports/ERP/Inventory/PACE_Buyers_Inventory_12_Month_Usage_Report - Layout 1.xdo";

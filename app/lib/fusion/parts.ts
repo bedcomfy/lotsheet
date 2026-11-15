@@ -24,6 +24,7 @@ export interface PartCharge {
   bus: string | null; operation: number | null; date: string | null;
   type: "MATERIAL_ISSUE" | "MATERIAL_RETURN"; quantity: number | null; unit: string | null;
   subinventory: string | null; locator: string | null; enteredBy: string | null; note: string | null;
+  mechanics: string[]; mechanicStatus: "complete" | "unavailable"; unnamedMechanic: boolean;
 }
 export interface PartsPage<T> {
   items: T[]; offset: number; nextOffset: number; hasMore: boolean; fetchedAt: number; expiresAt: number; connectionId: string;

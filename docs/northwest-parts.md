@@ -73,6 +73,30 @@ The fallback uses SOAP `runReport` at `/xmlpserver/services/ExternalReportWSSSer
 
 ## Browser index lifecycle
 
+The Bus number field accepts any typed number, including a bus absent from the
+selected part's returned history. Filtering uses an exact, trimmed, case-insensitive
+match; blank shows all buses. A no-match message names the bus and part only after
+the full history read completes. Partial or failed reads are never presented as
+proof of no history.
+
+Charge rows also show **Mechanics on operation**, separately from **Part recorded by**.
+The server reads `maintenanceWorkOrderTransactionHistory` with
+`TransactionType='RESOURCE_CHARGE'`, scoped to Northwest and the exact pairs of
+`WorkOrderId` and `OperationSequenceNumber` in the material page. It takes names from
+`ResourceInstance` for Oracle resources whose `ResourceName` contains "mechanic".
+This was verified against this tenant's `Mechanic` resource. These are historical
+posted mechanic labor entries, not a current assignment roster or proof of who
+physically issued the part. `CreatedBy` never supplies a mechanic name.
+
+Twenty operation pairs are read per batch with two concurrent streams, following
+Oracle's actual pagination. Names are deduplicated per operation. Empty names are
+flagged; no labor, unnamed labor and an unavailable lookup have different labels.
+A failed/partial labor lookup preserves the verified material rows and marks
+mechanics unavailable; an authentication failure still stops the read. Each batch
+has a 5,000-row cap, and further labor pages stop after a 30-second lookup budget
+(an in-flight bounded request may complete afterward). Part history itself is not
+stored in the browser inventory cache.
+
 Two read streams build the index. Catalog search works while indexing continues. A fully completed snapshot is saved to IndexedDB in the connected browser; it contains business fields and an opaque connection fingerprint, not an authorization credential. A page reload first validates access against Oracle and only restores the snapshot for the same connection while it is under 15 minutes old and the credential is unexpired. Refresh index rebuilds it. No shared sheet tables or production data are modified.
 
 The page clears displayed data on expiry, a 401, or a changed connection fingerprint. Each response is bound to the connection that initiated the scan, so a new cookie midway through indexing cannot merge two accounts' data. Aborted or superseded part searches cannot replace the current part's history. Returning focus rechecks Oracle access. A network failure shows a warning about previously read values; a catalog-access denial clears the view. Browser cache expiry is evaluated when loaded, and cached business data is not an authentication credential.
@@ -93,7 +117,13 @@ status and field types only. It cannot fetch arbitrary URLs, reports or organiza
 
 Unit tests exercise input restrictions, tenant/organization scoping, actual-offset paging, report parsing against captured Oracle HTML, quantity semantics, expired credentials, repeated pages, changed connections, stale responses and cache boundaries. Browser stories cover keyboard name search, exact part lookup, bus filtering, returns, empty/error/loading states, dark theme, long content and phone safe areas. The isolated full-flow test runs actual application handlers and cookies with a synthetic Oracle boundary, including capped pages, report fallback, refresh/cache restore and lost authentication.
 
-During implementation the accessible local browser showed Not connected. No fresh Oracle credentials were available there. This feature therefore still requires the first live NWD scan in the user's connected work browser to establish current endpoint permissions, timings, inventory counts and full report coverage. The implementation does not claim that the live NWD inventory has already been populated.
+Live verification on 2026-11-14 used shared saved access from a browser without an
+Oracle login. The complete Northwest scan returned 8,648 parts, 2,773 locator
+assignments, 2,759 stockroom assignments and 2,531 stock balances. Coolant part
+910090 returned 58 material entries across 57 work orders. These are observed
+counts for that read and may change. Separate live labor probes confirmed Selvin
+A Zambrano on NWD-1670 operation 40 and Roberto Velasco Jr. on NWD-1693 operation
+110, while material CreatedBy identified a different person.
 
 Primary references consulted:
 
