@@ -82,10 +82,14 @@ export class FusionClient {
       this.update({ status: "connecting", error: null });
       this.send("hello");
       this.helloTimer = this.host.setInterval(() => this.send("hello"), 1000);
-      this.startTimer = this.host.setTimeout(() => this.handoffFailed("The favorite did not connect. Copy the current favorite address from this page and try again."), 60000);
+      this.startTimer = this.host.setTimeout(() => {
+        this.generation++;
+        this.controllers.forEach(controller => controller.abort());
+        this.handoffFailed("The connection did not finish. Refresh this page to check saved access, or click your current Connect Lotsheet favorite again.");
+      }, 45000);
       this.closedTimer = this.host.setInterval(() => {
-        if (this.peer?.closed) this.handoffFailed("Fusion closed before access was received. Click your favorite in Fusion again.");
-      }, 1000);
+        void this.recoverHandoff();
+      }, 5000);
     } else {
       this.storeChannel(null);
       this.peer = null;
@@ -107,7 +111,9 @@ export class FusionClient {
     if (message.type !== "authorization" || typeof message.accessToken !== "string" ||
         !message.accessToken || message.accessToken.length > 3500) return;
     this.accepting = true;
-    this.clearBridgeTimers();
+    // Keep the overall deadline and saved-session recovery running while saving.
+    if (this.helloTimer !== null) this.host.clearInterval(this.helloTimer);
+    this.helloTimer = null;
     void this.saveAccess(message.accessToken);
   };
 
@@ -138,21 +144,38 @@ export class FusionClient {
   }
 
   private async saveAccess(accessToken: string) {
+    const generation = this.generation;
     try {
       const session = await this.call(FUSION_SESSION_PATH, { method: "POST",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accessToken }) });
-      if (this.disposed) return;
+      if (this.disposed || generation !== this.generation) return;
       if (session.connected !== true) throw new ApiFailure("AUTH");
       const saved = await this.call(FUSION_SESSION_PATH);
-      if (this.disposed) return;
+      if (this.disposed || generation !== this.generation) return;
       if (saved.connected !== true) throw new ApiFailure("SAVE");
       this.connected(saved.expiresAt);
       this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true });
       this.send("complete");
       this.detachBridge();
     } catch (error) {
-      if (!this.disposed) this.handoffFailed(error instanceof ApiFailure ? error.message : ERRORS.NETWORK);
+      if (!this.disposed && generation === this.generation && this.snapshot.status === "connecting") this.handoffFailed(error instanceof ApiFailure ? error.message : ERRORS.NETWORK);
     }
+  }
+
+  private async recoverHandoff() {
+    if (this.restoring || this.disposed || this.snapshot.status !== "connecting") return;
+    this.restoring = true;
+    const generation = this.generation;
+    try {
+      const saved = await this.call(FUSION_SESSION_PATH);
+      if (this.disposed || generation !== this.generation || this.snapshot.status !== "connecting") return;
+      if (saved.connected === true) {
+        this.connected(saved.expiresAt);
+        this.update({ storage: saved.storage === "server" ? "server" : "browser", shared: saved.shared === true });
+        this.send("complete"); this.detachBridge();
+      } else if (this.peer?.closed) this.handoffFailed("Fusion closed before access was saved. Click Connect Lotsheet in Fusion again.");
+    } catch { /* The bounded handoff deadline supplies the actionable error. */ }
+    finally { this.restoring = false; }
   }
 
   private async restore(required = false) {

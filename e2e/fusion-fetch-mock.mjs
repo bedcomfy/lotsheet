@@ -33,14 +33,18 @@ globalThis.fetch = async (input, options) => {
   if (report) {
     const body = await request.text();
     if (!body.includes("<p:runReport>") || !body.includes("Pace Northwest Division") || !body.includes("PACE_Buyers_Inventory_12_Month_Usage_Report")) return new Response("Bad report", { status: 400 });
-    const numbers = [...body.matchAll(/<p:item>(\d+)<\/p:item>/g)].map(match => match[1]);
+    const numbers = body.includes("<p:item>All</p:item>") ? catalog.map(p => p.ItemNumber) : [...body.matchAll(/<p:item>(\d+)<\/p:item>/g)].map(match => match[1]);
     const cells = values => "<tr>" + values.map(v => `<td>${v}</td>`).join("") + "</tr>";
-    const html = "<table>" + cells(["ITEM_NUMBER", "ORGANIZATION_CODE", "SUBINVENTORY_CODE", "SEGMENT1", "SEGMENT2", "SEGMENT3", "OH_QTY"]) + numbers.map(n => cells([n, "NWD", "Northwest", "TANK AREA", "**", "**", n === "910090" ? "3060.47" : "678"])).join("") + "</table>";
+    const html = "<table>" + cells(["ITEM_NUMBER", "ORGANIZATION_CODE", "DESCRIPTION", "SUBINVENTORY_CODE", "SEGMENT1", "SEGMENT2", "SEGMENT3", "OH_QTY"]) + numbers.map(n => cells([n, "NWD", catalog.find(p => p.ItemNumber === n)?.ItemDescription, "Northwest", "TANK AREA", "**", "**", n === "910090" ? "3060.47" : "678"])).join("") + "</table>";
     return new Response(`<reportBytes>${Buffer.from(html).toString("base64")}</reportBytes>`);
   }
   const q = url.searchParams.get("q") ?? "";
   if (!q.includes("OrganizationId=300000004581674")) return new Response("Missing Northwest scope", { status: 400 });
-  if (url.pathname.endsWith("/itemsV2")) return page(catalog);
+  if (url.pathname.endsWith("/itemsV2")) {
+    const number = q.match(/ItemNumber='([^']+)'/)?.[1];
+    if (!number) return new Response("EGP:::EGP_MIN_ONE_FIELD_NEED_SEARCH", { status: 400 });
+    return page(catalog.filter(p => p.ItemNumber === number));
+  }
   if (url.pathname.endsWith("/locatorItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, LocatorItemId: 300000021769924, ItemNumber: "910090", SubinventoryCode: "Northwest", LocatorName: "TANK AREA-**-**" }]);
   if (url.pathname.endsWith("/subinventoryItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, SubinventoryItemId: "100000024478060_300000012931087", ItemNumber: "910090", SecondaryInventory: "Northwest" }]);
   if (url.pathname.endsWith("/inventoryOnhandBalances")) return Response.json({}, { status: 403 });

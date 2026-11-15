@@ -27,6 +27,7 @@ export interface PartCharge {
 }
 export interface PartsPage<T> {
   items: T[]; offset: number; nextOffset: number; hasMore: boolean; fetchedAt: number; expiresAt: number; connectionId: string;
+  catalogSource?: "buyers-report";
 }
 export interface IndexProgress {
   status: LoadStatus; offset: number; fetchedAt: number | null; error: string | null;
@@ -36,6 +37,7 @@ export interface PartsIndex {
   parts: Part[]; locations: PartLocation[]; subinventories: PartLocation[]; balances: PartBalance[];
   progress: Record<IndexKind, IndexProgress>;
   stockSource: "onhand" | "buyers-report" | null;
+  catalogSource?: "buyers-report";
 }
 export function emptyPartsIndex(connectionId: string, expiresAt: number): PartsIndex {
   const stage = (): IndexProgress => ({ status: "idle", offset: 0, fetchedAt: null, error: null });
@@ -61,12 +63,12 @@ export function uniqueByKey<T extends { key: string }>(rows: T[]): T[] {
   return [...new Map(rows.map(row => [row.key, row])).values()];
 }
 export function partLocations(index: PartsIndex, part: Part): PartLocation[] {
-  const locators = index.locations.filter(row => row.itemId === part.id);
+  const locators = index.locations.filter(row => row.itemId === part.id || row.partNumber === part.number);
   const assigned = new Set(locators.map(row => row.subinventory));
-  return [...locators, ...index.subinventories.filter(row => row.itemId === part.id && !assigned.has(row.subinventory))];
+  return [...locators, ...index.subinventories.filter(row => (row.itemId === part.id || row.partNumber === part.number) && !assigned.has(row.subinventory))];
 }
 export function partBalances(index: PartsIndex, part: Part): PartBalance[] {
-  return index.balances.filter(row => row.itemId === part.id || (row.itemId === null && row.partNumber === part.number));
+  return index.balances.filter(row => row.itemId === part.id || row.partNumber === part.number);
 }
 /** Do not aggregate across unknown or different units, or infer missing stock as zero. */
 export function balanceTotal(rows: PartBalance[]): { quantity: number; unit: string } | null {

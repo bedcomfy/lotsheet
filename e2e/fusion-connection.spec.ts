@@ -125,3 +125,13 @@ test("expires saved access without keeping Fusion open", async ({ context, page 
   await expect(receiver.getByRole("button", { name: "Read records", exact: true })).toBeDisabled();
   expect((await context.cookies()).some(cookie => cookie.name === COOKIE)).toBe(false);
 });
+
+test("recovers a saved connection after remounting an unfinished bookmark handoff", async ({ context, page }) => {
+  await mockFusion(context);
+  const { fusion, receiver } = await connect(context, page);
+  await receiver.evaluate(() => sessionStorage.setItem("pace:fusion:handoff:v2", "11111111-1111-4111-8111-111111111111"));
+  await receiver.reload();
+  await expect(receiver.getByText("Access saved", { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(receiver.getByText("Saved on site · private testing")).toBeVisible();
+  await fusion.close();
+});

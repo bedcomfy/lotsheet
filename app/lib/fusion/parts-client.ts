@@ -130,6 +130,7 @@ export class PartsClient {
         offset = page.nextOffset;
         const current = this.state.index;
         this.update({ index: { ...current, [field]: [...current[field], ...page.items],
+          ...(kind === "catalog" && page.catalogSource ? { catalogSource: page.catalogSource } : {}),
           stockSource: kind === "balances" ? (report ? "buyers-report" : "onhand") : current.stockSource } as PartsIndex });
         setStage(page.hasMore ? "loading" : "complete", null, page.fetchedAt);
         if (!page.hasMore) break;

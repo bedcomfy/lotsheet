@@ -13,6 +13,35 @@ The Parts page (`/fusion/parts`) lets a connected Lotsheet user search an NWD pa
 
 ## Reads
 
+### Production correction in 0.57.2
+
+Live reads on November 14 confirmed that the tenant rejects unqualified `itemsV2`
+scans with `EGP-2776154` (three search characters required). The context check now
+uses a bounded NWD `subinventoryItems` read. When that specific catalog rejection
+occurs, the existing Buyers Inventory report is run with item parameter `All` and
+organization fixed to Pace Northwest Division. It returned 8,648 distinct part
+numbers and 8,658 stock rows in the captured live read. These are report coverage,
+not a claim of unrestricted access to every Oracle item or transaction.
+
+The corrected reader also completed live REST scans of 2,773 locator assignments,
+2,759 stockroom assignments, and 2,531 on-hand balance rows. With the available
+saved credential, the on-hand endpoint succeeded after the compound-filter fix.
+Bus 6403 history returned part 081521 on NWD-1680 and coolant 910090 on NWD-1693.
+
+The complete report is checked before results are served (48 MB upstream and 3.5 MB
+per application payload limits); oversized/incomplete output fails explicitly.
+Catalog and stock share a short, credential-bound in-memory business-data snapshot,
+with a fresh Oracle permission check on reuse. Nothing from this cache authorizes
+another account. This fallback does not enumerate thousands of guessed prefixes.
+
+Report parts use an opaque encoded part-number key. History resolves that exact
+number through a bounded NWD `itemsV2` lookup, verifies one exact match, then uses
+the returned item ID to read material transactions. Locations join on the NWD part
+number as well as item ID. Report units/status are left unknown when absent.
+Compound filters use `and` with REST framework version 4; semicolon syntax failed
+in live requests. The earlier REST-only design below applies when broad catalog
+queries are allowed; the deployed fallback handles this tenant's restriction.
+
 The only new application endpoint is `GET /api/fusion/parts`. It accepts a fixed `kind`, an offset, and (for history only) a numeric component ID and optional exact bus. Arbitrary endpoints, SQL, organization IDs and report paths cannot be supplied.
 
 | Kind | Oracle resource | Purpose |

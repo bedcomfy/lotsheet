@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.57.2 - 2026-11-14
+
+- Fix the live Parts catalog 400 caused by Oracle requiring a search term. Use the existing Northwest inventory report for complete reported part names/numbers and stock; resolve exact Oracle item IDs when reading charge history.
+- Validate Northwest access with the working stockroom endpoint and correct compound query syntax. Preserve unknown report units/status and join report parts to their assigned locations.
+- Recover already-saved access during a stalled bookmark handoff. Keep a 45-second deadline active while saving and ignore late responses after timeout.
+- Add regression coverage for Oracle's actual catalog restriction, report fallback, exact history lookup and stalled handoffs.
+
 ## 0.57.1 - 2026-11-13
 
 - Save verified temporary Oracle tokens encrypted on the server for private read-only testing. Migrate existing browser access automatically; allow authorized test sessions to reuse valid saved credentials while keeping anonymous visitors out.

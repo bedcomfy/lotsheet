@@ -4,7 +4,7 @@ import { GET } from "../../api/fusion/parts/route";
 import { FUSION_COOKIE } from "./server";
 import { FUSION_REQUEST_HEADER, FUSION_ORIGIN } from "./config";
 import { NWD_ORGANIZATION_ID } from "./parts";
-import { parseStockReport, partsParameters, readPartHistory, readPartsIndex, readStockReport, stockReportEnvelope } from "./parts-server";
+import { parseReportParts, parseStockReport, partsParameters, readPartHistory, readPartsIndex, readStockReport, stockReportEnvelope } from "./parts-server";
 
 const token = () => "e30." + Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 14400 })).toString("base64url") + ".synthetic";
 const org = { OrganizationId: Number(NWD_ORGANIZATION_ID), OrganizationCode: "NWD" };
@@ -64,6 +64,27 @@ describe("Northwest read boundary", () => {
   });
 });
 describe("Northwest report fallback", () => {
+  it("builds the full catalog from the fixed report when Oracle requires a search term", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(new Response("EGP:::EGP_MIN_ONE_FIELD_NEED_SEARCH", { status: 400 }))
+      .mockResolvedValueOnce(Response.json({ items: [{ ...org, InventoryItemId: item.ItemId }], hasMore: false }))
+      .mockResolvedValueOnce(new Response(`<reportBytes>${Buffer.from(html).toString("base64")}</reportBytes>`));
+    vi.stubGlobal("fetch", fetch);
+    const result = await readPartsIndex(token(), "catalog", 0);
+    expect(result.hasMore).toBe(false);
+    expect(result.items).toHaveLength(5);
+    expect(result.items).toContainEqual(expect.objectContaining({ number: "910090", id: "part:393130303930" }));
+    expect(fetch.mock.calls[2][1].body).toContain("<p:item>All</p:item>");
+    expect(fetch.mock.calls[2][1].body).toContain("Pace Northwest Division");
+    expect(() => parseReportParts(html.replaceAll(">NWD<", ">OTHER<"))).toThrow();
+  });
+  it("resolves a report part number to its exact Northwest Oracle ID before reading charges", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({ items: [item], hasMore: false }))
+      .mockResolvedValueOnce(Response.json({ items: [charge], hasMore: false }));
+    vi.stubGlobal("fetch", fetch);
+    const result = await readPartHistory(token(), "part:393130303930", "6403", 0);
+    expect(new URL(fetch.mock.calls[0][0]).searchParams.get("q")).toBe("OrganizationId=300000004581674 and ItemNumber='910090'");
+    expect(result.items[0]).toMatchObject({ workOrder: "NWD-1680", bus: "6403" });
+  });
   it("parses the previously captured Oracle HTML with unconfirmed stock units", () => {
     const rows = parseStockReport(html);
     expect(rows).toHaveLength(5);

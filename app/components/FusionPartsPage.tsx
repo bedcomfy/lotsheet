@@ -51,6 +51,7 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
       {index && <span className={styles.hint}>Access expires {time(index.expiresAt)}</span>}
     </Toolbar>
     {state.error && <p role="alert" className={styles.error}>{state.error}</p>}
+    {index?.catalogSource === "buyers-report" && <p className={styles.hint}>Part names and numbers come from Oracle’s Northwest inventory report. Catalog units and item status are unavailable in this report. Charge history is read live for the selected part.</p>}
     {!index ? <EmptyState kind={state.status === "checking" ? "loading" : state.status === "error" ? "error" : "empty"}
       title={state.status === "checking" ? "Checking Northwest access" : state.status === "error" ? "Northwest catalog could not be read" : "Connect to Oracle Fusion"}
       description={state.status === "checking" ? "Validating your saved connection before loading parts." : state.status === "error" ? "Saved Oracle access and catalog access are separate checks. The error above identifies the failed read; try Refresh index to retry." : "Use your Connect Lotsheet favorite in your signed-in Fusion browser, then open Parts here."}

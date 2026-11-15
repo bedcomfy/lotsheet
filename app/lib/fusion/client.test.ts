@@ -45,6 +45,27 @@ function fixture(handoff = true, initialSaved = false) {
 afterEach(() => vi.useRealTimers());
 
 describe("saved Fusion access", () => {
+  it("recovers saved access when a bookmark opens with an unfinished handoff", async () => {
+    const f = fixture(true, true);
+    expect(f.state()?.status).toBe("connecting");
+    await vi.advanceTimersByTimeAsync(5001);
+    expect(f.state()?.status).toBe("connected");
+    expect(f.storage.size).toBe(0);
+    f.client.dispose();
+  });
+  it("bounds a stalled token save and ignores a late completion after the deadline", async () => {
+    const f = fixture();
+    let finish!: (response: Response) => void;
+    f.fetch.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    f.dispatch({ type: "authorization", accessToken: "synthetic-token" });
+    await vi.advanceTimersByTimeAsync(45001);
+    expect(f.state()?.status).toBe("sign-in-required");
+    expect(f.state()?.error).toContain("did not finish");
+    finish(Response.json({ connected: true, expiresAt: f.expiresAt }));
+    await vi.advanceTimersByTimeAsync(1);
+    expect(f.state()?.status).toBe("sign-in-required");
+    f.client.dispose();
+  });
   it("accepts only the exact Fusion opener and sends the token directly to the session endpoint", async () => {
     const f = fixture();
     const message = { type: "authorization", accessToken: "synthetic-token" };

@@ -10,7 +10,7 @@ const PREFIX = "/fscmRestApi/resources/11.13.18.05/";
 const MAX_REST_BYTES = 4_000_000;
 const MAX_REPORT_BYTES = 48_000_000;
 const DEFINITIONS = {
-  catalog: { path: "itemsV2", fields: "OrganizationId,OrganizationCode,ItemId,ItemNumber,ItemDescription,PrimaryUOMCode,PrimaryUOMValue,ItemStatusValue", order: "ItemNumber:asc,ItemId:asc" },
+  catalog: { path: "itemsV2", fields: "OrganizationId,OrganizationCode,ItemId,ItemNumber,ItemDescription,PrimaryUOMValue,ItemStatusValue", order: "ItemNumber:asc,ItemId:asc" },
   locations: { path: "locatorItems", fields: "OrganizationId,OrganizationCode,InventoryItemId,LocatorItemId,ItemNumber,SubinventoryCode,LocatorName", order: "LocatorItemId:asc" },
   subinventories: { path: "subinventoryItems", fields: "OrganizationId,OrganizationCode,InventoryItemId,SubinventoryItemId,ItemNumber,SecondaryInventory", order: "InventoryItemId:asc,SecondaryInventory:asc" },
   balances: { path: "inventoryOnhandBalances", fields: "OrganizationId,OrganizationCode,InventoryItemId,ItemNumber,SubinventoryCode,Locator,LocatorId,PrimaryQuantity,PrimaryUOMCode,PrimaryUnitOfMeasure,Revision,OwningPartySiteId,SummaryLevel", order: "InventoryItemId:asc,SubinventoryCode:asc,LocatorId:asc" },
@@ -71,7 +71,11 @@ async function oracle(token: string, path: string, options: RequestInit = {}, re
   } catch { throw new FusionFailure("NETWORK", 502, { resource, stage: "request" }); }
   if (response.status === 401) throw new FusionFailure("AUTH", 401, { resource, upstreamStatus: 401 });
   if (response.status === 403) throw new FusionFailure("FORBIDDEN", 403, { resource, upstreamStatus: 403 });
-  if (!response.ok) throw new FusionFailure("HTTP", 502, { resource, upstreamStatus: response.status });
+  if (!response.ok) {
+    const detail = response.status === 400 ? await limitedText(response, MAX_REST_BYTES).catch(() => "") : "";
+    throw new FusionFailure("HTTP", 502, { resource, upstreamStatus: response.status,
+      ...(detail.includes("EGP_MIN_ONE_FIELD_NEED_SEARCH") || detail.includes("EGP-2776154") ? { stage: "search-required" } : {}) });
+  }
   let body: string;
   try { body = await limitedText(response, report ? MAX_REPORT_BYTES : MAX_REST_BYTES); }
   catch (error) { if (error instanceof FusionFailure) throw error; throw new FusionFailure("NETWORK", 502, { resource, stage: "response" }); }
@@ -99,21 +103,21 @@ export function partsParameters(params: URLSearchParams) {
   if (!/^\d{1,7}$/.test(rawOffset) || offset > PARTS_MAX_OFFSET) throw new FusionFailure("REQUEST", 400);
   const itemId = params.get("itemId") ?? "";
   const bus = (params.get("bus") ?? "").trim();
-  if (kind === "history" && (!/^\d{1,18}$/.test(itemId) || !/^[A-Za-z0-9._ -]{0,64}$/.test(bus))) throw new FusionFailure("REQUEST", 400);
+  if (kind === "history" && (!/^(?:\d{1,18}|part:(?:[a-f0-9]{2}){1,1200})$/.test(itemId) || !/^[A-Za-z0-9._ -]{0,64}$/.test(bus))) throw new FusionFailure("REQUEST", 400);
   if (kind === "context" && offset !== 0) throw new FusionFailure("REQUEST", 400);
   return { kind: kind!, offset, itemId, bus };
 }
 export async function readPartsContext(token: string) {
-  // A real catalog read validates both the credential and NWD item access before
+  // A real stockroom read validates both the credential and NWD access before
   // a browser can restore its cached index. This is not a general app identity.
-  const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`, fields: "OrganizationId,OrganizationCode,ItemId", limit: "1", onlyData: "true" });
-  await collection(token, "itemsV2", query, 0);
+  const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`, fields: "OrganizationId,OrganizationCode,InventoryItemId", limit: "1", onlyData: "true" });
+  await collection(token, "subinventoryItems", query, 0);
   return { connectionId: createHash("sha256").update(token).digest("hex"), expiresAt: expiry(token), organization: "NWD" };
 }
 /** Fixed, one-row probes for private testing. Return shape/status only, never credentials or upstream error bodies. */
 export async function diagnoseParts(token: string, kind: IndexKind) {
   const definition = DEFINITIONS[kind];
-  const base = { q: `OrganizationId=${NWD_ORGANIZATION_ID}` + (kind === "balances" ? ";SummaryLevel='Locator'" : ""), limit: "1", onlyData: "true" };
+  const base = { q: `OrganizationId=${NWD_ORGANIZATION_ID}` + (kind === "balances" ? " and SummaryLevel='Locator'" : ""), limit: "1", onlyData: "true" };
   const probes = [
     { name: "minimal-default", query: new URLSearchParams(base), version: false },
     { name: "projected-default", query: new URLSearchParams({ ...base, fields: definition.fields }), version: false },
@@ -144,9 +148,16 @@ export async function diagnoseParts(token: string, kind: IndexKind) {
 }
 export async function readPartsIndex(token: string, kind: IndexKind, offset: number): Promise<PartsPage<Part | PartLocation | PartBalance>> {
   const definition = DEFINITIONS[kind];
-  const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}` + (kind === "balances" ? ";SummaryLevel='Locator'" : ""),
+  const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}` + (kind === "balances" ? " and SummaryLevel='Locator'" : ""),
     fields: definition.fields, onlyData: "true", limit: String(PARTS_PAGE_SIZE), offset: String(offset), orderBy: definition.order });
-  const page = await collection(token, definition.path, query, offset);
+  let page;
+  try { page = await collection(token, definition.path, query, offset); }
+  catch (error) {
+    if (kind !== "catalog" || !(error instanceof FusionFailure) || error.diagnostic?.stage !== "search-required") throw error;
+    if (offset !== 0) throw new FusionFailure("FORMAT", 502);
+    const report = await northwestReport(token);
+    return { ...reportPage(token, report.parts, report.fetchedAt), catalogSource: "buyers-report" };
+  }
   return { ...page, items: page.items.map(row => {
     if (kind === "catalog") return { id: id(row.ItemId)!, number: text(row.ItemNumber, true)!, description: text(row.ItemDescription) ?? "",
       unit: text(row.PrimaryUOMValue), unitCode: text(row.PrimaryUOMCode), status: text(row.ItemStatusValue) } satisfies Part;
@@ -164,6 +175,14 @@ export async function readPartsIndex(token: string, kind: IndexKind, offset: num
   }) };
 }
 export async function readPartHistory(token: string, itemId: string, bus: string, offset: number): Promise<PartsPage<PartCharge>> {
+  if (itemId.startsWith("part:")) {
+    const number = Buffer.from(itemId.slice(5), "hex").toString("utf8");
+    if (!number || number.length > 300 || /[\x00-\x1f\x7f]/.test(number) || Buffer.from(number).toString("hex") !== itemId.slice(5)) throw new FusionFailure("REQUEST", 400);
+    const match = await collection(token, "itemsV2", new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID} and ItemNumber='${number.replaceAll("'", "''")}'`,
+      fields: "OrganizationId,OrganizationCode,ItemId,ItemNumber", limit: "2", onlyData: "true" }), 0);
+    if (match.hasMore || match.items.length !== 1 || match.items[0].ItemNumber !== number) throw new FusionFailure("FORMAT", 502);
+    itemId = id(match.items[0].ItemId)!;
+  }
   const query = new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID} and ComponentItemId=${itemId} and (TransactionType='MATERIAL_ISSUE' or TransactionType='MATERIAL_RETURN')` + (bus ? ` and AssetNumber='${bus}'` : ""),
     fields: HISTORY_FIELDS, onlyData: "true", limit: String(PARTS_PAGE_SIZE), offset: String(offset), orderBy: "TransactionDate:desc,TransactionId:desc" });
   const page = await collection(token, "maintenanceWorkOrderTransactionHistory", query, offset);
@@ -199,6 +218,47 @@ function decodeCell(html: string) {
     return ({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " } as Record<string, string>)[value.toLowerCase()];
   }).trim();
 }
+export function parseReportParts(html: string): Part[] {
+  const rows = [...html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(row => [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => decodeCell(cell[1])));
+  const start = rows.findIndex(row => row.includes("ITEM_NUMBER") && row.includes("OH_QTY"));
+  if (start < 0) throw new FusionFailure("FORMAT", 502);
+  const header = rows[start];
+  if (!["DESCRIPTION", "ORGANIZATION_CODE"].every(key => header.includes(key))) throw new FusionFailure("FORMAT", 502);
+  const parts = new Map<string, Part>();
+  for (const cells of rows.slice(start + 1)) {
+    const row = Object.fromEntries(header.map((key, i) => [key, cells[i] ?? ""]));
+    if (!row.ITEM_NUMBER) continue;
+    if (row.ORGANIZATION_CODE !== "NWD" || row.ITEM_NUMBER.length > 300) throw new FusionFailure("FORMAT", 502);
+    const part = { id: "part:" + Buffer.from(row.ITEM_NUMBER).toString("hex"), number: row.ITEM_NUMBER, description: row.DESCRIPTION,
+      unit: row.UNIT_OF_MEASURE || null, unitCode: null, status: null };
+    if (parts.has(part.number) && JSON.stringify(parts.get(part.number)) !== JSON.stringify(part)) throw new FusionFailure("FORMAT", 502);
+    parts.set(part.number, part);
+  }
+  if (!parts.size) throw new FusionFailure("FORMAT", 502);
+  return [...parts.values()].sort((a, b) => a.number.localeCompare(b.number));
+}
+function reportPage<T>(token: string, items: T[], fetchedAt: number): PartsPage<T> {
+  if (Buffer.byteLength(JSON.stringify(items)) > 3_500_000) throw new FusionFailure("FORMAT", 502);
+  return { items, offset: 0, nextOffset: items.length, hasMore: false, fetchedAt, expiresAt: expiry(token), connectionId: createHash("sha256").update(token).digest("hex") };
+}
+// Business data only; credential-bound and briefly shared between the catalog and stock reads.
+const reports = new Map<string, { until: number; value: Promise<{ parts: Part[]; balances: PartBalance[]; fetchedAt: number }> }>();
+async function northwestReport(token: string) {
+  await readPartsContext(token);
+  const key = createHash("sha256").update(token).digest("hex");
+  for (const [id, report] of reports) if (report.until <= Date.now()) reports.delete(id);
+  const existing = reports.get(key); if (existing) return existing.value;
+  const value = (async () => {
+    const xml = await oracle(token, "/xmlpserver/services/ExternalReportWSSService", { body: stockReportEnvelope(["All"]) }, true);
+    const encoded = xml.match(/<(?:\w+:)?reportBytes\b[^>]*>([A-Za-z0-9+/=\s]+)<\/(?:\w+:)?reportBytes>/)?.[1];
+    if (!encoded) throw new FusionFailure("FORMAT", 502);
+    const html = Buffer.from(encoded.replace(/\s/g, ""), "base64").toString("utf8");
+    return { parts: parseReportParts(html), balances: parseStockReport(html), fetchedAt: Date.now() };
+  })();
+  if (reports.size >= 8) reports.delete(reports.keys().next().value!);
+  reports.set(key, { until: Math.min(expiry(token), Date.now() + 60000), value });
+  try { return await value; } catch (error) { reports.delete(key); throw error; }
+}
 export function parseStockReport(html: string): PartBalance[] {
   const rows = [...html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(row =>
     [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(cell => decodeCell(cell[1])));
@@ -226,8 +286,15 @@ export function parseStockReport(html: string): PartBalance[] {
   return items;
 }
 export async function readStockReport(token: string, offset: number): Promise<PartsPage<PartBalance>> {
-  const page = await collection(token, "itemsV2", new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`,
-    fields: "OrganizationId,OrganizationCode,ItemNumber", onlyData: "true", limit: "100", offset: String(offset), orderBy: "ItemNumber:asc,ItemId:asc" }), offset);
+  let page;
+  try { page = await collection(token, "itemsV2", new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`,
+    fields: "OrganizationId,OrganizationCode,ItemNumber", onlyData: "true", limit: "100", offset: String(offset), orderBy: "ItemNumber:asc,ItemId:asc" }), offset); }
+  catch (error) {
+    if (!(error instanceof FusionFailure) || error.diagnostic?.stage !== "search-required") throw error;
+    if (offset !== 0) throw new FusionFailure("FORMAT", 502);
+    const report = await northwestReport(token);
+    return reportPage(token, report.balances, report.fetchedAt);
+  }
   const numbers = page.items.map(row => text(row.ItemNumber, true)!);
   if (!numbers.length) return { ...page, items: [] };
   const xml = await oracle(token, "/xmlpserver/services/ExternalReportWSSService", { body: stockReportEnvelope(numbers) }, true);

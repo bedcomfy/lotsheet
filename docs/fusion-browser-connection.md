@@ -70,6 +70,12 @@ not just the locally decoded expiry. Catalog access is still a separate permissi
 
 ## Verification
 
+The receiver checks for already-saved access every five seconds while a bookmark
+handoff is pending, including after a remount with an unfinished pairing ID.
+The complete handoff has a 45-second deadline that remains active during token
+saving. Late responses cannot return a timed-out screen to Connected. The favorite
+protocol is unchanged, so an existing v2 favorite does not need replacement.
+
 Run `npm run verify`, then `npm run e2e:fusion` against the compiled app. The
 browser test runs real Lotsheet session and read handlers with a synthetic
 Oracle server boundary loaded only by its isolated test server. No test mode or
