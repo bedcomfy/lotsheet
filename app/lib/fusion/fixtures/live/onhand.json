@@ -1,0 +1,244 @@
+{
+  "items": [
+    {
+      "ItemNumber": "0810209",
+      "ItemDescription": "HOSE:EGR TUBE BRACE TO AIR TRANSFER HOSE",
+      "ItemPrimaryImageURL": null,
+      "PrimaryUOMCode": "PC",
+      "OrganizationCode": "NWD",
+      "SummaryLevel": "Locator",
+      "InventoryItemId": 100000024470224,
+      "OrganizationId": 300000004581674,
+      "Revision": null,
+      "SubinventoryGroup": null,
+      "SubinventoryCode": "Northwest",
+      "LocatorId": 300000012935953,
+      "ParLocation": 2,
+      "OwningPartySiteId": null,
+      "PrimaryQuantity": 10,
+      "ConsignedQuantity": 0,
+      "StockingUOMCode": null,
+      "StockingUnitOfMeasure": null,
+      "StockingOnhandQuantity": null,
+      "CategoryId": null,
+      "CreationDate": "2026-10-13T21:46:34+00:00",
+      "LastUpdateDate": "2026-10-13T21:46:34+00:00",
+      "Category": null,
+      "OwningPartySite": null,
+      "OwningPartyId": null,
+      "OwningParty": null,
+      "Locator": "08-B-2",
+      "PrimaryUnitOfMeasure": "Piece",
+      "MaterialStatusId": 1,
+      "MaterialStatus": "Active",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000/child/cycleCountDetails",
+          "name": "cycleCountDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000/child/inventoryTrackingAttributes",
+          "name": "inventoryTrackingAttributes",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000/child/lots",
+          "name": "lots",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000/child/replenishmentDetails",
+          "name": "replenishmentDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFA2D00000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342311FFFFFFFF0000000EACED000577080000000000000000/child/serials",
+          "name": "serials",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "ItemNumber": "200694",
+      "ItemDescription": "HOSE:ASSEMBLY,PWM VALVE",
+      "ItemPrimaryImageURL": null,
+      "PrimaryUOMCode": "AY",
+      "OrganizationCode": "NWD",
+      "SummaryLevel": "Locator",
+      "InventoryItemId": 100000024474897,
+      "OrganizationId": 300000004581674,
+      "Revision": null,
+      "SubinventoryGroup": null,
+      "SubinventoryCode": "Northwest",
+      "LocatorId": 300000012935737,
+      "ParLocation": 2,
+      "OwningPartySiteId": null,
+      "PrimaryQuantity": 2,
+      "ConsignedQuantity": 0,
+      "StockingUOMCode": null,
+      "StockingUnitOfMeasure": null,
+      "StockingOnhandQuantity": null,
+      "CategoryId": null,
+      "CreationDate": "2026-10-13T21:46:19+00:00",
+      "LastUpdateDate": "2026-10-13T21:46:19+00:00",
+      "Category": null,
+      "OwningPartySite": null,
+      "OwningPartyId": null,
+      "OwningParty": null,
+      "Locator": "22-C-5",
+      "PrimaryUnitOfMeasure": "Assembly",
+      "MaterialStatusId": 1,
+      "MaterialStatus": "Active",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000/child/cycleCountDetails",
+          "name": "cycleCountDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000/child/inventoryTrackingAttributes",
+          "name": "inventoryTrackingAttributes",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000/child/lots",
+          "name": "lots",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000/child/replenishmentDetails",
+          "name": "replenishmentDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB5110000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342239FFFFFFFF0000000EACED000577080000000000000000/child/serials",
+          "name": "serials",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "ItemNumber": "220326",
+      "ItemDescription": "HOSE: 3/4 ID.HEATER",
+      "ItemPrimaryImageURL": null,
+      "PrimaryUOMCode": "FT",
+      "OrganizationCode": "NWD",
+      "SummaryLevel": "Locator",
+      "InventoryItemId": 100000024475276,
+      "OrganizationId": 300000004581674,
+      "Revision": null,
+      "SubinventoryGroup": null,
+      "SubinventoryCode": "Northwest",
+      "LocatorId": 300000012935748,
+      "ParLocation": 2,
+      "OwningPartySiteId": null,
+      "PrimaryQuantity": 112,
+      "ConsignedQuantity": 0,
+      "StockingUOMCode": null,
+      "StockingUnitOfMeasure": null,
+      "StockingOnhandQuantity": null,
+      "CategoryId": null,
+      "CreationDate": "2026-10-13T21:46:35+00:00",
+      "LastUpdateDate": "2026-10-13T21:46:35+00:00",
+      "Category": null,
+      "OwningPartySite": null,
+      "OwningPartyId": null,
+      "OwningParty": null,
+      "Locator": "23-AS-1",
+      "PrimaryUnitOfMeasure": "Foot",
+      "MaterialStatusId": 1,
+      "MaterialStatus": "Active",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000",
+          "name": "inventoryOnhandBalances",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000/child/cycleCountDetails",
+          "name": "cycleCountDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000/child/inventoryTrackingAttributes",
+          "name": "inventoryTrackingAttributes",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000/child/lots",
+          "name": "lots",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000/child/replenishmentDetails",
+          "name": "replenishmentDetails",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances/0009000000074C6F6361746F720000000EACED0005770800005AF311EFB68C0000000EACED00057708000110D931B4A92AFFFFFFFFFFFFFFFF000000094E6F727468776573740000000EACED00057708000110D932342244FFFFFFFF0000000EACED000577080000000000000000/child/serials",
+          "name": "serials",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 3,
+  "hasMore": true,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances",
+      "name": "inventoryOnhandBalances",
+      "kind": "collection"
+    }
+  ]
+}

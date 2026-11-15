@@ -11,6 +11,8 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   page.on("request", request => { if (request.url().includes("/api/fusion/parts")) partsRequests.push(request.url()); });
   await page.goto("/fusion/parts");
   await expect(page.getByText("Index complete", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Update saved catalog", exact: true }).click();
+  await expect(page.getByText("2 saved parts", { exact: true })).toBeVisible();
   await expect(page.getByRole("timer", { name: "Oracle access time remaining" })).toContainText(/\d{2}:\d{2}:\d{2} remaining/);
   const search = page.getByRole("combobox", { name: "Part number or name" });
   await search.fill("cool bulk");
@@ -34,6 +36,7 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   await page.screenshot({ path: testInfo.outputPath("parts-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  expect(await page.getByRole("textbox", { name: "Search saved parts" }).evaluate(el => el.getBoundingClientRect().right <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("parts-phone.png"), fullPage: true });
   expect(partsRequests.some(url => url.includes("kind=history") && url.includes("offset=2"))).toBe(true);
   partsRequests.length = 0;
@@ -53,7 +56,15 @@ test("Northwest index, partial-name search, charge pagination, bus filter, cache
   const removed = await context.request.delete("/api/fusion/session", { headers: { Origin: "http://localhost:3002", [FUSION_REQUEST_HEADER]: "1", Cookie: contributedCookie.name + "=" + contributedCookie.value } });
   expect(removed.status()).toBe(200);
   await page.getByRole("button", { name: "Refresh history" }).click();
-  await expect(page.getByText("Connect to Oracle Fusion", { exact: true })).toBeVisible();
-  await expect(page.getByRole("table")).toHaveCount(0);
+  await expect(page.getByText("Connect to Oracle for live stock and charges", { exact: true })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Northwest part charge history" })).toHaveCount(0);
+  // Other connection tests can leave another shared test credential. Model all
+  // Oracle access being unavailable without changing the catalog's real handler.
+  await page.route("**/api/fusion/parts?kind=context", route => route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ code: "AUTH" }) }));
+  await page.reload();
+  await expect(page.getByText("2 saved parts", { exact: true })).toBeVisible();
+  await page.getByRole("textbox", { name: "Search saved parts" }).fill("COOLANT-MPN");
+  await expect(page.getByRole("region", { name: "Saved Northwest parts", exact: true })).toContainText("910090");
+  await expect(page.getByRole("button", { name: "Update saved catalog", exact: true })).toBeDisabled();
   expect(errors).toEqual([]);
 });

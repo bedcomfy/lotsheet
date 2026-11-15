@@ -1,0 +1,80 @@
+{
+  "items": [
+    {
+      "MeterUsageCode": "ORA_ASSET",
+      "MeterObjectId": 100000024726932,
+      "MeterId": 100000024977871,
+      "AssetNumber": "6403",
+      "ActiveEndDate": null,
+      "ActiveStartDate": "2023-01-01T00:00:00+00:00",
+      "LastReadingValue": 499833,
+      "LastReadingDate": "2026-11-14T21:06:50+00:00",
+      "LastReadingComments": "1719201",
+      "DisplayedReading": 499833,
+      "WorkOrderId": null,
+      "WorkOrderNumber": null,
+      "MeterTypeCode": "ORA_CONTINUOUS",
+      "MeterType": "Continuous",
+      "MeterDefinitionId": 300000021479493,
+      "InitialReadingValue": null,
+      "MeterName": "ODO",
+      "MeterDescription": "ODOMETERS",
+      "MeterCode": "ODO",
+      "ReadingDirection": "ORA_ASCENDING",
+      "ReadingDirectionMeaning": "Ascending",
+      "ReadingTypeCode": "ORA_ABSOLUTE",
+      "ReadingType": "Absolute",
+      "UOMCode": "EA",
+      "UnitOfMeasure": "Each",
+      "RolloverResetValue": null,
+      "RolloverMaximumValue": null,
+      "RolloverAllowedFlag": false,
+      "ResetAllowedFlag": false,
+      "ResetValue": null,
+      "DailyUtilizationRate": 50,
+      "AllowInMaintProgramFlag": true,
+      "RecordAtWoComplCode": "ORA_MANDATORY",
+      "RecordAtWoComplMeaning": "Mandatory",
+      "UtilizationRateComputedAt": 25,
+      "CalculatedUtilizationRate": 125.4800033569336,
+      "WoReadingRecordedFlag": false,
+      "ReadingLockDate": null,
+      "LifeToDateReading": 499833,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/meters/00020000000EACED0005770800005AF311F761CF0000000EACED00057708000110D932B68045",
+          "name": "meters",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000002E78"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/meters/00020000000EACED0005770800005AF311F761CF0000000EACED00057708000110D932B68045",
+          "name": "meters",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/meters",
+      "name": "meters",
+      "kind": "collection"
+    }
+  ]
+}

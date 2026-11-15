@@ -1,0 +1,616 @@
+{
+  "items": [
+    {
+      "SubinventoryItemId": "100000024469573_300000012931087",
+      "FixedLotMultiple": null,
+      "InventoryItemId": 100000024469573,
+      "MinimumMaximumPlanningCode": 6,
+      "MinimumMaximumPlanningMeaning": "Not planned",
+      "MaximumMinmaxQuantity": null,
+      "MaximumOrderQuantity": null,
+      "MinmaxQuantityUOM": "AY",
+      "MinmaxQuantityUOMMeasure": "Assembly",
+      "MinimumMinmaxQuantity": null,
+      "MinimumOrderQuantity": null,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "PostprocessingLeadTime": null,
+      "PreprocessingLeadTime": null,
+      "ProcessingLeadTime": null,
+      "SecondaryInventory": "Northwest",
+      "SourceOrganizationId": null,
+      "SourceSubinventory": null,
+      "SourceOrderingUOM": "AY",
+      "SourceOrderingUOMMeasure": "Assembly",
+      "SourceType": null,
+      "SourceTypeMeaning": null,
+      "ItemNumber": "072203",
+      "SourceOrganizationCode": null,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "CountRequired": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "HARNESS:HEADLIGHT WITH CONNECTORS AND PINS",
+      "ItemPrimaryImageURL": null,
+      "CreationDate": "2026-10-09T22:29:51.550+00:00",
+      "LastReplenishedDate": null,
+      "SourceOrganizationName": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "SourceSubinventoryName": null,
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-09T22:29:53.138+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "Attribute1": null,
+      "Attribute10": null,
+      "Attribute11": null,
+      "Attribute12": null,
+      "Attribute13": null,
+      "Attribute14": null,
+      "Attribute15": null,
+      "Attribute2": null,
+      "Attribute3": null,
+      "Attribute4": null,
+      "Attribute5": null,
+      "Attribute6": null,
+      "Attribute7": null,
+      "Attribute8": null,
+      "Attribute9": null,
+      "AttributeCategory": null,
+      "GTINs": {
+        "items": [],
+        "count": 0,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/GTINs",
+            "name": "GTINs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "MPNs": {
+        "items": [
+          {
+            "TradingPatnerItemId": 100000025184952,
+            "MPN": "10324268",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA0450000000EACED0005770800005AF311FA8AB8",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA0450000000EACED0005770800005AF311FA8AB8",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          },
+          {
+            "TradingPatnerItemId": 100000025184953,
+            "MPN": "31901303",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA0450000000EACED0005770800005AF311FA8AB9",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA0450000000EACED0005770800005AF311FA8AB9",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          }
+        ],
+        "count": 2,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs",
+            "name": "MPNs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469573_300000012931087/child/subinventoryItemsDFF",
+          "name": "subinventoryItemsDFF",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "SubinventoryItemId": "100000024470847_300000012931087",
+      "FixedLotMultiple": null,
+      "InventoryItemId": 100000024470847,
+      "MinimumMaximumPlanningCode": 6,
+      "MinimumMaximumPlanningMeaning": "Not planned",
+      "MaximumMinmaxQuantity": null,
+      "MaximumOrderQuantity": null,
+      "MinmaxQuantityUOM": "PC",
+      "MinmaxQuantityUOMMeasure": "Piece",
+      "MinimumMinmaxQuantity": null,
+      "MinimumOrderQuantity": null,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "PostprocessingLeadTime": null,
+      "PreprocessingLeadTime": null,
+      "ProcessingLeadTime": null,
+      "SecondaryInventory": "Northwest",
+      "SourceOrganizationId": null,
+      "SourceSubinventory": null,
+      "SourceOrderingUOM": "PC",
+      "SourceOrderingUOMMeasure": "Piece",
+      "SourceType": null,
+      "SourceTypeMeaning": null,
+      "ItemNumber": "120488",
+      "SourceOrganizationCode": null,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "CountRequired": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "FILTER:PRIMARY FUEL-2007 (WITH PLUG & WATER SERSOR)",
+      "ItemPrimaryImageURL": null,
+      "CreationDate": "2026-10-09T22:29:45.363+00:00",
+      "LastReplenishedDate": null,
+      "SourceOrganizationName": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "SourceSubinventoryName": null,
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-09T22:29:48.098+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "Attribute1": null,
+      "Attribute10": null,
+      "Attribute11": null,
+      "Attribute12": null,
+      "Attribute13": null,
+      "Attribute14": null,
+      "Attribute15": null,
+      "Attribute2": null,
+      "Attribute3": null,
+      "Attribute4": null,
+      "Attribute5": null,
+      "Attribute6": null,
+      "Attribute7": null,
+      "Attribute8": null,
+      "Attribute9": null,
+      "AttributeCategory": null,
+      "GTINs": {
+        "items": [],
+        "count": 0,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/GTINs",
+            "name": "GTINs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "MPNs": {
+        "items": [
+          {
+            "TradingPatnerItemId": 100000025168641,
+            "MPN": "FS1065",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B01",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B01",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          },
+          {
+            "TradingPatnerItemId": 100000025168642,
+            "MPN": "FS1067",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B02",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B02",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          },
+          {
+            "TradingPatnerItemId": 100000025168643,
+            "MPN": "WIX3965",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B03",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFA53F0000000EACED0005770800005AF311FA4B03",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          }
+        ],
+        "count": 3,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs",
+            "name": "MPNs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024470847_300000012931087/child/subinventoryItemsDFF",
+          "name": "subinventoryItemsDFF",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "SubinventoryItemId": "100000024469469_300000012931087",
+      "FixedLotMultiple": null,
+      "InventoryItemId": 100000024469469,
+      "MinimumMaximumPlanningCode": 6,
+      "MinimumMaximumPlanningMeaning": "Not planned",
+      "MaximumMinmaxQuantity": null,
+      "MaximumOrderQuantity": null,
+      "MinmaxQuantityUOM": "PC",
+      "MinmaxQuantityUOMMeasure": "Piece",
+      "MinimumMinmaxQuantity": null,
+      "MinimumOrderQuantity": null,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "PostprocessingLeadTime": null,
+      "PreprocessingLeadTime": null,
+      "ProcessingLeadTime": null,
+      "SecondaryInventory": "Northwest",
+      "SourceOrganizationId": null,
+      "SourceSubinventory": null,
+      "SourceOrderingUOM": "PC",
+      "SourceOrderingUOMMeasure": "Piece",
+      "SourceType": null,
+      "SourceTypeMeaning": null,
+      "ItemNumber": "072172",
+      "SourceOrganizationCode": null,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "CountRequired": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "BREAKER:CIRCUIT-25AMP/24V",
+      "ItemPrimaryImageURL": null,
+      "CreationDate": "2026-10-09T22:29:51.108+00:00",
+      "LastReplenishedDate": null,
+      "SourceOrganizationName": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "SourceSubinventoryName": null,
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-09T22:29:53.119+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "Attribute1": null,
+      "Attribute10": null,
+      "Attribute11": null,
+      "Attribute12": null,
+      "Attribute13": null,
+      "Attribute14": null,
+      "Attribute15": null,
+      "Attribute2": null,
+      "Attribute3": null,
+      "Attribute4": null,
+      "Attribute5": null,
+      "Attribute6": null,
+      "Attribute7": null,
+      "Attribute8": null,
+      "Attribute9": null,
+      "AttributeCategory": null,
+      "GTINs": {
+        "items": [],
+        "count": 0,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/GTINs",
+            "name": "GTINs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "MPNs": {
+        "items": [
+          {
+            "TradingPatnerItemId": 100000025164510,
+            "MPN": "10373128",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3ADE",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3ADE",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          },
+          {
+            "TradingPatnerItemId": 100000025164511,
+            "MPN": "2-5000-K10-H-25A",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3ADF",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3ADF",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          },
+          {
+            "TradingPatnerItemId": 100000025164562,
+            "MPN": "26009571",
+            "links": [
+              {
+                "rel": "self",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3B12",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "canonical",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs/00030000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EF9FDD0000000EACED0005770800005AF311FA3B12",
+                "name": "MPNs",
+                "kind": "item"
+              },
+              {
+                "rel": "parent",
+                "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087",
+                "name": "subinventoryItems",
+                "kind": "item"
+              }
+            ]
+          }
+        ],
+        "count": 3,
+        "hasMore": false,
+        "limit": 3,
+        "offset": 0,
+        "links": [
+          {
+            "rel": "self",
+            "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs",
+            "name": "MPNs",
+            "kind": "collection"
+          }
+        ]
+      },
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087",
+          "name": "subinventoryItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems/100000024469469_300000012931087/child/subinventoryItemsDFF",
+          "name": "subinventoryItemsDFF",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 3,
+  "hasMore": true,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/subinventoryItems",
+      "name": "subinventoryItems",
+      "kind": "collection"
+    }
+  ]
+}

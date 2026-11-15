@@ -1,0 +1,83 @@
+{
+  "items": [
+    {
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "OrganizationName": "Pace Northwest Division",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterCode": "NWD",
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "InactiveDate": null,
+      "WorkAreaId": 300000012942817,
+      "HcmDepartmentId": null,
+      "HcmDepartmentMeaning": null,
+      "WorkAreaCode": "NWD",
+      "WorkAreaName": "NWD",
+      "WorkAreaDescription": "NWD",
+      "OverrideScheduleFlag": false,
+      "ResourceCount": 4,
+      "Status": "Active",
+      "ManualWIPMovementFlag": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917",
+          "name": "workCenters",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000278"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917",
+          "name": "workCenters",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917/child/WorkCenterDFF",
+          "name": "WorkCenterDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917/child/WorkCenterResource",
+          "name": "WorkCenterResource",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917/child/WorkCenterSubinventory",
+          "name": "WorkCenterSubinventory",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/300000012942917/child/productionCalendars",
+          "name": "productionCalendars",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters",
+      "name": "workCenters",
+      "kind": "collection"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/workCenters/action/viewResourceAvailabilityForCalendar",
+      "name": "viewResourceAvailabilityForCalendar",
+      "kind": "other"
+    }
+  ]
+}

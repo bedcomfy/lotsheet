@@ -1,0 +1,956 @@
+{
+  "items": [
+    {
+      "WoOperationId": 300000023544378,
+      "OperationName": "REPAIR  ENGINE AS NEEDED",
+      "OperationSequenceNumber": 10,
+      "OperationDescription": "REPAIR  ENGINE AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977130,
+      "StandardOperationCode": "0800",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  ENGINE AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544379,
+      "OperationName": "REPAIR  BODY AND FRAME AS NEEDED",
+      "OperationSequenceNumber": 20,
+      "OperationDescription": "REPAIR  BODY AND FRAME AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977182,
+      "StandardOperationCode": "1500",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  BODY AND FRAME AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544380,
+      "OperationName": "REPAIR  MISC. ACCESSORIES AS NEEDED",
+      "OperationSequenceNumber": 30,
+      "OperationDescription": "REPAIR  MISC. ACCESSORIES AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977316,
+      "StandardOperationCode": "2900",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  MISC. ACCESSORIES AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544382,
+      "OperationName": "REPAIR  ELECTRICAL AND LIGHTING AS NEEDED",
+      "OperationSequenceNumber": 40,
+      "OperationDescription": "REPAIR  ELECTRICAL AND LIGHTING AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977112,
+      "StandardOperationCode": "0700",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  ELECTRICAL AND LIGHTING AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544383,
+      "OperationName": "REPAIR  EXHAUST SYSTEM AS NEEDED",
+      "OperationSequenceNumber": 50,
+      "OperationDescription": "REPAIR  EXHAUST SYSTEM AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977149,
+      "StandardOperationCode": "1000",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  EXHAUST SYSTEM AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544383/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544384,
+      "OperationName": "ADD GLYCOL AS NEEDED",
+      "OperationSequenceNumber": 60,
+      "OperationDescription": "ADD GLYCOL AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977107,
+      "StandardOperationCode": "0609",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "ADD GLYCOL AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544384/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544385,
+      "OperationName": "REPAIR  FRONT AXLE AND SUSPENSION AS NEEDED",
+      "OperationSequenceNumber": 70,
+      "OperationDescription": "REPAIR  FRONT AXLE AND SUSPENSION AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977049,
+      "StandardOperationCode": "0100",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  FRONT AXLE AND SUSPENSION AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544385/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544386,
+      "OperationName": "REPAIR  GLAZING AS NEEDED",
+      "OperationSequenceNumber": 80,
+      "OperationDescription": "REPAIR  GLAZING AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977209,
+      "StandardOperationCode": "1700",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  GLAZING AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544386/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544387,
+      "OperationName": "REPAIR BELTS, TENSIONERS, PULLEYS AS NEEDED",
+      "OperationSequenceNumber": 90,
+      "OperationDescription": "REPAIR BELTS, TENSIONERS, PULLEYS AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977145,
+      "StandardOperationCode": "0815",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR BELTS, TENSIONERS, PULLEYS AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544387/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "WoOperationId": 300000023544389,
+      "OperationName": "REPAIR  AIR, HYDRAULIC LEAKS AS NEEDED",
+      "OperationSequenceNumber": 100,
+      "OperationDescription": "REPAIR  AIR, HYDRAULIC LEAKS AS NEEDED",
+      "OperationType": "IN_HOUSE",
+      "OperationTypeDescription": "In-house",
+      "OrganizationId": 300000004581674,
+      "WorkOrderNumber": "NWD-1676",
+      "WorkOrderId": 300000023544372,
+      "WorkCenterCode": "NWD",
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "CountPointOperationFlag": true,
+      "AutoTransactFlag": false,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "WorkDefinitionId": null,
+      "WdOperationId": null,
+      "LeadTimeUOM": null,
+      "SupplierName": null,
+      "SupplierId": null,
+      "SupplierSiteId": null,
+      "ShippingDocumentsFlag": null,
+      "StandardOperationId": 300000012977233,
+      "StandardOperationCode": "2008",
+      "VariableLeadTime": null,
+      "FixedLeadTime": null,
+      "WorkAreaId": 300000012942817,
+      "OSPItemId": null,
+      "OSPItemDescription": null,
+      "UnitOfMeasure": "Each",
+      "UOMCode": null,
+      "OSPItemNumber": null,
+      "SupplierSiteCode": null,
+      "StandardOperationName": "REPAIR  AIR, HYDRAULIC LEAKS AS NEEDED",
+      "ResequenceFlag": null,
+      "ExecutionSequence": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "OperationLongDescription": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389",
+          "name": "WorkOrderOperation",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389/child/WorkOrderOperationAttachments",
+          "name": "WorkOrderOperationAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389/child/WorkOrderOperationDFF",
+          "name": "WorkOrderOperationDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389/child/WorkOrderOperationMaterial",
+          "name": "WorkOrderOperationMaterial",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544389/child/WorkOrderOperationResource",
+          "name": "WorkOrderOperationResource",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 10,
+  "hasMore": false,
+  "limit": 100,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation",
+      "name": "WorkOrderOperation",
+      "kind": "collection"
+    }
+  ]
+}

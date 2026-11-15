@@ -1,0 +1,98 @@
+{
+  "items": [
+    {
+      "WoStatusHistoryId": 15590,
+      "OrganizationId": 300000004581674,
+      "WorkOrderId": 300000023544158,
+      "StatusChangeDate": "2026-11-13T22:19:01+00:00",
+      "FromStatusId": 10004,
+      "FromStatusCode": "ORA_RELEASED",
+      "FromSystemStatusCode": "RELEASED",
+      "FromStatusName": "Released",
+      "ToStatusId": 10002,
+      "ToStatusCode": "ORA_COMPLETED",
+      "ToSystemStatusCode": "COMPLETED",
+      "ToStatusName": "Completed",
+      "Reason": null,
+      "CreatedBy": "Edwin.Figueroa@Pacebus.com",
+      "CreationDate": "2026-11-13T22:19:27.023+00:00",
+      "LastUpdateDate": "2026-11-13T22:19:27.023+00:00",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory/00020000000EACED000577080000000000003CE60000000EACED00057708000110D932D6015E",
+          "name": "WorkOrderStatusHistory",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory/00020000000EACED000577080000000000003CE60000000EACED00057708000110D932D6015E",
+          "name": "WorkOrderStatusHistory",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        }
+      ]
+    },
+    {
+      "WoStatusHistoryId": 300000023544177,
+      "OrganizationId": 300000004581674,
+      "WorkOrderId": 300000023544158,
+      "StatusChangeDate": "2026-11-12T22:36:19.250+00:00",
+      "FromStatusId": 10005,
+      "FromStatusCode": "ORA_UNRELEASED",
+      "FromSystemStatusCode": "UNRELEASED",
+      "FromStatusName": "Unreleased",
+      "ToStatusId": 10004,
+      "ToStatusCode": "ORA_RELEASED",
+      "ToSystemStatusCode": "RELEASED",
+      "ToStatusName": "Released",
+      "Reason": null,
+      "CreatedBy": "Edwin.Figueroa@Pacebus.com",
+      "CreationDate": "2026-11-12T22:36:21.414+00:00",
+      "LastUpdateDate": "2026-11-12T22:36:21.414+00:00",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory/00020000000EACED00057708000110D932D601710000000EACED00057708000110D932D6015E",
+          "name": "WorkOrderStatusHistory",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory/00020000000EACED00057708000110D932D601710000000EACED00057708000110D932D6015E",
+          "name": "WorkOrderStatusHistory",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        }
+      ]
+    }
+  ],
+  "count": 2,
+  "hasMore": false,
+  "limit": 5,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory",
+      "name": "WorkOrderStatusHistory",
+      "kind": "collection"
+    }
+  ]
+}

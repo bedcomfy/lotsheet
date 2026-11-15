@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.58.0 - 2026-11-14
+
+- Save the complete available Northwest parts catalog in a dedicated database table, independent of Oracle token expiry. Preserve manufacturer/trade numbers, Oracle item IDs, descriptions and stockroom/locator references without storing on-hand balances.
+- Add a saved catalog browser with number/name/description/reference searches, location selection and filtering, ascending/descending sorting, pagination, and links to live charge history. Failed refreshes retain the previous complete catalog.
+- Capture credential-free Oracle response fixtures and field contracts for work orders, operations, materials, resources, labor instances, assets, meters and inventory. Add a read-only local fixture explorer for development without Oracle.
+- Verify saved-catalog reads with expired credentials, atomic snapshot replacement, nested manufacturer-number pagination, offline browser persistence, and phone/dark/long-content states.
+
 ## 0.57.5 - 2026-11-14
 
 - Replace the Parts bus dropdown with a typed bus-number filter. Accept buses absent from the results and show a specific no-history message after a complete read; blank shows all buses.

@@ -1,0 +1,627 @@
+[
+  {
+    "name": "work-orders",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders",
+    "query": {
+      "q": "OrganizationId=300000004581674 and (WorkOrderNumber='NWD-1670' or WorkOrderNumber='NWD-1676' or WorkOrderNumber='NWD-1693')",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:28:55.351Z",
+    "count": 3,
+    "hasMore": false
+  },
+  {
+    "name": "asset-6403",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets",
+    "query": {
+      "q": "AssetNumber='6403'",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:28:55.581Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "item-910090",
+    "path": "/fscmRestApi/resources/11.13.18.05/itemsV2",
+    "query": {
+      "q": "OrganizationId=300000004581674 and ItemNumber='910090'",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:28:56.501Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "material-history",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrderTransactionHistory",
+    "query": {
+      "q": "OrganizationId=300000004581674 and ComponentItemId=100000024478060 and (TransactionType='MATERIAL_ISSUE' or TransactionType='MATERIAL_RETURN')",
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:00.081Z",
+    "count": 5,
+    "hasMore": true
+  },
+  {
+    "name": "resource-history",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrderTransactionHistory",
+    "query": {
+      "q": "OrganizationId=300000004581674 and WorkOrderId=300000023544158 and TransactionType='RESOURCE_CHARGE'",
+      "limit": "10"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:02.607Z",
+    "count": 10,
+    "hasMore": false
+  },
+  {
+    "name": "locator",
+    "path": "/fscmRestApi/resources/11.13.18.05/locatorItems",
+    "query": {
+      "q": "OrganizationId=300000004581674",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:03.370Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "subinventory",
+    "path": "/fscmRestApi/resources/11.13.18.05/subinventoryItems",
+    "query": {
+      "q": "OrganizationId=300000004581674",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:03.563Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "onhand",
+    "path": "/fscmRestApi/resources/11.13.18.05/inventoryOnhandBalances",
+    "query": {
+      "q": "OrganizationId=300000004581674 and SummaryLevel='Locator'",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:07.200Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "work-order-ProjectDetailsDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/ProjectDetailsDFF",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:07.530Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-RouteAssets",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/RouteAssets",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:08.016Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-WorkOrderAsset",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderAsset",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:08.299Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-WorkOrderDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderDFF",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:08.575Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-WorkOrderOperation",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:08.979Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "operation-0-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:09.561Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "operation-0-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:09.980Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "operation-1-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544166/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:10.591Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "operation-1-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544166/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:10.857Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-documentReference",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/documentReference",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:11.101Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "asset-assetDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetDFF",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:11.512Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "asset-assetImageAttachments",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetImageAttachments",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:11.835Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "asset-assetQualifications",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetQualifications",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:12.141Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "asset-fixedAssetAssociations",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/fixedAssetAssociations",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:12.417Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "asset-meters",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/meters",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:12.733Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "asset-notes",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/notes",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:13.067Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "asset-partsListComponents",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/partsListComponents",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:13.652Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "asset-relationships",
+    "path": "/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:13.912Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "item-ItemDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemDFF",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:14.468Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "item-ItemGlobalDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemGlobalDFF",
+    "query": {
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:29:15.006Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "subinventory-numbers",
+    "path": "/fscmRestApi/resources/11.13.18.05/subinventoryItems",
+    "query": {
+      "q": "OrganizationId=300000004581674",
+      "limit": "3",
+      "expand": "MPNs,GTINs"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:51.279Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "operation-0-WorkOrderOperationResource-WorkOrderOperationResourceDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176/child/WorkOrderOperationResourceDFF",
+    "query": {
+      "limit": "10"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:51.574Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "operation-0-WorkOrderOperationResource-WorkOrderOperationResourceInstance",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176/child/WorkOrderOperationResourceInstance",
+    "query": {
+      "limit": "10"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:51.869Z",
+    "count": 2,
+    "hasMore": false
+  },
+  {
+    "name": "operation-1-WorkOrderOperationResource-WorkOrderOperationResourceDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544166/child/WorkOrderOperationResource/300000023544175/child/WorkOrderOperationResourceDFF",
+    "query": {
+      "limit": "10"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:52.261Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "operation-1-WorkOrderOperationResource-WorkOrderOperationResourceInstance",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544166/child/WorkOrderOperationResource/300000023544175/child/WorkOrderOperationResourceInstance",
+    "query": {
+      "limit": "10"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:52.552Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1670-operations",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation",
+    "query": {
+      "limit": "100"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:52.932Z",
+    "count": 5,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-operations",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation",
+    "query": {
+      "limit": "100"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:53.254Z",
+    "count": 10,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op10-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:53.561Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op10-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544378/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:53.812Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op20-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:54.120Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op20-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544379/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:54.423Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op30-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:54.686Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op30-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:54.989Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op40-WorkOrderOperationMaterial",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationMaterial",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:55.298Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1676-op40-WorkOrderOperationResource",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544382/child/WorkOrderOperationResource",
+    "query": {
+      "limit": "25"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:55.478Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "NWD-1693-operations",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544906/child/WorkOrderOperation",
+    "query": {
+      "limit": "100"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:55.746Z",
+    "count": 13,
+    "hasMore": false
+  },
+  {
+    "name": "unreleased-work-order",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders",
+    "query": {
+      "q": "OrganizationId=300000004581674 and WorkOrderStatus='UNRELEASED'",
+      "limit": "1"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:30:57.179Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "production-resource-mechanic",
+    "path": "/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508",
+    "query": {},
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:43.325Z"
+  },
+  {
+    "name": "resource-EquipmentInstance",
+    "path": "/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/EquipmentInstance",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:43.803Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "resource-LaborInstance",
+    "path": "/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/LaborInstance",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:44.137Z",
+    "count": 5,
+    "hasMore": true
+  },
+  {
+    "name": "resource-ProgramFileName",
+    "path": "/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/ProgramFileName",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:44.511Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "resource-ResourceDFF",
+    "path": "/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/ResourceDFF",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:44.902Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "work-centers",
+    "path": "/fscmRestApi/resources/11.13.18.05/workCenters",
+    "query": {
+      "q": "OrganizationId=300000004581674",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:46.210Z",
+    "count": 1,
+    "hasMore": false
+  },
+  {
+    "name": "standard-operations",
+    "path": "/fscmRestApi/resources/11.13.18.05/standardOperations",
+    "query": {
+      "q": "OrganizationId=300000004581674",
+      "limit": "3"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:47.750Z",
+    "count": 3,
+    "hasMore": true
+  },
+  {
+    "name": "work-order-WorkOrderStatusHistory",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderStatusHistory",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:48.053Z",
+    "count": 2,
+    "hasMore": false
+  },
+  {
+    "name": "work-order-attachments",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/attachments",
+    "query": {
+      "limit": "5"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:32:48.614Z",
+    "count": 0,
+    "hasMore": false
+  },
+  {
+    "name": "unreleased-by-status-code",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders",
+    "query": {
+      "q": "OrganizationId=300000004581674 and WorkOrderStatusCode='ORA_UNRELEASED'",
+      "limit": "1"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:36:29.173Z",
+    "count": 1,
+    "hasMore": true
+  },
+  {
+    "name": "NWD-1676-expanded",
+    "path": "/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372",
+    "query": {
+      "expand": "WorkOrderOperation.WorkOrderOperationResource.WorkOrderOperationResourceInstance,WorkOrderOperation.WorkOrderOperationMaterial,WorkOrderAsset,WorkOrderDFF",
+      "onlyData": "true"
+    },
+    "status": 200,
+    "fetchedAt": "2026-11-15T03:38:14.342Z"
+  }
+]

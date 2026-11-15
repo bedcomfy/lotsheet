@@ -1,0 +1,231 @@
+{
+  "items": [
+    {
+      "ActiveEndDate": null,
+      "AssetId": 100000024726932,
+      "AssetNumber": "6403",
+      "BOMExplosionFlag": null,
+      "CompetitorAssetFlag": false,
+      "CreationDate": "2026-10-06T22:31:01+00:00",
+      "CurrentLocationContextCode": "ORA_WORK_CENTER",
+      "CurrentLocationId": null,
+      "CustomerAccountId": null,
+      "CustomerAccountSiteId": null,
+      "CustomerAccountSiteUseId": null,
+      "CustomerAssetEndDate": null,
+      "CustomerAssetStartDate": null,
+      "CustomerBillingPartyId": null,
+      "CustomerBillingPartyName": null,
+      "CustomerBillingPartySiteId": null,
+      "CustomerId": null,
+      "CustomerSiteId": null,
+      "CustomerSitePartyId": null,
+      "Description": "Manufacturer ELDORADO NATIONAL, model, Series Enc.",
+      "DfltWoSubTypeCode": null,
+      "DfltWoTypeCode": null,
+      "FulfillLineId": null,
+      "InServiceDate": null,
+      "InstalledDate": null,
+      "LocatorId": null,
+      "IotEnabledFlag": false,
+      "ItemId": 100000024477832,
+      "OperatingOrganizationId": 300000004581674,
+      "ItemRevision": null,
+      "LastUpdateDate": "2026-10-15T04:36:27+00:00",
+      "LocationOrganizationId": 300000004581674,
+      "LotNumber": null,
+      "MaintainableFlag": true,
+      "NewWoAllowedFlag": true,
+      "PurchaseDate": null,
+      "Quantity": 1,
+      "RegistrationDate": null,
+      "SalesOrderId": null,
+      "SalesOrderLineId": null,
+      "SalesOrderLineNumber": null,
+      "SalesOrderNumber": null,
+      "SalesOrderSourceSystem": null,
+      "SalesOrderSourceSystemType": null,
+      "SerialNumber": "1N9APACL7EC084285",
+      "ShipmentDate": null,
+      "SoldByBusinessUnitId": null,
+      "SplitFromAssetId": null,
+      "SubinventoryName": null,
+      "SubinventoryCode": null,
+      "UOMCode": "EA",
+      "UnitOfMeasure": "Each",
+      "UpdateContractFlag": null,
+      "WorkCenterId": 300000012942917,
+      "WorkCenterName": "NWD",
+      "CustomerSitePartyName": null,
+      "CustomerSiteName": null,
+      "CustomerAccountName": null,
+      "CustomerAccountSiteName": null,
+      "OperatingOrganizationCode": "NWD",
+      "ManageAssetPrivilege": null,
+      "ItemNumber": "ENC, AXESS, 2014",
+      "CustomerName": null,
+      "CustomerNumber": null,
+      "ItemRequiredFlag": false,
+      "Country": null,
+      "City": null,
+      "PostalCode": null,
+      "State": null,
+      "Address1": null,
+      "Address2": null,
+      "Address3": null,
+      "Address4": null,
+      "Province": null,
+      "County": null,
+      "CurrentLocationContext": "Work Center",
+      "LocatorName": null,
+      "CurrentLocationName": "NWD:NWD",
+      "ContactId": null,
+      "ContactName": null,
+      "ContactNumber": null,
+      "ParentAssetId": null,
+      "StructureActionCode": null,
+      "WorkCenterCode": "NWD",
+      "CustomerAccountNumber": null,
+      "CustomerAccountSiteNumber": null,
+      "SoldByBusinessUnitName": null,
+      "LocationOrganizationCode": "NWD",
+      "CustomerSiteNumber": null,
+      "CustomerSitePartyNumber": null,
+      "CustomerAccountSiteUseCode": null,
+      "ItemCustomerSelfServiceFlag": false,
+      "ItemServiceRequestEnabledCode": null,
+      "ItemDescription": "Manufacturer ELDORADO NATIONAL, model, Series Enc. Axess, Year 2014",
+      "ItemLongDescription": null,
+      "SecondaryQuantity": null,
+      "SecondaryUOMCode": null,
+      "CustomerPartyType": null,
+      "ReturnSourceOrderNumber": null,
+      "ReturnOrderNumber": null,
+      "ReturnOrderFulfillLineId": null,
+      "ReturnOrderId": null,
+      "ReturnOrderLineId": null,
+      "OperatingOrganizationName": "Pace Northwest Division",
+      "CurrentLocationNameFormatted": null,
+      "WorkAreaName": "NWD",
+      "ProjectId": null,
+      "TaskId": null,
+      "ProjectNumber": null,
+      "TaskNumber": null,
+      "CountryOfOriginCode": null,
+      "CountryOfOriginName": null,
+      "SecondaryUOMName": null,
+      "ParentAssetNumber": null,
+      "DfltWoTypeMeaning": null,
+      "DfltWoSubTypeMeaning": null,
+      "AssetItemUpdateAllowedFlag": true,
+      "RequestId": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetDFF",
+          "name": "assetDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetImageAttachments",
+          "name": "assetImageAttachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetQualifications",
+          "name": "assetQualifications",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/attachments",
+          "name": "attachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/charges",
+          "name": "charges",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/fixedAssetAssociations",
+          "name": "fixedAssetAssociations",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/meters",
+          "name": "meters",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/notes",
+          "name": "notes",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/partsListComponents",
+          "name": "partsListComponents",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships",
+          "name": "relationships",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets",
+      "name": "installedBaseAssets",
+      "kind": "collection"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/action/exportAssets",
+      "name": "exportAssets",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/action/copyAssetObjects",
+      "name": "copyAssetObjects",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/action/splitAssetRecords",
+      "name": "splitAssetRecords",
+      "kind": "other"
+    }
+  ]
+}

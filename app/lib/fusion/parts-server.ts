@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { FUSION_ORIGIN } from "./config";
 import { FusionFailure, tokenExpiry } from "./server";
+import type { CatalogSource, CatalogPart } from "./catalog";
 import {
   NWD_ORGANIZATION_ID, NWD_ORGANIZATION_CODE, NWD_ORGANIZATION_NAME, PARTS_MAX_OFFSET, PARTS_PAGE_SIZE,
   type IndexKind, type Part, type PartBalance, type PartCharge, type PartLocation, type PartsPage,
@@ -174,6 +175,34 @@ export async function readPartsIndex(token: string, kind: IndexKind, offset: num
       quantity: number(row.PrimaryQuantity), unit: text(row.PrimaryUnitOfMeasure), unitCode: text(row.PrimaryUOMCode), source: "onhand",
     } satisfies PartBalance;
   }) };
+}
+/** Manufacturer and trade numbers for every NWD stockroom item, with child paging. */
+export async function readCatalogNumbers(token: string, offset: number) {
+  const page = await collection(token, "subinventoryItems", new URLSearchParams({ q: `OrganizationId=${NWD_ORGANIZATION_ID}`,
+    expand: "MPNs,GTINs", onlyData: "true", limit: String(PARTS_PAGE_SIZE), offset: String(offset), orderBy: "InventoryItemId:asc,SecondaryInventory:asc" }), offset);
+  const items: NonNullable<CatalogSource["references"]> = [];
+  for (const row of page.items) {
+    const parent = text(row.SubinventoryItemId, true)!;
+    if (!/^\d+_\d+$/.test(parent)) throw new FusionFailure("FORMAT", 502);
+    const numbers: CatalogPart["numbers"] = [];
+    for (const kind of ["MPNs", "GTINs"] as const) {
+      let child = row[kind] as { items: Row[]; hasMore: boolean; offset?: number };
+      let childOffset = 0;
+      while (true) {
+        if (!child || !Array.isArray(child.items) || typeof child.hasMore !== "boolean" || (child.hasMore && !child.items.length) || (child.offset != null && child.offset !== childOffset)) throw new FusionFailure("FORMAT", 502);
+        for (const value of child.items) {
+          const result = text(kind === "MPNs" ? value.MPN : value.GTIN, true)!;
+          if (!numbers.some(n => n.type === (kind === "MPNs" ? "MPN" : "GTIN") && n.value === result)) numbers.push({ type: kind === "MPNs" ? "MPN" : "GTIN", value: result });
+        }
+        if (!child.hasMore) break;
+        childOffset += child.items.length;
+        if (childOffset > 10000) throw new FusionFailure("FORMAT", 502);
+        child = JSON.parse(await oracle(token, PREFIX + "subinventoryItems/" + parent + "/child/" + kind + "?" + new URLSearchParams({ onlyData: "true", limit: "250", offset: String(childOffset) })));
+      }
+    }
+    items.push({ partNumber: text(row.ItemNumber, true)!, itemId: id(row.InventoryItemId)!, unit: text(row.MinmaxQuantityUOMMeasure), numbers });
+  }
+  return { ...page, items };
 }
 export async function readPartHistory(token: string, itemId: string, bus: string, offset: number): Promise<PartsPage<PartCharge>> {
   if (itemId.startsWith("part:")) {

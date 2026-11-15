@@ -1,0 +1,217 @@
+{
+  "items": [
+    {
+      "InventoryItemId": 100000024476463,
+      "LocatorItemId": 300000021950218,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "LocatorId": 300000012934630,
+      "LocatorName": "25-ES-5",
+      "LocatorDescription": null,
+      "SubinventoryCode": "Northwest",
+      "ItemNumber": "250563",
+      "SubinventoryId": 300000012931087,
+      "StructureInstanceNumber": 9003,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "CountRequired": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "COVER:WHEELCHAIR RAMP",
+      "ItemPrimaryImageURL": null,
+      "LastReplenishedDate": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "CreationDate": "2026-10-13T20:59:13.298+00:00",
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-13T20:59:15.827+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021950218",
+          "name": "locatorItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021950218",
+          "name": "locatorItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021950218/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021950218/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021950218/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "InventoryItemId": 100000024470103,
+      "LocatorItemId": 300000021948412,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "LocatorId": 300000012935891,
+      "LocatorName": "08-C-5",
+      "LocatorDescription": null,
+      "SubinventoryCode": "Northwest",
+      "ItemNumber": "081146",
+      "SubinventoryId": 300000012931087,
+      "StructureInstanceNumber": 9003,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "CountRequired": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "BRACKET:IDLER MOUNTING AY",
+      "ItemPrimaryImageURL": null,
+      "LastReplenishedDate": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "CreationDate": "2026-10-13T20:58:46.126+00:00",
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-13T20:58:49.600+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021948412",
+          "name": "locatorItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021948412",
+          "name": "locatorItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021948412/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021948412/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021948412/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        }
+      ]
+    },
+    {
+      "InventoryItemId": 100000024469259,
+      "LocatorItemId": 300000021769388,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "LocatorId": 300000012935891,
+      "LocatorName": "08-C-5",
+      "LocatorDescription": null,
+      "SubinventoryCode": "Northwest",
+      "ItemNumber": "0810080",
+      "SubinventoryId": 300000012931087,
+      "StructureInstanceNumber": 9003,
+      "ParLevel": null,
+      "ParMaximumQuantity": null,
+      "ParUOMCode": null,
+      "ParUOMMeasure": null,
+      "CountRequired": null,
+      "DefaultCountTypeCode": null,
+      "DefaultCountType": null,
+      "QuantityCountTolerance": null,
+      "ItemDescription": "HOSE:FLEXIBLE COOLANT DRAIN FROM TURBO HOSE",
+      "ItemPrimaryImageURL": null,
+      "LastReplenishedDate": null,
+      "FullLPNFlag": null,
+      "SubinventoryName": "Northwest",
+      "SubinventoryDescription": null,
+      "CreationDate": "2026-10-10T00:19:38.531+00:00",
+      "CreatedBy": "MYTHICS",
+      "LastUpdateDate": "2026-10-10T00:19:42.001+00:00",
+      "LastUpdatedBy": "MYTHICS",
+      "NumberOfBins": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021769388",
+          "name": "locatorItems",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021769388",
+          "name": "locatorItems",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021769388/child/GTINs",
+          "name": "GTINs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021769388/child/MPNs",
+          "name": "MPNs",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems/300000021769388/child/onhandQuantity",
+          "name": "onhandQuantity",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 3,
+  "hasMore": true,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/locatorItems",
+      "name": "locatorItems",
+      "kind": "collection"
+    }
+  ]
+}

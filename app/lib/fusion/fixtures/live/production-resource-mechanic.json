@@ -1,0 +1,77 @@
+{
+  "OrganizationId": 300000004581674,
+  "OrganizationCode": "NWD",
+  "OrganizationName": "Pace Northwest Division",
+  "ResourceId": 300000012943508,
+  "ResourceName": "Mechanic",
+  "ResourceDescription": "Mechanic\n",
+  "ResourceCode": "Mechanic",
+  "ResourceType": "LABOR",
+  "ResourceTypeMeaning": "Labor",
+  "UOMCode": "HR",
+  "UnitOfMeasure": "Hours",
+  "ResourceClassCode": null,
+  "ResourceClassMeaning": null,
+  "CostedFlag": true,
+  "InactiveDate": null,
+  "DefaultExpenditureTypeId": null,
+  "DefaultExpenditureTypeName": null,
+  "AutomationEquipmentFlag": false,
+  "ResourceInstancesCount": 36,
+  "Status": "Active",
+  "HcmSchedulingGroupCode": null,
+  "HcmSchedulingGroupName": null,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508",
+      "name": "productionResources",
+      "kind": "item",
+      "properties": {
+        "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+      }
+    },
+    {
+      "rel": "canonical",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508",
+      "name": "productionResources",
+      "kind": "item"
+    },
+    {
+      "rel": "lov",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/lov/ExpenditureTypeSimpleVA",
+      "name": "ExpenditureTypeSimpleVA",
+      "kind": "collection"
+    },
+    {
+      "rel": "lov",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/lov/OrganizationVA",
+      "name": "OrganizationVA",
+      "kind": "collection"
+    },
+    {
+      "rel": "child",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/EquipmentInstance",
+      "name": "EquipmentInstance",
+      "kind": "collection"
+    },
+    {
+      "rel": "child",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/LaborInstance",
+      "name": "LaborInstance",
+      "kind": "collection"
+    },
+    {
+      "rel": "child",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/ProgramFileName",
+      "name": "ProgramFileName",
+      "kind": "collection"
+    },
+    {
+      "rel": "child",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/productionResources/300000012943508/child/ResourceDFF",
+      "name": "ResourceDFF",
+      "kind": "collection"
+    }
+  ]
+}

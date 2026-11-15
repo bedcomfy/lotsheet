@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "WoOperationResourceId": 300000023544176,
+      "__FLEX_Context": null,
+      "__FLEX_Context_DisplayValue": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176/child/WorkOrderOperationResourceDFF/300000023544176",
+          "name": "WorkOrderOperationResourceDFF",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000278"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176/child/WorkOrderOperationResourceDFF/300000023544176",
+          "name": "WorkOrderOperationResourceDFF",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176",
+          "name": "WorkOrderOperationResource",
+          "kind": "item"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 10,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/WorkOrderOperation/300000023544165/child/WorkOrderOperationResource/300000023544176/child/WorkOrderOperationResourceDFF",
+      "name": "WorkOrderOperationResourceDFF",
+      "kind": "collection"
+    }
+  ]
+}

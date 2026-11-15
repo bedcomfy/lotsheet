@@ -14,6 +14,7 @@ import { browserPartsCache } from "../lib/fusion/parts-cache";
 import { balanceTotal, findParts, indexIsComplete, partBalances, partLocations, PARTS_CACHE_AGE, type Part, type PartCharge, type PartsIndex } from "../lib/fusion/parts";
 import styles from "./FusionPartsPage.module.css";
 import { FusionExpiryCountdown } from "./FusionExpiryCountdown";
+import SavedPartsCatalog from "./SavedPartsCatalog";
 
 const time = (timestamp: number | null) => timestamp ? new Date(timestamp).toLocaleString() : "Not yet read";
 const quantity = (value: number | null) => value === null ? "Unknown" : value.toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -22,8 +23,9 @@ const STAGES = [ ["catalog", "Parts", "parts"], ["locations", "Locator assignmen
 
 export interface FusionPartsViewProps {
   state: PartsSnapshot; onRefresh: () => void; onSelect: (id: string | null) => void; onConnect: () => void;
+  savedCatalog?: React.ReactNode;
 }
-export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: FusionPartsViewProps) {
+export function FusionPartsView({ state, onRefresh, onSelect, onConnect, savedCatalog }: FusionPartsViewProps) {
   const [search, setSearch] = useState("");
   const [bus, setBus] = useState("");
   const [returns, setReturns] = useState(true);
@@ -51,10 +53,11 @@ export function FusionPartsView({ state, onRefresh, onSelect, onConnect }: Fusio
       </ToolbarGroup>
       {index && <FusionExpiryCountdown expiresAt={index.expiresAt} />}
     </Toolbar>
+    {savedCatalog}
     {state.error && <p role="alert" className={styles.error}>{state.error}</p>}
     {index?.catalogSource === "buyers-report" && <p className={styles.hint}>Part names and numbers come from Oracle’s Northwest inventory report. Catalog units and item status are unavailable in this report. Charge history is read live for the selected part.</p>}
     {!index ? <EmptyState kind={state.status === "checking" ? "loading" : state.status === "error" ? "error" : "empty"}
-      title={state.status === "checking" ? "Checking Northwest access" : state.status === "error" ? "Northwest catalog could not be read" : "Connect to Oracle Fusion"}
+      title={state.status === "checking" ? "Checking Northwest access" : state.status === "error" ? "Northwest catalog could not be read" : "Connect to Oracle for live stock and charges"}
       description={state.status === "checking" ? "Validating your saved connection before loading parts." : state.status === "error" ? "Saved Oracle access and catalog access are separate checks. The error above identifies the failed read; try Refresh index to retry." : "Use your Connect Lotsheet favorite in your signed-in Fusion browser, then open Parts here."}
       action={state.status !== "checking" ? <Button variant="primary" onPress={onConnect}>Open Oracle connection</Button> : undefined} /> : <>
       <Panel title="Northwest parts index" description={complete ? "All pages returned by Oracle have been indexed for the current connection." : "Search becomes available as parts load. Results remain partial until every section finishes."}
@@ -128,7 +131,7 @@ function PartStock({ index, part }: { index: PartsIndex; part: Part }) {
   const rows = [...balances.map(row => ({ key: row.key, location: row.locator, room: row.subinventory, value: quantity(row.quantity), unit: row.unit || row.unitCode || "Unit not supplied", type: "Stock balance" })),
     ...assigned.filter(row => !balances.some(b => b.subinventory === row.subinventory && (b.locator === row.locator || row.locator === null)))
       .map(row => ({ key: row.key, location: row.locator, room: row.subinventory, value: "Unknown", unit: "No balance returned", type: "Assigned location" }))];
-  return <Panel title={`${part.number} · ${part.description || "Part details"}`} description={`Catalog unit: ${part.unit || part.unitCode || "not supplied"} · Status: ${part.status || "not supplied"}`}
+  return <Panel id="fusion-live-part" title={`${part.number} · ${part.description || "Part details"}`} description={`Catalog unit: ${part.unit || part.unitCode || "not supplied"} · Status: ${part.status || "not supplied"}`}
     actions={total ? <StatusBadge>{quantity(total.quantity)} {total.unit} on hand</StatusBadge> : undefined}>
     {rows.length ? <DataTableFrame tabIndex={0} role="region" aria-label="Northwest stock and locations">
       <table className={styles.table}><caption className={styles.srOnly}>Northwest stock and locations</caption>
@@ -151,6 +154,9 @@ export default function FusionPartsPage() {
     window.addEventListener("focus", focus);
     return () => { window.removeEventListener("focus", focus); reader.dispose(); client.current = null; };
   }, []);
-  return <FusionPartsView state={state} onRefresh={() => void client.current?.connect(true)}
+  return <FusionPartsView state={state} savedCatalog={<SavedPartsCatalog connected={state.status === "connected"} onHistory={state.index?.progress.catalog.status === "complete" ? number => {
+      const part = state.index?.parts.find(p => p.number === number);
+      if (part) { void client.current?.selectPart(part.id); requestAnimationFrame(() => document.getElementById("fusion-live-part")?.scrollIntoView({ behavior: "smooth", block: "start" })); }
+    } : undefined} />} onRefresh={() => void client.current?.connect(true)}
     onSelect={id => void client.current?.selectPart(id)} onConnect={() => router.push("/fusion")} />;
 }

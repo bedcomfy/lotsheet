@@ -1,5 +1,22 @@
 # Northwest parts and charge history
 
+## Permanent catalog in 0.58.0
+
+The page now includes a database-backed **Saved Northwest catalog** above its live
+stock/history reader. It remains available after Oracle disconnects or expires,
+on any Lotsheet device. The saved catalog includes descriptions, derived names,
+part numbers, available Oracle item IDs, manufacturer/trade numbers, and all
+returned nonempty NWD stockroom/locator references. It deliberately excludes
+on-hand quantities and transaction history. Search, location filters and sorting
+work across the full saved catalog, independent of display pagination.
+
+`GET /api/fusion/catalog` reads saved business data without Oracle authentication.
+`POST /api/fusion/catalog` refreshes from fixed NWD sources using valid Oracle
+access; complete verified results replace the previous snapshot atomically.
+The connected-browser lifecycle below continues to apply to **live** balances and
+history, not this permanent catalog. See [the offline development kit](oracle-offline-development.md)
+for source coverage, capture counts, fixtures, response shapes and limitations.
+
 The Parts page (`/fusion/parts`) lets a connected Lotsheet user search an NWD part number or multiple words from its description, inspect stock and assigned locations, and read the work orders where that component was actually issued or returned. The bus filter operates on all material entries loaded for the selected part. Repeated entries on one work order remain separate; the summary counts distinct work orders with issues. Returns are labeled and can be hidden. Quantities are displayed as Oracle returns them, without a synthetic net-consumption calculation.
 
 ## Scope and authentication

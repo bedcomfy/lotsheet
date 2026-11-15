@@ -1,0 +1,109 @@
+{
+  "items": [
+    {
+      "RelationshipId": 112874,
+      "AssetId": 100000024717607,
+      "SerialNumber": "10-61718",
+      "ItemNumber": "RADIO-DATA",
+      "AssetNumber": null,
+      "LogicalObjectId": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112874",
+          "name": "relationships",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112874",
+          "name": "relationships",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        }
+      ]
+    },
+    {
+      "RelationshipId": 112790,
+      "AssetId": 100000024727579,
+      "SerialNumber": "10-39510",
+      "ItemNumber": "MDT-TRANSITMASTER",
+      "AssetNumber": null,
+      "LogicalObjectId": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112790",
+          "name": "relationships",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112790",
+          "name": "relationships",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        }
+      ]
+    },
+    {
+      "RelationshipId": 112792,
+      "AssetId": 100000024727529,
+      "SerialNumber": "10-43114",
+      "ItemNumber": "IVLU-PROXIM",
+      "AssetNumber": null,
+      "LogicalObjectId": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112792",
+          "name": "relationships",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships/112792",
+          "name": "relationships",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        }
+      ]
+    }
+  ],
+  "count": 3,
+  "hasMore": true,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/relationships",
+      "name": "relationships",
+      "kind": "collection"
+    }
+  ]
+}

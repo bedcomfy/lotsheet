@@ -1,0 +1,15 @@
+{
+  "items": [],
+  "count": 0,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544158/child/documentReference",
+      "name": "documentReference",
+      "kind": "collection"
+    }
+  ]
+}

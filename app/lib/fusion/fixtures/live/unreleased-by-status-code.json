@@ -1,0 +1,231 @@
+{
+  "items": [
+    {
+      "WorkOrderNumber": "NWD-1081",
+      "WorkOrderId": 300000023055055,
+      "WorkOrderDescription": null,
+      "WorkOrderLongDescription": null,
+      "OrganizationCode": "NWD",
+      "OrganizationId": 300000004581674,
+      "ItemNumber": "ENC AXESS 2016",
+      "ItemDescription": "Manufacturer ELDORADO NATIONAL CORPORATION, Series N/A, Year 2016",
+      "InventoryItemId": 100000024477807,
+      "PlannedStartQuantity": 1,
+      "UOMCode": "EA",
+      "UnitOfMeasure": "Each",
+      "AssetNumber": "6561",
+      "AssetDescription": "Manufacturer ELDORADO NATIONAL CORPORATION, Series N/A, Year 2016",
+      "SerialNumber": "1N9APACL0GC0844261",
+      "LotNumber": null,
+      "WoAssetId": 300000023055056,
+      "WorkOrderTypeCode": "CORRECTIVE",
+      "WorkOrderType": "Corrective",
+      "WorkOrderSubTypeCode": "ORA_PLANNED",
+      "WorkOrderSubType": "Planned",
+      "MntWorkDefinitionName": null,
+      "MntWorkDefinitionCode": null,
+      "MntWorkDefinitionDescription": null,
+      "WorkDefinitionId": null,
+      "WorkDefinitionVersionId": null,
+      "WorkDefinitionVersion": null,
+      "WorkDefinitionAsOfDateMnt": null,
+      "MaintenanceProgramId": null,
+      "MaintenanceProgramName": null,
+      "MaintenanceProgramCode": null,
+      "MaintenanceProgramDescription": null,
+      "WorkOrderStatusCode": "ORA_UNRELEASED",
+      "WorkOrderStatus": "Unreleased",
+      "WorkOrderStatusId": 10005,
+      "Status": "SUCCESS",
+      "PlannedStartDate": "2026-11-03T11:38:00+00:00",
+      "PlannedCompletionDate": "2026-11-03T11:38:00+00:00",
+      "ActualStartDate": null,
+      "ActualCompletionDate": null,
+      "ReleasedDate": null,
+      "ClosedDate": null,
+      "WorkOrderPriority": null,
+      "SourceSystemId": null,
+      "SourceSystemCode": null,
+      "SourceSystemType": null,
+      "SourceHeaderReference": null,
+      "SourceHeaderReferenceId": null,
+      "SourceLineReference": null,
+      "SourceLineReferenceId": null,
+      "WorkMethodCode": "MAINTENANCE",
+      "WdMntNameId": null,
+      "CanceledReason": null,
+      "AssetId": 100000024726706,
+      "WorkOrderAssetId": 100000024726706,
+      "PjcProjectNumber": null,
+      "PjcTaskNumber": null,
+      "ExplosionFlag": null,
+      "ResequenceFlag": false,
+      "SchedulingMethod": "DEFAULT_SCHEDULER",
+      "SchedulingDescription": "Default scheduling",
+      "FirmPlannedFlag": false,
+      "WarrantyRepairFlag": false,
+      "MatchToTransactionCodeFlag": null,
+      "PrimaryReasonForRepair": null,
+      "PrimaryReasonForRepairCode": null,
+      "AllowMultipleAssetsFlag": false,
+      "AllowCompletionToInventoryFlag": false,
+      "AllowOutOfSequenceOperationCompletionFlag": false,
+      "IncludeInPlanningFlag": false,
+      "TargetItemId": null,
+      "TargetItemNumber": null,
+      "TargetItemDescription": null,
+      "CompletionSubinventoryName": null,
+      "CompletionSubinventoryCode": null,
+      "CompletionLocator": null,
+      "CompletionLocatorId": null,
+      "DefaultRejectionSubinventoryName": null,
+      "DefaultRejectionSubinventoryCode": null,
+      "DefaultRejectionLocator": null,
+      "DefaultRejectionLocatorId": null,
+      "LocatorControlFlag": true,
+      "LastCountPointOperationSequence": null,
+      "TransformWorkOrderFlag": false,
+      "ForecastDate": null,
+      "CanceledDate": null,
+      "DefaultSupplyTypeCode": "1",
+      "DefaultSupplyType": "Push",
+      "SystemStatusCode": "UNRELEASED",
+      "SystemStatus": "Unreleased",
+      "RouteFlag": null,
+      "AssetRouteId": null,
+      "AssetRouteCode": null,
+      "AssetRouteName": null,
+      "AssetRouteDescription": null,
+      "RouteCompletionCode": null,
+      "RouteSkipAllowedFlag": null,
+      "HCMSchedulerEnabledFlag": false,
+      "GroupName": null,
+      "GroupCode": null,
+      "GroupDescription": null,
+      "WoGroupId": null,
+      "SignatureEnableFlag": "false",
+      "MntAssignmentFirmFlag": false,
+      "MntAssignmentStatusCode": null,
+      "MntAssignmentStatus": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055",
+          "name": "maintenanceWorkOrders",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055",
+          "name": "maintenanceWorkOrders",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/ProjectDetailsDFF",
+          "name": "ProjectDetailsDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/RouteAssets",
+          "name": "RouteAssets",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/WorkOrderAsset",
+          "name": "WorkOrderAsset",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/WorkOrderDFF",
+          "name": "WorkOrderDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/WorkOrderOperation",
+          "name": "WorkOrderOperation",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/WorkOrderStatusHistory",
+          "name": "WorkOrderStatusHistory",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/attachments",
+          "name": "attachments",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/child/documentReference",
+          "name": "documentReference",
+          "kind": "collection"
+        },
+        {
+          "rel": "action",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/action/generateRepairSummaryPromptParams",
+          "name": "generateRepairSummaryPromptParams",
+          "kind": "other"
+        },
+        {
+          "rel": "action",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023055055/action/generateRepairSuggestion",
+          "name": "generateRepairSuggestion",
+          "kind": "other"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": true,
+  "limit": 1,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders",
+      "name": "maintenanceWorkOrders",
+      "kind": "collection"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/midpointRescheduleWorkOrderOperation",
+      "name": "midpointRescheduleWorkOrderOperation",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/createConditionBasedWorkOrders",
+      "name": "createConditionBasedWorkOrders",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/resequenceAsNextOperation",
+      "name": "resequenceAsNextOperation",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/copyWorkOrder",
+      "name": "copyWorkOrder",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/manageResourceAssignment",
+      "name": "manageResourceAssignment",
+      "kind": "other"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+.filters { display: grid; grid-template-columns: minmax(12rem,2fr) repeat(3,minmax(10rem,1fr)) auto; gap: var(--ui-space-3); align-items: end; margin-block: var(--ui-space-4); }
+.hint { color: var(--ui-text-muted); font-size: var(--ui-font-size-xs); line-height: var(--ui-line-height-body); }
+.error { color: var(--ui-danger); overflow-wrap: anywhere; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--ui-font-size-sm); color: var(--ui-text); }
+.table th { text-align: left; background: var(--ui-surface-raised); }
+.table th, .table td { padding: var(--ui-space-3); border-bottom: 1px solid var(--ui-border); vertical-align: top; overflow-wrap: anywhere; }
+.table td { min-width: 10rem; max-width: 30rem; }
+.table small { display: block; color: var(--ui-text-muted); font-size: var(--ui-font-size-xs); margin-block: var(--ui-space-1); }
+.table td > div + div { margin-top: var(--ui-space-2); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+@media (max-width: 1100px) { .filters { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) { .filters { grid-template-columns: minmax(0,1fr); } .table td { min-width: 9rem; } }

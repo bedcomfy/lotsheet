@@ -1,0 +1,77 @@
+{
+  "items": [
+    {
+      "AssetId": 100000024726932,
+      "__FLEX_Context": "Vehicle Information",
+      "__FLEX_Context_DisplayValue": "Vehicle Information",
+      "inServiceDate": "2014-10-08",
+      "retiredDate": null,
+      "busStatus": null,
+      "length": null,
+      "width": null,
+      "height": null,
+      "wheelbase": null,
+      "turnRadius": null,
+      "weight": null,
+      "axleWeightGvaw": null,
+      "seatCapacity": null,
+      "fuelType": null,
+      "fuelCapacity": null,
+      "maximumRange": null,
+      "oilCapacity": null,
+      "engineMfgModelSerial": null,
+      "licensePlateNumber": "200248",
+      "videoCamera": null,
+      "transmissionManufacturer": null,
+      "transmissionModelType": null,
+      "transmissionSerialNumber": null,
+      "differentialManufacturer": null,
+      "differentialModel": null,
+      "differentialSerialNumber": null,
+      "wheelChairRampManufacturer": null,
+      "wheelChairRampModel": null,
+      "wheelChairRampSerialNumber": null,
+      "hvacManufacturer": null,
+      "hvacModel": null,
+      "hvacSerialNumber": null,
+      "assetCategory": "FLEET.BUS",
+      "assetCriticality": "Normal",
+      "assetType": "Capital",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetDFF/100000024726932",
+          "name": "assetDFF",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetDFF/100000024726932",
+          "name": "assetDFF",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932",
+          "name": "installedBaseAssets",
+          "kind": "item"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetDFF",
+      "name": "assetDFF",
+      "kind": "collection"
+    }
+  ]
+}

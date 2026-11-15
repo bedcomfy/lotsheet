@@ -1,0 +1,1015 @@
+{
+  "items": [
+    {
+      "ItemId": 100000024478060,
+      "OrganizationId": 300000004581674,
+      "OrganizationCode": "NWD",
+      "ItemClass": "Root Item Class",
+      "Template": null,
+      "ItemNumber": "910090",
+      "ItemDescription": "ANTIFREEZE:PREMIXED LOW SILICATE SPECIFICATION  ANTI FREEZE IN DRUMS",
+      "ApprovalStatusValue": "Approved",
+      "ItemStatusValue": "Active",
+      "LifecyclePhaseValue": "Production",
+      "StyleItemFlag": null,
+      "StyleItemNumberValue": "910090",
+      "Keyword": null,
+      "IgnoreDuplicateItemFlag": null,
+      "UserItemTypeValue": "eAM STOCK ITEM",
+      "PackTypeValue": null,
+      "LongDescription": null,
+      "FormattedDescription": null,
+      "PrimaryUOMValue": "Quart",
+      "TransactionConversionValue": "Both",
+      "DefaultingControlValue": null,
+      "PositiveDeviationFactor": 0,
+      "NegativeDeviationFactor": 0,
+      "CopyItemAndApplyTemplatesFlag": null,
+      "CopyAssociationsFlag": null,
+      "CopyAttachmentsFlag": null,
+      "CopyCategoriesFlag": null,
+      "CopyFromItemValue": null,
+      "CopyFromRevisionValue": null,
+      "CopyFromVersionValue": null,
+      "CopyOrganizationAssignmentsFlag": null,
+      "LastSubmittedNewItemRequest": null,
+      "ChangeNotice": null,
+      "ChangeOrderLineSequenceNumber": null,
+      "StructureItemTypeValue": "Standard",
+      "CreateConfiguredItem": null,
+      "ConfigModelTypeValue": "Standard",
+      "EffectivityControlValue": "Date",
+      "BaseItemValue": null,
+      "AutoCreatedConfigurationFlag": false,
+      "PickComponentsFlag": false,
+      "AssembleToOrderFlag": false,
+      "CostingEnabledFlag": true,
+      "IncludeInRollUpFlag": null,
+      "StandardLotSize": null,
+      "InventoryAssetFlag": true,
+      "BuildInWIPFlag": true,
+      "WIPSupplyTypeValue": "Push",
+      "WIPSupplyLocatorValue": null,
+      "WIPSupplySubinventoryValue": null,
+      "OvercompletionToleranceTypeValue": null,
+      "OvercompletionToleranceValue": null,
+      "InventoryCarryPenalty": null,
+      "OperationSlackPenalty": null,
+      "RecipeEnabledFlag": true,
+      "ProcessQualityEnabledFlag": false,
+      "ProcessCostingEnabledFlag": false,
+      "ProcessExecutionEnabledFlag": true,
+      "ProcessSupplySubinventoryValue": null,
+      "ProcessSupplyLocatorValue": null,
+      "ProcessYieldSubinventoryValue": null,
+      "ProcessYieldLocatorValue": null,
+      "HazardousMaterialFlag": false,
+      "CASNumber": null,
+      "AssetTrackedFlag": false,
+      "AssetClassValue": "Equipment",
+      "ServiceRequestEnabledValue": null,
+      "DefectTrackingOnFlag": null,
+      "ServiceDurationTypeValue": "Open Ended",
+      "ServiceDuration": null,
+      "ServiceDurationPeriodValue": null,
+      "ServiceStartTypeValue": "Milestone",
+      "ServiceStartDelay": 0,
+      "AllowSuspendFlag": false,
+      "AllowTerminateFlag": false,
+      "RequiresItemAssociationFlag": false,
+      "CreateFixedAssetFlag": null,
+      "InstanceClassValue": null,
+      "BillingTypeValue": null,
+      "ServiceBillingEnabledFlag": false,
+      "RecoveredPartDispositionValue": null,
+      "InventoryItemFlag": true,
+      "StockEnabledFlag": true,
+      "MaterialTransactionEnabledFlag": true,
+      "ReservableFlag": true,
+      "CheckMaterialShortageFlag": false,
+      "RevisionQuantityControlFlag": false,
+      "BulkPickedFlag": false,
+      "LotControlValue": "No lot control",
+      "StartingLotPrefix": null,
+      "StartingLotNumber": null,
+      "MaturityDays": null,
+      "HoldDays": null,
+      "LotExpirationControlValue": "No shelf life control",
+      "ShelfLifeDays": 0,
+      "RetestInterval": null,
+      "ExpirationActionValue": null,
+      "ExpirationActionInterval": null,
+      "ChildLotEnabledFlag": false,
+      "ChildLotFormatValidationFlag": false,
+      "CopyLotAttributeFlag": false,
+      "ChildLotPrefix": null,
+      "ChildLotStartingNumber": null,
+      "ChildLotParent": null,
+      "LotTranslateEnabledFlag": false,
+      "LotSplitEnabledFlag": false,
+      "LotDivisibleFlag": false,
+      "LotSubstitutionEnabledFlag": null,
+      "LotMergeEnabledFlag": false,
+      "GradeControlFlag": false,
+      "DefaultGradeValue": null,
+      "SerialGenerationValue": "No serial number control",
+      "SerialStartingPrefix": null,
+      "SerialStartingNumber": null,
+      "NegativeMeasurementError": null,
+      "PositiveMeasurementError": null,
+      "CycleCountEnabledFlag": true,
+      "LotStatusEnabledFlag": false,
+      "SerialStatusEnabledFlag": false,
+      "DefaultLotStatusValue": null,
+      "DefaultSerialStatusValue": null,
+      "RestrictSubinventoriesFlag": true,
+      "RestrictLocatorsFlag": true,
+      "StockLocatorControlValue": "Previously specified",
+      "DimensionUOMValue": null,
+      "UnitWidthQuantity": null,
+      "UnitLengthQuantity": null,
+      "UnitHeightQuantity": null,
+      "WeightUOMValue": null,
+      "UnitWeightQuantity": null,
+      "VolumeUOMValue": null,
+      "UnitVolumeQuantity": null,
+      "ContainerItemFlag": false,
+      "ContainerTypeValue": null,
+      "MaximumLoadWeight": null,
+      "VehicleItemFlag": false,
+      "InternalVolume": null,
+      "MinimumFillPercent": null,
+      "WarehouseEquipmentFlag": false,
+      "EventFlag": false,
+      "CollateralFlag": false,
+      "CustomerOrderFlag": false,
+      "CustomerOrderEnabledFlag": false,
+      "ATPComponentsValue": "None",
+      "PickingRuleValue": null,
+      "RMAInspectionRequiredFlag": false,
+      "EligibilityRuleFlag": null,
+      "ReturnableFlag": true,
+      "ATPValue": "None",
+      "FinancingAllowedFlag": null,
+      "SalesProductTypeValue": null,
+      "TransactionEnabledFlag": false,
+      "OrderManagementIndivisibleFlag": false,
+      "DefaultSalesOrderSourceTypeValue": "Internal",
+      "ElectronicFormatFlag": false,
+      "ShippableFlag": false,
+      "DefaultShippingOrganizationValue": null,
+      "ShipModelCompleteFlag": false,
+      "DownloadableFlag": false,
+      "OverShipmentTolerance": null,
+      "UnderShipmentTolerance": null,
+      "OverReturnTolerance": null,
+      "UnderReturnTolerance": null,
+      "InvoiceEnabledFlag": false,
+      "AccountingRuleValue": null,
+      "PaymentTermsValue": null,
+      "OutputTaxClassificationCodeValue": null,
+      "InvoicedFlag": false,
+      "InvoicingRuleValue": null,
+      "SalesAccountValue": null,
+      "WebStatusValue": "Unpublished",
+      "BackOrderableFlag": null,
+      "OrderableOnWebFlag": false,
+      "MinimumLicenseQuantity": null,
+      "InventoryPlanningMethodValue": "Min-max planning",
+      "PlanningMakeBuyValue": "Buy",
+      "Planner": null,
+      "SubcontractingComponentValue": null,
+      "MinimumMinmaxQuantity": 6780,
+      "MaximumMinmaxQuantity": 9897,
+      "MinimumOrderQuantity": null,
+      "MaximumOrderQuantity": null,
+      "OrderCost": null,
+      "SourceOrganizationValue": null,
+      "SourceSubinventoryOrganizationValue": null,
+      "SourceSubinventoryValue": null,
+      "FixedOrderQuantity": null,
+      "FixedDaysSupply": null,
+      "FixedLotSizeMultiplier": null,
+      "AutomaticallyExpireASNFlag": false,
+      "ConsignedFlag": false,
+      "ReplenishmentMinimumOrder": null,
+      "ReplenishmentMaximumOrder": null,
+      "VMIFixedOrderQuantity": null,
+      "ForecastTypelValue": "Order Forecast",
+      "ForecastHorizon": null,
+      "PlanningMethodValue": "Not Planned",
+      "RoundingControlTypeFlag": null,
+      "CreateSupplyFlag": true,
+      "CriticalComponentFlag": false,
+      "PlanningTimeFence": "User Defined Time Fence",
+      "DemandTimeFence": null,
+      "ReleaseTimeFence": null,
+      "ShrinkageRate": null,
+      "ForecastControlValue": null,
+      "AcceptableEarlyDays": null,
+      "PlanningTimeDays": 1,
+      "DemandTimeDays": null,
+      "ReleaseTimeDays": null,
+      "MRPCalculateATPFlag": null,
+      "RepairLeadtime": null,
+      "RepairYield": null,
+      "PreprocessingDays": null,
+      "PostprocessingDays": 0,
+      "ProcessingDays": null,
+      "VariableLeadTime": null,
+      "CumulativeTotalLeadTime": null,
+      "FixedLeadTime": null,
+      "CumulativeManufacturingLeadTime": null,
+      "LeadTimeLotSize": 1,
+      "PurchasingFlag": true,
+      "UseApprovedSupplierFlag": false,
+      "NegotiationRequiredFlag": null,
+      "PurchasingInputTaxClassificationValue": null,
+      "InvoiceCloseTolerancePercentage": null,
+      "HazardClassValue": null,
+      "AssetCategoryValue": null,
+      "PurchasableFlag": true,
+      "TaxableFlag": true,
+      "BuyerOrganizationValue": null,
+      "DefaultBuyerValue": null,
+      "ReceiptCloseTolerancePercentage": null,
+      "UNNumberValue": null,
+      "ListPrice": 1.6,
+      "PriceTolerancePercentage": null,
+      "MarketPrice": null,
+      "RoundingFactor": null,
+      "MatchApprovalLevelValue": null,
+      "MatchConfigurationOptionValue": null,
+      "ReceiptDateActionValue": null,
+      "DaysEarlyReceiptAllowed": null,
+      "DaysLateReceiptAllowed": null,
+      "AllowSubstituteReceiptsFlag": false,
+      "AllowUnorderedReceiptsFlag": null,
+      "QuantityReceivedToleranceAction": null,
+      "QuantityReceivedTolerancePercentage": null,
+      "ItemExtensibleFlexfieldCategoryCode": "ROOT_ICC",
+      "CreationDate": "2026-10-04T21:27:19.386+00:00",
+      "LastUpdateDate": "2026-10-28T15:43:05.221+00:00",
+      "BackToBackEnabledFlag": false,
+      "ContractManufacturingFlag": false,
+      "DaysOfCover": null,
+      "DemandPeriod": null,
+      "SafetyStockPlanningMethodValue": "Not Planned",
+      "OutsideProcessServiceFlag": false,
+      "AllowMaintenanceAssetFlag": false,
+      "EnableGenealogyTrackingFlag": true,
+      "EngineeredItemFlag": false,
+      "ProcurementBusinessUnitName": null,
+      "ForcePurchaseLeadTimeFlag": true,
+      "ReplacementTypeValue": null,
+      "BuyerEmailAddress": null,
+      "AssetTrackedValue": "Not Tracked",
+      "RequestId": 2617423,
+      "CreatedBy": "MYTHICS",
+      "CreationDateTime": "2026-10-04T21:27:19.386+00:00",
+      "LastUpdateDateTime": "2026-10-28T15:43:05.221+00:00",
+      "LastUpdateLogin": "5EE9677CDD3699F9E0636056310AAF7D",
+      "LastUpdatedBy": "MYTHICS",
+      "InternallyTransferableFlag": false,
+      "TransferOrdersEnabledFlag": false,
+      "ReplenishmentMaximumDaysOfSupply": null,
+      "CustomerSelfServiceEnabledFlag": false,
+      "AllowPurchasingDocumentDescriptionUpdateFlag": true,
+      "EnableContractCoverage": false,
+      "CarryingCostPercentage": null,
+      "ReplenishmentMinimumDaysOfSupply": null,
+      "AllowExpressTransactionsFlag": null,
+      "ReceiptRoutingValue": "Direct",
+      "InvoiceMatchOptionValue": null,
+      "CommsActivationRequiredFlag": null,
+      "RequiresFulfillmentLocationFlag": false,
+      "IssueUOMValue": "Quart",
+      "EnforceShipToLocationValue": null,
+      "StandardCoverageValue": null,
+      "ReplenishmentSourceTypeValue": null,
+      "TrackingUOMValue": "Primary",
+      "SecondaryUOMValue": null,
+      "PricingUOMValue": "Primary",
+      "HardPeggingLevelValue": "None",
+      "CommonSupplyProjectDemandFlag": null,
+      "EnableIotFlag": false,
+      "ExpenditureTypeValue": null,
+      "PackagingStringValue": null,
+      "CreateSupplyAfterDate": null,
+      "CreateFixedAssetValue": null,
+      "UnderCompletionToleranceTypeValue": null,
+      "UnderCompletionToleranceValue": null,
+      "DefaultRepairTransactionName": null,
+      "CreatedFromItemId": null,
+      "CreatedFromItemNumber": null,
+      "CreatedFromItemRevision": null,
+      "ItemObjectTypeValue": "Item",
+      "PartsSourcingValue": null,
+      "OrderModifierStartQuantityFlag": null,
+      "PreliminaryItemFlag": true,
+      "ExpirationDateCalculationBasis": null,
+      "ExpirationDateCalculationBasisValue": null,
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A",
+          "name": "itemsV2",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000002770400000002737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B0200007870000000017371007E00020000000378"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A",
+          "name": "itemsV2",
+          "kind": "item"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPaymentTermsValue",
+          "name": "LovPaymentTermsValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSourceTypeValue",
+          "name": "LovSourceTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovConfigModelTypeValue",
+          "name": "LovConfigModelTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/ExpenditureTypeValueVA",
+          "name": "ExpenditureTypeValueVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSecondaryUomValue",
+          "name": "LovSecondaryUomValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovCopyFromRevisionValue",
+          "name": "LovCopyFromRevisionValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovIbItemInstanceClassValue",
+          "name": "LovIbItemInstanceClassValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDefaultGradeValue",
+          "name": "LovDefaultGradeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovWebStatusValue",
+          "name": "LovWebStatusValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/ContractCoveragePVO1",
+          "name": "ContractCoveragePVO1",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovBaseItemValue",
+          "name": "LovBaseItemValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPickingRuleValue",
+          "name": "LovPickingRuleValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovMatchApprovalLevelValue",
+          "name": "LovMatchApprovalLevelValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/PackagingStringsPVO1",
+          "name": "PackagingStringsPVO1",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovCreateFixedAssetValue",
+          "name": "LovCreateFixedAssetValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSubcontractingComponentValue",
+          "name": "LovSubcontractingComponentValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSourceSubinventoryOrganizationValue",
+          "name": "LovSourceSubinventoryOrganizationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovReceiptDaysExceptionValue",
+          "name": "LovReceiptDaysExceptionValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovAssetClassValue",
+          "name": "LovAssetClassValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovCurrentPhaseValue",
+          "name": "LovCurrentPhaseValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPrimaryUOMValue",
+          "name": "LovPrimaryUOMValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDefaultSoSourceTypeValue",
+          "name": "LovDefaultSoSourceTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovLotControlValue",
+          "name": "LovLotControlValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovTradeItemDescriptorValue",
+          "name": "LovTradeItemDescriptorValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovUnitOfIssueValue",
+          "name": "LovUnitOfIssueValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovMaterialBillableValue",
+          "name": "LovMaterialBillableValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovServiceDurationPeriodValue",
+          "name": "LovServiceDurationPeriodValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovReleaseTimeFenceValue",
+          "name": "LovReleaseTimeFenceValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovInvoicingRuleValue",
+          "name": "LovInvoicingRuleValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovVmiForecastTypeValue",
+          "name": "LovVmiForecastTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovRecoveredPartDispValue",
+          "name": "LovRecoveredPartDispValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovATPValue",
+          "name": "LovATPValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovUnderCompletionToleranceTypeValue",
+          "name": "LovUnderCompletionToleranceTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovTrackingQuantityIndValue",
+          "name": "LovTrackingQuantityIndValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSecondaryDefaultIndValue",
+          "name": "LovSecondaryDefaultIndValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSalesProductTypeValue",
+          "name": "LovSalesProductTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovBuyerValue",
+          "name": "LovBuyerValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSourceOrganizationValue",
+          "name": "LovSourceOrganizationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/ReplacementTypeValueVA",
+          "name": "ReplacementTypeValueVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/ExpirationDateCalculationBasisVA",
+          "name": "ExpirationDateCalculationBasisVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovInventoryPlanningValue",
+          "name": "LovInventoryPlanningValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovOvercompletionToleranceTypeValue",
+          "name": "LovOvercompletionToleranceTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPlannerValue",
+          "name": "LovPlannerValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovWeightUOMValue",
+          "name": "LovWeightUOMValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovCopyFromItemValue",
+          "name": "LovCopyFromItemValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPlanningMakeBuyValue",
+          "name": "LovPlanningMakeBuyValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDefaultLotStatusValue",
+          "name": "LovDefaultLotStatusValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDefaultSerialStatusValue",
+          "name": "LovDefaultSerialStatusValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovEffectivityControlValue",
+          "name": "LovEffectivityControlValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovWIPSupplySubinventoryValue",
+          "name": "LovWIPSupplySubinventoryValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovRepairTransactionCode",
+          "name": "LovRepairTransactionCode",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovBOMItemTypeValue",
+          "name": "LovBOMItemTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovServRequestEnabledValue",
+          "name": "LovServRequestEnabledValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovEnforceShipToLocationValue",
+          "name": "LovEnforceShipToLocationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovVolumeUOMValue",
+          "name": "LovVolumeUOMValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovQuantityRcvExceptionValue",
+          "name": "LovQuantityRcvExceptionValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovApprovalStatusValue",
+          "name": "LovApprovalStatusValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovAccountingRuleValue",
+          "name": "LovAccountingRuleValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovAllowedUnitsLookupValue",
+          "name": "LovAllowedUnitsLookupValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovServiceDurationTypeValue",
+          "name": "LovServiceDurationTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovContainerTypeValue",
+          "name": "LovContainerTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDefaultShippingOrgValue",
+          "name": "LovDefaultShippingOrgValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/SafetyStockPlanningMethodVA",
+          "name": "SafetyStockPlanningMethodVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDemandTimeFenceValue",
+          "name": "LovDemandTimeFenceValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/PartsSourcingVA",
+          "name": "PartsSourcingVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovConfigOrgsValue",
+          "name": "LovConfigOrgsValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovWIPSupplyTypeValue",
+          "name": "LovWIPSupplyTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovTemplateValue",
+          "name": "LovTemplateValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovShelfLifeValue",
+          "name": "LovShelfLifeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovMRPPlanningValue",
+          "name": "LovMRPPlanningValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovOrganizationValue",
+          "name": "LovOrganizationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovConfigMatchValue",
+          "name": "LovConfigMatchValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovReceivingRoutingValue",
+          "name": "LovReceivingRoutingValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPlanningTimeFenceValue",
+          "name": "LovPlanningTimeFenceValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovATOForecastControlValue",
+          "name": "LovATOForecastControlValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovAssetTrackedValue",
+          "name": "LovAssetTrackedValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovATPComponentsValue",
+          "name": "LovATPComponentsValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSoAuthorizationValue",
+          "name": "LovSoAuthorizationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovProcessSupplySubinventoryValue",
+          "name": "LovProcessSupplySubinventoryValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSourceSubinventoryValue",
+          "name": "LovSourceSubinventoryValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovLocationControlValue",
+          "name": "LovLocationControlValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovItemCatalogGroupValue",
+          "name": "LovItemCatalogGroupValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovProcessYieldSubinventoryValue",
+          "name": "LovProcessYieldSubinventoryValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovSerialNumberControlValue",
+          "name": "LovSerialNumberControlValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovHazardClassValue",
+          "name": "LovHazardClassValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovTaxValue",
+          "name": "LovTaxValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovServiceStartTypeValue",
+          "name": "LovServiceStartTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovPurchasingTaxValue",
+          "name": "LovPurchasingTaxValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovUNNumberValue",
+          "name": "LovUNNumberValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/HardPeggingLevelValueVA",
+          "name": "HardPeggingLevelValueVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovDimensionUOMValue",
+          "name": "LovDimensionUOMValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/StyleItemMasterOrgVA",
+          "name": "StyleItemMasterOrgVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/ItemObjectTypeVA",
+          "name": "ItemObjectTypeVA",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovParentChildGenerationValue",
+          "name": "LovParentChildGenerationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovCopyFromVersionValue",
+          "name": "LovCopyFromVersionValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovOntPricingQuantitySourceValue",
+          "name": "LovOntPricingQuantitySourceValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovInventoryItemStatusValue",
+          "name": "LovInventoryItemStatusValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovBuyerOrganizationValue",
+          "name": "LovBuyerOrganizationValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovExpirationActionValue",
+          "name": "LovExpirationActionValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovItemTypeValue",
+          "name": "LovItemTypeValue",
+          "kind": "collection"
+        },
+        {
+          "rel": "lov",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/lov/LovInvoiceMatchOption",
+          "name": "LovInvoiceMatchOption",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemAttachment",
+          "name": "ItemAttachment",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemCategory",
+          "name": "ItemCategory",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemDFF",
+          "name": "ItemDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemEffCategory",
+          "name": "ItemEffCategory",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemGlobalDFF",
+          "name": "ItemGlobalDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemRevision",
+          "name": "ItemRevision",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemSupplierAssociation",
+          "name": "ItemSupplierAssociation",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ItemTranslation",
+          "name": "ItemTranslation",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/00040000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A0000000EACED0005770800005AF311EFC16C0000000EACED00057708000110D931B4A92A/child/ProductCosts",
+          "name": "ProductCosts",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2",
+      "name": "itemsV2",
+      "kind": "collection"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/action/addItemsToDeleteGroup",
+      "name": "addItemsToDeleteGroup",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/itemsV2/action/addSupplierAssociationsToDeleteGroup",
+      "name": "addSupplierAssociationsToDeleteGroup",
+      "kind": "other"
+    }
+  ]
+}

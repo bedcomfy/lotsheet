@@ -1,0 +1,15 @@
+{
+  "items": [],
+  "count": 0,
+  "hasMore": false,
+  "limit": 3,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/installedBaseAssets/100000024726932/child/assetImageAttachments",
+      "name": "assetImageAttachments",
+      "kind": "collection"
+    }
+  ]
+}

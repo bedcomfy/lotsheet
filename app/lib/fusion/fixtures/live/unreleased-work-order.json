@@ -1,0 +1,45 @@
+{
+  "items": [],
+  "count": 0,
+  "hasMore": false,
+  "limit": 1,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders",
+      "name": "maintenanceWorkOrders",
+      "kind": "collection"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/midpointRescheduleWorkOrderOperation",
+      "name": "midpointRescheduleWorkOrderOperation",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/createConditionBasedWorkOrders",
+      "name": "createConditionBasedWorkOrders",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/resequenceAsNextOperation",
+      "name": "resequenceAsNextOperation",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/copyWorkOrder",
+      "name": "copyWorkOrder",
+      "kind": "other"
+    },
+    {
+      "rel": "action",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/action/manageResourceAssignment",
+      "name": "manageResourceAssignment",
+      "kind": "other"
+    }
+  ]
+}

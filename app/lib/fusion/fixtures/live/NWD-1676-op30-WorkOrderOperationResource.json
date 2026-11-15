@@ -1,0 +1,94 @@
+{
+  "items": [
+    {
+      "WoOperationResourceId": 300000023544398,
+      "WoOperationId": 300000023544380,
+      "OperationSequenceNumber": 30,
+      "OperationName": "REPAIR  MISC. ACCESSORIES AS NEEDED",
+      "WorkOrderId": 300000023544372,
+      "OrganizationId": 300000004581674,
+      "ResourceSequenceNumber": 10,
+      "ResourceCode": "Mechanic",
+      "ResourceType": "LABOR",
+      "ResourceDescription": "Mechanic\n",
+      "ResourceId": 300000012943508,
+      "UnitOfMeasure": "Hours",
+      "WorkCenterName": "NWD",
+      "WorkCenterDescription": "Northwest Division",
+      "BasisType": "1",
+      "ChargeType": "AUTOMATIC",
+      "UsageRate": 0.001,
+      "RequiredUsage": 0.001,
+      "PlannedStartDate": "2026-11-13T01:12:00+00:00",
+      "PlannedCompletionDate": "2026-11-13T01:12:00+00:00",
+      "ScheduledFlag": false,
+      "StandardOperationCode": "2900",
+      "StandardOperationId": 300000012977316,
+      "WorkAreaName": "NWD",
+      "WorkAreaCode": "NWD",
+      "WorkAreaDescription": "NWD",
+      "WorkAreaId": 300000012942817,
+      "PrincipalFlag": false,
+      "ScheduledIndicator": "NO",
+      "AssignedUnits": 1,
+      "EqpQualProfileId": null,
+      "ProfileId": null,
+      "ProfileCode": null,
+      "EqpQualProfileCode": null,
+      "ReasonForRepairCode": null,
+      "ReasonForRepairName": null,
+      "RepairTransactionCode": null,
+      "RepairTransactionName": null,
+      "WorkAccomplishedCode": null,
+      "WorkAccomplishedName": null,
+      "ResourceTypeMeaning": "Labor",
+      "links": [
+        {
+          "rel": "self",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource/300000023544398",
+          "name": "WorkOrderOperationResource",
+          "kind": "item",
+          "properties": {
+            "changeIndicator": "ACED0005737200136A6176612E7574696C2E41727261794C6973747881D21D99C7619D03000149000473697A65787000000001770400000001737200116A6176612E6C616E672E496E746567657212E2A0A4F781873802000149000576616C7565787200106A6176612E6C616E672E4E756D62657286AC951D0B94E08B02000078700000000178"
+          }
+        },
+        {
+          "rel": "canonical",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource/300000023544398",
+          "name": "WorkOrderOperationResource",
+          "kind": "item"
+        },
+        {
+          "rel": "parent",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380",
+          "name": "WorkOrderOperation",
+          "kind": "item"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource/300000023544398/child/WorkOrderOperationResourceDFF",
+          "name": "WorkOrderOperationResourceDFF",
+          "kind": "collection"
+        },
+        {
+          "rel": "child",
+          "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource/300000023544398/child/WorkOrderOperationResourceInstance",
+          "name": "WorkOrderOperationResourceInstance",
+          "kind": "collection"
+        }
+      ]
+    }
+  ],
+  "count": 1,
+  "hasMore": false,
+  "limit": 25,
+  "offset": 0,
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://iaymqy.fa.ocs.oraclecloud.com:443/fscmRestApi/resources/11.13.18.05/maintenanceWorkOrders/300000023544372/child/WorkOrderOperation/300000023544380/child/WorkOrderOperationResource",
+      "name": "WorkOrderOperationResource",
+      "kind": "collection"
+    }
+  ]
+}

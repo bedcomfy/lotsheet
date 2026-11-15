@@ -46,7 +46,7 @@ globalThis.fetch = async (input, options) => {
     return page(catalog.filter(p => p.ItemNumber === number));
   }
   if (url.pathname.endsWith("/locatorItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, LocatorItemId: 300000021769924, ItemNumber: "910090", SubinventoryCode: "Northwest", LocatorName: "TANK AREA-**-**" }]);
-  if (url.pathname.endsWith("/subinventoryItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, SubinventoryItemId: "100000024478060_300000012931087", ItemNumber: "910090", SecondaryInventory: "Northwest" }]);
+  if (url.pathname.endsWith("/subinventoryItems")) return page([{ ...org, InventoryItemId: catalog[0].ItemId, SubinventoryItemId: "100000024478060_300000012931087", ItemNumber: "910090", SecondaryInventory: "Northwest", MinmaxQuantityUOMMeasure: "Quart", MPNs: { items: [{ MPN: "COOLANT-MPN" }], hasMore: false }, GTINs: { items: [], hasMore: false } }]);
   if (url.pathname.endsWith("/inventoryOnhandBalances")) return Response.json({}, { status: 403 });
   if (url.pathname.endsWith("/maintenanceWorkOrderTransactionHistory")) {
     if (q.includes("TransactionType='RESOURCE_CHARGE'")) {
