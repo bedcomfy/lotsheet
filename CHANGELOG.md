@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.58.1 - 2026-11-19
+
+- Replace the deployed application with a standalone, static unavailable notice that directs visitors to their system administrator or site owner for support.
+- Route all page and API paths to the notice with an unavailable status, no caching, no scripts, and no external connections. Deploy only the notice directory; retain application source and data for restoration.
+- Disable automatic Git deployments. Keep the original Vercel project paused and deny all its traffic with a project firewall rule, including historical deployment URLs; serve the notice from a separate project without application credentials.
+
 ## 0.58.0 - 2026-11-14
 
 - Save the complete available Northwest parts catalog in a dedicated database table, independent of Oracle token expiry. Preserve manufacturer/trade numbers, Oracle item IDs, descriptions and stockroom/locator references without storing on-hand balances.
